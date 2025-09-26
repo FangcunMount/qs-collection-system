@@ -1,0 +1,191 @@
+.color() {
+  // 主色：各类按钮、链接文字、选中
+  primary: #478de2;
+  // 次色：比主色淡一点
+  secondary: #e5f0ff;
+  // 积极色，如：创建成功、进行中
+  positive: #008000;
+  // 警告色，如：不可搞作、等
+  warning: #fef8cb;
+  // 消极色，如：失败、金钱等
+  negative: #f44336;
+}
+
+.bgColor() {
+  primary: #fff;
+  secondary: #f5f5f5;
+}
+
+.iconColor() {
+  primary: #444;
+  secondary: #b4b4b4;
+}
+
+.textColor() {
+  // 主要文字色，通用文字都是该色号
+  primary: #333;
+  // 次要文字色，如：日期、年龄、信息
+  secondary: #666;
+  // 提示文字色，如：性别、日期等
+  tips: #999;
+  // 积极色，如：创建成功、进行中
+  positive: #009e00;
+  // 警告色，如：不可搞作、等
+  warning: #fef8cb;
+  // 消极色，如：失败、金钱等
+  negative: #f44336;
+}
+
+.directions() {
+  l: left;
+  r: right;
+  t: top;
+  b: bottom;
+}
+
+.pm() {
+  p: padding;
+  m: margin;
+}
+
+.size() {
+  xs: 8rpx;
+  sm: 20rpx;
+  md: 32rpx;
+  lg: 48rpx;
+  xl: 64rpx;
+  none: 0rpx;
+}
+
+.fontSizeH() {
+  h1: 72rpx;
+  h2: 56rpx;
+  h3: 48rpx;
+  h4: 36rpx;
+  h5: 32rpx;
+  h6: 28rpx;
+}
+
+.fontSizeB() {
+  body1: 32rpx;
+  body2: 28rpx;
+  body3: 24rpx;
+}
+
+// ⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇  color  ⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇
+each(.bgColor(), .(@v, @k, @i) {
+  .s-bg-@{k} {
+    background-color: @v  !important;
+  }
+});
+
+each(.color(), .(@v, @k, @i) {
+  .s-color-@{k} {
+    background-color: @v !important;
+  }
+
+  .s-text-color-@{k} {
+    color: @v !important;
+  }
+})
+
+each(.iconColor(), .(@v, @k, @i) {
+  .s-icon-@{k} {
+    color: @v !important;
+  }
+})
+
+each(.textColor(), .(@v, @k, @i) {
+  .s-text-@{k} {
+    color: @v !important;
+  }
+})
+// ⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆
+
+// ⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇  size  ⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇
+each(.size(), .(@sv, @sk, @si) {
+  each(.pm(), .(@pv, @pk, @pi) {
+    each(.directions(), .(@dv, @dk, @di) {
+      .s-@{pk}@{dk}-@{sk} {
+        @{pv}-@{dv}: @sv;
+      }
+    });
+
+    .s-@{pk}a-@{sk} {
+      @{pv}: @sv;
+    }
+    .s-@{pk}x-@{sk} {
+      @{pv}: @sv 0px;
+    }
+    .s-@{pk}y-@{sk} {
+      @{pv}: 0px @sv;
+    }
+
+  });
+});
+
+each(.fontSizeH(), .(@v, @k, @i) {
+  .s-text-@{k} {
+    font-size: @v;
+    font-weight: 700;
+  }
+});
+
+each(.fontSizeB(), .(@v, @k, @i) {
+  .s-text-@{k} {
+    font-size: @v;
+  }
+})
+// ⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆
+
+.s-row {
+  display: flex;
+  flex-direction: row;
+}
+
+.s-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.s-row-end {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.s-row-start {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.s-row-center {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+}
+
+.s-row-between {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.s-no-wrap {
+  white-space: nowrap;
+}
+
+.s-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+page {
+  width: 100vw;
+  height: 100vh;
+}

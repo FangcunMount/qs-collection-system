@@ -1,0 +1,63 @@
+{
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "解析展示",
+          "pathName": "pages/analysis/index",
+          "query": "a=66cda86806f31532b53e2c40",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "问卷进入",
+          "pathName": "pages/questionsheet/index",
+          "query": "q= 3adyDE&f=17",
+          "launchMode": "default",
+          "scene": 1011
+        },
+        {
+          "name": "首页展示",
+          "pathName": "pages/home/home/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "答卷展示",
+          "pathName": "pages/answersheet/index",
+          "query": "a= 66cda86806f31532b53e2c40",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "答卷列表",
+          "pathName": "pages/answersheetList/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "注册",
+          "pathName": "pages/register/index",
+          "query": "submitClose=0&goUrl=/pages/questionsheet/index&goParams={}&role=child",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
+          "name": "添加顾问",
+          "pathName": "pages/addConsultant/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        }
+      ]
+    }
+  },
+  "description": "项目私有配置文件。此文件中的内容将覆盖 project.config.json 中的相同字段。项目的改动优先同步到此文件中。详见文档：https://developers.weixin.qq.com/miniprogram/dev/devtools/projectconfig.html",
+  "projectname": "mpwenjuan",
+  "setting": {
+    "compileHotReLoad": true
+  },
+  "libVersion": "2.29.1"
+}

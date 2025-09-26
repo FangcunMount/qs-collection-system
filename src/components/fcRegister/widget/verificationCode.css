@@ -1,0 +1,40 @@
+.fc-code {
+  position: relative;
+}
+.fc-code .insert-code {
+  padding: 48rpx;
+}
+.fc-code .fc-code--box__container {
+  display: flex;
+}
+.fc-code .fc-code--box__container .fc-code--box {
+  display: flex;
+  align-items: center;
+}
+.fc-code .fc-code--box__container .fc-code--box input {
+  width: 40rpx;
+  height: 36rpx;
+  margin-right: 24rpx;
+  padding-bottom: 8rpx;
+  border: 2rpx solid #cccccd;
+  text-align: center;
+  color: #333333;
+  font-size: 32rpx;
+  border-radius: 10rpx;
+}
+.fc-code .fc-code--box__container .fc-code--box:first-child {
+  margin-left: 30rpx;
+}
+.fc-code .is-input {
+  border-color: #079aff !important;
+}
+.fc-code .ipt {
+  height: 0;
+  width: 0;
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+.fc-code .c-blue {
+  color: #079aff;
+}

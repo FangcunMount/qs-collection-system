@@ -1,0 +1,132 @@
+.tScore-analysis-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+
+    .body {
+        width: 100%;
+        height: 100%;
+
+        .analysis-tab {
+            width: 100%;
+            height: 100%;
+            padding: 32rpx 32rpx 160rpx 32rpx;
+            overflow-y: scroll;
+            display: none;
+
+            .tab-title {
+                font-size: 36rpx;
+                color: #333;
+                font-weight: bold;
+                text-align: left;
+            }
+
+            // 测评得分 tab
+            .tScore-info-tab {
+
+                .tScore-chart {
+                    width: 100%;
+                    margin-top: 64rpx;
+                }
+    
+                .tScore-table {
+                    width: 100%;
+                    margin: 64rpx 0;
+                    font-size: 28rpx;
+                    line-height: 88rpx;
+                    border: 1rpx solid #f0f0f0;
+    
+                    .bg-header {
+                        display: flex;
+                        justify-content: center;
+                        color: #333;
+                        text-align: center;
+                        font-size: 28rpx;
+                        font-weight: bold;
+                        line-height: 88rpx;
+                    }
+    
+                    .tr {
+                        display: flex;
+                        justify-content: center;
+                        color: #333;
+                        text-align: center;
+                        font-size: 28rpx;
+                        line-height: 88rpx;
+                        border-bottom: 1rpx solid #f0f0f0;
+                    }
+    
+                    .score-warning {
+                        color: #ff4d4f;
+                    }
+    
+                    .tr:nth-child(2n-1) {
+                        background-color: #f5f5f5;
+                    }
+                }
+            }
+
+            // 测评解读 tab
+            .tScore-interpretation-tab {
+                padding-bottom: 64rpx;
+
+                .tScore-interpretation-section-title {
+                    font-size: 32rpx;
+                    color: #333;
+                    font-weight: bold;
+                    line-height: 48rpx;
+                    margin-top: 32rpx;
+                }
+
+                .tScore-interpretation-section-content {
+                    margin-top: 32rpx;
+                    color: #333;
+                    font-size: 28rpx;
+                    line-height: 48rpx;
+
+                    .tScore-interpretation-section-p {
+                        margin-left: 32rpx;
+                        margin-top: 16rpx;
+                    }
+                }
+            }
+
+            // 测评简介 tab
+            .tScore-introduction-tab {
+                padding-bottom: 64rpx;
+
+                .tScore-introduction-section-title {
+                    font-size: 32rpx;
+                    color: #333;
+                    font-weight: bold;
+                    line-height: 48rpx;
+                    margin-top: 32rpx;
+                }
+
+                .tScore-introduction-section-content {
+                    margin-top: 32rpx;
+                    color: #333;
+                    font-size: 28rpx;
+                    line-height: 48rpx;
+
+                    .tScore-introduction-section-p {
+                        margin-top: 16rpx;
+                    }
+                }
+            }
+        }
+
+        .analysis-tab.at-tabs-pane--active {
+            display: block;
+        }
+    }
+
+    .footer {
+        position: absolute;
+        bottom: 0rpx;
+        width: 100vw;
+        padding-bottom: 30rpx;
+        background-color: #fff;
+    }
+
+}
