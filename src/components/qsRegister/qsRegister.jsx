@@ -9,7 +9,6 @@ import RegisterFooter from "./widget/registerFooter";
 import NeedDialog from "../needDialog";
 
 import { postChildRegister } from "./widget/api";
-import { getGlobalData } from "../../util/globalData";
 import { useSubmit } from "../../util/useUtil";
 
 const createInitialRegisterInfo = () => ({
@@ -70,13 +69,6 @@ const QsRegister = ({ goUrl, submitClose }) => {
       child: { ...registerInfo.testee },
       user: { ...registerInfo.contact }
     };
-
-    if (getGlobalData("doctorid")) {
-      submitData.source = {
-        type: "Doctor",
-        id: getGlobalData("doctorid")
-      };
-    }
 
     const res = await postChildRegister(submitData);
     if (res.childid) afterSubmit();

@@ -18,7 +18,7 @@ import { getGlobalData, setGlobalData, clearGlobalData } from "../../util/global
 import { getLogger } from "../../util/log";
 import { getAnswersheetidBySignid } from "../../services/api/answersheetApi";
 import { getForwardConfig } from "../../services/api/share";
-import { getMpEntryParams, postReachstore } from "../../services/api/commonApi";
+import { getMpEntryParams } from "../../services/api/commonApi";
 
 import { PrivacyAuthorization } from "../../components/privacyAuthorization/privacyAuthorization";
 
@@ -77,19 +77,13 @@ export default function Index() {
       const {
         q: questionsheetCode,
         t: testeeid,
-        d: doctorid,
         a: fcActivityId,
         signid,
         senderid
       } = result;
       const { clinicid, reach_store } = result;
 
-      if (clinicid && reach_store === "1") {
-        postReachstore(clinicid);
-      }
-
       fcActivityId ? setGlobalData("fcActivityId", fcActivityId) : clearGlobalData("fcActivityId");
-      doctorid && setGlobalData("doctorid", doctorid);
       senderid && setGlobalData("senderid", senderid);
       signid && setSubSignid(signid);
       result.sp && setIsSinglePage(result.sp === "1");
@@ -160,7 +154,7 @@ export default function Index() {
   };
 
   const canShareWeapp = () => {
-    return !getGlobalData("fcActivityId") && !getGlobalData("doctorid");
+    return !getGlobalData("fcActivityId");
   };
 
   const verifyTestee = async testeeid => {
