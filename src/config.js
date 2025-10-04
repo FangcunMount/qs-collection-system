@@ -36,7 +36,7 @@ const config = configMap[envVersion];
 
 export default {
   ...config,
-  host: 'https://mpwenjuan.' + config.domain,
+  host: 'https://qs-collection-system.' + config.domain,
   // host: 'https://mockapi.eolinker.com/VSRnDuC52a14e4cc405c00d4d526bb3baaf1fd4c32e9f74',
   envVersion,
 }

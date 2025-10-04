@@ -61,7 +61,7 @@ export default () => {
           className='s-text-secondary s-text-body2'
           style={{ height: "48rpx", lineHeight: "48rpx", marginLeft: "12rpx" }}
         >
-          方寸问卷
+          问卷
         </View>
         <View
           className='s-text-tips s-text-body3'

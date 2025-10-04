@@ -1,8 +1,8 @@
 {
-  "name": "mpwenjuan",
+  "name": "qs-collection-system",
   "version": "1.0.0",
   "private": true,
-  "description": "方寸问卷助手",
+  "description": "问卷收集系统",
   "templateInfo": {
     "name": "taro-ui",
     "typescript": false,

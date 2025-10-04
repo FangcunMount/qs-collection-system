@@ -27,7 +27,7 @@ const FcText = props => {
   };
 
   const handleUploadMedia = async (filePath, type) => {
-    const sceneType = "mpwenjuan";
+    const sceneType = "qs-collection-system";
     try {
       const res = await getOSSSignature(sceneType);
 
