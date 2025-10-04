@@ -7,10 +7,8 @@ import "./qsRegister.less";
 import RegisterCollecter from "./widget/registerCollecter";
 import RegisterFooter from "./widget/registerFooter";
 import NeedDialog from "../needDialog";
-import ConfirmDialog from "./widget/confirmDialog";
-import BindDialog from "./widget/bindDialog";
 
-import { postChildRegister, getChildConfirm } from "./widget/api";
+import { postChildRegister } from "./widget/api";
 import { getGlobalData } from "../../util/globalData";
 import { useSubmit } from "../../util/useUtil";
 
@@ -72,15 +70,7 @@ const QsRegister = ({ goUrl, role, submitClose }) => {
     return tmp;
   });
 
-  const [needConfirmData, setNeedConfirmData] = useState({
-    childid: "",
-    phone: ""
-  });
-
-  const [childConfirmList, setChildConfirmList] = useState([]);
   const [needCloseFlag, setNeedCloseFlag] = useState(false);
-  const [confirmFlag, setConfirmFlag] = useState(false);
-  const [bindFlag, setBindFlag] = useState(false);
 
   const verify = () => {
     const verifyFlag = Object.keys(registerInfo).reduce((res, v) => {
@@ -92,19 +82,9 @@ const QsRegister = ({ goUrl, role, submitClose }) => {
     return verifyFlag;
   };
 
-  const [, childConfirm] = useSubmit({
+  const [, handleSubmit] = useSubmit({
     beforeSubmit: () => verify(),
     submit: async () => {
-      const childInfo = { ...registerInfo["child"] };
-      delete childInfo.verify;
-
-      const res = await getChildConfirm(childInfo);
-      if (res.list.length > 0) {
-        setChildConfirmList(res.list);
-        setConfirmFlag(true);
-        return;
-      }
-
       await childRegister();
     },
     options: {
@@ -149,31 +129,8 @@ const QsRegister = ({ goUrl, role, submitClose }) => {
     });
   };
 
-  const childbind = (phone, childid) => {
-    setNeedConfirmData({ childid, phone });
-    setConfirmFlag(false);
-    setBindFlag(true);
-  };
-
   return (
     <View className="register-container">
-      <ConfirmDialog
-        flag={confirmFlag}
-        list={childConfirmList}
-        onBind={childbind}
-        onRegister={childRegister}
-      ></ConfirmDialog>
-      <BindDialog
-        flag={bindFlag}
-        phone={needConfirmData.phone}
-        childid={needConfirmData.childid}
-        userPhone={registerInfo.user.phone}
-        onBack={() => {
-          setBindFlag(false);
-          setConfirmFlag(true);
-        }}
-        onOk={afterSubmit}
-      ></BindDialog>
       <NeedDialog
         flag={needCloseFlag}
         content="注册完成，点击下方按钮关闭小程序"
@@ -183,7 +140,7 @@ const QsRegister = ({ goUrl, role, submitClose }) => {
         registerInfo={registerInfo}
         onChange={handleChangeRegisterInfo}
       ></RegisterCollecter>
-      <RegisterFooter submit={childConfirm}></RegisterFooter>
+      <RegisterFooter submit={handleSubmit}></RegisterFooter>
     </View>
   );
 };
