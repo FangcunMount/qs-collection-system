@@ -39,7 +39,7 @@ const fromConfigMap = {
   "16": { ...banQwxEnvConfig },
   "17": { ...defaultConfig, qwxEnv: { canInto: true, canSubmit: false } },
   "18": { ...banQwxEnvConfig, needWritedClose: true },
-  "19": { ...banQwxEnvConfig, actionAfterWited: "goto-addConsultant" }
+  "19": { ...banQwxEnvConfig }
 }
 
 export const getFromConfig = (fromCode) => {

@@ -43,13 +43,6 @@
           "query": "submitClose=0&goUrl=/pages/questionsheet/index&goParams={}&role=child",
           "launchMode": "default",
           "scene": null
-        },
-        {
-          "name": "添加顾问",
-          "pathName": "pages/addConsultant/index",
-          "query": "",
-          "launchMode": "default",
-          "scene": null
         }
       ]
     }

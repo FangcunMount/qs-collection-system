@@ -6,7 +6,6 @@ export default {
     'pages/answersheet/index',
     'pages/analysis/index',
     'pages/register/index',
-    'pages/addConsultant/index',
     'pages/errpage/errpage',
   ],
   window: {

@@ -294,9 +294,6 @@ export default function Index() {
           url: `/pages/analysis/index?a=${answersheetid}`
         });
         break;
-      case "goto-addConsultant":
-        Taro.redirectTo({ url: "/pages/addConsultant/index" });
-        break;
       case "close":
         setNeedWritedCloseFlag(true);
         break;
