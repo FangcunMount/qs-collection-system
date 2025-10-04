@@ -1,22 +1,5 @@
 import Taro from "@tarojs/taro"
 
-export const isQywx = () => {
-  let isQy = false
-  Taro.getSystemInfo({
-    success(res) {
-      if (res.environment === 'wxwork') {
-        isQy = true
-      }
-      // 判断是否是企业微信
-      // console.log(res.environment)
-    },
-    fail(err) {
-      console.log(err)
-    }
-  })
-  return isQy
-}
-
 /**
  * 检测当前的小程序
  * 是否是最新版本，是否需要下载、更新

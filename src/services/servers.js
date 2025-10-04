@@ -4,7 +4,6 @@ import { authorizationHandler, errorHandler } from 'fc-tools-weapp/dist/bundle'
 import { getGlobalData, setGlobalData } from '../util/globalData'
 import { getUrl } from '../util'
 import config from '../config'
-import { isQywx } from '../util/checkEnvironment'
 
 export function request(url, params = {}, options = {}) {
   const requestParams = interceptorsRequest({
@@ -101,7 +100,7 @@ function interceptorsRequest(options) {
   }
 
   requestParam.header['token'] = getGlobalData('token') || config.token || ''
-  requestParam.header['Frontend-Env'] = isQywx() ? 'qwx' : 'wx'
+  requestParam.header['Frontend-Env'] = 'wx'
   requestParam.header['Wxshop-Id'] = config.wxshopid || '' 
 
   return requestParam
