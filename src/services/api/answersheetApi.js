@@ -52,9 +52,8 @@ export const getAnswersheetidBySignid = (signid) => {
   return request("/answersheet/GetAnswerSheetId", { signid }, { isNeedLoading: true })
 }
 
-export const getAnswersheetList = (testeeType, testeeId, limit) => {
+export const getAnswersheetList = (testeeId, limit) => {
   return request("/readAnswerSheet/list", {
-    'testee_type': testeeType,
     'testeeid': testeeId,
     'limit': limit
   }, { isNeedLoading: true })

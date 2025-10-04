@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { View, Text } from "@tarojs/components";
+import { View } from "@tarojs/components";
 import Taro from "@tarojs/taro";
 
-import { AtButton } from "taro-ui";
-import "taro-ui/dist/style/components/button.scss";
 import PageContainer from "../../../components/pageContainer/pageContainer";
 
 import QsSection from "../../../components/question/section";
@@ -112,9 +110,7 @@ export default function QuestionSheet({
   canSubmit,
   questionsheetid,
   subSignid,
-  testeeid,
-  writedCallback,
-  testeeType
+  writedCallback
 }) {
   const [questionSheet, setQuestionSheet] = useState(null);
   const [writerRoles, setWriterRoles] = useState([]);
@@ -385,36 +381,7 @@ export default function QuestionSheet({
   });
 
   return (
-    <PageContainer
-      scrollTop={scrollTop}
-      header={
-        testeeid && testeeType === 'patient' ? (
-          <View
-            className="s-col"
-            style={{
-              justifyContent: "flex-end",
-              alignItems: "flex-end",
-              padding: "32rpx 0rpx"
-            }}
-          >
-            <View className="s-col" style={{ width: "120px" }}>
-              <AtButton size="small" type="primary" openType="share">
-                发送评估邀约
-              </AtButton>
-            </View>
-            <Text
-              style={{
-                fontSize: "24rpx",
-                color: "#666",
-                marginRight: "16rpx"
-              }}
-            >
-              邀请他人帮助我的孩子做评估
-            </Text>
-          </View>
-        ) : null
-      }
-    >
+    <PageContainer scrollTop={scrollTop}>
       <View className="qs-header__container">
         <View className="qs-header__title">{questionSheet?.title}</View>
         <View className="qs-header__tips s-text-secondary">

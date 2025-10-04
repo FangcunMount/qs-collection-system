@@ -25,8 +25,8 @@ const AnswersheetListImp = ({ testee }) => {
 
   // 初始化答卷列表
   useEffect(() => {
-    if (!testee || !testee.id || !testee.type) {
-        return;
+    if (!testee || !testee.id) {
+      return;
     }
 
     initAnswersheetList();
@@ -48,11 +48,7 @@ const AnswersheetListImp = ({ testee }) => {
 
   // 获取答卷列表  
   const initAnswersheetList = () => {
-    getAnswersheetList(
-        testee.type,
-        testee.id,
-        limit
-    ).then(data => {
+    getAnswersheetList(testee.id, limit).then(data => {
       setAnswersheetList(data.list);
     });
   }
@@ -73,11 +69,7 @@ const AnswersheetListImp = ({ testee }) => {
   const handleLoadMore = () => {
     const theLimit = limit + defaultLimit;
 
-    getAnswersheetList(
-      testee.type,
-      testee.id,
-      theLimit
-    ).then(data => {
+    getAnswersheetList(testee.id, theLimit).then(data => {
       setAnswersheetList(data.list);
       setLimit(data.list.length);
     });

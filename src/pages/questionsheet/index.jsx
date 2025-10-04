@@ -47,7 +47,6 @@ const handleEntryParams = params => {
 export default function Index() {
   const [questionsheetid, setQuestionsheetid] = useState(null);
   const [subSignid, setSubSignid] = useState("");
-  const [testeeType, setTesteeType] = useState("");
 
   const canSubmit = true;
 
@@ -120,29 +119,18 @@ export default function Index() {
       setGlobalData("testeeid", testeeid);
       return true;
     }
-    const { testee_type = "", testee_list = [] } = await getUserTestList();
+    const { testee_list = [] } = await getUserTestList();
 
-    setTesteeType(testee_type);
-    if (testee_type === "patient") {
-      if (testee_list.length < 1) {
-        setNeedTesteeidFlag(true);
-        return false;
-      }
-    } else if (testee_type === "child") {
-      if (testee_list.length < 1) {
-        const params = {
-          submitClose: "0",
-          goUrl: "/pages/questionsheet/index",
-          goParams: JSON.stringify(paramData)
-        };
-        Taro.redirectTo({ url: paramsConcat("/pages/register/index", params) });
-        return false;
-      } else if (testee_list.length === 1) {
-        setGlobalData("testeeid", testee_list[0].id);
-      } else {
-        setChildList(testee_list);
-        setSelectChildFlag(true);
-      }
+    if (testee_list.length < 1) {
+      setNeedTesteeidFlag(true);
+      return false;
+    }
+
+    if (testee_list.length === 1) {
+      setGlobalData("testeeid", testee_list[0].id);
+    } else {
+      setChildList(testee_list);
+      setSelectChildFlag(true);
     }
 
     return true;
@@ -178,7 +166,7 @@ export default function Index() {
       />
       <NeedDialog
         flag={needTesteeidFlag}
-        content="暂无患者，请联系客服。"
+        content="暂无受试者，请联系客服。"
       ></NeedDialog>
       {isSinglePage ? (
         <SinglePageModel
@@ -193,7 +181,6 @@ export default function Index() {
         subSignid={subSignid}
         writedCallback={writedCallback}
         canSubmit={canSubmit}
-        testeeType={testeeType}
       ></QuestionSheet>
       )}
 

@@ -25,8 +25,7 @@ const AnswersheetList = () => {
     
     const testeeList = childListRes.list.map((item) => ({
       id: item.id,
-      name: item.name,
-      type: item.type ?? 'Child'
+      name: item.name
     }));
 
     setTesteeList(testeeList);
