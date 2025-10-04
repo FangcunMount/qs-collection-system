@@ -6,23 +6,19 @@ const configMap = {
   // 开发版Config
   develop: {
     wxshopid: 50,
-    domain: 'fangcunhulian.cn',
+    domain: 'yangshujie.com',
     dev_user: 'yangshujie',
     token: 'fcqx5c72ad4aeb59e4fcea2f6d93d276953b'
-    // token: 'fcqx4182e59c981dece8a08a06e64ec40855'
-    // token: 'fcqxb756cd1162f06b9c458facd6c2b50550'
-    // token: 'fcqx01fa5c6cdf7913a0b7350e2039925c0a'
-    // token: 'fcqxff5ef7be5c775f0306470d57a1d66158'
   },
   // 体验版
   trial: {
     wxshopid: 50,
-    domain: 'fangcunhulian.cn',
+    domain: 'yangshujie.com',
   },
   // 线上版
   release: {
     wxshopid: 50,
-    domain: 'fangcunyisheng.com',
+    domain: 'yangshujie.com',
   }
 };
 

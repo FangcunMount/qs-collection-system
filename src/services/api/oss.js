@@ -3,7 +3,7 @@ import Taro from "@tarojs/taro";
 export function getOSSSignature(dirName) {
   return new Promise((resolve, reject) => {
     Taro.request({
-      url: "https://api.fangcunyisheng.com/oss/getSignature",
+      url: "https://api.yangshujie.com/oss/getSignature",
       data: {
         dir: dirName
       },
@@ -24,7 +24,7 @@ export function getOSSSignature(dirName) {
 export function saveUploadFile(data) {
   return new Promise((resolve, reject) => {
     Taro.request({
-      url: "https://api.fangcunyisheng.com/oss/uploadafterjson",
+      url: "https://api.yangshujie.com/oss/uploadafterjson",
       data: {
         ...data,
         type: data.type === "image" ? "picture" : data.type
