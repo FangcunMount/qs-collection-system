@@ -6,7 +6,7 @@ import "taro-ui-fc/dist/styles/input.less";
 
 import ShowContainer from "./widget/showContainer";
 
-const FcText = props => {
+const QsText = props => {
   const { item, index, disabled } = props;
   const { onChangeValue } = props;
 
@@ -30,4 +30,4 @@ const FcText = props => {
   );
 };
 
-export default FcText;
+export default QsText;

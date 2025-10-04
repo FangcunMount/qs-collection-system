@@ -24,7 +24,7 @@ const VerificationCode = ({ value, onChange, vertifyNum }) => {
 
     return renderInputArr.map((v, i) => {
       return (
-        <View key={i} class="fc-code--box" onClick={() => setIsVFocus(true)}>
+        <View key={i} class="qs-code--box" onClick={() => setIsVFocus(true)}>
           <Input
             className={
               (value.length === i && isVFocus) ||
@@ -42,8 +42,8 @@ const VerificationCode = ({ value, onChange, vertifyNum }) => {
   };
 
   return (
-    <View className="fc-code">
-      <View className="fc-code--box__container">{createElements()}</View>
+    <View className="qs-code">
+      <View className="qs-code--box__container">{createElements()}</View>
 
       <Input
         type="number"

@@ -4,7 +4,7 @@ import { SiDatePicker } from "taro-ui-fc";
 
 import ShowContainer from "./widget/showContainer";
 
-const FcDate = props => {
+const QsDate = props => {
   const { item, index, disabled } = props;
   const { onChangeValue } = props;
 
@@ -29,4 +29,4 @@ const FcDate = props => {
   );
 };
 
-export default FcDate;
+export default QsDate;

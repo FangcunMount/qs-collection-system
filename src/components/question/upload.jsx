@@ -8,7 +8,7 @@ import ShowContainer from "./widget/showContainer";
 import { getOSSSignature, saveUploadFile } from "../../services/api/oss";
 import { isEmpty } from "lodash";
 
-const FcText = props => {
+const QsUpload = props => {
   const { item, index, disabled } = props;
   const { onChangeValue } = props;
 
@@ -210,4 +210,4 @@ const FcText = props => {
   );
 };
 
-export default FcText;
+export default QsUpload;

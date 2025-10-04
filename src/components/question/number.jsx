@@ -6,7 +6,7 @@ import "taro-ui-fc/dist/styles/icon.scss";
 
 import ShowContainer from "./widget/showContainer";
 
-const FcNumber = props => {
+const QsNumber = props => {
   const { item, index, disabled } = props;
   const { onChangeValue } = props;
 
@@ -33,4 +33,4 @@ const FcNumber = props => {
   );
 };
 
-export default FcNumber;
+export default QsNumber;

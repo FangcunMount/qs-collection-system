@@ -127,30 +127,30 @@ export const PrivacyAuthorization = () => {
         <>
             {
                 hideDialog ? null : (
-                    <View class="fc-xs-half-screen-dialog" hidden={hideDialog}>
-                        <View class="fc-xs-half-screen-dialog-mask" ontap={handleDisagree}></View>
-                        <View class="fc-xs-half-screen-dialog__hd">
-                            <text class="fc-xs-half-screen-dialog__title">{ title }</text>
+                    <View class="qs-xs-half-screen-dialog" hidden={hideDialog}>
+                        <View class="qs-xs-half-screen-dialog-mask" ontap={handleDisagree}></View>
+                        <View class="qs-xs-half-screen-dialog__hd">
+                            <text class="qs-xs-half-screen-dialog__title">{ title }</text>
                         </View>
-                        <View class="fc-xs-half-screen-dialog__bd">
-                            <View class="fc-xs-half-screen-dialog__tips">{ desc1 }</View>
-                            <View class="fc-xs-half-screen-dialog__tips privacy-contract-link"
+                        <View class="qs-xs-half-screen-dialog__bd">
+                            <View class="qs-xs-half-screen-dialog__tips">{ desc1 }</View>
+                            <View class="qs-xs-half-screen-dialog__tips privacy-contract-link"
                               onClick={handleOpenPrivacyContract}
                             >{ urlTitle }</View>
-                            <View class="fc-xs-half-screen-dialog__tips">{ desc2 }</View>
+                            <View class="qs-xs-half-screen-dialog__tips">{ desc2 }</View>
                         </View>
-                        <View class="fc-xs-half-screen-dialog__ft">
-                        <View class="fc-xs-half-screen-dialog__btn-area">
+                        <View class="qs-xs-half-screen-dialog__ft">
+                        <View class="qs-xs-half-screen-dialog__btn-area">
                             <Button 
                               id="disagree-btn"
                               type="default"
-                              class="fc-xs-btn btn-warning"
+                              class="qs-xs-btn btn-warning"
                               ontap={handleDisagree}
                             >不同意</Button>
 
                             <Button id="agree-btn"
                               type="primary"
-                              class="fc-xs-btn btn-primary"
+                              class="qs-xs-btn btn-primary"
                               openType="agreePrivacyAuthorization"
                               onClick={handleAgree}
                             >同意</Button>

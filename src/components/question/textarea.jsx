@@ -5,7 +5,7 @@ import "taro-ui/dist/style/components/textarea.scss";
 
 import ShowContainer from "./widget/showContainer";
 
-const FcTextarea = props => {
+const QsTextarea = props => {
   const { item, index, disabled } = props;
   const { onChangeValue } = props;
 
@@ -40,4 +40,4 @@ const FcTextarea = props => {
   );
 };
 
-export default FcTextarea;
+export default QsTextarea;

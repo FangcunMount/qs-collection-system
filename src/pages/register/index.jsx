@@ -1,6 +1,6 @@
 import React from "react";
 import { useReady, useRouter } from "@tarojs/taro";
-import FcRegister from "../../components/fcRegister/fcRegister";
+import QsRegister from "../../components/qsRegister/qsRegister";
 import { paramsConcat } from "../../util";
 import { getLogger } from "../../util/log";
 
@@ -23,12 +23,12 @@ const Register = () => {
   });
 
   return (
-    <FcRegister
+    <QsRegister
       submitClose={submitClose == "1"}
       goUrl={goUrl}
       role={role}
       renderParams={renderParams}
-    ></FcRegister>
+    ></QsRegister>
   );
 };
 

@@ -1,17 +1,17 @@
-.fc-code {
+.qs-code {
   position: relative;
 }
-.fc-code .insert-code {
+.qs-code .insert-code {
   padding: 48rpx;
 }
-.fc-code .fc-code--box__container {
+.qs-code .qs-code--box__container {
   display: flex;
 }
-.fc-code .fc-code--box__container .fc-code--box {
+.qs-code .qs-code--box__container .qs-code--box {
   display: flex;
   align-items: center;
 }
-.fc-code .fc-code--box__container .fc-code--box input {
+.qs-code .qs-code--box__container .qs-code--box input {
   width: 40rpx;
   height: 36rpx;
   margin-right: 24rpx;
@@ -22,19 +22,19 @@
   font-size: 32rpx;
   border-radius: 10rpx;
 }
-.fc-code .fc-code--box__container .fc-code--box:first-child {
+.qs-code .qs-code--box__container .qs-code--box:first-child {
   margin-left: 30rpx;
 }
-.fc-code .is-input {
+.qs-code .is-input {
   border-color: #079aff !important;
 }
-.fc-code .ipt {
+.qs-code .ipt {
   height: 0;
   width: 0;
   position: absolute;
   left: 0;
   top: 0;
 }
-.fc-code .c-blue {
+.qs-code .c-blue {
   color: #079aff;
 }

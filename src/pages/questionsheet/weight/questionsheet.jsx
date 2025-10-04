@@ -6,18 +6,18 @@ import { AtButton } from "taro-ui";
 import "taro-ui/dist/style/components/button.scss";
 import PageContainer from "../../../components/pageContainer/pageContainer";
 
-import FcSection from "../../../components/question/section";
-import FcRadio from "../../../components/question/radio";
-import FcText from "../../../components/question/text";
-import FcTextarea from "../../../components/question/textarea";
-import FcNumber from "../../../components/question/number";
-import FcDate from "../../../components/question//date";
-import FcCheckbox from "../../../components/question/checkbox";
-import FcScoreRadio from "../../../components/question/scoreRadio";
-import FcSelect from "../../../components/question/select";
-import FcImageRadio from "../../../components/question/imageRadio";
-import FcImageCheckbox from "../../../components/question/imageCheckBox";
-import FcUpload from "../../../components/question/upload";
+import QsSection from "../../../components/question/section";
+import QsRadio from "../../../components/question/radio";
+import QsText from "../../../components/question/text";
+import QsTextarea from "../../../components/question/textarea";
+import QsNumber from "../../../components/question/number";
+import QsDate from "../../../components/question//date";
+import QsCheckbox from "../../../components/question/checkbox";
+import QsScoreRadio from "../../../components/question/scoreRadio";
+import QsSelect from "../../../components/question/select";
+import QsImageRadio from "../../../components/question/imageRadio";
+import QsImageCheckbox from "../../../components/question/imageCheckBox";
+import QsUpload from "../../../components/question/upload";
 
 import "./questionsheet.less";
 
@@ -223,48 +223,48 @@ export default function QuestionSheet({
 
     switch (v.type) {
       case "Section":
-        return <FcSection item={v} index={i}></FcSection>;
+        return <QsSection item={v} index={i}></QsSection>;
       case "Radio":
         return (
-          <FcRadio
+          <QsRadio
             item={v}
             index={i}
             onChangeValue={handleChangeValue}
             onChangeExtend={handleChangeRadioExtend}
-          ></FcRadio>
+          ></QsRadio>
         );
       case "CheckBox":
         return (
-          <FcCheckbox
+          <QsCheckbox
             item={v}
             index={i}
             onChangeValue={handleChangeValue}
             onChangeExtend={handleChangeRadioExtend}
-          ></FcCheckbox>
+          ></QsCheckbox>
         );
       case "Text":
-        return <FcText item={v} index={i} onChangeValue={handleChangeValue} />;
+        return <QsText item={v} index={i} onChangeValue={handleChangeValue} />;
       case "Textarea":
         return (
-          <FcTextarea item={v} index={i} onChangeValue={handleChangeValue} />
+          <QsTextarea item={v} index={i} onChangeValue={handleChangeValue} />
         );
       case "Number":
         return (
-          <FcNumber item={v} index={i} onChangeValue={handleChangeValue} />
+          <QsNumber item={v} index={i} onChangeValue={handleChangeValue} />
         );
       case "Date":
-        return <FcDate item={v} index={i} onChangeValue={handleChangeValue} />;
+        return <QsDate item={v} index={i} onChangeValue={handleChangeValue} />;
       case "ScoreRadio":
         return (
-          <FcScoreRadio item={v} index={i} onChangeValue={handleChangeValue} />
+          <QsScoreRadio item={v} index={i} onChangeValue={handleChangeValue} />
         );
       case "Select":
         return (
-          <FcSelect item={v} index={i} onChangeValue={handleChangeValue} />
+          <QsSelect item={v} index={i} onChangeValue={handleChangeValue} />
         );
       case "ImageRadio":
         return (
-          <FcImageRadio
+          <QsImageRadio
             item={v}
             index={i}
             onChangeValue={handleChangeValue}
@@ -273,7 +273,7 @@ export default function QuestionSheet({
         );
       case "ImageCheckBox":
         return (
-          <FcImageCheckbox
+          <QsImageCheckbox
             item={v}
             index={i}
             onChangeValue={handleChangeValue}
@@ -282,7 +282,7 @@ export default function QuestionSheet({
         );
       case "Upload":
         return (
-          <FcUpload
+          <QsUpload
             item={v}
             index={i}
             onChangeValue={handleChangeValue}

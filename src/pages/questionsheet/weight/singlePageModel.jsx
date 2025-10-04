@@ -12,15 +12,15 @@ import {
 import "./singlePageModel.less";
 import hollowRound from "../../../assets/images/hollow-round.png";
 
-import FcSection from "../../../components/question/section";
-import FcRadio from "../../../components/question/radio";
-import FcText from "../../../components/question/text";
-import FcTextarea from "../../../components/question/textarea";
-import FcNumber from "../../../components/question/number";
-import FcDate from "../../../components/question//date";
-import FcCheckbox from "../../../components/question/checkbox";
-import FcScoreRadio from "../../../components/question/scoreRadio";
-import FcSelect from "../../../components/question/select";
+import QsSection from "../../../components/question/section";
+import QsRadio from "../../../components/question/radio";
+import QsText from "../../../components/question/text";
+import QsTextarea from "../../../components/question/textarea";
+import QsNumber from "../../../components/question/number";
+import QsDate from "../../../components/question//date";
+import QsCheckbox from "../../../components/question/checkbox";
+import QsScoreRadio from "../../../components/question/scoreRadio";
+import QsSelect from "../../../components/question/select";
 import WriterRoleDialog from "./WriterRoleDialog";
 import { checkQuestion } from "./questionsheet";
 import { useThrottle } from "../../../util/useUtil";
@@ -178,44 +178,44 @@ export default props => {
 
     switch (v.type) {
       case "Section":
-        return <FcSection item={v} index={i}></FcSection>;
+        return <QsSection item={v} index={i}></QsSection>;
       case "Radio":
         return (
-          <FcRadio
+          <QsRadio
             item={v}
             index={i}
             onChangeValue={handleChangeValue}
             onChangeExtend={handleChangeRadioExtend}
-          ></FcRadio>
+          ></QsRadio>
         );
       case "CheckBox":
         return (
-          <FcCheckbox
+          <QsCheckbox
             item={v}
             index={i}
             onChangeValue={handleChangeValue}
             onChangeExtend={handleChangeRadioExtend}
-          ></FcCheckbox>
+          ></QsCheckbox>
         );
       case "Text":
-        return <FcText item={v} index={i} onChangeValue={handleChangeValue} />;
+        return <QsText item={v} index={i} onChangeValue={handleChangeValue} />;
       case "Textarea":
         return (
-          <FcTextarea item={v} index={i} onChangeValue={handleChangeValue} />
+          <QsTextarea item={v} index={i} onChangeValue={handleChangeValue} />
         );
       case "Number":
         return (
-          <FcNumber item={v} index={i} onChangeValue={handleChangeValue} />
+          <QsNumber item={v} index={i} onChangeValue={handleChangeValue} />
         );
       case "Date":
-        return <FcDate item={v} index={i} onChangeValue={handleChangeValue} />;
+        return <QsDate item={v} index={i} onChangeValue={handleChangeValue} />;
       case "ScoreRadio":
         return (
-          <FcScoreRadio item={v} index={i} onChangeValue={handleChangeValue} />
+          <QsScoreRadio item={v} index={i} onChangeValue={handleChangeValue} />
         );
       case "Select":
         return (
-          <FcSelect item={v} index={i} onChangeValue={handleChangeValue} />
+          <QsSelect item={v} index={i} onChangeValue={handleChangeValue} />
         );
       default:
         return "";

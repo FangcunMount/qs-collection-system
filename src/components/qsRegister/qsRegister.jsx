@@ -3,7 +3,7 @@ import PropTypes from "prop-types";
 import { View } from "@tarojs/components";
 import Taro from "@tarojs/taro";
 
-import "./fcRegister.less";
+import "./qsRegister.less";
 import RegisterCollecter from "./widget/registerCollecter";
 import RegisterFooter from "./widget/registerFooter";
 import NeedDialog from "../needDialog";
@@ -21,17 +21,17 @@ const initialRegisterInfo = {
     birthday: "",
     verify: function() {
       if (!this.name) {
-        Taro.showToast({ title: "请填写孩子的姓名", icon: "none" });
+        Taro.showToast({ title: "请填写受试者的姓名", icon: "none" });
         return false;
       }
 
       if (!this.sex) {
-        Taro.showToast({ title: "请选择孩子的性别", icon: "none" });
+        Taro.showToast({ title: "请选择受试者的性别", icon: "none" });
         return false;
       }
 
       if (!this.birthday) {
-        Taro.showToast({ title: "请选择孩子的出生日期", icon: "none" });
+        Taro.showToast({ title: "请选择受试者的出生日期", icon: "none" });
         return false;
       }
 
@@ -62,7 +62,7 @@ const roleMap = {
 };
 
 // renderParams
-const FcRegister = ({ goUrl, role, submitClose }) => {
+const QsRegister = ({ goUrl, role, submitClose }) => {
   const [registerInfo, setRegisterInfo] = useState(() => {
     const tmp = {};
     roleMap[role].map(v => {
@@ -188,10 +188,10 @@ const FcRegister = ({ goUrl, role, submitClose }) => {
   );
 };
 
-FcRegister.prototype = {
+QsRegister.prototype = {
   submitClose: PropTypes.bool,
   goUrl: PropTypes.string.isRequired,
   role: PropTypes.string.isRequired
 };
 
-export default FcRegister;
+export default QsRegister;
