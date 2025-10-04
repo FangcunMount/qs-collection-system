@@ -17,7 +17,6 @@ import QsScoreRadio from "../../../components/question/scoreRadio";
 import QsSelect from "../../../components/question/select";
 import QsImageRadio from "../../../components/question/imageRadio";
 import QsImageCheckbox from "../../../components/question/imageCheckBox";
-import QsUpload from "../../../components/question/upload";
 
 import "./questionsheet.less";
 
@@ -274,15 +273,6 @@ export default function QuestionSheet({
       case "ImageCheckBox":
         return (
           <QsImageCheckbox
-            item={v}
-            index={i}
-            onChangeValue={handleChangeValue}
-            onChangeExtend={handleChangeRadioExtend}
-          />
-        );
-      case "Upload":
-        return (
-          <QsUpload
             item={v}
             index={i}
             onChangeValue={handleChangeValue}

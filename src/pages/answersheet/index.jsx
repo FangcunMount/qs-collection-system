@@ -20,7 +20,6 @@ import ScoreRadio from "../../components/question/scoreRadio";
 import Select from "../../components/question/select";
 import ImageRadio from "../../components/question/imageRadio";
 import ImageCheckBox from "../../components/question/imageCheckBox";
-import Upload from "../../components/question/upload";
 
 import NeedDialog from "../../components/needDialog";
 import ExportImageDialog from "./widget/exportImageDialog";
@@ -125,8 +124,6 @@ const AnswerSheet = () => {
         );
       case "Select":
         return <Select item={v} index={i} disabled onChangeValue={() => {}} />;
-      case "Upload":
-        return <Upload item={v} index={i} disabled onChangeValue={() => {}} />;
       default:
         return "";
     }
