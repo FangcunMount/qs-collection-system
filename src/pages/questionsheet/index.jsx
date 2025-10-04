@@ -17,18 +17,12 @@ import { paramsConcat, parsingScene } from "../../util";
 import { getGlobalData, setGlobalData, clearGlobalData } from "../../util/globalData";
 import { getLogger } from "../../util/log";
 import { getAnswersheetidBySignid } from "../../services/api/answersheetApi";
-import { getForwardConfig } from "../../services/api/share";
 import { getMpEntryParams } from "../../services/api/commonApi";
 
 import { PrivacyAuthorization } from "../../components/privacyAuthorization/privacyAuthorization";
 
 const PAGE_NAME = "question_sheet";
 const logger = getLogger(PAGE_NAME);
-const initShareParams = {
-  q: "",
-  t: ""
-};
-
 const handleEntryParams = params => {
   return new Promise((resolve, reject) => {
     if (!params.scene) {
@@ -53,7 +47,6 @@ const handleEntryParams = params => {
 export default function Index() {
   const [questionsheetid, setQuestionsheetid] = useState(null);
   const [subSignid, setSubSignid] = useState("");
-  const [shareParams, setShareParams] = useState(initShareParams);
   const [testeeType, setTesteeType] = useState("");
 
   const canSubmit = true;
@@ -94,14 +87,7 @@ export default function Index() {
     });
   }, []);
 
-  useShareAppMessage(() => {
-    const sharePath = `pages/questionsheet/index?q=${shareParams.q}&t=${shareParams.t}`;
-    logger.RUN("useShareAppMessage <RUN>, path: ", sharePath);
-    return {
-      title: "邀请您填写问卷",
-      path: sharePath
-    };
-  });
+  useShareAppMessage(() => ({}));
 
   const beforeEach = async (params, next) => {
     const { questionsheetCode, testeeid, signid } = params;
@@ -125,36 +111,8 @@ export default function Index() {
       return;
     }
 
-    if (!getGlobalData("shareTicket") && canShareWeapp()) {
-      try {
-        const forwardRes = await getForwardConfig();
-        setShareParams({
-          t: forwardRes.payload.testeeid,
-          q: questionsheetCode
-        });
-        // eslint-disable-next-line no-undef
-        wx.updateShareMenu({
-          withShareTicket: true,
-          isPrivateMessage: true,
-          activityId: forwardRes.activityid,
-          success(res) {
-            console.log(res);
-          },
-          fail(res) {
-            console.log(res);
-          }
-        });
-      } catch (error) {
-        console.log(error);
-      }
-    }
-
     Taro.hideLoading();
     next();
-  };
-
-  const canShareWeapp = () => {
-    return !getGlobalData("fcActivityId");
   };
 
   const verifyTestee = async testeeid => {
@@ -230,14 +188,13 @@ export default function Index() {
           canSubmit={canSubmit}
         ></SinglePageModel>
       ) : (
-        <QuestionSheet
-          questionsheetid={questionsheetid}
-          subSignid={subSignid}
-          writedCallback={writedCallback}
-          canSubmit={canSubmit}
-          testeeid={shareParams.t}
-          testeeType={testeeType}
-        ></QuestionSheet>
+      <QuestionSheet
+        questionsheetid={questionsheetid}
+        subSignid={subSignid}
+        writedCallback={writedCallback}
+        canSubmit={canSubmit}
+        testeeType={testeeType}
+      ></QuestionSheet>
       )}
 
       <PrivacyAuthorization />
