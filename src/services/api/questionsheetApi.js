@@ -85,14 +85,6 @@ export const postQuestionsheet = (questionsheet, writer_role_code, signid) => {
     submitData['testeeid'] = getGlobalData('testeeid')
   }
   
-  if (getGlobalData('fcActivityId')) {
-    submitData['activity'] = getGlobalData('fcActivityId')
-  }
-
-  if (getGlobalData('senderid')) {
-    submitData['senderid'] = getGlobalData('senderid')
-  }
-
   return request('/writeAnswerSheet/submit', submitData, { method: 'POST' })
 }
 

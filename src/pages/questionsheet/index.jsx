@@ -14,7 +14,7 @@ import SinglePageModel from "./weight/singlePageModel";
 import { getUserTestList } from "../../services/api/user";
 
 import { paramsConcat, parsingScene } from "../../util";
-import { getGlobalData, setGlobalData, clearGlobalData } from "../../util/globalData";
+import { getGlobalData, setGlobalData } from "../../util/globalData";
 import { getLogger } from "../../util/log";
 import { getAnswersheetidBySignid } from "../../services/api/answersheetApi";
 import { getMpEntryParams } from "../../services/api/commonApi";
@@ -69,14 +69,10 @@ export default function Index() {
       const {
         q: questionsheetCode,
         t: testeeid,
-        a: fcActivityId,
-        signid,
-        senderid
+        signid
       } = result;
       const { clinicid, reach_store } = result;
 
-      fcActivityId ? setGlobalData("fcActivityId", fcActivityId) : clearGlobalData("fcActivityId");
-      senderid && setGlobalData("senderid", senderid);
       signid && setSubSignid(signid);
       result.sp && setIsSinglePage(result.sp === "1");
 
