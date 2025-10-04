@@ -61,12 +61,12 @@ const sexIcon = {
 const ChildName = ({ name, onChange }) => {
   return (
     <>
-      <View style={InputLabelCSS}>孩子的姓名：</View>
+      <View style={InputLabelCSS}>受试者的姓名：</View>
       <Input
         value={name}
         onInput={e => onChange("name", e.target.value)}
         style={InputCSS}
-        placeholder="请填写孩子姓名"
+        placeholder="请填写受试者姓名"
       ></Input>
     </>
   );
@@ -87,7 +87,7 @@ const ChildSex = ({ sex, onChange }) => {
   };
   return (
     <>
-      <View style={InputLabelCSS}>孩子的性别：</View>
+      <View style={InputLabelCSS}>受试者的性别：</View>
       <View style={{ display: "flex" }}>
         <View
           style={{ ...sexBody, marginRight: "32rpx" }}
@@ -104,7 +104,7 @@ const ChildSex = ({ sex, onChange }) => {
         >
           {getCheckIcon("2")}
           <Image mode="widthFix" src={girlPng} style={sexIcon}></Image>
-          <Text>女生</Text>
+              <Text>女生</Text>
         </View>
       </View>
     </>
@@ -124,7 +124,7 @@ const ChildBirthday = ({ birthday, onChange }) => {
 
   return (
     <>
-      <View style={InputLabelCSS}>孩子的生日：</View>
+      <View style={InputLabelCSS}>受试者的生日：</View>
       <SiDatePicker 
         onChange={v => onChange("birthday", v)}
         value={ defaultDate() }
@@ -133,25 +133,25 @@ const ChildBirthday = ({ birthday, onChange }) => {
           value={birthday}
           disabled
           style={InputCSS}
-          placeholder="请选择孩子的出生日期"
+          placeholder="请选择受试者的出生日期"
         ></Input>
       </SiDatePicker>
     </>
   );
 };
 
-const RegisterCoillterChild = ({ childInfo, onChange }) => {
-  const handleChangeChild = (k, v) => {
-    onChange("child", k, v);
+const RegisterCoillterChild = ({ testeeInfo, onChange }) => {
+  const handleChangeTestee = (k, v) => {
+    onChange("testee", k, v);
   };
 
   return (
     <View style={{ padding: "32rpx" }}>
-      <ChildName name={childInfo.name} onChange={handleChangeChild} />
-      <ChildSex sex={childInfo.sex} onChange={handleChangeChild} />
+      <ChildName name={testeeInfo.name} onChange={handleChangeTestee} />
+      <ChildSex sex={testeeInfo.sex} onChange={handleChangeTestee} />
       <ChildBirthday
-        birthday={childInfo.birthday}
-        onChange={handleChangeChild}
+        birthday={testeeInfo.birthday}
+        onChange={handleChangeTestee}
       />
     </View>
   );

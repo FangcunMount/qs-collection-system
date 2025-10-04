@@ -32,17 +32,17 @@ const UserPhone = ({ phone, onChange }) => {
   );
 };
 
-const RegisterCoillterChild = ({ userInfo, onChange }) => {
-  const handleChangeUser = (k, v) => {
-    onChange("user", k, v);
+const RegisterCoillterUser = ({ contactInfo, onChange }) => {
+  const handleChangeContact = (k, v) => {
+    onChange("contact", k, v);
   };
   return (
     <View style={{ padding: "32rpx", color: "#aaa" }}>
-      <UserPhone phone={userInfo.phone} onChange={handleChangeUser} />
+      <UserPhone phone={contactInfo.phone} onChange={handleChangeContact} />
 
       <PrivacyAuthorization />
     </View>
   );
 };
 
-export default RegisterCoillterChild;
+export default RegisterCoillterUser;

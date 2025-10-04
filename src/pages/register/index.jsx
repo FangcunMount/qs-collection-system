@@ -9,16 +9,14 @@ const logger = getLogger(PAGE_NAME);
 
 const Register = () => {
   const paramData = useRouter();
-  let { submitClose, goUrl, goParams, role, renderParams } = paramData.params;
-  renderParams = renderParams ? JSON.parse(renderParams) : {};
+  let { submitClose, goUrl, goParams } = paramData.params;
+  goParams = goParams ?? "{}";
   goUrl = paramsConcat(goUrl, JSON.parse(goParams));
 
   useReady(() => {
     logger.RUN("did reday <RUN> | params: ", {
       submitClose,
-      goUrl,
-      role,
-      renderParams
+      goUrl
     });
   });
 
@@ -26,8 +24,6 @@ const Register = () => {
     <QsRegister
       submitClose={submitClose == "1"}
       goUrl={goUrl}
-      role={role}
-      renderParams={renderParams}
     ></QsRegister>
   );
 };

@@ -265,8 +265,7 @@ export default function Index() {
         const params = {
           submitClose: "0",
           goUrl: "/pages/questionsheet/index",
-          goParams: JSON.stringify(paramData),
-          role: "child"
+          goParams: JSON.stringify(paramData)
         };
         Taro.redirectTo({ url: paramsConcat("/pages/register/index", params) });
         return false;
@@ -317,8 +316,7 @@ export default function Index() {
     const params = {
       submitClose: "0",
       goUrl: "/pages/questionsheet/index",
-      goParams: JSON.stringify(paramData),
-      role: "child"
+      goParams: JSON.stringify(paramData)
     };
     Taro.redirectTo({ url: paramsConcat("/pages/register/index", params) });
   };

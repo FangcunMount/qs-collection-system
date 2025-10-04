@@ -4,19 +4,16 @@ import { View } from "@tarojs/components";
 import RegisterCoillterChild from "./registerCoillterChild";
 import RegisterCoillterUser from "./registerCoillterUser";
 
-const RegisterCollecter = ({ role, registerInfo, onChange }) => {
+const RegisterCollecter = ({ registerInfo, onChange }) => {
   return (
     <View style={{ flexGrow: 1 }}>
       <View style={{ textAlign: "center" }}>您好，请您填写以下基本信息：</View>
-      {role == "child" ? (
-        <RegisterCoillterChild
-          childInfo={registerInfo.child}
-          onChange={onChange}
-        />
-      ) : null}
-
+      <RegisterCoillterChild
+        testeeInfo={registerInfo.testee}
+        onChange={onChange}
+      />
       <RegisterCoillterUser
-        userInfo={registerInfo.user}
+        contactInfo={registerInfo.contact}
         onChange={onChange}
       ></RegisterCoillterUser>
     </View>

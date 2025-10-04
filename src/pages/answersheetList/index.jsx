@@ -23,13 +23,11 @@ const AnswersheetList = () => {
       return;
     }
     
-    const testeeList = childListRes.list.map((item) => {
-      return {
-        id: item.id,
-        name: item.name,
-        type: 'Child'
-      }
-    });
+    const testeeList = childListRes.list.map((item) => ({
+      id: item.id,
+      name: item.name,
+      type: item.type ?? 'Child'
+    }));
 
     setTesteeList(testeeList);
   }
@@ -39,8 +37,7 @@ const AnswersheetList = () => {
     const params = {
       submitClose: 0,
       goUrl: '/pages/home/index',
-      goParams: '{}',
-      role: 'child',
+      goParams: '{}'
     };
 
     Taro.redirectTo({ url: paramsConcat("/pages/register/index", params) });
