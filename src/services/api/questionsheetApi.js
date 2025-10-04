@@ -81,9 +81,6 @@ export const postQuestionsheet = (questionsheet, writer_role_code, signid) => {
     submitData['signid'] = signid
   }
 
-  const fromCode = getGlobalData('from')
-  submitData['from'] = fromCode
-
   if (getGlobalData('testeeid')) {
     submitData['testeeid'] = getGlobalData('testeeid')
   }

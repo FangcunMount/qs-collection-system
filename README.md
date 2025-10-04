@@ -44,10 +44,9 @@ npm run dev:weapp         # 微信小程序实时编译
 ## 使用指南
 
 1. 依据项目需求在 `src/config.js` 中配置域名、token、wxshopid 等信息。
-2. 通过 `src/config/from.js` 定义渠道入参校验规则。
-3. 若需要 OSS 上传，确认接口 `getOSSSignature` / `saveUploadFile` 与后端配置一致。
-4. 页面入口与路由在 `src/app.config.js` 中维护，可按需增删页面。
-5. 若扩展问卷题型，请在 `src/components/question/` 目录新增组件并在问卷渲染逻辑中注册。
+2. 若需要 OSS 上传，确认接口 `getOSSSignature` / `saveUploadFile` 与后端配置一致。
+3. 页面入口与路由在 `src/app.config.js` 中维护，可按需增删页面。
+4. 若扩展问卷题型，请在 `src/components/question/` 目录新增组件并在问卷渲染逻辑中注册。
 
 ## 如何贡献
 

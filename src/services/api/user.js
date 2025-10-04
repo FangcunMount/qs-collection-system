@@ -5,11 +5,13 @@ export const getUserInfo = () => {
 };
 
 export const userHasTestee = from => {
-  return request("/user/hasTestee", { from });
+  const payload = from ? { from } : {};
+  return request("/user/hasTestee", payload);
 };
 
 export const getUserTestList = from => {
-  return request("/user/testeelist", { from });
+  const payload = from ? { from } : {};
+  return request("/user/testeelist", payload);
 };
 
 export const getChildList = () => {

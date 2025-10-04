@@ -1,6 +1,5 @@
 const globalData = {
-  token: '',
-  from: '1'
+  token: ''
 };
 
 const setGlobalData = (k, v) => {

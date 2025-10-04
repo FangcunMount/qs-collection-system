@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import Taro, { useReady, useRouter, useShareAppMessage, AtToast } from "@tarojs/taro";
+import Taro, { useReady, useRouter, useShareAppMessage } from "@tarojs/taro";
 import "taro-ui/dist/style/components/button.scss";
 import "taro-ui/dist/style/components/modal.scss";
 import "taro-ui/dist/style/components/loading.scss";
@@ -16,11 +16,8 @@ import { getUserTestList } from "../../services/api/user";
 import { paramsConcat, parsingScene } from "../../util";
 import { getGlobalData, setGlobalData, clearGlobalData } from "../../util/globalData";
 import { getLogger } from "../../util/log";
-import { isQywx } from "../../util/checkEnvironment";
-import { getFromConfig } from "../../config/from";
 import { getAnswersheetidBySignid } from "../../services/api/answersheetApi";
 import { getForwardConfig } from "../../services/api/share";
-import { postAddUsertrack } from "../../services/api/usertrackApi";
 import { getMpEntryParams, postReachstore } from "../../services/api/commonApi";
 
 import { PrivacyAuthorization } from "../../components/privacyAuthorization/privacyAuthorization";
@@ -28,7 +25,6 @@ import { PrivacyAuthorization } from "../../components/privacyAuthorization/priv
 const PAGE_NAME = "question_sheet";
 const logger = getLogger(PAGE_NAME);
 const initShareParams = {
-  f: "",
   q: "",
   t: ""
 };
@@ -60,12 +56,9 @@ export default function Index() {
   const [shareParams, setShareParams] = useState(initShareParams);
   const [testeeType, setTesteeType] = useState("");
 
-  const [canSubmit, setCanSubmit] = useState(true);
+  const canSubmit = true;
 
-  const [needQywxFlag, setNeedQywxFlag] = useState(false);
-  const [needWxFlag, setNeedWxFlag] = useState(false);
   const [needTesteeidFlag, setNeedTesteeidFlag] = useState(false);
-  const [needWritedCloseFlag, setNeedWritedCloseFlag] = useState(false);
 
   const [selectChildFlag, setSelectChildFlag] = useState(false);
   const [childList, setChildList] = useState([]);
@@ -85,7 +78,6 @@ export default function Index() {
         q: questionsheetCode,
         t: testeeid,
         d: doctorid,
-        f: fromCode,
         a: fcActivityId,
         signid,
         senderid
@@ -99,31 +91,26 @@ export default function Index() {
       fcActivityId ? setGlobalData("fcActivityId", fcActivityId) : clearGlobalData("fcActivityId");
       doctorid && setGlobalData("doctorid", doctorid);
       senderid && setGlobalData("senderid", senderid);
-      fromCode && setGlobalData("from", fromCode);
       signid && setSubSignid(signid);
       result.sp && setIsSinglePage(result.sp === "1");
 
-      beforeEach({ questionsheetCode, testeeid, fromCode, signid }, () => {
+      beforeEach({ questionsheetCode, testeeid, signid }, () => {
         setQuestionsheetid(questionsheetCode);
       });
     });
   }, []);
 
   useShareAppMessage(() => {
-    logger.RUN(
-      "useShareAppMessage <RUN>, path: ",
-      `pages/questionsheet/index?q=${shareParams.q}&f=${shareParams.f}&t=${shareParams.t}`
-    );
+    const sharePath = `pages/questionsheet/index?q=${shareParams.q}&t=${shareParams.t}`;
+    logger.RUN("useShareAppMessage <RUN>, path: ", sharePath);
     return {
       title: "邀请您填写问卷",
-      path: `pages/questionsheet/index?q=${shareParams.q}&f=${shareParams.f}&t=${shareParams.t}`
+      path: sharePath
     };
   });
 
   const beforeEach = async (params, next) => {
-    const { questionsheetCode, fromCode, testeeid, signid } = params;
-
-    const fromConfig = getFromConfig(fromCode);
+    const { questionsheetCode, testeeid, signid } = params;
 
     // 如果标记的id已有答卷id，直接跳转至答卷展示
     if (signid) {
@@ -137,17 +124,8 @@ export default function Index() {
       }
     }
 
-    // 如果环境和允许的配置冲突，阻断后续操作
-    if (!envJudgment(fromConfig)) {
-      Taro.hideLoading();
-      return;
-    }
-
     // 如果没有 testeeid，阻断后续操作
-    const verifyTesteeFlag = await verifyTestee(
-      fromConfig.needTesteeid,
-      testeeid
-    );
+    const verifyTesteeFlag = await verifyTestee(testeeid);
     if (!verifyTesteeFlag) {
       Taro.hideLoading();
       return;
@@ -157,7 +135,6 @@ export default function Index() {
       try {
         const forwardRes = await getForwardConfig();
         setShareParams({
-          f: "14",
           t: forwardRes.payload.testeeid,
           q: questionsheetCode
         });
@@ -178,81 +155,20 @@ export default function Index() {
       }
     }
 
-    handleAddUsertrack(fromCode, questionsheetCode);
-
     Taro.hideLoading();
     next();
-  };
-
-  /**
-   * @description: 在进入问卷时，添加用户足迹（门诊扫码、活动）
-   * @param {string} fromCode: 来源 code
-   * @param {string} questionsheetCode: 问卷 code
-   */
-  const handleAddUsertrack = (fromCode, questionsheetCode) => {
-    if (["5", "16"].includes(fromCode)) {
-      let throughType = "";
-      let throughid = "";
-      const behaviorType = "open_wenjuan";
-      const behaviorid = questionsheetCode;
-      if (fromCode == "5") {
-        throughType = "doctor";
-        throughid = getGlobalData("doctorid");
-      } else if (fromCode == "16") {
-        throughType = "activity";
-        throughid = getGlobalData("fcActivityId");
-      }
-
-      logger.RUN("handleAddUsertrack <RUN>, params: ", {
-        throughType,
-        throughid,
-        behaviorType,
-        behaviorid
-      });
-      postAddUsertrack(throughType, throughid, behaviorType, behaviorid);
-    }
   };
 
   const canShareWeapp = () => {
     return !getGlobalData("fcActivityId") && !getGlobalData("doctorid");
   };
 
-  /**
-   * @description evvironment detection, test for canInfo and canSubmit
-   * @param {object} fromConfig: {qwxEnv: {canInto: boolean ...}, wxEnv: {... canSubmit: boolean}, ...}
-   * @returns {boolean}
-   */
-  const envJudgment = fromConfig => {
-    if (isQywx()) {
-      if (!fromConfig.qwxEnv.canInto) {
-        setNeedWxFlag(true);
-        return false;
-      }
-      setCanSubmit(fromConfig.qwxEnv.canSubmit);
-    } else {
-      if (!fromConfig.wxEnv.canInto) {
-        setNeedQywxFlag(true);
-        return false;
-      }
-      setCanSubmit(fromConfig.wxEnv.canSubmit);
+  const verifyTestee = async testeeid => {
+    if (testeeid) {
+      setGlobalData("testeeid", testeeid);
+      return true;
     }
-
-    return true;
-  };
-
-  const verifyTestee = async (needTesteeid, testeeid) => {
-    if (needTesteeid) {
-      if (!testeeid) {
-        setNeedTesteeidFlag(true);
-        return false;
-      } else {
-        setGlobalData("testeeid", testeeid);
-        return true;
-      }
-    }
-    const { testee_type, testee_list } = await getUserTestList(
-      getGlobalData("from")
-    );
+    const { testee_type = "", testee_list = [] } = await getUserTestList();
 
     setTesteeType(testee_type);
     if (testee_type === "patient") {
@@ -281,30 +197,9 @@ export default function Index() {
   };
 
   const writedCallback = answersheetid => {
-    const fromConfig = getFromConfig(getGlobalData("from"));
-
-    if (fromConfig.needWritedClose) {
-      return setNeedWritedCloseFlag(true);
-    }
-
-    switch (fromConfig.actionAfterWited) {
-      case "goto-analysis":
-        Taro.redirectTo({
-          url: `/pages/analysis/index?a=${answersheetid}`
-        });
-        break;
-      case "close":
-        setNeedWritedCloseFlag(true);
-        break;
-      default:
-        logger.ERROR(
-          "writedCallback invoke ERROR_MESSAGE: unknow actionAfterWrited."
-        );
-        Taro.redirectTo({
-          url: `/pages/analysis/index?a=${answersheetid}`
-        });
-        break;
-    }
+    Taro.redirectTo({
+      url: `/pages/analysis/index?a=${answersheetid}`
+    });
   };
 
   const handleSelectChild = childid => {
@@ -330,21 +225,8 @@ export default function Index() {
         onAddChild={handleAddChild}
       />
       <NeedDialog
-        flag={needWxFlag}
-        content="请通过微信扫码登录小程序。"
-      ></NeedDialog>
-      <NeedDialog
-        flag={needQywxFlag}
-        content="请通过企业微信扫码登录小程序。"
-      ></NeedDialog>
-      <NeedDialog
         flag={needTesteeidFlag}
         content="暂无患者，请联系客服。"
-      ></NeedDialog>
-      <NeedDialog
-        flag={needWritedCloseFlag}
-        content="填写完成，点击下方按钮返回。"
-        btnText="返回"
       ></NeedDialog>
       {isSinglePage ? (
         <SinglePageModel
