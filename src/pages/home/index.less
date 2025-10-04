@@ -1,0 +1,124 @@
+.home-page {
+  min-height: 100vh;
+  padding: 48rpx 40rpx 80rpx;
+  box-sizing: border-box;
+  background: #f5f7fb;
+}
+
+.home-page__hero {
+  padding: 64rpx 48rpx;
+  border-radius: 32rpx;
+  background: linear-gradient(135deg, #0c9cff 0%, #5f68ff 100%);
+  color: #ffffff;
+  box-shadow: 0 24rpx 48rpx rgba(15, 91, 255, 0.18);
+  margin-bottom: 48rpx;
+}
+
+.home-page__title {
+  font-size: 48rpx;
+  font-weight: 600;
+  margin-bottom: 16rpx;
+  display: block;
+}
+
+.home-page__subtitle {
+  font-size: 28rpx;
+  line-height: 42rpx;
+  opacity: 0.9;
+  display: block;
+}
+
+.home-page__actions {
+  margin-top: 48rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 32rpx;
+}
+
+.home-action {
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 24rpx;
+  padding: 32rpx 36rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.home-action__desc {
+  font-size: 26rpx;
+  line-height: 40rpx;
+}
+
+.home-page__section {
+  margin-bottom: 48rpx;
+}
+
+.home-section__title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 24rpx;
+  display: block;
+}
+
+.home-section__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24rpx;
+}
+
+.home-card {
+  background: #ffffff;
+  border-radius: 24rpx;
+  padding: 36rpx;
+  box-shadow: 0 16rpx 32rpx rgba(10, 52, 128, 0.08);
+  color: #1a1a1a;
+}
+
+.home-card--feature {
+  border-left: 8rpx solid #2c82ff;
+}
+
+.home-card--highlight + .home-card--highlight {
+  margin-top: 24rpx;
+}
+
+.home-card__title {
+  font-size: 30rpx;
+  font-weight: 600;
+  margin-bottom: 16rpx;
+  display: block;
+}
+
+.home-card__content {
+  font-size: 26rpx;
+  line-height: 40rpx;
+  color: #4f5a70;
+}
+
+.home-card__list {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.home-card__item {
+  font-size: 26rpx;
+  line-height: 40rpx;
+  color: #4f5a70;
+}
+
+@media screen and (min-width: 768px) {
+  .home-page__actions {
+    flex-direction: row;
+  }
+
+  .home-action {
+    flex: 1;
+    height: 220rpx;
+  }
+
+  .home-section__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

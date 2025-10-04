@@ -38,7 +38,7 @@ const AnswersheetList = () => {
   const jumpToRegister = () => {
     const params = {
       submitClose: 0,
-      goUrl: '/pages/home/home/index',
+      goUrl: '/pages/home/index',
       goParams: '{}',
       role: 'child',
     };

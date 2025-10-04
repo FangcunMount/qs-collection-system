@@ -1,9 +1,6 @@
 export default {
   pages: [
-    'pages/home/home/index',
-    'pages/home/about/index',
-    'pages/home/doctor/index',
-    'pages/home/patient/index',
+    'pages/home/index',
     'pages/questionsheet/index',
     'pages/answersheetList/index',
     'pages/answersheet/index',
@@ -18,6 +15,6 @@ export default {
     navigationBarTitleText: 'WeChat',
     navigationBarTextStyle: 'black'
   },
-  entryPagePath: "pages/home/home/index",
+  entryPagePath: "pages/home/index",
   "__usePrivacyCheck__": true
 }
