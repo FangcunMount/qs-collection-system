@@ -3,7 +3,7 @@ import { AtTabs, AtTabsPane } from "taro-ui"
 import "taro-ui/dist/style/components/list.scss";
 import "taro-ui/dist/style/components/tabs.scss";
 
-const TesteeListTab = ({ testeeList, TabPanes }) => {
+const TesteeListTab = ({ testeeList, TabPanes, onSelect }) => {
   // tab 配置
   const [ tabConfig, setTabConfig ] = useState({
     current: 0,
@@ -35,6 +35,9 @@ const TesteeListTab = ({ testeeList, TabPanes }) => {
       ...tabConfig,
       current: value
     });
+    if (typeof onSelect === 'function' && testeeList && testeeList[value]) {
+      onSelect(testeeList[value]);
+    }
   }
 
 return (

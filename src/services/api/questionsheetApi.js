@@ -1,6 +1,6 @@
 import { boolToOneZero } from '../../util';
-import { getGlobalData } from '../../util/globalData';
 import { request } from '../servers';
+import { getSelectedTesteeId } from '../../store';
 
 
 export const getQuestionsheet = (code) => {
@@ -81,8 +81,9 @@ export const postQuestionsheet = (questionsheet, writer_role_code, signid) => {
     submitData['signid'] = signid
   }
 
-  if (getGlobalData('testeeid')) {
-    submitData['testeeid'] = getGlobalData('testeeid')
+  const selectedTesteeId = getSelectedTesteeId()
+  if (selectedTesteeId) {
+    submitData['testeeid'] = selectedTesteeId
   }
   
   return request('/writeAnswerSheet/submit', submitData, { method: 'POST' })

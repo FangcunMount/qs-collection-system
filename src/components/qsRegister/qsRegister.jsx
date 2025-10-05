@@ -10,6 +10,7 @@ import NeedDialog from "../needDialog";
 
 import { postChildRegister } from "./widget/api";
 import { useSubmit } from "../../util/useUtil";
+import { addTestee, setSelectedTesteeId } from "../../store";
 
 const createInitialRegisterInfo = () => ({
   testee: {
@@ -71,7 +72,15 @@ const QsRegister = ({ goUrl, submitClose }) => {
     };
 
     const res = await postChildRegister(submitData);
-    if (res.childid) afterSubmit();
+    if (res.childid) {
+      const newTestee = {
+        id: res.childid,
+        name: registerInfo.testee.name
+      };
+      addTestee(newTestee);
+      setSelectedTesteeId(res.childid);
+      afterSubmit();
+    }
   };
 
   const afterSubmit = () => {

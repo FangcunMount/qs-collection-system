@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Taro, { useReady, useRouter, useShareAppMessage } from "@tarojs/taro";
 import "taro-ui/dist/style/components/button.scss";
 import "taro-ui/dist/style/components/modal.scss";
@@ -14,10 +14,16 @@ import SinglePageModel from "./weight/singlePageModel";
 import { getUserTestList } from "../../services/api/user";
 
 import { paramsConcat, parsingScene } from "../../util";
-import { getGlobalData, setGlobalData } from "../../util/globalData";
 import { getLogger } from "../../util/log";
 import { getAnswersheetidBySignid } from "../../services/api/answersheetApi";
 import { getMpEntryParams } from "../../services/api/commonApi";
+import {
+  getTesteeList as getStoredTesteeList,
+  setTesteeList as storeTesteeList,
+  getSelectedTesteeId,
+  setSelectedTesteeId,
+  subscribeUserStore
+} from "../../store";
 
 import { PrivacyAuthorization } from "../../components/privacyAuthorization/privacyAuthorization";
 
@@ -53,11 +59,18 @@ export default function Index() {
   const [needTesteeidFlag, setNeedTesteeidFlag] = useState(false);
 
   const [selectChildFlag, setSelectChildFlag] = useState(false);
-  const [childList, setChildList] = useState([]);
+  const [childList, setChildList] = useState(() => getStoredTesteeList());
 
   const [isSinglePage, setIsSinglePage] = useState(false);
 
   const paramData = useRouter().params;
+
+  useEffect(() => {
+    const unsubscribe = subscribeUserStore(({ testeeList }) => {
+      setChildList(testeeList);
+    });
+    return unsubscribe;
+  }, []);
 
   useReady(() => {
     logger.RUN("did show <RUN>, params: ", { ...paramData });
@@ -110,23 +123,39 @@ export default function Index() {
     next();
   };
 
-  const verifyTestee = async testeeid => {
-    if (testeeid) {
-      setGlobalData("testeeid", testeeid);
+  const verifyTestee = async explicitTesteeId => {
+    if (explicitTesteeId) {
+      setSelectedTesteeId(explicitTesteeId);
+      if (!getStoredTesteeList().length) {
+        const { testee_list = [] } = await getUserTestList();
+        storeTesteeList(testee_list);
+      }
       return true;
     }
-    const { testee_list = [] } = await getUserTestList();
 
-    if (testee_list.length < 1) {
+    let storedList = getStoredTesteeList();
+    if (!storedList.length) {
+      const { testee_list = [] } = await getUserTestList();
+      storeTesteeList(testee_list);
+      storedList = getStoredTesteeList();
+    }
+
+    if (!storedList.length) {
       setNeedTesteeidFlag(true);
       return false;
     }
 
-    if (testee_list.length === 1) {
-      setGlobalData("testeeid", testee_list[0].id);
+    if (storedList.length === 1) {
+      setSelectedTesteeId(storedList[0].id);
     } else {
-      setChildList(testee_list);
-      setSelectChildFlag(true);
+      const currentSelected = getSelectedTesteeId();
+      const exists = currentSelected && storedList.some(item => item.id === currentSelected);
+      if (exists) {
+        setSelectedTesteeId(currentSelected);
+      } else {
+        setChildList(storedList);
+        setSelectChildFlag(true);
+      }
     }
 
     return true;
@@ -139,7 +168,7 @@ export default function Index() {
   };
 
   const handleSelectChild = childid => {
-    setGlobalData("testeeid", childid);
+    setSelectedTesteeId(childid);
     setSelectChildFlag(false);
   };
 
