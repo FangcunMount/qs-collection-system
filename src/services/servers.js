@@ -1,6 +1,6 @@
 import Taro from '@tarojs/taro'
-import { authorizationHandler, errorHandler } from 'fc-tools-weapp/dist/bundle'
 
+import { authorizationHandler, errorHandler } from '../util/authorization'
 import { getGlobalData, setGlobalData } from '../util/globalData'
 import { getUrl } from '../util'
 import config from '../config'

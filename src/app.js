@@ -1,9 +1,9 @@
 import { Component } from 'react'
-import { initConfig } from 'fc-tools-weapp/dist/bundle'
 
 import './app.less'
 import { checkUpdateVersion } from './util/checkEnvironment'
 import { setGlobalData } from './util/globalData'
+import { initConfig } from './util/authorization'
 import config from './config'
 
 class App extends Component {
