@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View } from "@tarojs/components";
 import Taro from "@tarojs/taro";
+import { AtButton } from "taro-ui";
 
 import PageContainer from "../../../components/pageContainer/pageContainer";
 
