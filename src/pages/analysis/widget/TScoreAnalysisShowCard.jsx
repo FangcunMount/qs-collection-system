@@ -4,13 +4,6 @@ import { View, Text, Image } from '@tarojs/components'
 import { isArray, isString } from "lodash";
 import { AtTabBar, AtTabsPane } from 'taro-ui'
 
-import "taro-ui/dist/style/components/tabs.scss";
-import "taro-ui/dist/style/components/tab-bar.scss";
-import "taro-ui/dist/style/components/badge.scss";
-import "taro-ui/dist/style/components/icon.scss";
-import "taro-ui/dist/style/components/article.scss";
-import "taro-ui/dist/style/components/flex.scss";
-
 const TScoreAnalysisShowCard = ({ tScores }) => {
   
   // tScore 表头

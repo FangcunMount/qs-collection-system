@@ -1,8 +1,6 @@
 import React from "react";
 import { View } from "@tarojs/components";
 import { SiInput } from "taro-ui-fc";
-import "taro-ui-fc/dist/styles/radio.less";
-import "taro-ui-fc/dist/styles/input.less";
 
 import ShowContainer from "./widget/showContainer";
 

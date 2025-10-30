@@ -3,7 +3,6 @@ import { View, Text, Image } from "@tarojs/components";
 import Taro from "@tarojs/taro";
 
 import { AtButton } from "taro-ui";
-import "taro-ui/dist/style/components/button.scss";
 
 import {
   getQuestionsheet,

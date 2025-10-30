@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { View } from "@tarojs/components";
 import { SiSelect } from "taro-ui-fc";
-import "taro-ui-fc/dist/styles/select.less";
 
 import ShowContainer from "./widget/showContainer";
 

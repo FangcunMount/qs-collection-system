@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { View } from "@tarojs/components";
 import { SiInput, SiCheckBox } from "taro-ui-fc";
-import "taro-ui-fc/dist/styles/input.less";
-import "taro-ui-fc/dist/styles/checkBox.less";
 
 import ShowContainer from "./widget/showContainer";
 

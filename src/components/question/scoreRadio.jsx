@@ -2,8 +2,6 @@ import React, { useEffect, useState } from "react";
 import { View, Text } from "@tarojs/components";
 import { AtRate } from "taro-ui";
 import { SiSeparator } from "taro-ui-fc";
-import "taro-ui/dist/style/components/rate.scss";
-import "taro-ui-fc/dist/styles/separator.less";
 
 import ShowContainer from "./widget/showContainer";
 

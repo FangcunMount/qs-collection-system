@@ -40,6 +40,16 @@ const config = {
           generateScopedName: '[name]__[local]___[hash:base64:5]'
         }
       }
+    },
+    // 添加 webpack 配置，忽略 mini-css-extract-plugin 的样式导入顺序警告
+    webpackChain(chain) {
+      chain.plugin('extract-css').tap(args => {
+        args[0] = {
+          ...args[0],
+          ignoreOrder: true  // 忽略 CSS 导入顺序警告
+        }
+        return args
+      })
     }
   },
   h5: {

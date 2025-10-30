@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { AtTabs, AtTabsPane } from "taro-ui"
-import "taro-ui/dist/style/components/list.scss";
-import "taro-ui/dist/style/components/tabs.scss";
 
 const TesteeListTab = ({ testeeList, TabPanes, onSelect }) => {
   // tab 配置

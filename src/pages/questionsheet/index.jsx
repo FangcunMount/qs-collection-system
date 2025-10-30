@@ -1,10 +1,5 @@
 import React, { useEffect, useState } from "react";
 import Taro, { useReady, useRouter, useShareAppMessage } from "@tarojs/taro";
-import "taro-ui/dist/style/components/button.scss";
-import "taro-ui/dist/style/components/modal.scss";
-import "taro-ui/dist/style/components/loading.scss";
-import "taro-ui/dist/style/components/toast.scss";
-import "taro-ui/dist/style/components/icon.scss";
 
 import "./index.less";
 import NeedDialog from "../../components/needDialog";

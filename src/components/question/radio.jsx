@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { View } from "@tarojs/components";
 import { SiInput, SiRadio } from "taro-ui-fc";
-import "taro-ui-fc/dist/styles/radio.less";
-import "taro-ui-fc/dist/styles/input.less";
 
 import ShowContainer from "./widget/showContainer";
 

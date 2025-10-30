@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { View, Button, Canvas } from "@tarojs/components";
 import { AtModal, AtModalHeader, AtModalAction, AtModalContent } from "taro-ui";
-import "taro-ui/dist/style/components/modal.scss";
-import "taro-ui/dist/style/components/button.scss";
 import Taro from "@tarojs/taro";
 
 import AnalysisToCanvas from "./AnalysisToCanvas";

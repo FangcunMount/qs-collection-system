@@ -2,9 +2,6 @@ import React, { useEffect, useState } from "react";
 import { View } from "@tarojs/components";
 import Taro from "@tarojs/taro";
 import { AtButton, AtActivityIndicator } from "taro-ui";
-import "taro-ui/dist/style/components/button.scss";
-import "taro-ui/dist/style/components/loading.scss";
-import "taro-ui/dist/style/components/activity-indicator.scss";
 
 import { getAnalysis } from "../../services/api/analysisApi";
 import PageContainer from "../../components/pageContainer/pageContainer";

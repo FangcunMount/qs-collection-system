@@ -1,6 +1,5 @@
 import React from "react";
 import { AtModal, AtModalHeader, AtModalContent, AtModalAction } from "taro-ui";
-import "taro-ui/dist/style/components/modal.scss";
 
 import { View, Navigator, Button } from "@tarojs/components";
 

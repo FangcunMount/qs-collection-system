@@ -4,7 +4,6 @@ import { View, Button } from "@tarojs/components";
 import { AtModal, AtModalHeader, AtModalContent, AtModalAction } from "taro-ui";
 
 import { SiBtnToggle } from "taro-ui-fc";
-import "taro-ui-fc/dist/styles/btnToggle.less";
 
 export default props => {
   const { writerRoles, writerRoleCode, flag } = props;

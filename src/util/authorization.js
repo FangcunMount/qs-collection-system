@@ -5,39 +5,11 @@ const authErrorMap = {
 
 let config = {}
 
-const isWeappQywx = () => {
-  let isQy = false
-  // eslint-disable-next-line no-undef
-  wx.getSystemInfo({
-    success(res) {
-      if (res.environment === 'wxwork') {
-        isQy = true
-      }
-    },
-    fail(err) {
-      console.log(err)
-    }
-  })
-  return isQy
-}
-
-
-const getLoginFn = () => {
-  let loginFn = null
-  if (isWeappQywx()) {
-    loginFn = wx.qy.login
-  } else {
-    loginFn = wx.login
-  }
-
-  return loginFn
-}
-
 class AuthorizationHandler {
   login(params = {}, header = {}) {
     return new Promise((resolve, reject) => {
-      const loginFn = getLoginFn()
-      loginFn({
+      
+      wx.login({
         success(res) {
           if (!res.code) {
             resolve(res.code);
@@ -46,7 +18,6 @@ class AuthorizationHandler {
           wx.request({
             url: `${config.host}/auth/gettoken?display=json`,
             data: { code: res.code, ...params },
-            header: { 'Frontend-Env': isWeappQywx() ? 'qwx' : 'wx', ...header },
             method: "GET",
             dataType: "json",
             responseType: "text",

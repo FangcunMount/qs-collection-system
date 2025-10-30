@@ -1,7 +1,6 @@
 import React from "react";
 import { View } from "@tarojs/components";
 import { AtTextarea } from "taro-ui";
-import "taro-ui/dist/style/components/textarea.scss";
 
 import ShowContainer from "./widget/showContainer";
 

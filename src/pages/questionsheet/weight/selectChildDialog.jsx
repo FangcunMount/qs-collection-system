@@ -3,8 +3,6 @@ import { showToast } from "@tarojs/taro";
 import { AtModal, AtModalHeader, AtModalContent, AtModalAction } from "taro-ui";
 import { View } from "@tarojs/components";
 import { SiRadio } from "taro-ui-fc";
-import "taro-ui-fc/dist/styles/radio.less";
-import "taro-ui/dist/style/components/modal.scss";
 
 import "./selectChildDialog.less";
 

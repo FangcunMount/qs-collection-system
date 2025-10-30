@@ -8,11 +8,6 @@ import { AtList, AtListItem, AtLoadMore } from "taro-ui";
 import "../index.less";
 import emptyData from "../../../assets/images/empty_data.png";
 
-import "taro-ui/dist/style/components/list.scss";
-import "taro-ui/dist/style/components/load-more.scss";
-import "taro-ui/dist/style/components/activity-indicator.scss";
-import "taro-ui/dist/style/components/button.scss";
-
 import { getAnswersheetList } from "../../../services/api/answersheetApi";
 
 const AnswersheetListImp = ({ testee }) => {

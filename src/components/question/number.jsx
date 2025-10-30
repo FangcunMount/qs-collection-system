@@ -1,8 +1,6 @@
 import React from "react";
 import { View } from "@tarojs/components";
 import { SiInputNumber } from "taro-ui-fc";
-import "taro-ui-fc/dist/styles/inputNumber.less";
-import "taro-ui-fc/dist/styles/icon.scss";
 
 import ShowContainer from "./widget/showContainer";
 
