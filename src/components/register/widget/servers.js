@@ -3,7 +3,7 @@ import Taro from "@tarojs/taro";
 import config from "../../../config";
 import { getGlobalData } from "../../../util/globalData";
 
-const host = "https://api." + config.domain;
+const host = config.iamHost
 
 export const request = (url, params, options) => {
   const requestData = {

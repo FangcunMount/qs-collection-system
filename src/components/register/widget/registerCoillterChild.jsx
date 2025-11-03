@@ -6,14 +6,23 @@ import boyPng from "../../../assets/images/boy.png";
 import girlPng from "../../../assets/images/girl.png";
 
 const InputLabelCSS = {
-  margin: "32rpx 0rpx 16rpx 0rpx",
-  color: "#666"
+  margin: "0 0 16rpx 0",
+  color: "#333",
+  fontSize: "28rpx",
+  fontWeight: "500"
 };
 
 const InputCSS = {
-  padding: "32rpx",
-  background: "#eee",
-  borderRadius: "8rpx"
+  padding: "28rpx 24rpx",
+  background: "#f7f8fa",
+  borderRadius: "12rpx",
+  fontSize: "28rpx",
+  border: "2rpx solid transparent",
+  transition: "all 0.3s ease"
+};
+
+const InputWrapperCSS = {
+  marginBottom: "32rpx"
 };
 
 const sexBody = {
@@ -21,11 +30,12 @@ const sexBody = {
   justifyContent: "center",
   alignItems: "center",
   flexGrow: 1,
-  padding: "32rpx",
-  background: "#eee",
-  borderRadius: "8rpx",
+  padding: "36rpx 24rpx",
+  background: "#f7f8fa",
+  borderRadius: "12rpx",
   position: "relative",
-  overflow: "hidden"
+  overflow: "hidden",
+  transition: "all 0.3s ease"
 };
 
 const sexSelected = {
@@ -34,17 +44,17 @@ const sexSelected = {
   position: "absolute",
   left: "0",
   top: "0",
-  background: "#478de2",
-  opacity: ".4"
+  background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+  opacity: ".15"
 };
 
 const sexSelectedIcon = {
   width: "28rpx",
   height: "52rpx",
   position: "absolute",
-  top: "20rpx",
-  left: "160rpx",
-  border: "8rpx solid #fff",
+  top: "24rpx",
+  right: "24rpx",
+  border: "8rpx solid #667eea",
   borderLeft: "0",
   borderTop: "0",
   transform: "rotate(45deg) scaleY(1)",
@@ -53,22 +63,22 @@ const sexSelectedIcon = {
 };
 
 const sexIcon = {
-  width: "60rpx",
-  height: "60rpx",
-  marginRight: "32rpx"
+  width: "64rpx",
+  height: "64rpx",
+  marginRight: "16rpx"
 };
 
 const ChildName = ({ name, onChange }) => {
   return (
-    <>
-      <View style={InputLabelCSS}>受试者的姓名：</View>
+    <View style={InputWrapperCSS}>
+      <View style={InputLabelCSS}>受试者姓名</View>
       <Input
         value={name}
         onInput={e => onChange("name", e.target.value)}
         style={InputCSS}
         placeholder="请填写受试者姓名"
       ></Input>
-    </>
+    </View>
   );
 };
 
@@ -86,28 +96,28 @@ const ChildSex = ({ sex, onChange }) => {
     }
   };
   return (
-    <>
-      <View style={InputLabelCSS}>受试者的性别：</View>
-      <View style={{ display: "flex" }}>
+    <View style={InputWrapperCSS}>
+      <View style={InputLabelCSS}>受试者性别</View>
+      <View style={{ display: "flex", gap: "24rpx" }}>
         <View
-          style={{ ...sexBody, marginRight: "32rpx" }}
+          style={sexBody}
           onClick={() => onChange("sex", "1")}
         >
           {getCheckIcon("1")}
           <Image mode="widthFix" src={boyPng} style={sexIcon}></Image>
-          <Text>男生</Text>
+          <Text style={{ fontSize: "28rpx", color: "#333" }}>男生</Text>
         </View>
 
         <View
-          style={{ ...sexBody, marginLeft: "32rpx" }}
+          style={sexBody}
           onClick={() => onChange("sex", "2")}
         >
           {getCheckIcon("2")}
           <Image mode="widthFix" src={girlPng} style={sexIcon}></Image>
-              <Text>女生</Text>
+          <Text style={{ fontSize: "28rpx", color: "#333" }}>女生</Text>
         </View>
       </View>
-    </>
+    </View>
   );
 };
 
@@ -123,12 +133,12 @@ const ChildBirthday = ({ birthday, onChange }) => {
   }
 
   return (
-    <>
-      <View style={InputLabelCSS}>受试者的生日：</View>
+    <View style={InputWrapperCSS}>
+      <View style={InputLabelCSS}>出生日期</View>
       <SiDatePicker 
         onChange={v => onChange("birthday", v)}
-        value={ defaultDate() }
-        >
+        value={defaultDate()}
+      >
         <Input
           value={birthday}
           disabled
@@ -136,7 +146,7 @@ const ChildBirthday = ({ birthday, onChange }) => {
           placeholder="请选择受试者的出生日期"
         ></Input>
       </SiDatePicker>
-    </>
+    </View>
   );
 };
 
@@ -146,7 +156,7 @@ const RegisterCoillterChild = ({ testeeInfo, onChange }) => {
   };
 
   return (
-    <View style={{ padding: "32rpx" }}>
+    <View>
       <ChildName name={testeeInfo.name} onChange={handleChangeTestee} />
       <ChildSex sex={testeeInfo.sex} onChange={handleChangeTestee} />
       <ChildBirthday

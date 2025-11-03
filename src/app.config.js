@@ -6,6 +6,7 @@ export default {
     'pages/answersheet/index',
     'pages/analysis/index',
     'pages/register/index',
+    'pages/registerChild/index',
     'pages/errpage/errpage',
   ],
   window: {

@@ -8,15 +8,25 @@ import './app.less'                           // 项目自定义全局样式
 import { checkUpdateVersion } from './util/checkEnvironment'
 import { setGlobalData } from './util/globalData'
 import { initConfig } from './util/authorization'
+import { initUserStore } from './store/userStore'
 import config from './config'
 
 class App extends Component {
   async componentDidMount() {
     initConfig(config)
+    
+    // 初始化用户 store：加载用户信息和受试者列表
+    try {
+      const result = await initUserStore();
+      console.log('[App] UserStore 初始化完成:', result);
+    } catch (error) {
+      console.error('[App] UserStore 初始化失败:', error);
+      // 不阻断应用启动
+    }
   }
 
   onLaunch(params) {
-    console.log(params)
+    console.log('[App] 小程序启动参数:', params)
     setGlobalData('shareTicket', params.shareTicket ?? '')
     checkUpdateVersion();
   }

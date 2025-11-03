@@ -16,15 +16,7 @@ export function request(url, params = {}, options = {}) {
 
   if (requestParams.needToken && !token) {
     return new Promise((resolve, reject) => {
-      let loginParams = {}
-      if (getGlobalData('userid')) {
-        loginParams['userid'] = getGlobalData('userid');
-      }
-      if ( config.wxshopid ) {
-        loginParams['wxshopid'] = config.wxshopid;
-      }
-
-      authorizationHandler.login(loginParams).then((res) => {
+      authorizationHandler.login({appId: config.appId}).then((res) => {
         requestParams.header['token'] = res;
         setGlobalData('token', res)
         baseRequest(requestParams)

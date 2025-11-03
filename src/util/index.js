@@ -18,14 +18,16 @@ export const formatTime = date => {
 
 export const getUrl = url => {
   let baseUrl = ''
+  
   if (url.startsWith('/common')) {
+    // 通用 API
     baseUrl = `https://api.${config.domain}${url.replace(new RegExp("/common"), '')}?display=json`
+  } else if (url.startsWith('/user') || url.startsWith('/auth')) {
+    // 用户相关接口：用户信息、认证、登录等
+    baseUrl = config.iamHost + url + '?display=json';
   } else {
-    baseUrl = config.host + url + '?display=json';
-  }
-
-  if (config.dev_user) {
-    baseUrl += `&dev_user=${config.dev_user}`
+    // 问卷相关接口：问卷、答卷、分析等（默认）
+    baseUrl = config.collectionHost + url + '?display=json';
   }
 
   return baseUrl
