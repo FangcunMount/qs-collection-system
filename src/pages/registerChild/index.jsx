@@ -9,14 +9,16 @@ const logger = getLogger(PAGE_NAME);
 
 const RegisterChild = () => {
   const paramData = useRouter();
-  let { submitClose, goUrl, goParams } = paramData.params;
+  let { submitClose, goUrl, goParams, testeeId, mode } = paramData.params;
   goParams = goParams ?? "{}";
   goUrl = paramsConcat(goUrl, JSON.parse(goParams));
 
   useReady(() => {
     logger.RUN("did ready <RUN> | params: ", {
       submitClose,
-      goUrl
+      goUrl,
+      testeeId,
+      mode
     });
   });
 
@@ -24,6 +26,8 @@ const RegisterChild = () => {
     <ChildRegister
       submitClose={submitClose == "1"}
       goUrl={goUrl}
+      testeeId={testeeId}
+      mode={mode}
     />
   );
 };

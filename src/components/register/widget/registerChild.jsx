@@ -174,7 +174,8 @@ const RegisterChild = ({ childInfo, onChange }) => {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center"
-          }}>
+          }}
+          >
             <Text style={{ color: childInfo.idType ? "#333" : "#999" }}>
               {idTypeOptions.find(item => item.value === childInfo.idType)?.label || "请选择证件类型"}
             </Text>
@@ -210,7 +211,8 @@ const RegisterChild = ({ childInfo, onChange }) => {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center"
-          }}>
+          }}
+          >
             <Text style={{ color: childInfo.relation ? "#333" : "#999" }}>
               {relationOptions.find(item => item.value === childInfo.relation)?.label || "请选择关系"}
             </Text>

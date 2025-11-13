@@ -1,3 +1,3 @@
 export * from './userStore';
-export * from './testeeStore';
+export * from './testeeStore.ts';
 export * from './tokenStore.ts';

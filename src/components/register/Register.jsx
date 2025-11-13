@@ -11,7 +11,7 @@ import NeedDialog from "../needDialog";
 
 import { postChildRegister } from "../../services/api/register";
 import { useSubmit } from "../../util/useUtil";
-import { addTestee, setSelectedTesteeId } from "../../store";
+import { addTestee, setSelectedTesteeId } from "../../store/testeeStore.ts";
 import { registerUser } from "./model";
 import { authorizationHandler } from "../../util/authorization";
 import config from "../../config";

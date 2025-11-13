@@ -20,6 +20,12 @@ const quickActions = [
     icon: "📋"
   },
   {
+    label: "受试者管理",
+    desc: "管理受试者信息",
+    url: "/pages/childrenList/index",
+    icon: "👶"
+  },
+  {
     label: "数据分析",
     desc: "查看统计报告",
     url: "/pages/analysis/index",

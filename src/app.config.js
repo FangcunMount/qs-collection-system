@@ -7,6 +7,7 @@ export default {
     'pages/analysis/index',
     'pages/register/index',
     'pages/registerChild/index',
+    'pages/childrenList/index',
     'pages/errpage/errpage',
   ],
   window: {

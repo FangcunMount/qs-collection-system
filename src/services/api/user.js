@@ -21,8 +21,12 @@ export const getUserTestList = from => {
 };
 
 export const getChildList = () => {
-  return request("/user/childlist");
-}
+  return request("/me/children", {}, {
+    host: config.iamHost,
+    isNeedLoading: true,
+    needToken: true
+  });
+};
 
 export default {
   getUserInfo,
