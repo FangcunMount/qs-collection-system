@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Input, Text, Image } from "@tarojs/components";
+import { View, Input, Text, Image, Picker } from "@tarojs/components";
 import { SiDatePicker } from "taro-ui-fc";
 
 import boyPng from "../../../assets/images/boy.png";
@@ -69,8 +69,23 @@ const sexIcon = {
 };
 
 const RegisterChild = ({ childInfo, onChange }) => {
-  const getCheckIcon = elSex => {
-    if (elSex == childInfo.sex) {
+  // 证件类型选项
+  const idTypeOptions = [
+    { value: "none", label: "无证件" },
+    { value: "idcard", label: "身份证" },
+    { value: "passport", label: "护照" },
+    { value: "birth_cert", label: "出生证明" }
+  ];
+
+  // 关系选项
+  const relationOptions = [
+    { value: "parent", label: "父母" },
+    { value: "guardian", label: "监护人" },
+    { value: "self", label: "本人" }
+  ];
+
+  const getCheckIcon = elGender => {
+    if (elGender == childInfo.gender) {
       return (
         <>
           <View style={sexSelected} />
@@ -97,8 +112,8 @@ const RegisterChild = ({ childInfo, onChange }) => {
       <View style={InputWrapperCSS}>
         <View style={InputLabelCSS}>受试者姓名</View>
         <Input
-          value={childInfo.name}
-          onInput={e => onChange("name", e.target.value)}
+          value={childInfo.legalName}
+          onInput={e => onChange("legalName", e.target.value)}
           style={InputCSS}
           placeholder="请填写受试者姓名"
         />
@@ -109,18 +124,18 @@ const RegisterChild = ({ childInfo, onChange }) => {
         <View style={{ display: "flex", gap: "24rpx" }}>
           <View
             style={sexBody}
-            onClick={() => onChange("sex", "1")}
+            onClick={() => onChange("gender", 1)}
           >
-            {getCheckIcon("1")}
+            {getCheckIcon(1)}
             <Image mode="widthFix" src={boyPng} style={sexIcon} />
             <Text style={{ fontSize: "28rpx", color: "#333" }}>男生</Text>
           </View>
 
           <View
             style={sexBody}
-            onClick={() => onChange("sex", "2")}
+            onClick={() => onChange("gender", 2)}
           >
-            {getCheckIcon("2")}
+            {getCheckIcon(2)}
             <Image mode="widthFix" src={girlPng} style={sexIcon} />
             <Text style={{ fontSize: "28rpx", color: "#333" }}>女生</Text>
           </View>
@@ -130,16 +145,109 @@ const RegisterChild = ({ childInfo, onChange }) => {
       <View style={InputWrapperCSS}>
         <View style={InputLabelCSS}>出生日期</View>
         <SiDatePicker 
-          onChange={v => onChange("birthday", v)}
+          onChange={v => onChange("dob", v)}
           value={defaultDate()}
         >
           <Input
-            value={childInfo.birthday}
+            value={childInfo.dob}
             disabled
             style={InputCSS}
             placeholder="请选择受试者的出生日期"
           />
         </SiDatePicker>
+      </View>
+
+      <View style={InputWrapperCSS}>
+        <View style={InputLabelCSS}>证件类型</View>
+        <Picker
+          mode="selector"
+          range={idTypeOptions}
+          rangeKey="label"
+          value={idTypeOptions.findIndex(item => item.value === childInfo.idType)}
+          onChange={e => {
+            const selectedOption = idTypeOptions[e.detail.value];
+            onChange("idType", selectedOption.value);
+          }}
+        >
+          <View style={{
+            ...InputCSS,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center"
+          }}>
+            <Text style={{ color: childInfo.idType ? "#333" : "#999" }}>
+              {idTypeOptions.find(item => item.value === childInfo.idType)?.label || "请选择证件类型"}
+            </Text>
+            <Text style={{ color: "#999" }}>▼</Text>
+          </View>
+        </Picker>
+      </View>
+
+      <View style={InputWrapperCSS}>
+        <View style={InputLabelCSS}>证件号码</View>
+        <Input
+          value={childInfo.idNo}
+          onInput={e => onChange("idNo", e.target.value)}
+          style={InputCSS}
+          placeholder="请填写证件号码"
+        />
+      </View>
+
+      <View style={InputWrapperCSS}>
+        <View style={InputLabelCSS}>与受试者关系</View>
+        <Picker
+          mode="selector"
+          range={relationOptions}
+          rangeKey="label"
+          value={relationOptions.findIndex(item => item.value === childInfo.relation)}
+          onChange={e => {
+            const selectedOption = relationOptions[e.detail.value];
+            onChange("relation", selectedOption.value);
+          }}
+        >
+          <View style={{
+            ...InputCSS,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center"
+          }}>
+            <Text style={{ color: childInfo.relation ? "#333" : "#999" }}>
+              {relationOptions.find(item => item.value === childInfo.relation)?.label || "请选择关系"}
+            </Text>
+            <Text style={{ color: "#999" }}>▼</Text>
+          </View>
+        </Picker>
+      </View>
+
+      <View style={{ ...InputWrapperCSS, marginTop: "48rpx" }}>
+        <View style={{ ...InputLabelCSS, color: "#666", fontSize: "26rpx" }}>
+          可选信息
+        </View>
+      </View>
+
+      <View style={InputWrapperCSS}>
+        <View style={InputLabelCSS}>身高（厘米）</View>
+        <Input
+          type="number"
+          value={childInfo.heightCm !== null ? String(childInfo.heightCm) : ""}
+          onInput={e => {
+            const value = e.target.value;
+            onChange("heightCm", value ? parseInt(value) : null);
+          }}
+          style={InputCSS}
+          placeholder="选填：受试者身高"
+        />
+      </View>
+
+      <View style={InputWrapperCSS}>
+        <View style={InputLabelCSS}>体重（千克）</View>
+        <Input
+          type="digit"
+          value={childInfo.weightKg}
+          onInput={e => onChange("weightKg", e.target.value)}
+          style={InputCSS}
+          placeholder="选填：受试者体重"
+        />
       </View>
     </View>
   );

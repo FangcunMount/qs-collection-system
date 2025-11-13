@@ -22,11 +22,11 @@ export const postUserRegister = (userInfo) => {
 };
 
 export const postChildRegister = (childInfo) => {
-  return request('/children', childInfo, { 
+  return request('/children/register', childInfo, { 
     host: config.iamHost,
     method: 'POST',
     isNeedLoading: true,
-    needToken: false
+    needToken: true
   });
 };
 

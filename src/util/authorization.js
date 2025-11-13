@@ -165,7 +165,7 @@ class AuthorizationHandler {
         console.log('[Auth] 使用 refresh_token 刷新 token');
 
         wxApi.request({
-          url: `${config.iamHost}/auth/refresh?display=json`,
+          url: `${config.iamHost}/auth/refresh_token?display=json`,
           data: {
             refresh_token: refreshToken
           },

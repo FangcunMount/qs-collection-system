@@ -30,9 +30,14 @@ const createInitialUserInfo = () => ({
 });
 
 const createInitialChildInfo = () => ({
-  name: "",
-  sex: "",
-  birthday: ""
+  legalName: "",
+  gender: null,
+  dob: "",
+  idType: "none",
+  idNo: "",
+  relation: "parent",
+  heightCm: null,
+  weightKg: ""
 });
 
 /**
@@ -74,18 +79,33 @@ const Register = ({ type, goUrl, submitClose }) => {
 
   // 验证受试者信息
   const verifyChildInfo = () => {
-    if (!childInfo.name) {
+    if (!childInfo.legalName) {
       Taro.showToast({ title: "请填写受试者的姓名", icon: "none" });
       return false;
     }
 
-    if (!childInfo.sex) {
+    if (childInfo.gender === null) {
       Taro.showToast({ title: "请选择受试者的性别", icon: "none" });
       return false;
     }
 
-    if (!childInfo.birthday) {
+    if (!childInfo.dob) {
       Taro.showToast({ title: "请选择受试者的出生日期", icon: "none" });
+      return false;
+    }
+
+    if (!childInfo.idType) {
+      Taro.showToast({ title: "请选择证件类型", icon: "none" });
+      return false;
+    }
+
+    if (!childInfo.idNo) {
+      Taro.showToast({ title: "请填写证件号码", icon: "none" });
+      return false;
+    }
+
+    if (!childInfo.relation) {
+      Taro.showToast({ title: "请选择与受试者的关系", icon: "none" });
       return false;
     }
 
@@ -143,9 +163,20 @@ const Register = ({ type, goUrl, submitClose }) => {
     try {
       console.log('[Register] 注册受试者');
       const childPayload = {
-        name: childInfo.name,
-        sex: childInfo.sex,
-        birthday: childInfo.birthday
+        legalName: childInfo.legalName,
+        gender: childInfo.gender,
+        dob: childInfo.dob,
+        idType: childInfo.idType,
+        idNo: childInfo.idNo,
+        relation: childInfo.relation
+      };
+      
+      // 添加可选字段
+      if (childInfo.heightCm !== null) {
+        childPayload.heightCm = childInfo.heightCm;
+      }
+      if (childInfo.weightKg) {
+        childPayload.weightKg = childInfo.weightKg;
       };
       
       const childRes = await postChildRegister(childPayload);
@@ -165,7 +196,7 @@ const Register = ({ type, goUrl, submitClose }) => {
         const childId = childData.childid || childData.id;
         const newTestee = {
           id: childId,
-          name: childInfo.name
+          name: childInfo.legalName
         };
         addTestee(newTestee);
         setSelectedTesteeId(childId);
