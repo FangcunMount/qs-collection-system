@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import PropTypes from "prop-types";
 import { View } from "@tarojs/components";
 import Taro from "@tarojs/taro";
@@ -9,9 +9,12 @@ import RegisterChild from "./widget/registerChild";
 import RegisterFooter from "./widget/registerFooter";
 import NeedDialog from "../needDialog";
 
-import { postUserRegister, postChildRegister } from "./widget/api";
+import { postChildRegister } from "../../services/api/register";
 import { useSubmit } from "../../util/useUtil";
 import { addTestee, setSelectedTesteeId } from "../../store";
+import { registerUser } from "./model";
+import { authorizationHandler } from "../../util/authorization";
+import config from "../../config";
 
 /**
  * 注册类型枚举
@@ -45,6 +48,14 @@ const Register = ({ type, goUrl, submitClose }) => {
   const [userInfo, setUserInfo] = useState(createInitialUserInfo);
   const [childInfo, setChildInfo] = useState(createInitialChildInfo);
   const [needCloseFlag, setNeedCloseFlag] = useState(false);
+  const isMountedRef = useRef(true);
+
+  // 组件卸载时标记
+  React.useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // 验证用户信息
   const verifyUserInfo = () => {
@@ -81,46 +92,44 @@ const Register = ({ type, goUrl, submitClose }) => {
     return true;
   };
 
-  // 注册提交
-  const [, handleSubmit] = useSubmit({
-    beforeSubmit: () => isUserRegister ? verifyUserInfo() : verifyChildInfo(),
-    submit: async () => {
-      if (isUserRegister) {
-        await registerUser();
-      } else {
-        await registerChild();
-      }
-    },
-    options: {
-      needGobalLoading: true,
-      gobalLoadingTips: "注册中..."
-    }
-  });
-
   // 注册用户
-  const registerUser = async () => {
+  const registerUserHandler = async () => {
     try {
-      console.log('[Register] 注册用户');
-      const userPayload = {
-        nickname: userInfo.username,
-        avatar: "",
-        contacts: [
-          {
-            type: "phone",
-            value: userInfo.phone
-          }
-        ]
-      };
-      
-      const userRes = await postUserRegister(userPayload);
+      console.log('[Register] 注册用户', userInfo);
+      const userRes = await registerUser(userInfo);
       console.log('[Register] 用户注册成功:', userRes);
+      
+      // 检查组件是否仍然挂载
+      if (!isMountedRef.current) {
+        console.warn('[Register] 组件已卸载，跳过后续操作');
+        return;
+      }
       
       // 注册成功，保存用户信息到本地存储（可选）
       Taro.setStorageSync('userInfo', userRes);
       
-      afterSubmit();
+      // 尝试自动登录，然后跳转到首页
+      try {
+        const token = await authorizationHandler.login({ appId: config.appId });
+        console.log('[Register] 自动登录成功，token:', token);
+        
+        // login 方法已经通过 tokenStore 保存了完整的 token 数据
+        // 使用 reLaunch 以清空页面栈，回到首页
+        Taro.reLaunch({ url: '/pages/home/index' });
+        return;
+      } catch (loginErr) {
+        console.warn('[Register] 自动登录失败，回退到原有跳转逻辑', loginErr);
+        afterSubmit();
+      }
     } catch (error) {
       console.error('[Register] 用户注册失败:', error);
+      
+      // 检查组件是否仍然挂载
+      if (!isMountedRef.current) {
+        console.warn('[Register] 组件已卸载，跳过错误处理');
+        return;
+      }
+      
       Taro.showToast({ 
         title: error.message || "注册失败，请重试", 
         icon: "none" 
@@ -141,10 +150,19 @@ const Register = ({ type, goUrl, submitClose }) => {
       
       const childRes = await postChildRegister(childPayload);
       console.log('[Register] 受试者注册成功:', childRes);
-      
+
+      // 兼容 register API 返回的规范化对象 { code, message, data }
+      const childData = childRes && childRes.data ? childRes.data : childRes;
+
+      // 检查组件是否仍然挂载
+      if (!isMountedRef.current) {
+        console.warn('[Register] 组件已卸载，跳过后续操作');
+        return;
+      }
+
       // 注册成功后的处理
-      if (childRes.childid || childRes.id) {
-        const childId = childRes.childid || childRes.id;
+      if (childData?.childid || childData?.id) {
+        const childId = childData.childid || childData.id;
         const newTestee = {
           id: childId,
           name: childInfo.name
@@ -155,6 +173,13 @@ const Register = ({ type, goUrl, submitClose }) => {
       }
     } catch (error) {
       console.error('[Register] 受试者注册失败:', error);
+      
+      // 检查组件是否仍然挂载
+      if (!isMountedRef.current) {
+        console.warn('[Register] 组件已卸载，跳过错误处理');
+        return;
+      }
+      
       Taro.showToast({ 
         title: error.message || "注册失败，请重试", 
         icon: "none" 
@@ -162,6 +187,22 @@ const Register = ({ type, goUrl, submitClose }) => {
       throw error;
     }
   };
+
+  // 注册提交
+  const [, handleSubmit] = useSubmit({
+    beforeSubmit: () => isUserRegister ? verifyUserInfo() : verifyChildInfo(),
+    submit: async () => {
+      if (isUserRegister) {
+        await registerUserHandler();
+      } else {
+        await registerChild();
+      }
+    },
+    options: {
+      needGobalLoading: true,
+      gobalLoadingTips: "注册中..."
+    }
+  });
 
   const afterSubmit = () => {
     if (submitClose) {

@@ -29,7 +29,7 @@ const ExportImageDialog = ({ total, factors, flag, onClose }) => {
         Taro.showToast({ title: "保存成功，请前往相册查看", icon: "none" });
       })
       .catch(err => {
-        Taro.showToast({ title: err, icon: "none" });
+        Taro.showToast({ title: String(err?.errmsg ?? err?.message ?? err ?? '保存失败'), icon: "none" });
       });
     onClose();
   };

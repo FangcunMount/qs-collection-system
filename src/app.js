@@ -9,18 +9,22 @@ import { checkUpdateVersion } from './util/checkEnvironment'
 import { setGlobalData } from './util/globalData'
 import { initConfig } from './util/authorization'
 import { initUserStore } from './store/userStore'
+import { initTokenStore } from './store/tokenStore'
 import config from './config'
 
 class App extends Component {
   async componentDidMount() {
     initConfig(config)
     
-    // 初始化用户 store：加载用户信息和受试者列表
+    // 初始化 Token Store
+    initTokenStore();
+    
+    // 初始化用户与受试者 store
     try {
-      const result = await initUserStore();
-      console.log('[App] UserStore 初始化完成:', result);
+      const userResult = await initUserStore();
+      console.log('[App] UserStore 初始化完成:', userResult);
     } catch (error) {
-      console.error('[App] UserStore 初始化失败:', error);
+      console.error('[App] Store 初始化失败:', error);
       // 不阻断应用启动
     }
   }

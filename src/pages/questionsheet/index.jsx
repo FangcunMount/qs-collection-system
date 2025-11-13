@@ -17,7 +17,7 @@ import {
   setTesteeList as storeTesteeList,
   getSelectedTesteeId,
   setSelectedTesteeId,
-  subscribeUserStore
+  subscribeTesteeStore
 } from "../../store";
 
 import { PrivacyAuthorization } from "../../components/privacyAuthorization/privacyAuthorization";
@@ -61,7 +61,7 @@ export default function Index() {
   const paramData = useRouter().params;
 
   useEffect(() => {
-    const unsubscribe = subscribeUserStore(({ testeeList }) => {
+    const unsubscribe = subscribeTesteeStore(({ testeeList }) => {
       setChildList(testeeList);
     });
     return unsubscribe;

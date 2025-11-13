@@ -10,7 +10,7 @@ import {
   setTesteeList as storeTesteeList,
   setSelectedTesteeId,
   getSelectedTesteeId,
-  subscribeUserStore
+  subscribeTesteeStore
 } from "../../store";
 
 const AnswersheetList = () => {
@@ -18,7 +18,7 @@ const AnswersheetList = () => {
   
   // 初始化受试者列表
   useEffect(() => {
-    const unsubscribe = subscribeUserStore(({ testeeList }) => {
+    const unsubscribe = subscribeTesteeStore(({ testeeList }) => {
       setTesteeList(testeeList);
     });
     initTesteeList();

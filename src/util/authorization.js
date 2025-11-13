@@ -1,3 +1,6 @@
+import { getWxApi } from './wxApi';
+import { setToken, getRefreshToken } from '../store/tokenStore';
+
 const authErrorMap = {
   '1001': '权限验证失败，请重新进入小程序',
   '1002': '未找到小程序用户',
@@ -5,26 +8,11 @@ const authErrorMap = {
   '102001': '用户未注册',  // 用户未注册错误码（code）
 };
 
-const ERRNO_USER_NOT_REGISTERED = '100207';  // 用户未注册错误码（在 data.errno 中）
-const CODE_INVALID_CREDENTIALS = '102001';  // 无效凭证错误码（在 data.code 中）
+const ERRNO_USER_NOT_REGISTERED = '102404';  // 兼容旧的 errno 未注册码（保留）
+const ERRNO_TOKEN_EXPIRED = '401';  // Token 过期
+const ERRNO_TOKEN_INVALID = '403';  // Token 无效
 
 let config = {}
-
-/**
- * 获取微信小程序 API
- * @returns {object} 微信小程序全局对象 wx
- * @throws {Error} 如果不在微信小程序环境中运行
- */
-const getWxApi = () => {
-  // eslint-disable-next-line no-undef
-  if (typeof wx !== 'undefined') {
-    // eslint-disable-next-line no-undef
-    return wx; // 微信小程序环境
-  }
-  
-  // 非微信小程序环境
-  throw new Error('此功能仅在微信小程序中可用，当前环境不支持 wx API');
-};
 
 class AuthorizationHandler {
   login(params = {}) {
@@ -43,10 +31,10 @@ class AuthorizationHandler {
             }
 
             let loginParams = {
-              Method: 'wx:minip',
+              Method: 'wechat',
               Credentials: {
-                AppID: params.appId,
-                JSCode: loginRes.code
+                app_id: params.appId,
+                code: loginRes.code
               },
               Audience: 'mobile',
             }
@@ -61,68 +49,44 @@ class AuthorizationHandler {
               responseType: "text",
               success(requestRes) {
                 console.log('[Auth] 登录响应:', requestRes);
-                
-                // 处理 HTTP 状态码非 200 的情况
-                if (requestRes.statusCode !== 200) {
-                  const responseData = requestRes.data || {};
-                  const errorCode = String(responseData.code || responseData.errno || '');
-                  const errorMsg = responseData.message || responseData.errmsg || '登录失败';
+
+                // HTTP 200，检查业务逻辑错误码，兼容新旧字段
+                const resp = requestRes.data || {};
+                const code = String(resp?.code ?? resp?.errno ?? '');
+                const message = resp?.message ?? resp?.errmsg ?? '';
+                const data = resp?.data;
+
+                // 登录成功（code/errno === '0' 或者 code 为空但存在 data）
+                if (!code || code === '0') {
+                  console.log('[Auth] 登录成功, data:', data);
                   
-                  console.log('[Auth] 登录失败:', {
-                    statusCode: requestRes.statusCode,
-                    errorCode,
-                    errorMsg
-                  });
-                  
-                  // 检查是否是用户未注册（code: 102001 或 errno: 100207）
-                  if (errorCode === CODE_INVALID_CREDENTIALS || errorCode === ERRNO_USER_NOT_REGISTERED) {
-                    console.log('[Auth] 用户未注册，跳转到注册页面');
-                    wxApi.reLaunch({
-                      url: '/pages/register/index',
-                    });
-                    reject({
-                      code: errorCode,
-                      message: '用户未注册',
-                      needRegister: true
-                    });
-                    return;
+                  // 保存完整的 token 数据到 tokenStore
+                  if (data) {
+                    setToken(data);
                   }
                   
-                  // 其他错误
-                  reject({
-                    code: errorCode,
-                    message: errorMsg,
-                    statusCode: requestRes.statusCode
-                  });
+                  // 返回 access_token
+                  const accessToken = data?.access_token ?? data?.token ?? data;
+                  resolve(accessToken);
                   return;
                 }
-                
-                // HTTP 200，检查业务逻辑错误码
-                const { errno, errmsg, data } = requestRes.data;
-                
-                // 登录成功
-                if (errno === '0') {
-                  console.log('[Auth] 登录成功');
-                  resolve(data.token);
-                  return;
-                }
-                
-                // 用户未注册
-                if (errno === ERRNO_USER_NOT_REGISTERED) {
-                  console.log('[Auth] 用户未注册（errno），跳转到注册页面');
+
+                // 用户未注册（兼容多种后端返回）
+                if (code === ERRNO_USER_NOT_REGISTERED || code === '100207' || code === '102001') {
+                  console.log('[Auth] 用户未注册（code/errno），跳转到注册页面');
                   wxApi.reLaunch({
                     url: '/pages/register/index',
                   });
                   reject({
-                    errno,
-                    errmsg: errmsg || '用户未注册',
+                    code,
+                    message: message || '用户未注册',
                     needRegister: true
                   });
                   return;
                 }
-                
+
                 // 其他业务错误
-                console.log('[Auth] 业务错误:', { errno, errmsg });
+                console.log('[Auth] 业务错误:', { code, message });
                 reject(requestRes.data);
               },
               fail(err) {
@@ -176,19 +140,92 @@ class AuthorizationHandler {
       throw error;
     }
   }
+
+  /**
+   * 使用 refresh_token 刷新 access_token
+   * @returns {Promise<string>} 新的 access_token
+   */
+  refreshToken() {
+    return new Promise((resolve, reject) => {
+      try {
+        const wxApi = getWxApi();
+        
+        // 从 tokenStore 获取 refresh_token
+        const refreshToken = getRefreshToken();
+        
+        if (!refreshToken) {
+          console.error('[Auth] 未找到 refresh_token');
+          reject(new Error('未找到 refresh_token'));
+          return;
+        }
+
+        console.log('[Auth] 使用 refresh_token 刷新 token');
+
+        wxApi.request({
+          url: `${config.iamHost}/auth/refresh?display=json`,
+          data: {
+            refresh_token: refreshToken
+          },
+          method: "POST",
+          dataType: "json",
+          responseType: "text",
+          success(requestRes) {
+            console.log('[Auth] 刷新 token 响应:', requestRes);
+
+            const resp = requestRes.data || {};
+            const code = String(resp?.code ?? resp?.errno ?? '');
+            const message = resp?.message ?? resp?.errmsg ?? '';
+            const data = resp?.data;
+
+            // 刷新成功
+            if (!code || code === '0') {
+              if (data) {
+                // 使用 tokenStore 更新 token
+                setToken(data);
+                
+                const newAccessToken = data?.access_token ?? data?.token ?? data;
+                resolve(newAccessToken);
+                return;
+              }
+            }
+
+            // 刷新失败
+            console.error('[Auth] Token 刷新失败:', { code, message });
+            reject({ code, message, needRelogin: true });
+          },
+          fail(err) {
+            console.error('[Auth] Token 刷新请求失败:', err);
+            reject(err);
+          }
+        });
+      } catch (error) {
+        console.error('[Auth] Token 刷新异常:', error);
+        reject(error);
+      }
+    });
+  }
 }
 
 class ErrorHandler {
-  handleAuthError(errno) {
-    if (authErrorMap.hasOwnProperty(errno)) {
+  handleAuthError(code) {
+    // 兼容传入 errno 或新的 code 字段
+    const key = String(code ?? '');
+    
+    // Token 过期或无效，不立即 logout，返回特殊标记让上层处理刷新
+    if (key === ERRNO_TOKEN_EXPIRED || key === ERRNO_TOKEN_INVALID) {
+      console.log('[ErrorHandler] Token 过期或无效，需要刷新');
+      return { needRefresh: true, code: key };
+    }
+    
+    // 其他认证错误，执行 logout
+    if (authErrorMap.hasOwnProperty(key)) {
       authorizationHandler.logout(
-        authErrorMap[errno]
+        authErrorMap[key]
       );
-
-      return false
+      return false;
     }
 
-    return true
+    return true;
   }
 }
 

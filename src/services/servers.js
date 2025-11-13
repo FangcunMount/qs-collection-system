@@ -1,24 +1,38 @@
 import Taro from '@tarojs/taro'
 
 import { authorizationHandler, errorHandler } from '../util/authorization'
-import { getGlobalData, setGlobalData } from '../util/globalData'
+import { getAccessToken, getRefreshingState, setRefreshingState } from '../store/tokenStore'
 import { getUrl } from '../util'
 import config from '../config'
 
+/**
+ * 通用请求函数，自动处理 token 和错误
+ * @param {string} url - API 路径
+ * @param {object} params - 请求参数
+ * @param {object} options - 请求选项
+ * @param {string} options.host - 可选的自定义域名（如 config.iamHost, config.collectionHost）
+ * @returns 
+ */
 export function request(url, params = {}, options = {}) {
+  console.log("[Request] 请求 URL:", url, "参数:", params, "选项:", options);
   const requestParams = interceptorsRequest({
     ...options,
-    url: getUrl(url),
+    url: getUrl(url, options.host),
     data: params
   })
 
-  const token = config.token ?? getGlobalData('token') ?? ''
+  // 加载 token，优先使用环境变量中的 token，其次使用全局数据中的 token
+  const token = loadToken()
+  console.log("........[Request] 请求参数:", requestParams, "Token:", token);
 
   if (requestParams.needToken && !token) {
     return new Promise((resolve, reject) => {
       authorizationHandler.login({appId: config.appId}).then((res) => {
-        requestParams.header['token'] = res;
-        setGlobalData('token', res)
+        console.log('[Request] 自动登录成功，token:', res);
+        requestParams.header['Authorization'] = `Bearer ${res}`;
+        
+        // login 方法已经通过 tokenStore 保存了完整的 token 数据
+        
         baseRequest(requestParams)
           .then((result) => {
             resolve(result)
@@ -26,8 +40,8 @@ export function request(url, params = {}, options = {}) {
             reject(err)
           });
       }).catch((err) => {
-        Taro.showToast({ title: err.errmsg, icon: 'none' })
-        reject(err)
+        Taro.showToast({ title: String(err?.errmsg ?? err?.message ?? '请求失败'), icon: 'none' })
+        reject(err);
       });
     })
   }
@@ -35,7 +49,28 @@ export function request(url, params = {}, options = {}) {
   return baseRequest(requestParams)
 }
 
-function baseRequest(params) {
+function loadToken() {
+  console.log("[In Load Token]");
+  
+  // 1. 优先从 config 获取
+  const configToken = config.token 
+  if (configToken != undefined && configToken !== null) {
+    console.info("[Load Token] 从 config 配置获取 token");
+    return configToken
+  }
+
+  // 2. 从 tokenStore 获取
+  const accessToken = getAccessToken();
+  if (accessToken) {
+    console.info("[Load Token] 从 TokenStore 获取到 access_token");
+    return accessToken;
+  }
+
+  console.info("[Load Token] 未找到 token");
+  return null;
+}
+
+function baseRequest(params, retryCount = 0) {
   if (params.isNeedLoading) {
     Taro.showLoading({ title: params.loadingText });
   }
@@ -45,21 +80,90 @@ function baseRequest(params) {
       ...params,
       complete: () => { params.isNeedLoading && Taro.hideLoading() },
       success: (res) => {
-        const data = res.data;
+        const data = res.data || {};
 
-        const authVerifySuccess = errorHandler.handleAuthError(data.errno)
-        if (!authVerifySuccess) reject(data)
+        // 兼容新旧响应格式：优先使用 code/message，其次使用 errno/errmsg
+        const code = String(data?.code ?? data?.errno ?? '');
+        const message = String(data?.message ?? data?.errmsg ?? '');
+        const payload = data?.data;
 
-        if (data.errno != "0") {
-          Taro.showToast({ title: data.errmsg, icon: 'none' })
-          reject(data)
+        const authVerifyResult = errorHandler.handleAuthError(code)
+        
+        // 如果需要刷新 token
+        if (authVerifyResult && typeof authVerifyResult === 'object' && authVerifyResult.needRefresh) {
+          console.log('[BaseRequest] Token 需要刷新，尝试自动刷新');
+          
+          // 防止重复刷新：如果已经重试过一次，不再刷新
+          if (retryCount >= 1) {
+            console.error('[BaseRequest] Token 刷新后仍然失败，需要重新登录');
+            Taro.showToast({ title: '登录已过期，请重新登录', icon: 'none' });
+            reject({ code, message, needRelogin: true });
+            return;
+          }
+
+          // 使用刷新锁，避免并发刷新
+          const { isRefreshing, refreshPromise } = getRefreshingState();
+          
+          if (isRefreshing && refreshPromise) {
+            console.log('[BaseRequest] 等待其他请求完成 token 刷新');
+            refreshPromise
+              .then((newToken) => {
+                console.log('[BaseRequest] Token 已被其他请求刷新，使用新 token 重试');
+                params.header['Authorization'] = `Bearer ${newToken}`;
+                baseRequest(params, retryCount + 1).then(resolve).catch(reject);
+              })
+              .catch((err) => {
+                console.error('[BaseRequest] Token 刷新失败');
+                reject(err);
+              });
+            return;
+          }
+
+          // 开始刷新 token
+          const newRefreshPromise = authorizationHandler.refreshToken()
+            .then((newToken) => {
+              console.log('[BaseRequest] Token 刷新成功，重试原请求');
+              setRefreshingState(false, null);
+              
+              // 使用新 token 重试原请求
+              params.header['Authorization'] = `Bearer ${newToken}`;
+              return baseRequest(params, retryCount + 1);
+            })
+            .catch((err) => {
+              console.error('[BaseRequest] Token 刷新失败:', err);
+              setRefreshingState(false, null);
+              
+              // 刷新失败，需要重新登录
+              if (err.needRelogin) {
+                authorizationHandler.redirectToRegister();
+              }
+              throw err;
+            });
+
+          setRefreshingState(true, newRefreshPromise);
+          newRefreshPromise.then(resolve).catch(reject);
+          return;
+        }
+        
+        // 其他认证错误
+        if (!authVerifyResult) {
+          reject({ code, message, data: payload });
+          return;
         }
 
-        resolve(data.data, data)
+        // 判定成功：code/errno === '0' 或者两者都不存在但有 payload 时视为成功
+        if (code && code !== '0') {
+          Taro.showToast({ title: message || '请求失败', icon: 'none' })
+          reject({ code, message, data: payload });
+          return;
+        }
+
+        resolve(payload, { code, message, data: payload })
       },
       fail: (err) => {
-        Taro.showToast({ title: '请求失败', icon: 'none' })
-        reject(err)
+        const message = err?.message ?? '请求失败'
+        Taro.showToast({ title: message, icon: 'none' })
+        reject({ code: '-1', message, error: err })
       }
     })
   })
@@ -91,9 +195,14 @@ function interceptorsRequest(options) {
     needToken: options.needToken ?? defaultConfig.needToken
   }
 
-  requestParam.header['token'] = getGlobalData('token') || config.token || ''
+  // token 已在 request 函数中处理，这里只设置其他通用 header
+  const token = loadToken();
+  if (token) {
+    requestParam.header['Authorization'] = `Bearer ${token}`;
+  }
   requestParam.header['Frontend-Env'] = 'wx'
   requestParam.header['Wxshop-Id'] = config.wxshopid || '' 
 
   return requestParam
 }
+

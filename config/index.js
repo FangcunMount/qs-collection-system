@@ -1,5 +1,5 @@
 const config = {
-  projectName: 'pharmacy',
+  projectName: 'qstore',
   date: '2021-4-28',
   designWidth: 750,
   deviceRatio: {

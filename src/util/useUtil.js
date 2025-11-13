@@ -38,7 +38,7 @@ export function useSubmit({ beforeSubmit = null, submit, options }) {
     } catch (error) {
       setLoading(false);
       Taro.nextTick(() => {
-        Taro.showToast({ title: error.errmsg ?? error, icon: "none" });
+        Taro.showToast({ title: String(error?.errmsg ?? error?.message ?? error ?? '提交失败'), icon: "none" });
       });
     }
   };

@@ -50,7 +50,8 @@ const AnswerSheet = () => {
         setQuestions(result.answersheet.answers);
       })
       .catch(err => {
-        if (err.errno == "100403") {
+        const code = String(err?.code ?? err?.errno ?? '');
+        if (code === "100403") {
           setNeedCloseFlag(true);
         }
       });

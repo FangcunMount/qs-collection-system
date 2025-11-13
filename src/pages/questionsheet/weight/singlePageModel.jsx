@@ -251,7 +251,7 @@ export default props => {
         writedCallback(result.answersheetid);
       })
       .catch(err => {
-        Taro.showToast({ title: err.errmsg, icon: "none" });
+        Taro.showToast({ title: String(err?.errmsg ?? err?.message ?? '提交失败'), icon: "none" });
       });
   }, 1000);
 

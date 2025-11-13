@@ -38,7 +38,7 @@ const ExportImageDialog = ({ questions, flag, onClose, onOk }) => {
         onOk();
       })
       .catch(err => {
-        Taro.showToast({ title: err, icon: "none" });
+        Taro.showToast({ title: String(err?.errmsg ?? err?.message ?? err ?? '保存失败'), icon: "none" });
       });
   };
 

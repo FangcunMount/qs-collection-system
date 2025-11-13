@@ -1,7 +1,13 @@
 import { request } from "../servers";
 
+import config from '../../config';
+
 export const getUserInfo = () => {
-  return request("/user/info");
+  return request("/me", {}, {
+      host: config.iamHost,
+      isNeedLoading: true,
+      needToken: true
+    });
 };
 
 export const userHasTestee = from => {

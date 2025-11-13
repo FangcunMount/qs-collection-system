@@ -16,7 +16,12 @@ export const formatTime = date => {
   return `${[year, month, day].map(formatNumber).join('/')} ${[hour, minute, second].map(formatNumber).join(':')}`
 }
 
-export const getUrl = url => {
+export const getUrl = (url, host) => {
+  // 如果指定了 host，直接使用
+  if (host) {
+    return host + url + '?display=json';
+  }
+
   let baseUrl = ''
   
   if (url.startsWith('/common')) {
