@@ -1,5 +1,5 @@
 import { getWxApi } from './wxApi';
-import { setToken, getRefreshToken } from '../store/tokenStore';
+import { setToken, getRefreshToken, clearToken } from '../store/tokenStore';
 
 const authErrorMap = {
   '1001': '权限验证失败，请重新进入小程序',
@@ -107,6 +107,9 @@ class AuthorizationHandler {
 
   logout(errmsg) {
     try {
+      // 清除 token
+      clearToken();
+      
       const wxApi = getWxApi();
       wxApi.reLaunch({
         url: `/pages/errpage/errpage?text=${errmsg}`,

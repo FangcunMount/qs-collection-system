@@ -1,7 +1,12 @@
 import Taro from '@tarojs/taro'
 
 import { authorizationHandler, errorHandler } from '../util/authorization'
-import { getAccessToken, getRefreshingState, setRefreshingState } from '../store/tokenStore'
+import { 
+  getAccessToken, 
+  getRefreshingState, 
+  setRefreshingState,
+  isTokenExpired 
+} from '../store/tokenStore'
 import { getUrl } from '../util'
 import config from '../config'
 
@@ -13,8 +18,23 @@ import config from '../config'
  * @param {string} options.host - 可选的自定义域名（如 config.iamHost, config.collectionHost）
  * @returns 
  */
-export function request(url, params = {}, options = {}) {
+export async function request(url, params = {}, options = {}) {
   console.log("[Request] 请求 URL:", url, "参数:", params, "选项:", options);
+  
+  // 请求前检查 token 是否即将过期
+  if (options.needToken !== false) { // 默认需要 token
+    const token = loadToken();
+    if (token && isTokenExpired()) {
+      console.log('[Request] Token 即将过期，先刷新再请求');
+      try {
+        await ensureTokenRefreshed();
+      } catch (error) {
+        console.error('[Request] Token 刷新失败:', error);
+        // 刷新失败继续执行，让后续逻辑处理
+      }
+    }
+  }
+  
   const requestParams = interceptorsRequest({
     ...options,
     url: getUrl(url, options.host),
@@ -47,6 +67,32 @@ export function request(url, params = {}, options = {}) {
   }
 
   return baseRequest(requestParams)
+}
+
+/**
+ * 确保 token 已刷新（带防并发保护）
+ */
+async function ensureTokenRefreshed() {
+  const { isRefreshing, refreshPromise } = getRefreshingState();
+  
+  // 如果正在刷新，等待完成
+  if (isRefreshing && refreshPromise) {
+    console.log('[Request] 等待其他请求完成 token 刷新');
+    return refreshPromise;
+  }
+  
+  // 开始刷新
+  const newRefreshPromise = authorizationHandler.refreshToken();
+  setRefreshingState(true, newRefreshPromise);
+  
+  try {
+    const newToken = await newRefreshPromise;
+    setRefreshingState(false, null);
+    return newToken;
+  } catch (error) {
+    setRefreshingState(false, null);
+    throw error;
+  }
 }
 
 function loadToken() {

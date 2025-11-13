@@ -40,24 +40,6 @@ type TokenInput = string | Partial<TokenData> | TokenData;
  */
 type Listener = (state: TokenStoreState) => void;
 
-/**
- * Token 刷新函数类型
- * @returns Promise<TokenData> - 返回新的完整 token 数据
- */
-export type TokenRefreshFunction = () => Promise<TokenData>;
-
-/**
- * Token Store 配置
- */
-export interface TokenStoreConfig {
-  /** 自动刷新函数 */
-  refreshFunction?: TokenRefreshFunction;
-  /** 提前刷新时间（毫秒），默认 5 分钟 */
-  refreshBeforeExpire?: number;
-  /** 是否启用自动刷新检查，默认 false */
-  enableAutoRefresh?: boolean;
-}
-
 const STORAGE_KEY = 'token';
 
 /** 当前状态 */
@@ -69,16 +51,6 @@ const state: TokenStoreState = {
 
 /** 监听器集合 */
 const listeners = new Set<Listener>();
-
-/** Token Store 配置 */
-let config: TokenStoreConfig = {
-  refreshFunction: undefined,
-  refreshBeforeExpire: 5 * 60 * 1000, // 默认提前 5 分钟
-  enableAutoRefresh: false
-};
-
-/** 自动刷新定时器 */
-let autoRefreshTimer: ReturnType<typeof setTimeout> | null = null;
 
 /**
  * 克隆当前状态
@@ -251,11 +223,6 @@ export function setToken(token: TokenInput, refreshToken?: string): void {
     tokenType: tokenData.token_type,
     expiresIn: tokenData.expires_in
   });
-
-  // Token 更新后，重新安排自动刷新
-  if (config.enableAutoRefresh) {
-    scheduleAutoRefresh();
-  }
 }
 
 /**
@@ -286,8 +253,6 @@ export function updateAccessToken(newAccessToken: string, newRefreshToken?: stri
  * 清除 Token
  */
 export function clearToken(): void {
-  clearAutoRefreshTimer();
-  
   state.tokenData = null;
   state.isRefreshing = false;
   state.refreshPromise = null;
@@ -312,10 +277,10 @@ export function hasToken(): boolean {
 
 /**
  * 检查 Token 是否过期（需要后端返回 expires_in）
- * @param advanceTime - 提前判定时间（毫秒），默认使用配置的 refreshBeforeExpire
+ * @param advanceTime - 提前判定时间（毫秒），默认 5 分钟
  * @returns 是否过期
  */
-export function isTokenExpired(advanceTime?: number): boolean {
+export function isTokenExpired(advanceTime: number = 5 * 60 * 1000): boolean {
   const tokenData = getTokenData();
   if (!tokenData || !tokenData.expires_in) {
     return false; // 无法判断，假设未过期
@@ -323,9 +288,8 @@ export function isTokenExpired(advanceTime?: number): boolean {
 
   const now = Date.now();
   const expireTime = (tokenData.updated_at || tokenData.created_at) + tokenData.expires_in * 1000;
-  const advance = advanceTime ?? config.refreshBeforeExpire ?? 5 * 60 * 1000;
   
-  return now >= expireTime - advance;
+  return now >= expireTime - advanceTime;
 }
 
 /**
@@ -398,149 +362,15 @@ export function getTokenStoreState(): TokenStoreState {
 }
 
 /**
- * 清除自动刷新定时器
- */
-function clearAutoRefreshTimer(): void {
-  if (autoRefreshTimer) {
-    clearTimeout(autoRefreshTimer);
-    autoRefreshTimer = null;
-  }
-}
-
-/**
- * 设置自动刷新定时器
- */
-function scheduleAutoRefresh(): void {
-  clearAutoRefreshTimer();
-
-  if (!config.enableAutoRefresh || !config.refreshFunction) {
-    return;
-  }
-
-  const remaining = getTokenRemainingTime();
-  if (remaining === null) {
-    console.log('[TokenStore] 无法获取 token 剩余时间，跳过自动刷新');
-    return;
-  }
-
-  const refreshAt = remaining - (config.refreshBeforeExpire ?? 5 * 60 * 1000);
-  
-  if (refreshAt <= 0) {
-    // 已经到刷新时间或已过期，立即刷新
-    console.log('[TokenStore] Token 即将过期，立即刷新');
-    performAutoRefresh();
-  } else {
-    // 设置定时器在指定时间后刷新
-    console.log(`[TokenStore] 将在 ${Math.round(refreshAt / 1000)} 秒后自动刷新 token`);
-    autoRefreshTimer = setTimeout(() => {
-      performAutoRefresh();
-    }, refreshAt);
-  }
-}
-
-/**
- * 执行自动刷新
- */
-async function performAutoRefresh(): Promise<void> {
-  if (!config.refreshFunction) {
-    console.warn('[TokenStore] 未配置刷新函数，无法自动刷新');
-    return;
-  }
-
-  if (state.isRefreshing) {
-    console.log('[TokenStore] 正在刷新中，跳过自动刷新');
-    return;
-  }
-
-  console.log('[TokenStore] 开始自动刷新 token');
-  
-  const refreshPromise = (async () => {
-    try {
-      const newTokenData = await config.refreshFunction!();
-      setToken(newTokenData);
-      console.log('[TokenStore] 自动刷新成功');
-      
-      // 刷新成功后，重新安排下次刷新
-      scheduleAutoRefresh();
-      
-      return newTokenData.access_token;
-    } catch (error) {
-      console.error('[TokenStore] 自动刷新失败:', error);
-      throw error;
-    }
-  })();
-
-  setRefreshingState(true, refreshPromise);
-  
-  try {
-    await refreshPromise;
-  } finally {
-    setRefreshingState(false, null);
-  }
-}
-
-/**
- * 配置 Token Store
- * @param newConfig - 配置选项
- */
-export function configureTokenStore(newConfig: Partial<TokenStoreConfig>): void {
-  config = {
-    ...config,
-    ...newConfig
-  };
-
-  console.log('[TokenStore] 配置已更新:', {
-    hasRefreshFunction: !!config.refreshFunction,
-    refreshBeforeExpire: config.refreshBeforeExpire,
-    enableAutoRefresh: config.enableAutoRefresh
-  });
-
-  // 如果启用了自动刷新且有 token，立即安排刷新检查
-  if (config.enableAutoRefresh && state.tokenData) {
-    scheduleAutoRefresh();
-  }
-}
-
-/**
- * 手动触发 Token 刷新
- * @returns Promise<string> - 新的 access_token
- */
-export async function refreshToken(): Promise<string> {
-  if (!config.refreshFunction) {
-    throw new Error('[TokenStore] 未配置刷新函数');
-  }
-
-  // 如果正在刷新，等待当前刷新完成
-  if (state.isRefreshing && state.refreshPromise) {
-    console.log('[TokenStore] 等待当前刷新完成');
-    return state.refreshPromise;
-  }
-
-  console.log('[TokenStore] 手动刷新 token');
-  return performAutoRefresh() as unknown as Promise<string>;
-}
-
-/**
  * 初始化 Token Store（从本地存储加载）
- * @param initialConfig - 可选的初始配置
  */
-export function initTokenStore(initialConfig?: Partial<TokenStoreConfig>): void {
-  // 应用配置
-  if (initialConfig) {
-    configureTokenStore(initialConfig);
-  }
-
+export function initTokenStore(): void {
   // 加载存储的 token
   const stored = loadFromStorage();
   if (stored) {
     state.tokenData = stored;
     console.log('[TokenStore] 已从本地存储加载 token');
     notify();
-
-    // 如果启用了自动刷新，安排刷新检查
-    if (config.enableAutoRefresh) {
-      scheduleAutoRefresh();
-    }
   } else {
     console.log('[TokenStore] 本地存储中无 token');
   }
@@ -563,9 +393,7 @@ const TokenStore = {
   getRefreshingState,
   subscribeTokenStore,
   getTokenStoreState,
-  initTokenStore,
-  configureTokenStore,
-  refreshToken
+  initTokenStore
 };
 
 export default TokenStore;
