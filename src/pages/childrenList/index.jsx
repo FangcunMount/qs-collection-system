@@ -80,7 +80,7 @@ const ChildrenList = () => {
   const handleViewChild = (child) => {
     // 跳转到编辑页面
     Taro.navigateTo({
-      url: `/pages/registerChild/index?testeeId=${child.id}&mode=edit`
+      url: `/pages/testeeEditor/index?testeeId=${child.id}`
     });
   };
 

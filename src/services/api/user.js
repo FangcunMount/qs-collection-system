@@ -28,9 +28,19 @@ export const getChildList = () => {
   });
 };
 
+export const patchChildInfo = (childId, childInfo) => {
+  return request(`/children/${childId}`, childInfo, {
+    host: config.iamHost,
+    method: 'PATCH',
+    isNeedLoading: true,
+    needToken: true
+  });
+};
+
 export default {
   getUserInfo,
   userHasTestee,
   getUserTestList,
-  getChildList
+  getChildList,
+  patchChildInfo,
 };

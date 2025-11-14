@@ -8,6 +8,7 @@ export default {
     'pages/register/index',
     'pages/registerChild/index',
     'pages/childrenList/index',
+    'pages/testeeEditor/index',
     'pages/errpage/errpage',
   ],
   window: {

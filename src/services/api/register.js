@@ -30,18 +30,9 @@ export const postChildRegister = (childInfo) => {
   });
 };
 
-export const postChildRegisterOld = (registerInfo) => {
-  return request('/children/register', { registerInfo }, { 
-    host: config.iamHost,
-    method: 'POST',
-    isNeedLoading: true,
-    needToken: false
-  });
-};
 
 export default {
   getPhoneByWxcode,
   postUserRegister,
   postChildRegister,
-  postChildRegisterOld
 };
