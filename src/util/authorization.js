@@ -1,14 +1,14 @@
 import { getWxApi } from './wxApi';
-import { setToken, getRefreshToken, clearToken } from '../store/tokenStore';
+import { setToken, getRefreshToken, clearToken, getAccessToken } from '../store/tokenStore';
 
 const authErrorMap = {
   '1001': '权限验证失败，请重新进入小程序',
   '1002': '未找到小程序用户',
   '100207': '用户未注册',  // 用户未注册错误码（errno）
   '102001': '用户未注册',  // 用户未注册错误码（code）
+  '102404': '用户未注册',  // 兼容旧的 errno 未注册码
 };
 
-const ERRNO_USER_NOT_REGISTERED = '102404';  // 兼容旧的 errno 未注册码（保留）
 const ERRNO_TOKEN_EXPIRED = '401';  // Token 过期
 const ERRNO_TOKEN_INVALID = '403';  // Token 无效
 
@@ -22,72 +22,87 @@ class AuthorizationHandler {
         
         wxApi.login({
           success(loginRes) {
-            console.log('wx.login res:', loginRes);
+            console.log('[Auth] wx.login 成功:', loginRes);
             
-            // 修复：登录失败应该 reject 而不是 resolve
             if (!loginRes.code) {
               reject(new Error('获取登录凭证失败'));
               return;
             }
 
-            let loginParams = {
-              Method: 'wechat',
-              Credentials: {
-                app_id: params.appId,
-                code: loginRes.code
-              },
-              Audience: 'mobile',
-            }
-
-            console.log('login params:', loginParams);
-
+            // 使用新的 IAM authn API
+            console.log('[Auth] 调用 IAM /authn/login');
+            
             wxApi.request({
-              url: `${config.iamHost}/auth/login?display=json`,
-              data: loginParams,
+              url: `${config.iamHost}/authn/login`,
+              data: {
+                method: 'wechat',
+                credentials: {
+                  app_id: params.appId || config.appId,
+                  code: loginRes.code
+                },
+                audience: 'mobile'
+              },
               method: "POST",
               dataType: "json",
               responseType: "text",
               success(requestRes) {
                 console.log('[Auth] 登录响应:', requestRes);
 
-                // HTTP 200，检查业务逻辑错误码，兼容新旧字段
-                const resp = requestRes.data || {};
-                const code = String(resp?.code ?? resp?.errno ?? '');
-                const message = resp?.message ?? resp?.errmsg ?? '';
-                const data = resp?.data;
-
-                // 登录成功（code/errno === '0' 或者 code 为空但存在 data）
-                if (!code || code === '0') {
-                  console.log('[Auth] 登录成功, data:', data);
-                  
-                  // 保存完整的 token 数据到 tokenStore
-                  if (data) {
-                    setToken(data);
-                  }
-                  
-                  // 返回 access_token
-                  const accessToken = data?.access_token ?? data?.token ?? data;
-                  resolve(accessToken);
+                // 检查 HTTP 状态码
+                if (requestRes.statusCode !== 200) {
+                  console.error('[Auth] HTTP 错误:', requestRes.statusCode);
+                  reject({
+                    statusCode: requestRes.statusCode,
+                    message: '登录请求失败'
+                  });
                   return;
                 }
 
-                // 用户未注册（兼容多种后端返回）
-                if (code === ERRNO_USER_NOT_REGISTERED || code === '100207' || code === '102001') {
-                  console.log('[Auth] 用户未注册（code/errno），跳转到注册页面');
+                const resp = requestRes.data || {};
+                console.log('[Auth] 响应数据结构:', { 
+                  hasAccessToken: !!resp.access_token,
+                  hasData: !!resp.data,
+                  hasDataAccessToken: !!resp.data?.access_token,
+                  code: resp.code,
+                  message: resp.message
+                });
+                
+                // IAM 新接口可能直接返回 token,也可能在 data 字段中
+                const tokenData = resp.access_token ? resp : resp.data;
+                
+                if (tokenData?.access_token) {
+                  console.log('[Auth] 登录成功,access_token 长度:', tokenData.access_token.length);
+                  
+                  // 保存完整的 token 数据到 tokenStore
+                  setToken(tokenData);
+                  
+                  resolve(tokenData.access_token);
+                  return;
+                }
+                
+                // 处理错误响应
+                const code = String(resp?.code ?? resp?.errno ?? resp?.error ?? '');
+                const message = resp?.message ?? resp?.errmsg ?? resp?.error_description ?? '登录失败';
+                
+                console.error('[Auth] 响应中未找到 access_token,判定为登录失败');
+
+                // 用户未注册
+                if (authErrorMap[code] && authErrorMap[code].includes('未注册')) {
+                  console.log('[Auth] 用户未注册，跳转到注册页面');
                   wxApi.reLaunch({
-                    url: '/pages/register/index',
+                    url: '/pages/user/register/index',
                   });
                   reject({
                     code,
-                    message: message || '用户未注册',
+                    message: authErrorMap[code] || message,
                     needRegister: true
                   });
                   return;
                 }
 
                 // 其他业务错误
-                console.log('[Auth] 业务错误:', { code, message });
-                reject(requestRes.data);
+                console.error('[Auth] 登录失败:', { code, message });
+                reject({ code, message, data: resp });
               },
               fail(err) {
                 console.error('[Auth] 请求失败:', err);
@@ -96,10 +111,12 @@ class AuthorizationHandler {
             });
           },
           fail(err) {
+            console.error('[Auth] wx.login 失败:', err);
             reject(err);
           },
         });
       } catch (error) {
+        console.error('[Auth] login 异常:', error);
         reject(error);
       }
     });
@@ -112,7 +129,7 @@ class AuthorizationHandler {
       
       const wxApi = getWxApi();
       wxApi.reLaunch({
-        url: `/pages/errpage/errpage?text=${errmsg}`,
+        url: `/pages/system/error/errpage?text=${errmsg}`,
       });
     } catch (error) {
       console.error('logout 失败:', error);
@@ -133,8 +150,8 @@ class AuthorizationHandler {
         .join('&');
       
       const url = queryString 
-        ? `/pages/register/index?${queryString}`
-        : '/pages/register/index';
+        ? `/pages/user/register/index?${queryString}`
+        : '/pages/user/register/index';
       
       console.log('[Auth] 跳转到注册页面:', url);
       wxApi.reLaunch({ url });
@@ -164,8 +181,9 @@ class AuthorizationHandler {
 
         console.log('[Auth] 使用 refresh_token 刷新 token');
 
+        // 使用新的 IAM authn API
         wxApi.request({
-          url: `${config.iamHost}/auth/refresh_token?display=json`,
+          url: `${config.iamHost}/authn/refresh_token`,
           data: {
             refresh_token: refreshToken
           },
@@ -175,35 +193,58 @@ class AuthorizationHandler {
           success(requestRes) {
             console.log('[Auth] 刷新 token 响应:', requestRes);
 
-            const resp = requestRes.data || {};
-            const code = String(resp?.code ?? resp?.errno ?? '');
-            const message = resp?.message ?? resp?.errmsg ?? '';
-            const data = resp?.data;
+            // 检查 HTTP 状态码
+            if (requestRes.statusCode !== 200) {
+              console.error('[Auth] 刷新失败 HTTP 错误:', requestRes.statusCode);
+              reject({
+                statusCode: requestRes.statusCode,
+                message: '刷新令牌失败',
+                needRelogin: true
+              });
+              return;
+            }
 
-            // 刷新成功
-            if (!code || code === '0') {
-              if (data) {
-                // 使用 tokenStore 更新 token
-                setToken(data);
-                
-                const newAccessToken = data?.access_token ?? data?.token ?? data;
-                resolve(newAccessToken);
-                return;
-              }
+            const resp = requestRes.data || {};
+
+            // IAM 新接口直接返回 token 数据
+            if (resp.access_token) {
+              console.log('[Auth] Token 刷新成功，响应数据:', {
+                hasAccessToken: !!resp.access_token,
+                hasRefreshToken: !!resp.refresh_token,
+                tokenType: resp.token_type,
+                expiresIn: resp.expires_in
+              });
+              
+              // 使用 tokenStore 更新 token
+              setToken(resp);
+              
+              // 验证 token 是否保存成功
+              const savedAccessToken = getAccessToken();
+              const savedRefreshToken = getRefreshToken();
+              console.log('[Auth] Token 保存后验证:', {
+                savedAccessToken: savedAccessToken?.substring(0, 20) + '...',
+                savedRefreshToken: savedRefreshToken?.substring(0, 20) + '...'
+              });
+              
+              resolve(resp.access_token);
+              return;
             }
 
             // 刷新失败
+            const code = String(resp?.code ?? resp?.errno ?? resp?.error ?? '');
+            const message = resp?.message ?? resp?.errmsg ?? resp?.error_description ?? '刷新失败';
+            
             console.error('[Auth] Token 刷新失败:', { code, message });
             reject({ code, message, needRelogin: true });
           },
           fail(err) {
             console.error('[Auth] Token 刷新请求失败:', err);
-            reject(err);
+            reject({ ...err, needRelogin: true });
           }
         });
       } catch (error) {
         console.error('[Auth] Token 刷新异常:', error);
-        reject(error);
+        reject({ error, needRelogin: true });
       }
     });
   }

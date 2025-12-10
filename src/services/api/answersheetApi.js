@@ -1,6 +1,14 @@
+/**
+ * 答卷 API（旧接口）
+ * 仍在部分页面使用，保留
+ */
+
 import { request } from '../servers';
 
-
+/**
+ * 获取答卷详情（原始数据）
+ * 在 answersheet 页面使用
+ */
 export const getAnswersheet = (id) => {
   return new Promise((resolve, reject) => {
     request('/readAnswerSheet/original', { answersheetid: id }, { isNeedLoading: true })
@@ -48,10 +56,18 @@ export const getAnswersheet = (id) => {
   })
 }
 
+/**
+ * 通过 signid 获取答卷 ID
+ * 在 questionsheet 页面使用
+ */
 export const getAnswersheetidBySignid = (signid) => {
   return request("/answersheet/GetAnswerSheetId", { signid }, { isNeedLoading: true })
 }
 
+/**
+ * 获取答卷列表
+ * 在 answersheetList 页面使用
+ */
 export const getAnswersheetList = (testeeId, limit) => {
   return request("/readAnswerSheet/list", {
     'testeeid': testeeId,
@@ -61,5 +77,6 @@ export const getAnswersheetList = (testeeId, limit) => {
 
 export default {
   getAnswersheet,
+  getAnswersheetidBySignid,
   getAnswersheetList,
 }

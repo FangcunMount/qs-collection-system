@@ -1,15 +1,16 @@
 export default {
   pages: [
-    'pages/home/index',
-    'pages/questionsheet/index',
-    'pages/answersheetList/index',
-    'pages/answersheet/index',
-    'pages/analysis/index',
-    'pages/register/index',
-    'pages/registerChild/index',
-    'pages/childrenList/index',
-    'pages/testeeEditor/index',
-    'pages/errpage/errpage',
+    'pages/home/index/index',
+    'pages/questionnaire/list/index',
+    'pages/questionnaire/fill/index',
+    'pages/answersheet/list/index',
+    'pages/answersheet/detail/index',
+    'pages/answersheet/analysis/index',
+    'pages/user/register/index',
+    'pages/testee/register/index',
+    'pages/testee/list/index',
+    'pages/testee/editor/index',
+    'pages/system/error/errpage',
   ],
   window: {
     backgroundTextStyle: 'light',
@@ -17,6 +18,6 @@ export default {
     navigationBarTitleText: 'WeChat',
     navigationBarTextStyle: 'black'
   },
-  entryPagePath: "pages/home/index",
+  entryPagePath: "pages/home/index/index",
   "__usePrivacyCheck__": true
 }

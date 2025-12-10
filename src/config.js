@@ -9,22 +9,22 @@ const configMap = {
     domain: 'yangshujie.com',
     // 开发环境：使用内网IP代替localhost，或勾选"不校验合法域名"
     // 将下面的 192.168.x.x 替换为您的实际内网IP
-    iamHost: 'http://192.168.193.1:8080/api/v1',  // 请替换为实际IP
-    collectionHost: 'https://collection.dev.yangshujie.com/api/v1'
+    iamHost: 'https://iam.yangshujie.com/api/v1',  // 请替换为实际IP
+    collectionHost: 'https://collect.yangshujie.com/api/v1'
   },
   // 体验版
   trial: {
     appId: 'wx72ade250b619a649',
     domain: 'yangshujie.com',
     iamHost: 'https://iam.yangshujie.com/api/v1',
-    collectionHost: 'https://collection.staging.yangshujie.com/api/v1'
+    collectionHost: 'https://collect.staging.yangshujie.com/api/v1'
   },
   // 线上版
   release: {
     appId: 'wx72ade250b619a649',
     domain: 'yangshujie.com',
     iamHost: 'https://iam.yangshujie.com/api/v1',
-    collectionHost: 'https://collection.yangshujie.com/api/v1'
+    collectionHost: 'https://collect.yangshujie.com/api/v1'
   }
 };
 

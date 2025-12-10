@@ -38,6 +38,7 @@ export type TesteeInput = Partial<Testee> & {
   childid?: string | number;
   testeeid?: string | number;
   name?: string;
+  legal_name?: string;
   testee_name?: string;
   sex?: string | number;
   birthday?: string;
@@ -144,10 +145,18 @@ function normalizeTestee(testee: TesteeInput): Testee | null {
     return null;
   }
 
-  // 兼容多种姓名字段
-  const legalName = testee.legalName ?? testee.name ?? testee.testee_name ?? '';
+  // 兼容多种姓名字段（包括下划线和驼峰格式）
+  const legalName = testee.legalName ?? (testee as any).legal_name ?? testee.name ?? testee.testee_name ?? '';
   
-  console.log('[TesteeStore] normalizeTestee 处理中:', { id, legalName });
+  console.log('[TesteeStore] normalizeTestee 处理中:', { 
+    id, 
+    legalName,
+    raw: { 
+      legalName: testee.legalName, 
+      legal_name: (testee as any).legal_name,
+      name: testee.name 
+    }
+  });
 
   // 兼容多种性别字段
   let gender: number | undefined;
@@ -426,7 +435,64 @@ export function subscribeTesteeStore(listener: Listener): () => void {
 }
 
 /**
+ * 从 IAM 加载儿童列表
+ */
+export async function loadChildrenFromIAM(): Promise<Testee[]> {
+  console.log('[TesteeStore] 从 IAM 加载儿童列表');
+  
+  try {
+    const { getMyChildren } = await import('../services/api/iamIdentityApi');
+    const response = await getMyChildren();
+    console.log('[TesteeStore] IAM 响应:', response);
+    
+    // 转换 IAM children 格式到 testee 格式
+    const children = response?.items || [];
+    const testees = children.map((child: any) => ({
+      id: String(child.id),
+      legalName: child.legal_name || '',
+      gender: child.gender,
+      dob: child.dob || '',
+      idType: child.id_type,
+      idNo: child.id_no,
+      idMasked: child.id_masked,
+      relation: child.relation,
+      heightCm: child.height_cm,
+      weightKg: child.weight_kg,
+      createdAt: child.created_at,
+      updatedAt: child.updated_at
+    }));
+    
+    console.log('[TesteeStore] 从 IAM 加载了', testees.length, '个儿童');
+    return testees;
+  } catch (error) {
+    console.error('[TesteeStore] 从 IAM 加载儿童失败:', error);
+    throw error;
+  }
+}
+
+/**
+ * 从 Collection 加载受试者列表
+ */
+export async function loadTesteesFromCollection(): Promise<Testee[]> {
+  console.log('[TesteeStore] 从 Collection 加载受试者列表');
+  
+  try {
+    const { getMyTestees } = await import('../services/api/testeeApi');
+    const response = await getMyTestees();
+    console.log('[TesteeStore] Collection 响应:', response);
+    
+    const testees = response?.items || [];
+    console.log('[TesteeStore] 从 Collection 加载了', testees.length, '个受试者');
+    return testees;
+  } catch (error) {
+    console.error('[TesteeStore] 从 Collection 加载受试者失败:', error);
+    throw error;
+  }
+}
+
+/**
  * 初始化 TesteeStore
+ * 优先从 IAM 加载儿童列表，如果失败则尝试旧接口
  */
 export async function initTesteeStore(force: boolean = false): Promise<TesteeStoreState> {
   // 如果已初始化且不强制刷新，直接返回
@@ -468,19 +534,18 @@ export async function initTesteeStore(force: boolean = false): Promise<TesteeSto
     }
 
     // 从服务器加载最新数据
-    console.log('[TesteeStore] 从服务器加载受试者列表');
-    const { getChildList } = await import('../services/api/user');
-    const response = await getChildList();
-    console.log('[TesteeStore] API 响应:', response);
+    let list: Testee[] = [];
     
-    // 兼容不同的响应格式
-    const list = Array.isArray(response)
-      ? response
-      : (response?.items || response?.data?.items || response?.data || response?.list || response?.children || []);
+    try {
+      // 使用新的 IAM API 加载儿童列表
+      console.log('[TesteeStore] 从 IAM 加载儿童列表');
+      list = await loadChildrenFromIAM();
+    } catch (iamError) {
+      console.error('[TesteeStore] IAM 加载失败:', iamError);
+      throw iamError;
+    }
     
-    console.log('[TesteeStore] 解析后的列表:', list);
-    console.log('[TesteeStore] 列表长度:', list.length);
-
+    console.log('[TesteeStore] 解析后的列表长度:', list.length);
     setTesteeList(list);
     
     state.isInitialized = true;
@@ -552,7 +617,11 @@ const TesteeStore = {
   
   // 初始化
   initTesteeStore,
-  refreshTesteeList
+  refreshTesteeList,
+  
+  // IAM & Collection 集成
+  loadChildrenFromIAM,
+  loadTesteesFromCollection
 };
 
 export default TesteeStore;

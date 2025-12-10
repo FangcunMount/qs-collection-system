@@ -2,13 +2,17 @@ import { boolToOneZero } from '../../util';
 import { request } from '../servers';
 import { getSelectedTesteeId } from '../../store';
 
+// 获取量表列表
+export const getQuestionsheetList = () => {
+  return request('/questionsheet/list', {}, { method: 'GET' })
+}
 
 export const getQuestionsheet = (code) => {
   return new Promise((resolve, reject) => {
     request('/questionsheet/one', { code })
       .then((result) => {
         let currentQuestionIndex = 1;
-        result.questionsheet.questions = result.questionsheet.questions.map((v, i) => {
+        result.questionsheet.questions = result.questionsheet.questions.map((v) => {
           // section 题型需要跳过（无需题号）
           if (v.type === "Section") {
             return v;
@@ -90,6 +94,7 @@ export const postQuestionsheet = (questionsheet, writer_role_code, signid) => {
 }
 
 export default {
+  getQuestionsheetList,
   getQuestionsheet,
   postQuestionsheet
 }

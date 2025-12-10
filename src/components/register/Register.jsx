@@ -9,9 +9,9 @@ import RegisterChild from "./widget/registerChild";
 import RegisterFooter from "./widget/registerFooter";
 import NeedDialog from "../needDialog";
 
-import { postChildRegister } from "../../services/api/register";
+import { registerChildComplete } from "../../services/registerService.ts";
 import { useSubmit } from "../../util/useUtil";
-import { addTestee, setSelectedTesteeId } from "../../store/testeeStore.ts";
+import { setSelectedTesteeId } from "../../store/testeeStore.ts";
 import { registerUser } from "./model";
 import { authorizationHandler } from "../../util/authorization";
 import config from "../../config";
@@ -135,7 +135,7 @@ const Register = ({ type, goUrl, submitClose }) => {
         
         // login 方法已经通过 tokenStore 保存了完整的 token 数据
         // 使用 reLaunch 以清空页面栈，回到首页
-        Taro.reLaunch({ url: '/pages/home/index' });
+        Taro.reLaunch({ url: '/pages/home/index/index' });
         return;
       } catch (loginErr) {
         console.warn('[Register] 自动登录失败，回退到原有跳转逻辑', loginErr);
@@ -162,28 +162,29 @@ const Register = ({ type, goUrl, submitClose }) => {
   const registerChild = async () => {
     try {
       console.log('[Register] 注册受试者');
+      // 准备注册数据 - registerService 需要特定的字段名
       const childPayload = {
-        legalName: childInfo.legalName,
-        gender: childInfo.gender,
-        dob: childInfo.dob,
+        name: childInfo.legalName,           // 映射到 name
+        birthday: childInfo.dob,              // 映射到 birthday
+        sex: childInfo.gender,                // 映射到 sex
         idType: childInfo.idType,
-        idNo: childInfo.idNo,
-        relation: childInfo.relation
+        idNo: childInfo.idNo
       };
       
       // 添加可选字段
-      if (childInfo.heightCm !== null) {
-        childPayload.heightCm = childInfo.heightCm;
+      if (childInfo.heightCm !== null && childInfo.heightCm !== '') {
+        childPayload.heightCm = Number(childInfo.heightCm);
       }
       if (childInfo.weightKg) {
-        childPayload.weightKg = childInfo.weightKg;
-      };
+        childPayload.weightKg = Number(childInfo.weightKg);
+      }
       
-      const childRes = await postChildRegister(childPayload);
-      console.log('[Register] 受试者注册成功:', childRes);
-
-      // 兼容 register API 返回的规范化对象 { code, message, data }
-      const childData = childRes && childRes.data ? childRes.data : childRes;
+      console.log('[Register] 准备调用 registerService, payload:', childPayload);
+      
+      // 使用新的 registerService 完成完整的注册流程
+      // 这会自动处理 IAM 注册 → Collection 创建 → Store 更新
+      const { childId, testeeId } = await registerChildComplete(childPayload);
+      console.log('[Register] 受试者注册成功, childId:', childId, 'testeeId:', testeeId);
 
       // 检查组件是否仍然挂载
       if (!isMountedRef.current) {
@@ -191,17 +192,9 @@ const Register = ({ type, goUrl, submitClose }) => {
         return;
       }
 
-      // 注册成功后的处理
-      if (childData?.childid || childData?.id) {
-        const childId = childData.childid || childData.id;
-        const newTestee = {
-          id: childId,
-          name: childInfo.legalName
-        };
-        addTestee(newTestee);
-        setSelectedTesteeId(childId);
-        afterSubmit();
-      }
+      // 设置当前选中的受试者
+      setSelectedTesteeId(testeeId);
+      afterSubmit();
     } catch (error) {
       console.error('[Register] 受试者注册失败:', error);
       
@@ -238,8 +231,17 @@ const Register = ({ type, goUrl, submitClose }) => {
   const afterSubmit = () => {
     if (submitClose) {
       setNeedCloseFlag(true);
-    } else {
+    } else if (goUrl) {
       Taro.redirectTo({ url: goUrl });
+    } else {
+      // 根据注册类型跳转到不同页面
+      if (isUserRegister) {
+        // 用户注册成功，返回上一页或首页
+        Taro.navigateBack({ delta: 1 });
+      } else {
+        // 受试者注册成功，跳转到受试者列表页面
+        Taro.redirectTo({ url: '/pages/testee/list/index' });
+      }
     }
   };
 

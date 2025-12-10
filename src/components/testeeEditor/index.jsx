@@ -6,7 +6,7 @@ import { AtButton } from "taro-ui";
 
 import "./index.less";
 import { findTesteeById, updateTestee } from "../../store/testeeStore.ts";
-import { patchChildInfo } from "../../services/api/user";
+import { updateChild } from "../../services/api/iamIdentityApi";
 
 /**
  * 受试者信息编辑组件
@@ -107,7 +107,7 @@ const TesteeEditor = ({ testeeId, onSuccess, onCancel }) => {
         payload.weightKg = String(editableData.weightKg);
       }
 
-      await patchChildInfo(testeeId, payload);
+      await updateChild(testeeId, payload);
       
       // 更新本地 store
       const updatedTestee = {

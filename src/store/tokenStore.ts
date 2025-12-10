@@ -125,8 +125,22 @@ function loadFromStorage(): TokenData | null {
  */
 function saveToStorage(tokenData: TokenData): void {
   try {
+    console.log('[TokenStore] 准备保存到本地存储:', {
+      hasAccessToken: !!tokenData.access_token,
+      hasRefreshToken: !!tokenData.refresh_token,
+      accessTokenLength: tokenData.access_token?.length,
+      refreshTokenLength: tokenData.refresh_token?.length
+    });
     Taro.setStorageSync(STORAGE_KEY, tokenData);
     console.log('[TokenStore] Token 已保存到本地存储');
+    
+    // 验证保存是否成功
+    const verified = Taro.getStorageSync(STORAGE_KEY);
+    console.log('[TokenStore] 保存验证:', {
+      saved: !!verified,
+      hasAccessToken: !!verified?.access_token,
+      hasRefreshToken: !!verified?.refresh_token
+    });
   } catch (e) {
     console.error('[TokenStore] 保存到本地存储失败:', e);
   }
@@ -208,9 +222,14 @@ export function setToken(token: TokenInput, refreshToken?: string): void {
     return;
   }
 
-  // 保留旧的 created_at
+  // 保留旧的 created_at（如果是第一次设置）
   if (state.tokenData?.created_at && !('created_at' in (token as object))) {
     tokenData.created_at = state.tokenData.created_at;
+  }
+  
+  // 强制更新 updated_at 为当前时间（除非明确传入了 updated_at）
+  if (!('updated_at' in (token as object))) {
+    tokenData.updated_at = Date.now();
   }
 
   state.tokenData = tokenData;
@@ -288,6 +307,17 @@ export function isTokenExpired(advanceTime: number = 5 * 60 * 1000): boolean {
 
   const now = Date.now();
   const expireTime = (tokenData.updated_at || tokenData.created_at) + tokenData.expires_in * 1000;
+  const remaining = expireTime - advanceTime - now;
+  
+  console.log('[TokenStore] Token 过期检查:', {
+    now: new Date(now).toISOString(),
+    updated_at: new Date(tokenData.updated_at || tokenData.created_at).toISOString(),
+    expires_in: tokenData.expires_in + '秒',
+    expireTime: new Date(expireTime).toISOString(),
+    advanceTime: advanceTime / 1000 + '秒',
+    remaining: Math.floor(remaining / 1000) + '秒',
+    isExpired: now >= expireTime - advanceTime
+  });
   
   return now >= expireTime - advanceTime;
 }

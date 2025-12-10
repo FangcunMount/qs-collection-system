@@ -1,4 +1,4 @@
-import { getUserInfo as fetchUserProfile } from '../services/api/user';
+import { getMe } from '../services/api/iamIdentityApi';
 
 const namespace = 'user';
 
@@ -78,25 +78,44 @@ const put = ({ type, payload }) => dispatch(type, payload);
 
 const effects = {
   async getUserInfo(_, helpers = { call, put }) {
-    const response = await helpers.call(fetchUserProfile);
+    // 使用新的 IAM Identity API
+    const response = await helpers.call(getMe);
     if (!response) {
       return null;
     }
+    
+    // 转换 IAM 用户数据格式
+    const userInfo = {
+      id: response.id,
+      name: response.nickname || response.legal_name || '',
+      picture: response.avatar_url || '',
+      nickname: response.nickname,
+      legalName: response.legal_name,
+      avatarUrl: response.avatar_url,
+      mobile: response.mobile,
+      email: response.email,
+      status: response.status,
+      createdAt: response.created_at,
+      updatedAt: response.updated_at
+    };
+    
     helpers.put({
       type: 'save',
       payload: {
-        userInfo: response,
+        currentUser: response,
+        userInfo: userInfo,
         clinic: response?.clinic || state.clinic,
         roles: response?.roles || state.roles
       }
     });
-    return response;
+    return userInfo;
   },
   async fetch(_, helpers = { call, put }) {
     return effects.getUserInfo(_, helpers);
   },
   async fetchCurrent(_, helpers = { call, put }) {
-    const response = await helpers.call(fetchUserProfile);
+    // 使用新的 IAM Identity API
+    const response = await helpers.call(getMe);
     if (response) {
       helpers.put({ type: 'saveCurrentUser', payload: response });
     }

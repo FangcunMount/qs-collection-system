@@ -43,15 +43,20 @@ export async function request(url, params = {}, options = {}) {
 
   // 加载 token，优先使用环境变量中的 token，其次使用全局数据中的 token
   const token = loadToken()
-  console.log("........[Request] 请求参数:", requestParams, "Token:", token);
+  console.log("........[Request] 请求参数:", requestParams);
+  console.log("........[Request] Token 状态:", { hasToken: !!token, tokenLength: token?.length, needToken: requestParams.needToken });
 
   if (requestParams.needToken && !token) {
+    console.log('[Request] 未找到 token，开始自动登录...');
     return new Promise((resolve, reject) => {
       authorizationHandler.login({appId: config.appId}).then((res) => {
-        console.log('[Request] 自动登录成功，token:', res);
-        requestParams.header['Authorization'] = `Bearer ${res}`;
+        console.log('[Request] 自动登录成功，access_token:', res?.substring(0, 20) + '...');
         
-        // login 方法已经通过 tokenStore 保存了完整的 token 数据
+        // 验证 token 是否已保存
+        const verifyToken = loadToken();
+        console.log('[Request] 登录后验证 token:', { saved: !!verifyToken, length: verifyToken?.length });
+        
+        requestParams.header['Authorization'] = `Bearer ${res}`;
         
         baseRequest(requestParams)
           .then((result) => {
@@ -60,6 +65,7 @@ export async function request(url, params = {}, options = {}) {
             reject(err)
           });
       }).catch((err) => {
+        console.error('[Request] 自动登录失败:', err);
         Taro.showToast({ title: String(err?.errmsg ?? err?.message ?? '请求失败'), icon: 'none' })
         reject(err);
       });
@@ -96,23 +102,23 @@ async function ensureTokenRefreshed() {
 }
 
 function loadToken() {
-  console.log("[In Load Token]");
+  console.log("[Load Token] 开始加载 token");
   
   // 1. 优先从 config 获取
   const configToken = config.token 
   if (configToken != undefined && configToken !== null) {
-    console.info("[Load Token] 从 config 配置获取 token");
+    console.info("[Load Token] 从 config 配置获取 token, 长度:", configToken.length);
     return configToken
   }
 
   // 2. 从 tokenStore 获取
   const accessToken = getAccessToken();
   if (accessToken) {
-    console.info("[Load Token] 从 TokenStore 获取到 access_token");
+    console.info("[Load Token] 从 TokenStore 获取到 access_token, 长度:", accessToken.length);
     return accessToken;
   }
 
-  console.info("[Load Token] 未找到 token");
+  console.warn("[Load Token] ⚠️ 未找到 token");
   return null;
 }
 
@@ -127,11 +133,29 @@ function baseRequest(params, retryCount = 0) {
       complete: () => { params.isNeedLoading && Taro.hideLoading() },
       success: (res) => {
         const data = res.data || {};
+        
+        console.log('[BaseRequest] 原始响应:', {
+          statusCode: res.statusCode,
+          data: data,
+          dataType: typeof data,
+          hasDataField: 'data' in data,
+          dataKeys: Object.keys(data)
+        });
 
-        // 兼容新旧响应格式：优先使用 code/message，其次使用 errno/errmsg
+        // 兼容新旧响应格式:优先使用 code/message,其次使用 errno/errmsg
         const code = String(data?.code ?? data?.errno ?? '');
         const message = String(data?.message ?? data?.errmsg ?? '');
-        const payload = data?.data;
+        
+        // 兼容不同的响应格式:
+        // 1. 标准格式: { code, message, data: {...} } - 使用 data.data
+        // 2. 扁平格式: { field1, field2, ... } - 直接使用整个 data 对象
+        const payload = data?.data !== undefined ? data.data : data;
+        
+        console.log('[BaseRequest] 提取后的 payload:', {
+          payload: payload,
+          payloadType: typeof payload,
+          payloadKeys: payload ? Object.keys(payload) : null
+        });
 
         const authVerifyResult = errorHandler.handleAuthError(code)
         
