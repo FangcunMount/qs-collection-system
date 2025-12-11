@@ -21,10 +21,8 @@ import "./questionsheet.less";
 
 import SelectWriterRole from "./selectWriterRole";
 
-import {
-  getQuestionsheet,
-  postQuestionsheet
-} from "../../../../services/api/questionsheetApi";
+import { getQuestionnaire } from "../../../../services/api/questionnaireApi";
+import { submitQuestionsheet } from "../../../../services/api/questionsheetApi";
 import { useSubmit } from "../../../../util/useUtil";
 import { isEmpty } from "../../../../util/checkType";
 import { getLogger } from "../../../../util/log";
@@ -134,18 +132,25 @@ export default function QuestionSheet({
     setWriterRoles([]);
     setWriterRoleCode(null);
 
-    getQuestionsheet(id).then(result => {
-      setQuestionSheet(result.questionsheet);
+    getQuestionnaire(id).then(result => {
+      // 新 API 返回的数据结构不同，需要适配
+      setQuestionSheet(result.questionnaire || result);
 
       // 如果需要填写人，则初始化填写人
-      setWriterRoles(
-        result.writer_roles.map(v => ({
-          label: v.name,
-          value: v.code
-        }))
-      );
+      if (result.writer_roles && result.writer_roles.length > 0) {
+        setWriterRoles(
+          result.writer_roles.map(v => ({
+            label: v.name,
+            value: v.code
+          }))
+        );
+      }
 
       Taro.hideLoading();
+    }).catch(error => {
+      console.error('加载问卷失败:', error);
+      Taro.hideLoading();
+      Taro.showToast({ title: '加载问卷失败', icon: 'none' });
     });
   };
 
@@ -365,14 +370,14 @@ export default function QuestionSheet({
         subSignid
       });
 
-      const res = await postQuestionsheet(
+      const res = await submitQuestionsheet(
         submitData,
         writerRoleCode,
         subSignid
       );
-      if (res.answersheetid) {
+      if (res.id) {
         Taro.showToast({ title: "提交成功", icon: "success", mask: true });
-        writedCallback(res.answersheetid);
+        writedCallback(res.id);
       }
     },
     options: {

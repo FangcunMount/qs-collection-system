@@ -445,24 +445,33 @@ export async function loadChildrenFromIAM(): Promise<Testee[]> {
     const response = await getMyChildren();
     console.log('[TesteeStore] IAM 响应:', response);
     
-    // 转换 IAM children 格式到 testee 格式
+    // 转换 IAM children 格式到 testee 格式（兼容驼峰和下划线格式）
     const children = response?.items || [];
-    const testees = children.map((child: any) => ({
-      id: String(child.id),
-      legalName: child.legal_name || '',
-      gender: child.gender,
-      dob: child.dob || '',
-      idType: child.id_type,
-      idNo: child.id_no,
-      idMasked: child.id_masked,
-      relation: child.relation,
-      heightCm: child.height_cm,
-      weightKg: child.weight_kg,
-      createdAt: child.created_at,
-      updatedAt: child.updated_at
-    }));
+    console.log('[TesteeStore] 原始 children 数据:', children);
     
-    console.log('[TesteeStore] 从 IAM 加载了', testees.length, '个儿童');
+    const testees = children.map((child: any) => {
+      const testee = {
+        id: String(child.id),
+        legalName: child.legalName || child.legal_name || '',
+        gender: child.gender,
+        dob: child.dob || '',
+        idType: child.idType || child.id_type,
+        idNo: child.idNo || child.id_no,
+        idMasked: child.idMasked || child.id_masked,
+        relation: child.relation,
+        heightCm: child.heightCm || child.height_cm,
+        weightKg: child.weightKg || child.weight_kg,
+        createdAt: child.createdAt || child.created_at,
+        updatedAt: child.updatedAt || child.updated_at
+      };
+      console.log('[TesteeStore] 转换单个 child:', { 
+        原始: { id: child.id, legalName: child.legalName, legal_name: child.legal_name },
+        结果: { id: testee.id, legalName: testee.legalName }
+      });
+      return testee;
+    });
+    
+    console.log('[TesteeStore] 从 IAM 加载了', testees.length, '个儿童, 转换后:', testees);
     return testees;
   } catch (error) {
     console.error('[TesteeStore] 从 IAM 加载儿童失败:', error);

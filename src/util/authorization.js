@@ -205,18 +205,21 @@ class AuthorizationHandler {
             }
 
             const resp = requestRes.data || {};
+            // 兼容两种返回格式:
+            // 1) 直接返回 token 字段: { access_token, refresh_token, ... }
+            // 2) 带 data 包裹: { code: 0, message: 'success', data: { access_token, ... } }
+            const payload = resp?.data ?? resp;
 
-            // IAM 新接口直接返回 token 数据
-            if (resp.access_token) {
+            if (payload?.access_token) {
               console.log('[Auth] Token 刷新成功，响应数据:', {
-                hasAccessToken: !!resp.access_token,
-                hasRefreshToken: !!resp.refresh_token,
-                tokenType: resp.token_type,
-                expiresIn: resp.expires_in
+                hasAccessToken: !!payload.access_token,
+                hasRefreshToken: !!payload.refresh_token,
+                tokenType: payload.token_type,
+                expiresIn: payload.expires_in
               });
               
               // 使用 tokenStore 更新 token
-              setToken(resp);
+              setToken(payload);
               
               // 验证 token 是否保存成功
               const savedAccessToken = getAccessToken();
@@ -226,7 +229,7 @@ class AuthorizationHandler {
                 savedRefreshToken: savedRefreshToken?.substring(0, 20) + '...'
               });
               
-              resolve(resp.access_token);
+              resolve(payload.access_token);
               return;
             }
 

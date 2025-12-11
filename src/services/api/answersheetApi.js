@@ -1,9 +1,27 @@
 /**
- * 答卷 API（旧接口）
- * 仍在部分页面使用，保留
+ * 答卷 API
  */
 
 import { request } from '../servers';
+import config from '../../config';
+
+/**
+ * 提交答卷（新 API）
+ * @param {Object} data - 答卷数据
+ * @param {Array} data.answers - 答案列表
+ * @param {string} data.questionnaire_code - 问卷编码
+ * @param {string} data.questionnaire_version - 问卷版本
+ * @param {number} data.testee_id - 受试者ID
+ * @param {string} data.title - 答卷标题（可选）
+ * @returns {Promise<{id: number, message: string}>}
+ */
+export const submitAnswersheet = (data) => {
+  return request('/answersheets', data, {
+    host: config.collectionHost,
+    method: 'POST',
+    needToken: true
+  });
+};
 
 /**
  * 获取答卷详情（原始数据）
@@ -76,6 +94,7 @@ export const getAnswersheetList = (testeeId, limit) => {
 }
 
 export default {
+  submitAnswersheet,
   getAnswersheet,
   getAnswersheetidBySignid,
   getAnswersheetList,

@@ -17,25 +17,25 @@ export const formatTime = date => {
 }
 
 export const getUrl = (url, host) => {
-  // 如果指定了 host，直接使用
-  if (host) {
-    return host + url + '?display=json';
-  }
-
   let baseUrl = ''
   
-  if (url.startsWith('/common')) {
+  // 如果指定了 host，直接使用
+  if (host) {
+    baseUrl = host + url;
+  } else if (url.startsWith('/common')) {
     // 通用 API
-    baseUrl = `https://api.${config.domain}${url.replace(new RegExp("/common"), '')}?display=json`
+    baseUrl = `https://api.${config.domain}${url.replace(new RegExp("/common"), '')}`
   } else if (url.startsWith('/user') || url.startsWith('/auth')) {
     // 用户相关接口：用户信息、认证、登录等
-    baseUrl = config.iamHost + url + '?display=json';
+    baseUrl = config.iamHost + url;
   } else {
     // 问卷相关接口：问卷、答卷、分析等（默认）
-    baseUrl = config.collectionHost + url + '?display=json';
+    baseUrl = config.collectionHost + url;
   }
 
-  return baseUrl
+  // 根据已有查询参数选择合适的连接符，避免出现 "...?a=1?b=2" 的错误
+  const separator = baseUrl.includes('?') ? '&' : '?';
+  return `${baseUrl}${separator}display=json`;
 }
 
 /**

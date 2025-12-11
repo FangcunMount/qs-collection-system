@@ -4,10 +4,8 @@ import Taro from "@tarojs/taro";
 
 import { AtButton } from "taro-ui";
 
-import {
-  getQuestionsheet,
-  postQuestionsheet
-} from "../../../../services/api/questionsheetApi";
+import { getQuestionnaire } from "../../../../services/api/questionnaireApi";
+import { submitQuestionsheet } from "../../../../services/api/questionsheetApi";
 import "./singlePageModel.less";
 import hollowRound from "../../../../assets/images/hollow-round.png";
 
@@ -46,8 +44,9 @@ export default props => {
     setWriterRoles([]);
     setWriterRoleCode(null);
 
-    getQuestionsheet(id).then(result => {
-      setQuestionSheet(result.questionsheet);
+    getQuestionnaire(id).then(result => {
+      // 新 API 返回的数据结构不同，需要适配
+      setQuestionSheet(result.questionnaire || result);
       setCurQuestionIndex(0);
 
       if (result.writer_roles && result.writer_roles.length > 0) {
@@ -62,6 +61,10 @@ export default props => {
       }
 
       Taro.hideLoading();
+    }).catch(error => {
+      console.error('加载问卷失败:', error);
+      Taro.hideLoading();
+      Taro.showToast({ title: '加载问卷失败', icon: 'none' });
     });
   };
 
@@ -245,10 +248,10 @@ export default props => {
 
     const submitData = clearData(questionSheet);
 
-    postQuestionsheet(submitData, writerRoleCode, subSignid)
+    submitQuestionsheet(submitData, writerRoleCode, subSignid)
       .then(result => {
         Taro.showToast({ title: "提交成功", icon: "success" });
-        writedCallback(result.answersheetid);
+        writedCallback(result.id);
       })
       .catch(err => {
         Taro.showToast({ title: String(err?.errmsg ?? err?.message ?? '提交失败'), icon: "none" });

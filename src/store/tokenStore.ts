@@ -230,6 +230,9 @@ export function setToken(token: TokenInput, refreshToken?: string): void {
   // 强制更新 updated_at 为当前时间（除非明确传入了 updated_at）
   if (!('updated_at' in (token as object))) {
     tokenData.updated_at = Date.now();
+    console.log('[TokenStore] 强制更新 updated_at:', new Date(tokenData.updated_at).toISOString());
+  } else {
+    console.log('[TokenStore] 保留传入的 updated_at:', new Date(tokenData.updated_at).toISOString());
   }
 
   state.tokenData = tokenData;
@@ -240,7 +243,10 @@ export function setToken(token: TokenInput, refreshToken?: string): void {
     hasAccessToken: !!tokenData.access_token,
     hasRefreshToken: !!tokenData.refresh_token,
     tokenType: tokenData.token_type,
-    expiresIn: tokenData.expires_in
+    expiresIn: tokenData.expires_in,
+    accessToken前20字符: tokenData.access_token?.substring(0, 20) + '...',
+    updated_at: new Date(tokenData.updated_at).toISOString(),
+    created_at: new Date(tokenData.created_at).toISOString()
   });
 }
 

@@ -23,11 +23,19 @@ export async function request(url, params = {}, options = {}) {
   
   // 请求前检查 token 是否即将过期
   if (options.needToken !== false) { // 默认需要 token
-    const token = loadToken();
-    if (token && isTokenExpired()) {
-      console.log('[Request] Token 即将过期，先刷新再请求');
+    const tokenBefore = loadToken();
+    if (tokenBefore && isTokenExpired()) {
+      console.log('[Request] Token 即将过期，先刷新再请求', {
+        tokenBefore: tokenBefore?.substring(0, 20) + '...'
+      });
       try {
-        await ensureTokenRefreshed();
+        const newToken = await ensureTokenRefreshed();
+        const tokenAfter = loadToken();
+        console.log('[Request] Token 刷新完成', {
+          newToken: newToken?.substring(0, 20) + '...',
+          tokenAfter: tokenAfter?.substring(0, 20) + '...',
+          isSame: newToken === tokenAfter
+        });
       } catch (error) {
         console.error('[Request] Token 刷新失败:', error);
         // 刷新失败继续执行，让后续逻辑处理
@@ -257,7 +265,7 @@ function interceptorsRequest(options) {
     url: options.url ?? defaultConfig.url,
     data: options.data ?? defaultConfig.data,
     header: options.header ?? defaultConfig.header,
-    method: options.method ?? defaultConfig.header,
+    method: options.method ?? defaultConfig.method,
     dataType: options.dataType ?? defaultConfig.dataType,
     responseType: options.responseType ?? defaultConfig.responseType,
     isNeedLoading: options.isNeedLoading ?? defaultConfig.isNeedLoading,
@@ -267,6 +275,11 @@ function interceptorsRequest(options) {
 
   // token 已在 request 函数中处理，这里只设置其他通用 header
   const token = loadToken();
+  console.log('[InterceptorsRequest] 设置 token 到 header', {
+    hasToken: !!token,
+    token: token?.substring(0, 20) + '...',
+    url: requestParam.url
+  });
   if (token) {
     requestParam.header['Authorization'] = `Bearer ${token}`;
   }
@@ -275,4 +288,3 @@ function interceptorsRequest(options) {
 
   return requestParam
 }
-

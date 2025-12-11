@@ -1,6 +1,7 @@
 import { boolToOneZero } from '../../util';
 import { request } from '../servers';
 import { getSelectedTesteeId } from '../../store';
+import { submitAnswersheet } from './answersheetApi';
 
 // 获取量表列表
 export const getQuestionsheetList = () => {
@@ -93,8 +94,86 @@ export const postQuestionsheet = (questionsheet, writer_role_code, signid) => {
   return request('/writeAnswerSheet/submit', submitData, { method: 'POST' })
 }
 
+/**
+ * 提交问卷答卷（使用新 API）
+ * @param {Object} questionsheet - 问卷数据
+ * @param {string} writer_role_code - 填写人角色代码（可选，暂不使用）
+ * @param {string} signid - 签名ID（可选，暂不使用）
+ * @returns {Promise<{id: number, message: string}>}
+ */
+/**
+ * 提交答卷 - 新 API 适配器
+ * @param {Object} questionsheet - 问卷数据
+ * @param {string} writer_role_code - 旧参数，保持兼容性，新 API 不使用
+ * @param {string} signid - 旧参数，保持兼容性，新 API 不使用
+ */
+// eslint-disable-next-line no-unused-vars
+export const submitQuestionsheet = async (questionsheet, writer_role_code, signid) => {
+  // 注意：writer_role_code 和 signid 参数保留是为了兼容旧调用方式，新 API 不使用这些参数
+  const selectedTesteeId = getSelectedTesteeId();
+  if (!selectedTesteeId) {
+    throw new Error('请先选择受试者');
+  }
+
+  // 转换答案格式：从旧格式转为新格式
+  const answers = questionsheet.answers
+    .filter(v => v.type !== 'Section') // 过滤掉章节
+    .map(v => {
+      let value = '';
+      
+      // 根据题目类型转换答案值
+      switch (v.type) {
+        case 'Radio':
+        case 'ScoreRadio':
+        case 'ImageRadio':
+        case 'Select':
+          // 单选：直接使用选中的 code
+          value = v.value || '';
+          break;
+          
+        case 'CheckBox':
+        case 'ImageCheckBox':
+          // 多选：将数组转为 JSON 字符串
+          value = JSON.stringify(v.value || []);
+          break;
+          
+        case 'Text':
+        case 'Textarea':
+        case 'Number':
+        case 'Date':
+          // 文本类：直接使用值
+          value = String(v.value || '');
+          break;
+          
+        default:
+          value = String(v.value || '');
+      }
+
+      return {
+        question_code: v.code,
+        question_type: v.type,
+        value: value,
+        score: v.score || 0
+      };
+    });
+
+  // 构建新 API 的请求数据
+  const requestData = {
+    questionnaire_code: questionsheet.code,
+    questionnaire_version: questionsheet.version || '1.0',
+    testee_id: parseInt(selectedTesteeId),
+    answers: answers,
+    title: questionsheet.name || questionsheet.title
+  };
+
+  console.log('[submitQuestionsheet] 提交数据:', requestData);
+
+  return submitAnswersheet(requestData);
+};
+
 export default {
   getQuestionsheetList,
   getQuestionsheet,
-  postQuestionsheet
+  postQuestionsheet,
+  submitQuestionsheet
 }

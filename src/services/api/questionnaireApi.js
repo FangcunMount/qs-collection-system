@@ -15,13 +15,17 @@ import config from '../../config';
  * @returns {Promise<{items: Array, total: number, page: number, page_size: number}>}
  */
 export const getQuestionnaires = (page = 1, pageSize = 20, status, title) => {
-  const params = { page, page_size: pageSize };
-  if (status) params.status = status;
-  if (title) params.title = title;
+  const queryParams = { page, page_size: pageSize };
+  if (status) queryParams.status = status;
+  if (title) queryParams.title = title;
   
-  return request('/questionnaires', {}, {
+  // 构建查询字符串
+  const queryString = Object.keys(queryParams)
+    .map(key => `${key}=${encodeURIComponent(queryParams[key])}`)
+    .join('&');
+  
+  return request(`/questionnaires?${queryString}`, {}, {
     host: config.collectionHost,
-    params,
     needToken: true
   });
 };
