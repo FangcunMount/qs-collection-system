@@ -1,68 +1,300 @@
+@import "../../../../styles/theme.less";
+
 .questionsheet {
   position: relative;
   box-sizing: border-box;
   width: 100%;
   height: 100%;
-  background-color: #478de2;
-  color: #fff;
-  padding: 0 80rpx 100rpx 80rpx;
+  background: @bg-section;
+  padding: @spacing-sm @spacing-lg 120rpx @spacing-lg;
+  padding-top: calc(@spacing-sm + env(safe-area-inset-top));
   display: flex;
   flex-direction: column;
 
-  .questionsheet-progress {
-    position: fixed;
-    top: 0;
-    left: 0;
+  // 进度信息
+  .progress-info {
+    margin-bottom: @spacing-sm;
+    
+    .progress-number {
+      font-size: 52rpx;
+      font-weight: 700;
+      color: @text-primary;
+      line-height: 1;
+      letter-spacing: -1rpx;
+    }
+  }
+
+  // 进度条容器
+  .progress-bar-container {
     height: 10rpx;
-    width: 100%;
-    background-color: antiquewhite;
-    transition: all ease .5s;
+    background: @border-light;
+    border-radius: 5rpx;
+    overflow: hidden;
+    margin-bottom: @spacing-xl;
+    box-shadow: @shadow-sm;
+    
+    .progress-bar {
+      height: 100%;
+      background: @gradient-primary;
+      border-radius: 5rpx;
+      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 0 8rpx rgba(24, 144, 255, 0.4);
+    }
   }
 
-  .questionsheet-title {
-    font-size: 50rpx;
-    margin: 60rpx 0 100rpx 0;
+  // 问题标题（页面顶部标题）
+  .questionnaire-title {
+    display: none;
   }
 
-  .questionsheet-icon1 {
-    position: absolute;
-    left: -50rpx;
-    top: 100rpx;
-    width: 200rpx;
+  .questionnaire-icon1 {
+    display: none;
   }
 
-  .questionsheet-icon2 {
-    position: absolute;
-    left: 0rpx;
-    bottom: 0rpx;
-    width: 100%;
-    height: 300rpx;
-    border-radius: 50% 30% 0 0;
-    opacity: 1;
-    background: linear-gradient(
-      90deg,
-      rgba(230, 114, 83, 1) 0%,
-      rgba(255, 163, 138, 1) 100%
-    );
-  }
-
+  // 问题卡片
   .question-card {
     color: #333;
     box-sizing: border-box;
-    height: 100%;
-    padding: 80rpx 30rpx;
-    background-color: #fff;
-    border: 1px solid #eee;
-    // border-radius: 20rpx;
+    flex: 1;
+    padding: 0;
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
     display: flex;
     flex-direction: column;
+    margin-top: 80rpx;
 
     .question {
       flex-grow: 1;
+      margin-bottom: 40rpx;
+      
+      // 问题标题样式优化
+      .question-title {
+        font-size: 38rpx;
+        font-weight: 600;
+        color: @text-primary;
+        margin-bottom: 40rpx;
+        line-height: 1.6;
+        letter-spacing: -0.5rpx;
+      }
+
+      // Radio/Checkbox 公共样式
+      .qs-radio__container,
+      .qs-checkbox__container,
+      .qs-select__container {
+        .item {
+          background: @bg-card;
+          border-radius: @radius-base;
+          padding: 28rpx @spacing-md;
+          margin-bottom: @spacing-sm;
+          border: 2rpx solid @border-light;
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow: @shadow-sm;
+          
+          &.is-checked {
+            background: @primary-light;
+            border-color: @primary-color;
+            box-shadow: 0 4rpx 12rpx rgba(24, 144, 255, 0.12);
+          }
+          
+          &:active {
+            opacity: 0.9;
+            transform: scale(0.98);
+          }
+        }
+      }
+
+      // Text/Textarea/Number/Date 公共样式
+      .qs-input,
+      .qs-textarea,
+      .qs-number,
+      .qs-date {
+        .input-field {
+          background: @bg-card;
+          border-radius: 12rpx;
+          padding: 20rpx @spacing-md;
+          border: 2rpx solid @border-light;
+          font-size: 28rpx;
+          transition: all 0.2s;
+          
+          &:focus,
+          &:active {
+            border-color: @primary-color;
+            box-shadow: 0 0 0 4rpx rgba(24, 144, 255, 0.1);
+          }
+        }
+      }
+
+      // Score Radio 样式
+      .qs-score-radio__container {
+        .score-item {
+          background: @bg-card;
+          border-radius: 12rpx;
+          padding: @spacing-sm 20rpx;
+          border: 2rpx solid @border-light;
+          margin-bottom: 12rpx;
+          transition: all 0.2s;
+          
+          &.is-checked {
+            background: @primary-light;
+            border-color: @primary-color;
+          }
+          
+          &:active {
+            opacity: 0.9;
+          }
+        }
+      }
+
+      // Image Radio/Checkbox 样式
+      .qs-image-radio__container,
+      .qs-image-checkbox__container {
+        .image-item {
+          border-radius: @radius-base;
+          overflow: hidden;
+          border: 3rpx solid @border-light;
+          transition: all 0.25s;
+          
+          &.is-checked {
+            border-color: @primary-color;
+            box-shadow: 0 0 0 6rpx rgba(24, 144, 255, 0.1);
+          }
+          
+          &:active {
+            transform: scale(0.98);
+          }
+        }
+      }
     }
 
     .btn-group {
       display: flex;
+      gap: @spacing-sm;
+      justify-content: center;
+      padding-top: @spacing-lg;
+      border-top: none;
+      
+      .at-button {
+        flex: 1;
+        max-width: 100%;
+        height: 88rpx;
+        font-size: 30rpx;
+        font-weight: 600;
+        border-radius: @radius-base;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      // 自定义按钮样式
+      .at-button--primary {
+        background: @gradient-primary;
+        color: @bg-card;
+        border: none;
+        box-shadow: 0 8rpx 16rpx rgba(24, 144, 255, 0.3);
+        
+        &:active {
+          opacity: 0.9;
+          box-shadow: 0 4rpx 12rpx rgba(24, 144, 255, 0.2);
+        }
+      }
+
+      .at-button--secondary {
+        background: @bg-card;
+        color: @primary-color;
+        border: 2rpx solid @primary-color;
+        
+        &:active {
+          background: @bg-section;
+          opacity: 0.9;
+        }
+      }
+    }
+  }
+
+  // 完成页面样式
+  .completion-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    justify-content: space-between;
+
+    .completion-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60rpx @spacing-lg;
+
+      .completion-icon {
+        font-size: 120rpx;
+        color: @primary-color;
+        margin-bottom: 40rpx;
+        font-weight: 700;
+        line-height: 1;
+        text-shadow: 0 0 40rpx rgba(24, 144, 255, 0.2);
+      }
+
+      .completion-title {
+        font-size: 48rpx;
+        font-weight: 700;
+        color: @text-primary;
+        margin-bottom: @spacing-sm;
+        text-align: center;
+        line-height: 1.4;
+      }
+
+      .completion-subtitle {
+        font-size: 28rpx;
+        color: @text-secondary;
+        text-align: center;
+        line-height: 1.5;
+      }
+    }
+
+    .btn-group {
+      display: flex;
+      gap: @spacing-sm;
+      justify-content: center;
+      padding: @spacing-lg 0 0 0;
+      border-top: none;
+      
+      .at-button {
+        flex: 1;
+        max-width: 100%;
+        height: 88rpx;
+        font-size: 30rpx;
+        font-weight: 600;
+        border-radius: @radius-base;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      // 自定义按钮样式
+      .at-button--primary {
+        background: @gradient-primary;
+        color: @bg-card;
+        border: none;
+        box-shadow: 0 8rpx 16rpx rgba(24, 144, 255, 0.3);
+        
+        &:active {
+          opacity: 0.9;
+          box-shadow: 0 4rpx 12rpx rgba(24, 144, 255, 0.2);
+        }
+      }
+
+      .at-button--secondary {
+        background: @bg-card;
+        color: @primary-color;
+        border: 2rpx solid @primary-color;
+        
+        &:active {
+          background: @bg-section;
+          opacity: 0.9;
+        }
+      }
     }
   }
 }

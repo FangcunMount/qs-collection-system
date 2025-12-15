@@ -6,12 +6,15 @@ import NeedDialog from "../../../components/needDialog";
 import SelectChildDialog from "./weight/selectChildDialog";
 import QuestionSheet from "./weight/questionsheet";
 import SinglePageModel from "./weight/singlePageModel";
+import InfoConfirm from "./components/InfoConfirm";
 import { initTesteeStore } from "../../../store/testeeStore.ts";
 
 import { paramsConcat, parsingScene } from "../../../util";
 import { getLogger } from "../../../util/log";
 import { getAnswersheetidBySignid } from "../../../services/api/answersheetApi";
 import { getMpEntryParams } from "../../../services/api/commonApi";
+import { getQuestionnaire } from "../../../services/api/questionnaireApi";
+import { getTestee } from "../../../services/api/testeeApi";
 import {
   getTesteeList as getStoredTesteeList,
   getSelectedTesteeId,
@@ -47,6 +50,11 @@ const handleEntryParams = params => {
 export default function Index() {
   const [questionsheetid, setQuestionsheetid] = useState(null);
   const [subSignid, setSubSignid] = useState("");
+  
+  // 新增状态
+  const [currentStep, setCurrentStep] = useState('loading'); // loading | confirm | filling
+  const [questionnaire, setQuestionnaire] = useState(null);
+  const [testeeInfo, setTesteeInfo] = useState(null);
 
   const canSubmit = true;
 
@@ -82,13 +90,63 @@ export default function Index() {
       signid && setSubSignid(signid);
       result.sp && setIsSinglePage(result.sp === "1");
 
-      beforeEach({ questionsheetCode, testeeid, signid }, () => {
+      beforeEach({ questionsheetCode, testeeid, signid }, async () => {
         setQuestionsheetid(questionsheetCode);
+        
+        // 加载问卷和受试者信息
+        await loadQuestionnaireAndTestee(questionsheetCode);
       });
     });
   }, []);
 
   useShareAppMessage(() => ({}));
+
+  /**
+   * 加载问卷和受试者信息
+   */
+  const loadQuestionnaireAndTestee = async (questionsheetCode) => {
+    try {
+      const selectedTesteeId = getSelectedTesteeId();
+      
+      if (!selectedTesteeId) {
+        Taro.hideLoading();
+        Taro.showToast({ title: '未选择受试者', icon: 'none' });
+        return;
+      }
+
+      // 并行加载问卷和受试者信息
+      const [questionnaireData, testeeData] = await Promise.all([
+        getQuestionnaire(questionsheetCode),
+        getTestee(selectedTesteeId)
+      ]);
+
+      setQuestionnaire(questionnaireData);
+      setTesteeInfo(testeeData);
+      setCurrentStep('confirm'); // 进入确认步骤
+      
+      Taro.hideLoading();
+    } catch (error) {
+      console.error('加载数据失败:', error);
+      Taro.hideLoading();
+      Taro.showToast({ title: '加载失败，请重试', icon: 'none' });
+    }
+  };
+
+  /**
+   * 确认信息，进入填写页面
+   */
+  const handleConfirmInfo = () => {
+    // 根据问卷类型和题目数量决定是否使用单页单题模式
+    const questionCount = questionnaire?.questions?.length || 0;
+    const questionnaireType = questionnaire?.type;
+    
+    // 医学量表且题目数少于20时，使用单页单题模式
+    if (questionnaireType === 'MedicalScale' && questionCount < 20 && !isSinglePage) {
+      setIsSinglePage(true);
+    }
+    
+    setCurrentStep('filling');
+  };
 
   const beforeEach = async (params, next) => {
     const { testeeid, signid } = params;
@@ -152,10 +210,41 @@ export default function Index() {
     return true;
   };
 
-  const writedCallback = answersheetid => {
-    Taro.redirectTo({
-      url: `/pages/answersheet/analysis/index?a=${answersheetid}`
+  /**
+   * 答卷提交成功回调
+   * 根据问卷类型跳转到不同页面：
+   * - Survey（调查问卷）：跳转到答卷详情页面
+   * - MedicalScale（医学量表）：跳转到解读报告页面
+   */
+  const writedCallback = (answersheetid, assessmentId) => {
+    const questionnaireType = questionnaire?.type;
+    const selectedTesteeId = getSelectedTesteeId();
+    
+    logger.RUN('[Fill] 答卷提交成功', { 
+      answersheetid, 
+      assessmentId,
+      questionnaireType,
+      testeeId: selectedTesteeId 
     });
+
+    if (questionnaireType === 'Survey') {
+      // 调查问卷：跳转到答卷详情页面
+      Taro.redirectTo({
+        url: `/pages/answersheet/detail/index?a=${answersheetid}`
+      });
+    } else if (questionnaireType === 'MedicalScale') {
+      // 医学量表：统一使用答卷ID跳转到解读报告页面
+      // 好处：无需依赖 testee_id 与 assessment_id，逻辑更稳健
+      Taro.redirectTo({
+        url: `/pages/analysis/index?a=${answersheetid}`
+      });
+    } else {
+      // 未知类型或旧数据：默认跳转到答卷详情页面
+      logger.WARN('[Fill] 问卷类型未知，默认跳转到答卷详情', { questionnaireType });
+      Taro.redirectTo({
+        url: `/pages/answersheet/detail/index?a=${answersheetid}`
+      });
+    }
   };
 
   const handleSelectChild = childid => {
@@ -184,20 +273,35 @@ export default function Index() {
         flag={needTesteeidFlag}
         content="暂无受试者，请联系客服。"
       ></NeedDialog>
-      {isSinglePage ? (
-        <SinglePageModel
-          questionsheetid={questionsheetid}
-          subSignid={subSignid}
-          writedCallback={writedCallback}
-          canSubmit={canSubmit}
-        ></SinglePageModel>
-      ) : (
-      <QuestionSheet
-        questionsheetid={questionsheetid}
-        subSignid={subSignid}
-        writedCallback={writedCallback}
-        canSubmit={canSubmit}
-      ></QuestionSheet>
+      
+      {/* 第一步：信息确认页面 */}
+      {currentStep === 'confirm' && (
+        <InfoConfirm
+          questionnaire={questionnaire}
+          testee={testeeInfo}
+          onConfirm={handleConfirmInfo}
+        />
+      )}
+      
+      {/* 第二步：问卷填写页面 */}
+      {currentStep === 'filling' && (
+        <>
+          {isSinglePage ? (
+            <SinglePageModel
+              questionsheetid={questionsheetid}
+              subSignid={subSignid}
+              writedCallback={writedCallback}
+              canSubmit={canSubmit}
+            />
+          ) : (
+            <QuestionSheet
+              questionsheetid={questionsheetid}
+              subSignid={subSignid}
+              writedCallback={writedCallback}
+              canSubmit={canSubmit}
+            />
+          )}
+        </>
       )}
 
       <PrivacyAuthorization />

@@ -1,0 +1,57 @@
+@import "../../styles/theme.less";
+
+.bottom-menu {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 160rpx; // 80px
+  padding-bottom: env(safe-area-inset-bottom);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  background: @bg-card;
+  border-top: 2rpx solid @border-base;
+  z-index: 50;
+  box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.04);
+}
+
+.menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  height: 100%;
+  padding-top: @spacing-sm;
+  transition: all 0.2s ease;
+  cursor: pointer;
+
+  &:active {
+    opacity: 0.7;
+  }
+}
+
+.menu-item__icon {
+  margin-bottom: @spacing-xs;
+  display: block;
+  transition: all 0.2s;
+}
+
+.menu-item__label {
+  font-size: 24rpx;
+  color: @text-secondary;
+  font-weight: 400;
+  display: block;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.menu-item.active .menu-item__label {
+  color: @primary-color;
+  font-weight: 600;
+}
+
+.menu-item.active .menu-item__icon {
+  transform: scale(1.15);
+}

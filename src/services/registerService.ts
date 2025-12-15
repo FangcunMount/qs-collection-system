@@ -86,16 +86,19 @@ export async function registerChildComplete(childData: ChildRegisterData): Promi
     console.log('[RegisterService] IAM 请求 payload:', iamPayload);
     const iamResponse = await registerChild(iamPayload);
     
-    console.log('[RegisterService] IAM 注册成功:', iamResponse);
+    console.log('[RegisterService] IAM 注册成功（原始）:', iamResponse);
     
     // 从响应中提取儿童信息
     const iamChild = iamResponse.child || iamResponse;
-    const childId = iamChild.id || iamChild.childId;
+    // ⚠️ 关键：立即转为字符串，防止 JavaScript 大数精度丢失
+    const childId = String(iamChild.id || iamChild.childId);
     
-    if (!childId) {
+    if (!childId || childId === 'undefined') {
       console.error('[RegisterService] IAM 响应中未找到 childId:', iamResponse);
       throw new Error('IAM 注册失败：未返回儿童ID');
     }
+    
+    console.log('[RegisterService] 提取的 childId（字符串）:', childId, '原始值:', iamChild.id);
     
     // Step 2: 在 Collection 创建受试者
     console.log('[RegisterService] Step 2: 在 Collection 创建受试者');
@@ -106,11 +109,12 @@ export async function registerChildComplete(childData: ChildRegisterData): Promi
     try {
       // 从 userStore 获取当前用户的 IAM ID
       const userInfo = getUserInfo();
-      const iamUserId = parseInt(userInfo?.id) || 0;
+      // 保持字符串格式，避免大数精度丢失
+      const iamUserId = String(userInfo?.id || '');
       
       const collectionPayload = {
         iam_user_id: iamUserId,
-        iam_child_id: parseInt(childId),
+        iam_child_id: String(childId),
         name: iamChild.legalName || iamChild.legal_name,
         gender: iamChild.gender,
         birthday: iamChild.dob,
@@ -122,9 +126,11 @@ export async function registerChildComplete(childData: ChildRegisterData): Promi
       console.log('[RegisterService] Collection 请求 payload:', collectionPayload);
       const testeeResponse = await createTestee(collectionPayload);
       
-      console.log('[RegisterService] Collection 创建成功:', testeeResponse);
+      console.log('[RegisterService] Collection 创建成功（原始）:', testeeResponse);
       testee = testeeResponse;
-      testeeId = testeeResponse.id || testeeResponse.testee_id;
+      // ⚠️ 关键：立即转为字符串
+      testeeId = String(testeeResponse.id || testeeResponse.testee_id);
+      console.log('[RegisterService] 提取的 testeeId（字符串）:', testeeId, '原始值:', testeeResponse.id);
     } catch (collectionError) {
       console.warn('[RegisterService] Collection 创建失败，继续使用 IAM 数据:', collectionError);
       // 即使 Collection 创建失败，也认为注册成功（因为 IAM 已成功）

@@ -1,0 +1,33 @@
+.total-score-section {
+  @import "../../../styles/theme.less";
+  margin: 24rpx 0;
+  
+  .total-score-badge {
+    display: inline-block;
+    background: @gradient-primary;
+    color: @bg-card;
+    font-size: 24rpx;
+    padding: 8rpx 20rpx;
+    border-radius: 20rpx;
+    margin-bottom: 24rpx;
+  }
+  
+  .total-score-display {
+    display: flex;
+    align-items: baseline;
+    margin-bottom: 16rpx;
+    
+    .score-number {
+      font-size: 72rpx;
+      font-weight: bold;
+      color: @primary-color;
+      line-height: 1;
+    }
+    
+    .score-label {
+      font-size: 28rpx;
+      color: @text-secondary;
+      margin-left: 16rpx;
+    }
+  }
+}

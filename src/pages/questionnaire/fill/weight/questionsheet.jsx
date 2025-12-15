@@ -30,19 +30,31 @@ import { getLogger } from "../../../../util/log";
 const PAGE_NAME = "question_sheet";
 const logger = getLogger(PAGE_NAME);
 
+/**
+ * 从新API的validation_rules数组中获取验证规则
+ */
+const getValidationRule = (rules, ruleType) => {
+  if (!rules || !Array.isArray(rules)) return null;
+  const rule = rules.find(r => r.rule_type === ruleType);
+  return rule ? rule.target_value : null;
+};
+
 export function checkQuestion(question) {
-  const required = question.validate_rules?.required;
-  const min_words = question.validate_rules?.min_words;
-  const max_words = question.validate_rules?.max_words;
-  const min_value = question.validate_rules?.min_value;
-  const max_value = question.validate_rules?.max_value;
-  const min_select = question.validate_rules?.min_select;
-  const max_select = question.validate_rules?.max_select;
+  // 适配新API的validation_rules结构
+  const validationRules = question.validation_rules || [];
+  const required = getValidationRule(validationRules, 'required');
+  const min_words = getValidationRule(validationRules, 'min_words');
+  const max_words = getValidationRule(validationRules, 'max_words');
+  const min_value = getValidationRule(validationRules, 'min_value');
+  const max_value = getValidationRule(validationRules, 'max_value');
+  const min_select = getValidationRule(validationRules, 'min_select');
+  const max_select = getValidationRule(validationRules, 'max_select');
+  
   const showIndex = question.title.split(".")[0];
   const value = question.value;
 
   // 必填验证
-  if (required && required === "1") {
+  if (required && (required === "1" || required === "true" || required === true)) {
     if (isEmpty(value)) {
       Taro.showToast({
         title: `第${showIndex}题为必填题`,
@@ -52,7 +64,7 @@ export function checkQuestion(question) {
     }
   }
 
-  if (min_words && value.length < min_words) {
+  if (min_words && value.length < Number(min_words)) {
     Taro.showToast({
       title: `第${showIndex}题最少字数为 ${min_words}，请检查答题内容`,
       icon: "none"
@@ -60,7 +72,7 @@ export function checkQuestion(question) {
     return false;
   }
 
-  if (max_words && value.length > max_words) {
+  if (max_words && value.length > Number(max_words)) {
     Taro.showToast({
       title: `第${showIndex}题最大字数为 ${max_words}，请检查答题内容`,
       icon: "none"
@@ -68,7 +80,7 @@ export function checkQuestion(question) {
     return false;
   }
 
-  if (min_value && Number(value) < min_value) {
+  if (min_value && Number(value) < Number(min_value)) {
     Taro.showToast({
       title: `第${showIndex}题最小值为 ${min_value}`,
       icon: "none"
@@ -77,7 +89,7 @@ export function checkQuestion(question) {
     return false;
   }
 
-  if (max_value && Number(value) > max_value) {
+  if (max_value && Number(value) > Number(max_value)) {
     Taro.showToast({
       title: `第${showIndex}题最大值为 ${max_value}`,
       icon: "none"
@@ -133,10 +145,17 @@ export default function QuestionSheet({
     setWriterRoleCode(null);
 
     getQuestionnaire(id).then(result => {
-      // 新 API 返回的数据结构不同，需要适配
-      setQuestionSheet(result.questionnaire || result);
+      logger.RUN('[QuestionSheet] 问卷数据加载成功:', {
+        code: result?.code,
+        title: result?.title,
+        questionsCount: result?.questions?.length,
+        hasQuestions: !!result?.questions
+      });
+      
+      // 新 API 返回的数据结构
+      setQuestionSheet(result);
 
-      // 如果需要填写人，则初始化填写人
+      // 如果需要填写人，则初始化填写人（目前新API暂不支持）
       if (result.writer_roles && result.writer_roles.length > 0) {
         setWriterRoles(
           result.writer_roles.map(v => ({
@@ -161,11 +180,21 @@ export default function QuestionSheet({
    */
 
   const getQuestionIsShow = showController => {
-    if (showController === "") return true;
+    if (showController === "" || !showController) return true;
+    
+    // 安全检查：确保 questionSheet 和 questions 已加载
+    if (!questionSheet || !questionSheet.questions) return true;
+    
+    // 安全检查：确保 showController.questions 存在
+    if (!showController.questions || !Array.isArray(showController.questions)) return true;
 
     const checkShowFlagByQuestions = showController.questions.map(v => {
       const i = questionSheet.questions.findIndex(q => q.code === v.code);
       const question = questionSheet.questions[i];
+      
+      // 安全检查：确保找到了问题
+      if (!question) return false;
+      
       if (!getQuestionIsShow(question.show_controller)) {
         return false;
       }
@@ -344,8 +373,10 @@ export default function QuestionSheet({
       getQuestionIsShow(v.show_controller)
     );
     return {
+      name: qs.name || qs.title,
       title: qs.title,
-      questionsheet_code: qs.code,
+      code: qs.code,
+      version: qs.version || '1.0',
       answers: tmpQuestions
     };
   };
@@ -377,7 +408,8 @@ export default function QuestionSheet({
       );
       if (res.id) {
         Taro.showToast({ title: "提交成功", icon: "success", mask: true });
-        writedCallback(res.id);
+        // 传递答卷 ID 和测评 ID（如果有）给回调函数
+        writedCallback(res.id, res.assessment_id);
       }
     },
     options: {
@@ -388,44 +420,49 @@ export default function QuestionSheet({
 
   return (
     <PageContainer scrollTop={scrollTop}>
-      <View className="qs-header__container">
-        <View className="qs-header__title">{questionSheet?.title}</View>
-        <View className="qs-header__tips s-text-secondary">
-          请认真填写以下内容，以便于我们为您做出准确的评估。
+      <View className="questionnaire-fill-wrapper">
+        <View className="qs-header__container">
+          <View className="qs-header__title">{questionSheet?.title}</View>
         </View>
+
+        {writerRoles.length > 0 ? (
+          <SelectWriterRole
+            roles={writerRoles}
+            roleCode={writerRoleCode}
+            changeRoleCode={setWriterRoleCode}
+          />
+        ) : null}
+
+        {questionSheet && questionSheet.questions
+          ? questionSheet.questions.map((v, i) => {
+              if (!getQuestionIsShow(v.show_controller)) {
+                return null;
+              }
+              // 计算实际题号（排除 Section 类型）
+              const questionNumber = questionSheet.questions
+                .slice(0, i)
+                .filter(q => q.type !== 'Section' && getQuestionIsShow(q.show_controller))
+                .length;
+              
+              return (
+                <View
+                  key={v.code}
+                  className="qs-question__container"
+                  id={`question-${i}`}
+                >
+                  {getQuestionComp(v, v.type === 'Section' ? undefined : questionNumber)}
+                </View>
+              );
+            })
+          : null}
+        {canSubmit ? (
+          <View className="qs-bottom">
+            <AtButton type="primary" full loading={subBtnLoading} onClick={handleSubmit}>
+              提交问卷
+            </AtButton>
+          </View>
+        ) : null}
       </View>
-
-      {writerRoles.length > 0 ? (
-        <SelectWriterRole
-          roles={writerRoles}
-          roleCode={writerRoleCode}
-          changeRoleCode={setWriterRoleCode}
-        />
-      ) : null}
-
-      {questionSheet && questionSheet.questions
-        ? questionSheet.questions.map((v, i) => {
-            if (!getQuestionIsShow(v.show_controller)) {
-              return null;
-            }
-            return (
-              <View
-                key={v.code}
-                className="qs-question__container"
-                id={`question-${i}`}
-              >
-                {getQuestionComp(v, i)}
-              </View>
-            );
-          })
-        : null}
-      {canSubmit ? (
-        <View className="qs-bottom">
-          <AtButton type="primary" full loading={subBtnLoading} onClick={handleSubmit}>
-            提交问卷
-          </AtButton>
-        </View>
-      ) : null}
     </PageContainer>
   );
 }

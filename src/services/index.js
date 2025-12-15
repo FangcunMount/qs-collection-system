@@ -12,9 +12,11 @@
 import questionsheetApi from "./api/questionsheetApi";
 import answersheetApi from "./api/answersheetApi";
 import analysisApi from "./api/analysisApi";
+import questionnaireApi from "./api/questionnaireApi";
 
 export default {
   ...questionsheetApi,
   ...answersheetApi,
-  ...analysisApi
+  ...analysisApi,
+  ...questionnaireApi
 };

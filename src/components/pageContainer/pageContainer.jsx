@@ -13,7 +13,6 @@ const PageContainer = props => {
         scroll-with-animation
         className='qs-page-container s-bg-primary'
       >
-        <View className='qs-header__banner s-color-secondary'></View>
         {props.children}
       </ScrollView>
     </View>

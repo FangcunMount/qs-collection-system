@@ -3,10 +3,15 @@ import { View } from "@tarojs/components";
 import { SiInputNumber } from "taro-ui-fc";
 
 import ShowContainer from "./widget/showContainer";
+import { isQuestionRequired, getValidationRule } from "../../pages/questionnaire/shared/utils";
 
 const QsNumber = props => {
   const { item, index, disabled } = props;
   const { onChangeValue } = props;
+
+  const validationRules = item.validation_rules || [];
+  const minValue = getValidationRule(validationRules, 'min_value');
+  const maxValue = getValidationRule(validationRules, 'max_value');
 
   const handleChange = v => {
     onChangeValue(v, index);
@@ -16,13 +21,13 @@ const QsNumber = props => {
       title={item.title}
       tips={item.tips}
       index={index}
-      required={item?.validate_rules?.required == "1"}
+      required={isQuestionRequired(item)}
     >
       <View>
         <SiInputNumber
           defaultValue={item.value}
-          minValue={item?.validate_rules?.min_value}
-          maxValue={item?.validate_rules?.max_value}
+          minValue={minValue ? Number(minValue) : undefined}
+          maxValue={maxValue ? Number(maxValue) : undefined}
           disabled={disabled}
           onChange={handleChange}
         ></SiInputNumber>

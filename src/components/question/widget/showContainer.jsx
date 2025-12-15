@@ -7,6 +7,9 @@ const ShowContainer = props => {
   return (
     <View>
       <View className='question-title'>
+        {props.index !== undefined && (
+          <Text className='question-number'>{props.index + 1}. </Text>
+        )}
         {props.title}
         <Text style={{ color: "red" }}>
           {props.required ? "（*必填）" : ""}

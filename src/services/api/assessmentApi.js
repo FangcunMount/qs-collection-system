@@ -15,7 +15,7 @@ import config from '../../config';
  * @returns {Promise<{items: Array, total: number, page: number, page_size: number}>}
  */
 export const getAssessments = (testeeId, status, page = 1, pageSize = 20) => {
-  const params = { testee_id: testeeId, page, page_size: pageSize };
+  const params = { testee_id: String(testeeId), page, page_size: pageSize };
   if (status) params.status = status;
   
   return request('/assessments', {}, {
@@ -32,9 +32,9 @@ export const getAssessments = (testeeId, status, page = 1, pageSize = 20) => {
  * @returns {Promise<object>}
  */
 export const getAssessmentDetail = (id, testeeId) => {
-  return request(`/assessments/${id}`, {}, {
+  return request(`/assessments/${String(id)}`, {}, {
     host: config.collectionHost,
-    params: { testee_id: testeeId },
+    params: { testee_id: String(testeeId) },
     needToken: true
   });
 };
@@ -46,9 +46,9 @@ export const getAssessmentDetail = (id, testeeId) => {
  * @returns {Promise<Array>}
  */
 export const getAssessmentScores = (id, testeeId) => {
-  return request(`/assessments/${id}/scores`, {}, {
+  return request(`/assessments/${String(id)}/scores`, {}, {
     host: config.collectionHost,
-    params: { testee_id: testeeId },
+    params: { testee_id: String(testeeId) },
     needToken: true
   });
 };
@@ -60,9 +60,9 @@ export const getAssessmentScores = (id, testeeId) => {
  * @returns {Promise<object>}
  */
 export const getAssessmentReport = (id, testeeId) => {
-  return request(`/assessments/${id}/report`, {}, {
+  return request(`/assessments/${String(id)}/report`, {}, {
     host: config.collectionHost,
-    params: { testee_id: testeeId },
+    params: { testee_id: String(testeeId) },
     needToken: true
   });
 };
@@ -74,15 +74,16 @@ export const getAssessmentReport = (id, testeeId) => {
  * @returns {Promise<Array>}
  */
 export const getHighRiskFactors = (id, testeeId) => {
-  return request(`/assessments/${id}/factors/high-risk`, {}, {
+  return request(`/assessments/${String(id)}/factors/high-risk`, {}, {
     host: config.collectionHost,
-    params: { testee_id: testeeId },
+    params: { testee_id: String(testeeId) },
     needToken: true
   });
 };
 
 /**
  * 获取因子得分趋势
+ * 使用 collection.yaml 中的合法接口: GET /assessments/trend
  * @param {string|number} testeeId - 受试者ID
  * @param {string} factorCode - 因子编码
  * @param {number} limit - 数据点数量
@@ -91,7 +92,7 @@ export const getHighRiskFactors = (id, testeeId) => {
 export const getFactorTrend = (testeeId, factorCode, limit = 10) => {
   return request('/assessments/trend', {}, {
     host: config.collectionHost,
-    params: { testee_id: testeeId, factor_code: factorCode, limit },
+    params: { testee_id: String(testeeId), factor_code: factorCode, limit },
     needToken: true
   });
 };

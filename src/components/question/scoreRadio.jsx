@@ -4,6 +4,7 @@ import { AtRate } from "taro-ui";
 import { SiSeparator } from "taro-ui-fc";
 
 import ShowContainer from "./widget/showContainer";
+import { isQuestionRequired } from "../../pages/questionnaire/shared/utils";
 
 const Radio = props => {
   const { index, item, disabled } = props;
@@ -42,7 +43,7 @@ const Radio = props => {
       title={item.title}
       tips={item.tips}
       index={index}
-      required={item?.validate_rules?.required == "1"}
+      required={isQuestionRequired(item)}
     >
       <View>
         <View className='s-row' style={{ justifyContent: "space-between" }}>

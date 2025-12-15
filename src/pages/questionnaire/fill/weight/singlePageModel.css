@@ -3,8 +3,8 @@
   box-sizing: border-box;
   width: 100%;
   height: 100%;
-  background-color: #478de2;
-  color: #fff;
+  background-color: #1890FF;
+  color: #ffffff;
   padding: 0 80rpx 100rpx 80rpx;
   display: flex;
   flex-direction: column;
@@ -36,15 +36,15 @@
   height: 300rpx;
   border-radius: 50% 30% 0 0;
   opacity: 1;
-  background: linear-gradient(90deg, #e67253 0%, #ffa38a 100%);
+  background: linear-gradient(90deg, #1890FF 0%, #096DD9 100%);
 }
 .questionsheet .question-card {
-  color: #333;
+  color: #262626;
   box-sizing: border-box;
   height: 100%;
   padding: 80rpx 30rpx;
-  background-color: #fff;
-  border: 1px solid #eee;
+  background-color: #ffffff;
+  border: 1px solid #E5E7EB;
   display: flex;
   flex-direction: column;
 }

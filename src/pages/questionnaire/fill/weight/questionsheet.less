@@ -1,25 +1,51 @@
+@import "../../../../styles/theme.less";
+
+// 页面整体包装器
+.questionnaire-fill-wrapper {
+  min-height: 100vh;
+  background: @bg-section;
+  padding-bottom: 120rpx;
+}
+
+// 问卷标题区域
 .qs-header__container {
-  padding: 30px;
-  flex-grow: 1;
+  background: @gradient-primary;
+  padding: 48rpx 32rpx;
+  color: @bg-card;
 
   .qs-header__title {
-    font-size: 40px;
+    font-size: 44rpx;
     font-weight: bold;
+    margin-bottom: 16rpx;
+    line-height: 1.3;
   }
 
   .qs-header__tips {
-    overflow: visible;
-    font-size: 28px;
-    line-height: 1.5;
+    font-size: 26rpx;
+    line-height: 1.6;
+    opacity: 0.9;
     word-break: break-word;
   }
 }
 
+// 问题容器
 .qs-question__container {
-  padding: 30px;
+  background: @bg-card;
+  border-radius: @radius-base;
+  padding: 32rpx;
+  margin: 24rpx 32rpx;
+  box-shadow: @shadow-sm;
 }
 
+// 底部提交按钮
 .qs-bottom {
-  width: 94%;
-  padding: 3%;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 24rpx 32rpx;
+  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
+  background: @bg-card;
+  box-shadow: @shadow-sm;
+  z-index: 100;
 }

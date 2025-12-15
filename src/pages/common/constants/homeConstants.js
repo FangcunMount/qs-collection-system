@@ -31,7 +31,7 @@ export const QUICK_ACTIONS = [
   {
     label: "数据分析",
     desc: "查看统计报告",
-    url: "/pages/answersheet/analysis/index",
+    url: "/pages/analysis/index",
     icon: "📊"
   }
 ];

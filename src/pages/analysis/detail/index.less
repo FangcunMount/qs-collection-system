@@ -1,0 +1,141 @@
+@import "../../../styles/theme.less";
+
+.analysis-detail-page {
+  min-height: 100vh;
+  background: @bg-section;
+  padding-bottom: 40rpx;
+
+  &.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28rpx;
+    color: @text-tertiary;
+  }
+}
+
+.detail-header {
+  background: @gradient-primary;
+  color: @bg-card;
+  padding: 48rpx 24rpx 32rpx;
+}
+.header-title {
+  font-size: 40rpx;
+  font-weight: 700;
+  line-height: 1.4;
+  margin-bottom: 16rpx;
+}
+.header-meta {
+  display: flex;
+  gap: 24rpx;
+  font-size: 24rpx;
+  opacity: 0.9;
+}
+
+.detail-section {
+  margin: 24rpx 24rpx 0;
+  background: @bg-section;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: @text-primary;
+  margin-bottom: 16rpx;
+  padding-left: 12rpx;
+  border-left: 6rpx solid @primary-color;
+}
+
+.summary-card {
+  background: @bg-card;
+  border-radius: @radius-base;
+  padding: 24rpx;
+  box-shadow: @shadow-sm;
+  border: 2rpx solid @border-light;
+  font-size: 28rpx;
+  line-height: 1.6;
+  color: @text-secondary;
+}
+
+.dimensions-list {
+  display: grid;
+  border: 2rpx solid @border-light;
+}
+.dimension-item {
+  background: @bg-card;
+  border-radius: 16rpx;
+  padding: 20rpx;
+  color: @text-secondary;
+  border: 2rpx solid @border-light;
+}
+.dim-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: @gradient-primary;
+}
+.dim-name {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: @text-primary;
+}
+.dim-level {
+  padding: 4rpx 12rpx;
+  border-radius: 100rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+  background: @success-light;
+}
+.dim-score {
+  display: flex;
+  align-items: baseline;
+  margin-bottom: 8rpx;
+}
+.score-label {
+  font-size: 24rpx;
+  color: @text-tertiary;
+}
+.score-value {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: @primary-color;
+  margin-left: 4rpx;
+}
+.dim-desc {
+  font-size: 24rpx;
+  color: @text-tertiary;
+  line-height: 1.5;
+}
+
+.suggestions-list {
+  display: grid;
+  gap: 12rpx;
+}
+.suggestion-item {
+  background: @bg-card;
+  border-radius: 12rpx;
+  padding: 16rpx 20rpx;
+  box-shadow: @shadow-sm;
+  border: 2rpx solid @border-light;
+  display: flex;
+  gap: 12rpx;
+}
+.suggestion-index {
+  width: 36rpx;
+  height: 36rpx;
+  border-radius: 50%;
+  background: @gradient-primary;
+  color: @bg-card;
+  font-size: 20rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.suggestion-text {
+  flex: 1;
+  font-size: 26rpx;
+  line-height: 1.6;
+  color: @text-secondary;
+}

@@ -1,3 +1,71 @@
+@import "../../styles/theme.less";
+
+// 页面整体包装器
+.analysis-page-wrapper {
+    min-height: 100vh;
+    background: @bg-section;
+    padding-bottom: 120rpx;
+}
+
+// 页面标题区域
+.analysis-header {
+    background: @gradient-primary;
+    padding: 48rpx 32rpx;
+    color: @bg-card;
+  
+    .analysis-header-title {
+        font-size: 44rpx;
+        font-weight: bold;
+        margin-bottom: 12rpx;
+    }
+  
+    .analysis-header-subtitle {
+        font-size: 26rpx;
+        opacity: 0.9;
+    }
+}
+
+// 内容区域
+.analysis-content {
+    padding: 32rpx;
+}
+
+// 空状态
+    .analysis-empty {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 120rpx 0;
+  
+  .empty-icon {
+    font-size: 80rpx;
+    margin-bottom: 24rpx;
+  }
+  
+    .empty-text {
+        font-size: 28rpx;
+        color: @text-tertiary;
+    }
+}
+
+// 底部操作栏
+.analysis-footer-actions {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 24rpx 32rpx;
+  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
+  background: #fff;
+  box-shadow: 0 -4rpx 12rpx rgba(0, 0, 0, 0.08);
+  z-index: 100;
+  
+  .footer-btn {
+    width: 100%;
+  }
+}
+
 .tScore-analysis-container {
     position: relative;
     width: 100vw;
@@ -34,12 +102,15 @@
                     margin: 64rpx 0;
                     font-size: 28rpx;
                     line-height: 88rpx;
-                    border: 1rpx solid #f0f0f0;
+                    border-radius: 12rpx;
+                    overflow: hidden;
+                    box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
     
                     .bg-header {
                         display: flex;
                         justify-content: center;
-                        color: #333;
+                        color: @bg-card;
+                        background: @gradient-primary;
                         text-align: center;
                         font-size: 28rpx;
                         font-weight: bold;
@@ -49,19 +120,27 @@
                     .tr {
                         display: flex;
                         justify-content: center;
-                        color: #333;
+                        color: @text-primary;
                         text-align: center;
                         font-size: 28rpx;
                         line-height: 88rpx;
-                        border-bottom: 1rpx solid #f0f0f0;
+                        border-bottom: 1rpx solid @border-base;
                     }
     
                     .score-warning {
-                        color: #ff4d4f;
+                        background: @error-light;
+                        color: @error-color;
+                        font-weight: bold;
+                        position: relative;
+                        
+                        .td:first-child::before {
+                            content: '⚠️ ';
+                            margin-right: 8rpx;
+                        }
                     }
     
-                    .tr:nth-child(2n-1) {
-                        background-color: #f5f5f5;
+                    .tr:nth-child(even) {
+                        background-color: @bg-hover;
                     }
                 }
             }

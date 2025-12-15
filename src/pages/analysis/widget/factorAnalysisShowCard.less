@@ -1,0 +1,49 @@
+.factor-score-section {
+  @import "../../../styles/theme.less";
+  margin: 24rpx 0;
+  
+  .factor-progress-container {
+    display: flex;
+    align-items: center;
+    gap: 24rpx;
+    
+    .factor-progress-bar {
+      flex: 1;
+      height: 36rpx;
+      background: @primary-light;
+      border-radius: 18rpx;
+      position: relative;
+      overflow: hidden;
+      
+      .progress-fill {
+        height: 100%;
+        background: @gradient-primary;
+        border-radius: 18rpx;
+        transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: @shadow-sm;
+      }
+    }
+    
+    .factor-score-text {
+      display: flex;
+      align-items: baseline;
+      font-size: 28rpx;
+      white-space: nowrap;
+      
+      .score-current {
+        font-weight: bold;
+        color: @primary-color;
+        font-size: 32rpx;
+      }
+      
+      .score-divider {
+        margin: 0 4rpx;
+        color: @text-tertiary;
+      }
+      
+      .score-total {
+        color: @text-secondary;
+      }
+    }
+  }
+}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, Image } from "@tarojs/components";
+import { View, Text } from "@tarojs/components";
 import Taro from "@tarojs/taro";
 
 import { AtButton } from "taro-ui";
@@ -7,7 +7,6 @@ import { AtButton } from "taro-ui";
 import { getQuestionnaire } from "../../../../services/api/questionnaireApi";
 import { submitQuestionsheet } from "../../../../services/api/questionsheetApi";
 import "./singlePageModel.less";
-import hollowRound from "../../../../assets/images/hollow-round.png";
 
 import QsSection from "../../../../components/question/section";
 import QsRadio from "../../../../components/question/radio";
@@ -46,7 +45,10 @@ export default props => {
 
     getQuestionnaire(id).then(result => {
       // 新 API 返回的数据结构不同，需要适配
-      setQuestionSheet(result.questionnaire || result);
+      const questionnaire = result.questionnaire || result;
+      // 过滤掉 Section 类型的题目
+      questionnaire.questions = questionnaire.questions.filter(q => q.type !== 'Section');
+      setQuestionSheet(questionnaire);
       setCurQuestionIndex(0);
 
       if (result.writer_roles && result.writer_roles.length > 0) {
@@ -114,11 +116,21 @@ export default props => {
    * @returns {boolean} Is the question displayed?
    */
   const getQuestionIsShow = showController => {
-    if (showController === "") return true;
+    if (showController === "" || !showController) return true;
+    
+    // 安全检查：确保 questionSheet 和 questions 已加载
+    if (!questionSheet || !questionSheet.questions) return true;
+    
+    // 安全检查：确保 showController.questions 存在
+    if (!showController.questions || !Array.isArray(showController.questions)) return true;
 
     const checkShowFlagByQuestions = showController.questions.map(v => {
       const i = questionSheet.questions.findIndex(q => q.code === v.code);
       const question = questionSheet.questions[i];
+      
+      // 安全检查：确保找到了问题
+      if (!question) return false;
+      
       if (!getQuestionIsShow(question.show_controller)) {
         return false;
       }
@@ -251,7 +263,8 @@ export default props => {
     submitQuestionsheet(submitData, writerRoleCode, subSignid)
       .then(result => {
         Taro.showToast({ title: "提交成功", icon: "success" });
-        writedCallback(result.id);
+        // 传递答卷 ID 和测评 ID（如果有）给回调函数
+        writedCallback(result.id, result.assessment_id);
       })
       .catch(err => {
         Taro.showToast({ title: String(err?.errmsg ?? err?.message ?? '提交失败'), icon: "none" });
@@ -261,13 +274,21 @@ export default props => {
   const getQuestionContent = () => {
     if (!questionSheet) return null;
 
+    // 计算实际问题序号和总数（排除 Section）
+    const questionNumber = questionSheet.questions
+      .slice(0, curQuestionIndex)
+      .filter(q => q.type !== 'Section' && getQuestionIsShow(q.show_controller))
+      .length + 1;
+    
+    const totalQuestions = questionSheet.questions.length;
+
     if (curQuestionIndex >= questionSheet?.questions.length) {
       return (
-        <View
-          style={{ display: "flex", flexDirection: "column", height: "100%" }}
-        >
-          <View style={{ flexGrow: "1", textAlign: "center" }}>
-            <Text>所有题目都是完成，是否提交问卷？</Text>
+        <View className='completion-container'>
+          <View className='completion-content'>
+            <View className='completion-icon'>✓</View>
+            <Text className='completion-title'>所有题目已完成</Text>
+            <Text className='completion-subtitle'>感谢您认真填写</Text>
           </View>
           <View className='btn-group'>
             <AtButton
@@ -275,7 +296,7 @@ export default props => {
               size='small'
               onClick={handleToPrevQuestion}
             >
-              返回
+              返回修改
             </AtButton>
             {canSubmit ? (
               <AtButton
@@ -284,7 +305,7 @@ export default props => {
                 size='small'
                 onClick={handleSubmit}
               >
-                提交
+                提交问卷
               </AtButton>
             ) : null}
           </View>
@@ -294,9 +315,26 @@ export default props => {
 
     return (
       <>
+        {/* 进度信息 */}
+        <View className='progress-info'>
+          <Text className='progress-number'>{questionNumber}/{totalQuestions}</Text>
+        </View>
+
+        {/* 进度条 */}
+        <View className='progress-bar-container'>
+          <View 
+            className='progress-bar' 
+            style={{width: `${(questionNumber / totalQuestions) * 100}%`}}
+          />
+        </View>
+
+        {/* 问题 */}
         <View className='question'>{getQuestionComp(curQuestionIndex)}</View>
+        
+        {/* 按钮组 */}
         <View className='btn-group'>
           {curQuestionIndex > 0 ? (
+
             <AtButton
               customStyle={{ width: "200rpx" }}
               size='small'
@@ -339,12 +377,6 @@ export default props => {
         setWriterRoleCode={setWriterRoleCode}
       ></WriterRoleDialog>
 
-      <Text className='questionsheet-title'>{questionSheet?.title}</Text>
-      <Image
-        className='questionsheet-icon1'
-        mode='widthFix'
-        src={hollowRound}
-      ></Image>
       <View className='question-card'>{getQuestionContent()}</View>
     </View>
   );

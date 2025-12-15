@@ -1,0 +1,259 @@
+@import "../../../../styles/theme.less";
+
+// 问卷详情页面样式
+.info-confirm-page {
+  width: 100%;
+  height: 100vh;
+  background: @bg-section;
+  display: flex;
+  flex-direction: column;
+
+  // 顶部导航栏
+  .info-confirm-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24rpx 32rpx;
+    padding-top: calc(24rpx + env(safe-area-inset-top));
+    background: transparent;
+    
+    .header-left {
+      .back-icon {
+        font-size: 64rpx;
+        font-weight: 300;
+        color: @text-primary;
+        line-height: 1;
+      }
+    }
+    
+    .header-right {
+      .more-icon {
+        font-size: 48rpx;
+        color: @text-primary;
+        line-height: 1;
+        letter-spacing: -4rpx;
+      }
+    }
+  }
+
+  // 滚动区域
+  .info-confirm-scroll {
+    flex: 1;
+    padding-top: calc(88rpx + env(safe-area-inset-top));
+  }
+
+  // 问卷封面图
+  .questionnaire-cover {
+    display: flex;
+    justify-content: center;
+    padding: 48rpx 32rpx 32rpx;
+    background: @gradient-header;
+    
+    .cover-image {
+      width: 320rpx;
+      height: 320rpx;
+      border-radius: 80rpx;
+      box-shadow: @shadow-md;
+      border: 4rpx solid @bg-card;
+    }
+  }
+
+  // 问卷标题信息
+    .questionnaire-header {
+    padding: 32rpx 32rpx 48rpx;
+    background: @gradient-header;
+    text-align: center;
+    
+    .questionnaire-title {
+      display: block;
+      font-size: 44rpx;
+      font-weight: 600;
+      color: @text-primary;
+      margin-bottom: 16rpx;
+      line-height: 1.4;
+    }
+    
+    .questionnaire-subtitle {
+      display: block;
+      font-size: 28rpx;
+      color: @text-tertiary;
+      margin-bottom: 32rpx;
+      line-height: 1.5;
+    }
+    
+    .questionnaire-meta {
+      display: flex;
+      justify-content: center;
+      gap: 48rpx;
+      
+      .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 12rpx;
+      padding: 12rpx 24rpx;
+      background: @bg-section;
+      border-radius: 48rpx;
+      border: 1rpx solid @border-light;
+        
+        .meta-icon {
+          font-size: 32rpx;
+        }
+        
+        .meta-text {
+          font-size: 26rpx;
+          color: @text-tertiary;
+          font-weight: 500;
+        }
+      }
+    }
+  }
+
+  // 信息板块
+  .info-section {
+    margin: 0 32rpx 24rpx;
+    padding: 32rpx;
+    background: @bg-card;
+    border-radius: @radius-base;
+    box-shadow: @shadow-sm;
+    
+    .section-title {
+      display: block;
+      font-size: 32rpx;
+      font-weight: 600;
+      color: @primary-color;
+      margin-bottom: 24rpx;
+      display: flex;
+      align-items: center;
+      
+      &::before {
+        content: '';
+        display: inline-block;
+        width: 6rpx;
+        height: 28rpx;
+        background: @gradient-primary;
+        border-radius: 3rpx;
+        margin-right: 12rpx;
+      }
+    }
+    
+      .section-content {
+      display: block;
+      font-size: 28rpx;
+      color: @text-secondary;
+      line-height: 1.8;
+      text-align: justify;
+    }
+    
+    // 受试者信息
+    .testee-info {
+      .testee-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20rpx 0;
+      border-bottom: 1rpx solid @border-base;
+        
+        &:last-child {
+          border-bottom: none;
+        }
+        
+        .testee-label {
+          font-size: 28rpx;
+          color: @text-tertiary;
+        }
+        
+        .testee-value {
+          font-size: 28rpx;
+          color: @text-primary;
+          font-weight: 500;
+        }
+      }
+    }
+    
+    // 适合谁测列表
+    .suitable-list {
+      .suitable-item {
+        display: flex;
+        margin-bottom: 16rpx;
+        
+        &:last-child {
+          margin-bottom: 0;
+        }
+        
+        .suitable-bullet {
+          font-size: 28rpx;
+          color: @primary-color;
+          margin-right: 12rpx;
+          line-height: 1.8;
+        }
+        
+        .suitable-text {
+          flex: 1;
+          font-size: 28rpx;
+          color: @text-secondary;
+          line-height: 1.8;
+        }
+      }
+    }
+    
+    // 参考文献列表
+    .reference-list {
+      .reference-item {
+        display: block;
+        font-size: 24rpx;
+        color: @text-tertiary;
+        line-height: 1.8;
+        margin-bottom: 12rpx;
+        
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+    }
+  }
+
+  // 底部占位
+  .bottom-placeholder {
+    height: 180rpx;
+  }
+
+  // 底部固定按钮
+    .info-confirm-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    padding: 24rpx 32rpx;
+    padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
+    background: @bg-card;
+    box-shadow: @shadow-sm;
+    
+    .start-button {
+      width: 100%;
+      padding: 28rpx 0;
+      background: @gradient-primary;
+      border-radius: @radius-lg;
+      text-align: center;
+      box-shadow: @shadow-md;
+      transition: all 0.3s;
+      
+      &:active {
+        transform: scale(0.98);
+        box-shadow: @shadow-sm;
+      }
+      
+      .button-text {
+        font-size: 32rpx;
+        font-weight: 600;
+        color: @bg-card;
+      }
+    }
+  }
+}
+

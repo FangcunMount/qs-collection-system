@@ -161,7 +161,7 @@ export const submitQuestionsheet = async (questionsheet, writer_role_code, signi
   const requestData = {
     questionnaire_code: questionsheet.code,
     questionnaire_version: questionsheet.version || '1.0',
-    testee_id: parseInt(selectedTesteeId),
+    testee_id: selectedTesteeId, // 保持原始格式，避免精度丢失
     answers: answers,
     title: questionsheet.name || questionsheet.title
   };

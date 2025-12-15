@@ -1,208 +1,308 @@
-// 问卷列表页面样式
+@import "../../../styles/theme.less";
 
-@primary-color: #4A7CFF;
-@text-primary: #1F2937;
-@text-secondary: #6B7280;
-@text-tertiary: #9CA3AF;
-@bg-page: #F3F4F6;
-@bg-card: #FFFFFF;
+// 精选测评列表页面样式
 
-.page {
+.questionnaire-list-page {
   min-height: 100vh;
-  background-color: @bg-page;
-  padding-top: 40px; // 为固定搜索栏留出空间
-}
+  background: @bg-section;
 
-// 搜索区域 - 固定在顶部
-.search {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
-  background: @bg-page;
-  padding: 16px 24px;
-  
-  .search-input {
+  // 顶部导航栏
+  .page-header {
     display: flex;
     align-items: center;
-    background: @bg-card;
-    border-radius: 16px;
-    padding: 0 24px;
-    height: 80px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    justify-content: space-between;
+    padding: @spacing-lg;
+    background: @gradient-primary;
+    color: @bg-card;
     
-    .search-icon {
-      font-size: 32px;
-      margin-right: 16px;
-      opacity: 0.4;
-    }
-    
-    .search-field {
-      flex: 1;
-      font-size: 28px;
-      color: @text-primary;
-      background: transparent;
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16rpx;
       
-      &::placeholder {
-        color: @text-tertiary;
+      .header-back {
+        font-size: 48rpx;
+        font-weight: 300;
+        line-height: 1;
+      }
+      
+      .header-title {
+        font-size: 36rpx;
+        font-weight: 600;
       }
     }
     
-    .search-clear {
-      width: 40px;
-      height: 40px;
+    .header-right {
       display: flex;
       align-items: center;
-      justify-content: center;
-      background: rgba(0, 0, 0, 0.06);
-      border-radius: 50%;
-      font-size: 24px;
-      color: #666;
-      margin-left: 12px;
+      gap: 32rpx;
       
-      &:active {
-        background: rgba(0, 0, 0, 0.1);
-      }
-    }
-  }
-}
-
-// 列表区域
-.list {
-  padding: 8px 24px 48px;
-  
-  .loading {
-    padding: 120px 0;
-  }
-  
-  .cards {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-}
-
-// 卡片样式
-.card {
-  background: @bg-card;
-  border-radius: 20px;
-  padding: 28px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  
-  &:active {
-    opacity: 0.95;
-    transform: scale(0.99);
-  }
-  
-  .card-body {
-    .card-title {
-      display: block;
-      font-size: 34px;
-      font-weight: 600;
-      color: @text-primary;
-      line-height: 1.4;
-      margin-bottom: 12px;
-    }
-    
-    .card-desc {
-      display: block;
-      font-size: 26px;
-      color: @text-secondary;
-      line-height: 1.5;
-      margin-bottom: 20px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      line-clamp: 2;
-      -webkit-box-orient: vertical;
-    }
-    
-    .card-footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      
-      .card-tags {
+      .report-btn {
         display: flex;
-        gap: 12px;
+        flex-direction: column;
+        align-items: center;
+        gap: 4rpx;
         
-        .tag {
-          background: @bg-page;
-          border-radius: 8px;
-          padding: 8px 14px;
-          
-          .tag-text {
-            font-size: 24px;
-            color: @text-secondary;
-          }
+        .report-icon {
+          width: 40rpx;
+          height: 40rpx;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(255, 255, 255, 0.3);
+          border-radius: 50%;
+          font-size: 24rpx;
+          font-weight: bold;
+        }
+        
+        .report-text {
+          font-size: 20rpx;
         }
       }
       
-      .card-action {
-        display: flex;
-        align-items: center;
-        gap: 4px;
+      .more-icon {
+        font-size: 48rpx;
+        line-height: 1;
+        letter-spacing: -4rpx;
+      }
+    }
+  }
+
+  // 宣传横幅
+  .banner-card {
+    margin: @spacing-md @spacing-lg;
+    padding: 40rpx;
+    background: @gradient-primary-soft;
+    border-radius: @radius-base;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+    box-shadow: @shadow-md;
+    
+    .banner-content {
+      flex: 1;
+      z-index: 2;
+      
+      .banner-title {
+        display: block;
+        font-size: 32rpx;
+        font-weight: 600;
+        color: @primary-color;
+        margin-bottom: 8rpx;
+      }
+      
+      .banner-subtitle {
+        display: block;
+        font-size: 28rpx;
+        font-weight: 500;
+        color: @text-secondary;
+        margin-bottom: 32rpx;
+      }
+      
+      .banner-button {
+        display: inline-block;
+        padding: 16rpx 40rpx;
+        background: @gradient-primary;
+        border-radius: 48rpx;
+        box-shadow: 0 4rpx 12rpx rgba(24, 144, 255, 0.18);
         
-        .action-text {
-          font-size: 28px;
-          color: @primary-color;
+        .banner-button-text {
+          font-size: 28rpx;
+          color: @bg-card;
           font-weight: 500;
         }
-        
-        .action-arrow {
-          font-size: 32px;
+      }
+    }
+    
+    .banner-image {
+      width: 180rpx;
+      height: 180rpx;
+      position: relative;
+      z-index: 2;
+      
+      .banner-illustration {
+        width: 100%;
+        height: 100%;
+        background: @gradient-primary-soft;
+        border-radius: 50%;
+        opacity: 0.85;
+      }
+    }
+  }
+
+  // 分类标签
+  .category-tabs {
+    display: flex;
+    align-items: center;
+    gap: 48rpx;
+    padding: @spacing-md @spacing-lg @spacing-sm;
+    background: @bg-card;
+    margin-bottom: @spacing-sm;
+    
+    .category-tab {
+      position: relative;
+      padding-bottom: 8rpx;
+      cursor: pointer;
+      
+      .category-text {
+        font-size: 30rpx;
+        color: @text-secondary;
+        font-weight: 500;
+        transition: all 0.3s;
+      }
+      
+      &.active {
+        .category-text {
           color: @primary-color;
+          font-weight: 600;
         }
+        
+        .category-underline {
+          position: absolute;
+          bottom: 0;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 40rpx;
+          height: 6rpx;
+          background: @gradient-primary;
+          border-radius: 3rpx;
+        }
+      }
+    }
+  }
+
+  // 列表容器
+  .list-container {
+    padding: @spacing-sm @spacing-lg @spacing-xl;
+    
+    .loading {
+      padding: 120rpx 0;
+    }
+    
+    .questionnaire-list {
+      display: flex;
+      flex-direction: column;
+      gap: @spacing-md;
+    }
+  }
+
+  // 问卷卡片 - 完全采用 home 页面的 scale-card 样式
+  .questionnaire-card {
+    background: @bg-card;
+    border-radius: @radius-lg;
+    padding: @spacing-lg;
+    border: 2rpx solid @border-base;
+    box-shadow: @shadow-sm;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s;
+
+    &:active {
+      transform: translateY(-4rpx);
+      box-shadow: @shadow-md;
+    }
+
+    .card-info {
+      flex: 1;
+      margin-right: @spacing-md;
+    }
+
+    .card-title {
+      font-size: 30rpx;
+      font-weight: 700;
+      color: @text-primary;
+      margin-bottom: @spacing-xs;
+      display: block;
+    }
+
+    .card-desc {
+      font-size: 26rpx;
+      color: @text-secondary;
+      margin-bottom: @spacing-sm;
+      display: block;
+      line-height: 1.5;
+    }
+
+    .card-meta {
+      display: flex;
+      align-items: center;
+    }
+
+    .meta-text {
+      font-size: 24rpx;
+      color: @text-tertiary;
+    }
+
+    .card-btn {
+      background: @primary-color;
+      color: @bg-card;
+      padding: 20rpx 40rpx;
+      border-radius: 40rpx;
+      font-size: 28rpx;
+      font-weight: 500;
+      white-space: nowrap;
+      transition: all 0.2s;
+
+      &:active {
+        transform: scale(0.95);
+        opacity: 0.8;
+      }
+
+      .btn-text {
+        color: @bg-card;
+      }
+    }
+  }
+
+  // 空状态
+  .empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 120rpx 0;
+    
+    .empty-icon {
+      font-size: 120rpx;
+      margin-bottom: 32rpx;
+      opacity: 0.3;
+    }
+    
+    .empty-title {
+      font-size: 32rpx;
+      font-weight: 600;
+      color: @text-primary;
+      margin-bottom: 16rpx;
+    }
+    
+    .empty-desc {
+      font-size: 28rpx;
+      color: @text-tertiary;
+      margin-bottom: 48rpx;
+    }
+    
+    .empty-btn {
+      padding: 16rpx 48rpx;
+      background: @gradient-primary;
+      border-radius: 48rpx;
+      box-shadow: 0 4rpx 12rpx rgba(24, 144, 255, 0.18);
+      
+      &:active {
+        transform: scale(0.95);
+        box-shadow: 0 2rpx 8rpx rgba(24, 144, 255, 0.12);
+      }
+      
+      .empty-btn-text {
+        font-size: 28rpx;
+        color: #fff;
+        font-weight: 500;
       }
     }
   }
 }
 
-// 空状态
-.empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 140px 48px;
-  
-  .empty-icon {
-    font-size: 96px;
-    margin-bottom: 32px;
-    opacity: 0.4;
-  }
-  
-  .empty-title {
-    font-size: 36px;
-    font-weight: 600;
-    color: @text-primary;
-    margin-bottom: 16px;
-  }
-  
-  .empty-desc {
-    font-size: 28px;
-    color: @text-tertiary;
-    margin-bottom: 48px;
-    text-align: center;
-  }
-  
-  .empty-btn {
-    background: @primary-color;
-    border-radius: 24px;
-    padding: 20px 56px;
-    
-    &:active {
-      opacity: 0.9;
-    }
-    
-    .empty-btn-text {
-      font-size: 30px;
-      color: #FFFFFF;
-      font-weight: 500;
-    }
-  }
-}
 
 
 

@@ -104,7 +104,7 @@ export const searchChildren = (name, dob, offset = 0, limit = 20) => {
  * @returns {Promise<object>}
  */
 export const getChild = (childId) => {
-  return request(`/identity/children/${childId}`, {}, {
+  return request(`/identity/children/${String(childId)}`, {}, {
     host: config.iamHost,
     needToken: true
   });
@@ -117,7 +117,7 @@ export const getChild = (childId) => {
  * @returns {Promise<object>}
  */
 export const updateChild = (childId, childData) => {
-  return request(`/identity/children/${childId}`, childData, {
+  return request(`/identity/children/${String(childId)}`, childData, {
     host: config.iamHost,
     method: 'PATCH',
     needToken: true
@@ -130,7 +130,7 @@ export const updateChild = (childId, childData) => {
  * @returns {Promise<{message: string}>}
  */
 export const deleteChild = (childId) => {
-  return request(`/identity/children/${childId}`, {}, {
+  return request(`/identity/children/${String(childId)}`, {}, {
     host: config.iamHost,
     method: 'DELETE',
     needToken: true
@@ -145,7 +145,7 @@ export const deleteChild = (childId) => {
  * @returns {Promise<{items: Array, total: number}>}
  */
 export const getChildGuardians = (childId, offset = 0, limit = 20) => {
-  return request(`/identity/children/${childId}/guardians`, {}, {
+  return request(`/identity/children/${String(childId)}/guardians`, {}, {
     host: config.iamHost,
     params: { offset, limit },
     needToken: true

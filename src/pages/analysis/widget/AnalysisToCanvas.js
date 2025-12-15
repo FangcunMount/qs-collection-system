@@ -1,4 +1,4 @@
-import { BaseCanvas } from "../../../../util/canvasUtils";
+import { BaseCanvas } from "../../../util/canvasUtils.js";
 
 class AnalysisToCanvas extends BaseCanvas {
   constructor() {

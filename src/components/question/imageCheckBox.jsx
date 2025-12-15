@@ -3,6 +3,7 @@ import { View, Image } from "@tarojs/components";
 import { SiInput, SiCheckBox } from "taro-ui-fc";
 
 import ShowContainer from "./widget/showContainer";
+import { isQuestionRequired } from "../../pages/questionnaire/shared/utils";
 
 const ImageRadio = props => {
   const { item, index, disabled } = props;
@@ -28,7 +29,7 @@ const ImageRadio = props => {
       title={item.title}
       tips={item.tips}
       index={index}
-      required={item?.validate_rules?.required == "1"}
+      required={isQuestionRequired(item)}
     >
       <View>
         <SiCheckBox

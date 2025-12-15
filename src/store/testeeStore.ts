@@ -145,8 +145,12 @@ function normalizeTestee(testee: TesteeInput): Testee | null {
     return null;
   }
 
-  // 兼容多种姓名字段（包括下划线和驼峰格式）
-  const legalName = testee.legalName ?? (testee as any).legal_name ?? testee.name ?? testee.testee_name ?? '';
+  // 兼容多种姓名字段（包括下划线和驼峰格式，以及 Collection 的 name 字段）
+  const legalName = testee.legalName ?? 
+                    (testee as any).legal_name ?? 
+                    testee.name ??  // Collection API 使用 name
+                    testee.testee_name ?? 
+                    '';
   
   console.log('[TesteeStore] normalizeTestee 处理中:', { 
     id, 
@@ -158,15 +162,17 @@ function normalizeTestee(testee: TesteeInput): Testee | null {
     }
   });
 
-  // 兼容多种性别字段
+  // 兼容多种性别字段（gender/sex 是小数字，可以安全使用 parseInt）
   let gender: number | undefined;
   if (testee.gender !== undefined) {
-    gender = typeof testee.gender === 'number' ? testee.gender : parseInt(String(testee.gender));
+    const genderValue = String(testee.gender);
+    gender = typeof testee.gender === 'number' ? testee.gender : (genderValue ? parseInt(genderValue, 10) : undefined);
   } else if (testee.sex !== undefined) {
-    gender = typeof testee.sex === 'number' ? testee.sex : parseInt(String(testee.sex));
+    const sexValue = String(testee.sex);
+    gender = typeof testee.sex === 'number' ? testee.sex : (sexValue ? parseInt(sexValue, 10) : undefined);
   }
 
-  // 兼容多种日期字段
+  // 兼容多种日期字段（Collection 使用 birthday）
   const dob = testee.dob ?? testee.birthday ?? '';
 
   const result = {
@@ -490,8 +496,33 @@ export async function loadTesteesFromCollection(): Promise<Testee[]> {
     const response = await getMyTestees();
     console.log('[TesteeStore] Collection 响应:', response);
     
-    const testees = response?.items || [];
-    console.log('[TesteeStore] 从 Collection 加载了', testees.length, '个受试者');
+    const items = response?.items || [];
+    console.log('[TesteeStore] Collection 原始数据:', items);
+    
+    // 转换 Collection testee 格式（需要适配新 API 的字段）
+    const testees = items.map((item: any) => {
+      const testee = {
+        id: String(item.id),  // Collection 使用数字 ID
+        legalName: item.name || '',  // Collection 使用 name 字段
+        gender: item.gender,
+        dob: item.birthday || '',  // Collection 使用 birthday 字段
+        idType: item.id_type,
+        idNo: item.id_no,
+        idMasked: item.id_masked,
+        relation: item.relation,
+        heightCm: item.height_cm,
+        weightKg: item.weight_kg,
+        createdAt: item.created_at,
+        updatedAt: item.updated_at
+      };
+      console.log('[TesteeStore] 转换单个 testee:', { 
+        原始: { id: item.id, name: item.name },
+        结果: { id: testee.id, legalName: testee.legalName }
+      });
+      return testee;
+    });
+    
+    console.log('[TesteeStore] 从 Collection 加载了', testees.length, '个受试者, 转换后:', testees);
     return testees;
   } catch (error) {
     console.error('[TesteeStore] 从 Collection 加载受试者失败:', error);
@@ -546,12 +577,22 @@ export async function initTesteeStore(force: boolean = false): Promise<TesteeSto
     let list: Testee[] = [];
     
     try {
-      // 使用新的 IAM API 加载儿童列表
-      console.log('[TesteeStore] 从 IAM 加载儿童列表');
-      list = await loadChildrenFromIAM();
-    } catch (iamError) {
-      console.error('[TesteeStore] IAM 加载失败:', iamError);
-      throw iamError;
+      // 优先使用新的 Collection API 加载受试者列表
+      console.log('[TesteeStore] 从 Collection 加载受试者列表');
+      list = await loadTesteesFromCollection();
+      console.log('[TesteeStore] Collection 加载成功，共', list.length, '个受试者');
+    } catch (collectionError) {
+      console.error('[TesteeStore] Collection 加载失败，尝试从 IAM 加载:', collectionError);
+      
+      try {
+        // 如果 Collection 失败，回退到 IAM API
+        console.log('[TesteeStore] 从 IAM 加载儿童列表');
+        list = await loadChildrenFromIAM();
+        console.log('[TesteeStore] IAM 加载成功，共', list.length, '个儿童');
+      } catch (iamError) {
+        console.error('[TesteeStore] IAM 也加载失败:', iamError);
+        throw iamError;
+      }
     }
     
     console.log('[TesteeStore] 解析后的列表长度:', list.length);

@@ -111,8 +111,8 @@ const AnswersheetListImp = ({ testee }) => {
                   moreBtnStyle={{ 
                     height: '35px', 
                     lineHeight: '35px', 
-                    color: '#478de2', 
-                    border: '1px solid #478de2', 
+                    color: '#1890FF', 
+                    border: '1px solid #1890FF', 
                     width: '33%', 
                     margin: '0 auto', 
                     borderRadius: '20px' 

@@ -1,7 +1,8 @@
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import Taro, { usePullDownRefresh } from "@tarojs/taro";
-import { View, Text, Input } from "@tarojs/components";
+import { View, Text } from "@tarojs/components";
 import { AtActivityIndicator } from "taro-ui";
+import BottomMenu from "../../../components/bottomMenu";
 
 import "./index.less";
 import PageContainer from "../../../components/pageContainer/pageContainer";
@@ -14,14 +15,15 @@ const logger = getLogger(PAGE_NAME);
 
 const QuestionsheetList = () => {
   const [questionsheetList, setQuestionsheetList] = useState([]);
-  const [searchValue, setSearchValue] = useState("");
   const [loading, setLoading] = useState(true);
-  const [searching, setSearching] = useState(false);
-  const searchTimerRef = useRef(null);
+  const [activeCategory, setActiveCategory] = useState("全部");
+  
+  // 分类标签
+  const categories = ["全部", "AI访谈", "儿童", "青少年", "成人"];
 
   // 页面级下拉刷新
   usePullDownRefresh(async () => {
-    await loadQuestionsheetList(searchValue);
+    await loadQuestionsheetList();
     Taro.stopPullDownRefresh();
   });
 
@@ -31,15 +33,11 @@ const QuestionsheetList = () => {
   }, []);
 
   // 加载问卷列表
-  const loadQuestionsheetList = useCallback(async (keyword = "") => {
+  const loadQuestionsheetList = useCallback(async () => {
     try {
-      if (keyword) {
-        setSearching(true);
-      } else {
-        setLoading(true);
-      }
+      setLoading(true);
       
-      const result = await getQuestionnaires(1, 20, undefined, keyword || undefined);
+      const result = await getQuestionnaires(1, 100, undefined, undefined);
       console.log("问卷列表结果：", result);
       const questionnaires = result.items || result.questionnaires || [];
       
@@ -47,9 +45,11 @@ const QuestionsheetList = () => {
         code: item.code,
         name: item.title || item.name,
         description: item.description,
-        category: item.category || item.tags?.[0],
+        category: item.category || item.tags?.[0] || "心理测评",
         question_count: item.question_count || item.questions?.length,
-        estimated_time: item.estimated_time,
+        test_count: Math.floor(Math.random() * 5000) + 1000, // 模拟已测人数
+        is_new: Math.random() > 0.7, // 模拟新人权益
+        thumbnail: item.thumbnail || `https://picsum.photos/seed/${item.code}/200/200`, // 使用缩略图或生成随机图片
         status: item.status
       }));
       
@@ -62,38 +62,19 @@ const QuestionsheetList = () => {
       });
     } finally {
       setLoading(false);
-      setSearching(false);
     }
   }, []);
 
-  // 搜索防抖
-  const handleSearchChange = useCallback((value) => {
-    setSearchValue(value);
-    
-    // 清除之前的定时器
-    if (searchTimerRef.current) {
-      clearTimeout(searchTimerRef.current);
-    }
-    
-    // 设置新的定时器，500ms 后执行搜索
-    searchTimerRef.current = setTimeout(() => {
-      loadQuestionsheetList(value);
-    }, 500);
-  }, [loadQuestionsheetList]);
-
-  // 清理定时器
-  useEffect(() => {
-    return () => {
-      if (searchTimerRef.current) {
-        clearTimeout(searchTimerRef.current);
-      }
-    };
+  // 处理分类切换
+  const handleCategoryChange = useCallback((category) => {
+    setActiveCategory(category);
+    // TODO: 根据分类筛选问卷列表
   }, []);
 
   const handleQuestionsheetClick = questionsheet => {
     logger.RUN("点击量表", questionsheet);
     const params = {
-      qid: questionsheet.code
+      q: questionsheet.code  // 使用 q 作为参数名，与填写页面保持一致
     };
     Taro.navigateTo({
       url: paramsConcat("/pages/questionnaire/fill/index", params)
@@ -103,86 +84,61 @@ const QuestionsheetList = () => {
   const renderQuestionsheetCard = questionsheet => (
     <View
       key={questionsheet.code}
-      className="card"
+      className="questionnaire-card"
       onClick={() => handleQuestionsheetClick(questionsheet)}
     >
-      <View className="card-body">
+      <View className="card-info">
         <Text className="card-title">{questionsheet.name}</Text>
-        {questionsheet.description && (
-          <Text className="card-desc">{questionsheet.description}</Text>
-        )}
-        <View className="card-footer">
-          <View className="card-tags">
-            {questionsheet.question_count && (
-              <View className="tag">
-                <Text className="tag-text">{questionsheet.question_count} 题</Text>
-              </View>
-            )}
-            {questionsheet.estimated_time && (
-              <View className="tag">
-                <Text className="tag-text">约 {questionsheet.estimated_time} 分钟</Text>
-              </View>
-            )}
-          </View>
-          <View className="card-action">
-            <Text className="action-text">开始填写</Text>
-          </View>
+        <Text className="card-desc">{questionsheet.category}</Text>
+        <View className="card-meta">
+          <Text className="meta-text">{questionsheet.test_count}人已测</Text>
         </View>
+      </View>
+      <View className="card-btn">
+        <Text className="btn-text">开始测试</Text>
       </View>
     </View>
   );
 
   const renderEmptyState = () => (
     <View className="empty">
-      <View className="empty-icon">{searchValue ? '🔍' : '📋'}</View>
-      <Text className="empty-title">{searchValue ? '未找到相关问卷' : '暂无问卷'}</Text>
-      <Text className="empty-desc">{searchValue ? '请尝试其他关键词' : '问卷列表为空，请稍后重试'}</Text>
-      {!searchValue && (
-        <View className="empty-btn" onClick={() => loadQuestionsheetList()}>
-          <Text className="empty-btn-text">刷新</Text>
-        </View>
-      )}
+      <View className="empty-icon">📋</View>
+      <Text className="empty-title">暂无问卷</Text>
+      <Text className="empty-desc">问卷列表为空，请稍后重试</Text>
+      <View className="empty-btn" onClick={() => loadQuestionsheetList()}>
+        <Text className="empty-btn-text">刷新</Text>
+      </View>
     </View>
   );
 
   return (
     <PageContainer>
-      <View className="page">
-        {/* 搜索栏 */}
-        <View className="search">
-          <View className="search-input">
-            <Text className="search-icon">🔍</Text>
-            <Input
-              className="search-field"
-              placeholder="搜索问卷名称"
-              value={searchValue}
-              onInput={e => handleSearchChange(e.detail.value)}
-            />
-            {searching && (
-              <AtActivityIndicator size={32} />
-            )}
-            {!searching && searchValue && (
-              <Text
-                className="search-clear"
-                onClick={() => {
-                  setSearchValue('');
-                  loadQuestionsheetList();
-                }}
-              >
-                ✕
-              </Text>
-            )}
-          </View>
+      <View className="questionnaire-list-page">
+
+        {/* 分类标签 */}
+        <View className="category-tabs">
+          {categories.map(category => (
+            <View
+              key={category}
+              className={`category-tab ${activeCategory === category ? 'active' : ''}`}
+              onClick={() => handleCategoryChange(category)}
+            >
+              <Text className="category-text">{category}</Text>
+              {activeCategory === category && (
+                <View className="category-underline" />
+              )}
+            </View>
+          ))}
         </View>
 
         {/* 问卷列表 */}
-        <View className="list">
+        <View className="list-container">
           {loading ? (
             <View className="loading">
               <AtActivityIndicator mode="center" content="加载中..." />
             </View>
           ) : questionsheetList.length > 0 ? (
-            <View className="cards">
+            <View className="questionnaire-list">
               {questionsheetList.map(questionsheet =>
                 renderQuestionsheetCard(questionsheet)
               )}
@@ -192,6 +148,8 @@ const QuestionsheetList = () => {
           )}
         </View>
       </View>
+
+      <BottomMenu activeKey="发现" />
     </PageContainer>
   );
 };

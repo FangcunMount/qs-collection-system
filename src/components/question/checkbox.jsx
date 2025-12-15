@@ -3,6 +3,7 @@ import { View } from "@tarojs/components";
 import { SiInput, SiCheckBox } from "taro-ui-fc";
 
 import ShowContainer from "./widget/showContainer";
+import { isQuestionRequired } from "../../pages/questionnaire/shared/utils";
 
 const Checkbox = props => {
   const { item, index, disabled } = props;
@@ -28,7 +29,7 @@ const Checkbox = props => {
       title={item.title}
       tips={item.tips}
       index={index}
-      required={item?.validate_rules?.required === "1"}
+      required={isQuestionRequired(item)}
     >
       <View>
         <SiCheckBox

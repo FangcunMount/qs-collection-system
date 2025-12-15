@@ -1,5 +1,7 @@
+@import "../../../styles/theme.less";
+
 page {
-  background-color: #f5f7fa;
+  background-color: @bg-section;
   height: 100vh;
 }
 
@@ -7,14 +9,14 @@ page {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background-color: #f5f7fa;
+  background-color: @bg-section;
 }
 
 /* 页面头部 */
 .page-header {
   padding: 48rpx 32rpx 32rpx;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: #fff;
+  background: @gradient-primary;
+  color: @bg-card;
 }
 
 .header-title {
@@ -63,7 +65,6 @@ page {
 .child-avatar {
   width: 96rpx;
   height: 96rpx;
-  background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -71,6 +72,7 @@ page {
   font-size: 48rpx;
   margin-right: 24rpx;
   flex-shrink: 0;
+  background: @gradient-primary-soft;
 }
 
 .child-info {
@@ -81,7 +83,7 @@ page {
 .child-name {
   font-size: 32rpx;
   font-weight: bold;
-  color: #333;
+  color: @text-primary;
   margin-bottom: 8rpx;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -92,11 +94,11 @@ page {
   display: flex;
   align-items: center;
   font-size: 26rpx;
-  color: #666;
+  color: @text-secondary;
 }
 
 .meta-item {
-  color: #666;
+  color: @text-secondary;
 }
 
 .meta-divider {
@@ -106,7 +108,7 @@ page {
 
 .child-arrow {
   font-size: 48rpx;
-  color: #ddd;
+  color: @border-base;
   margin-left: 16rpx;
   flex-shrink: 0;
 }
@@ -114,7 +116,7 @@ page {
 /* 卡片信息 */
 .child-card-body {
   padding-top: 24rpx;
-  border-top: 2rpx solid #f0f0f0;
+  border-top: 2rpx solid @border-base;
 }
 
 .info-row {
@@ -130,12 +132,12 @@ page {
 
 .info-label {
   font-size: 28rpx;
-  color: #999;
+  color: @text-tertiary;
 }
 
 .info-value {
   font-size: 28rpx;
-  color: #333;
+  color: @text-primary;
   font-weight: 500;
 }
 
@@ -157,14 +159,14 @@ page {
 
 .empty-text {
   font-size: 32rpx;
-  color: #666;
+  color: @text-secondary;
   margin-bottom: 16rpx;
   font-weight: 500;
 }
 
 .empty-desc {
   font-size: 28rpx;
-  color: #999;
+  color: @text-tertiary;
 }
 
 /* 加载状态 */
@@ -203,14 +205,13 @@ page {
 /* 页面底部 */
 .page-footer {
   position: fixed;
-  bottom: 0;
+  bottom: calc(120rpx + env(safe-area-inset-bottom));
   left: 0;
   right: 0;
   padding: 24rpx 32rpx;
-  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
-  background: #fff;
-  box-shadow: 0 -4rpx 20rpx rgba(0, 0, 0, 0.05);
-  z-index: 100;
+  background: @bg-card;
+  box-shadow: @shadow-sm;
+  z-index: 49;
 }
 
 .add-button {
@@ -220,7 +221,7 @@ page {
   border-radius: 44rpx;
   font-size: 32rpx;
   font-weight: bold;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: @gradient-primary;
   border: none;
 }
 

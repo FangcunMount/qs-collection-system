@@ -7,6 +7,19 @@ import config from '../../config';
  */
 
 /**
+ * 检查受试者是否存在
+ * @param {string|number} iamChildId - IAM儿童ID
+ * @returns {Promise<{exists: boolean, testee_id?: number}>}
+ */
+export const checkTesteeExists = (iamChildId) => {
+  return request('/testees/exists', {}, {
+    host: config.collectionHost,
+    params: { iam_child_id: String(iamChildId) },
+    needToken: true
+  });
+};
+
+/**
  * 获取我的受试者列表
  * @param {number} offset - 偏移量
  * @param {number} limit - 每页数量
@@ -23,8 +36,8 @@ export const getMyTestees = (offset = 0, limit = 20) => {
 /**
  * 创建受试者
  * @param {object} testeeData - 受试者数据
- * @param {number} testeeData.iam_user_id - IAM用户ID（可选）
- * @param {number} testeeData.iam_child_id - IAM儿童ID（必填）
+ * @param {string|number} testeeData.iam_user_id - IAM用户ID（可选，支持大数，建议用字符串）
+ * @param {string|number} testeeData.iam_child_id - IAM儿童ID（必填，支持大数，建议用字符串）
  * @param {string} testeeData.name - 姓名（必填）
  * @param {number} testeeData.gender - 性别 (1=男, 2=女, 3=其他)（必填）
  * @param {string} testeeData.birthday - 出生日期 (YYYY-MM-DD)（可选）
@@ -47,7 +60,7 @@ export const createTestee = (testeeData) => {
  * @returns {Promise<object>}
  */
 export const getTestee = (testeeId) => {
-  return request(`/testees/${testeeId}`, {}, {
+  return request(`/testees/${String(testeeId)}`, {}, {
     host: config.collectionHost,
     needToken: true
   });
@@ -60,9 +73,9 @@ export const getTestee = (testeeId) => {
  * @returns {Promise<object>}
  */
 export const updateTestee = (testeeId, testeeData) => {
-  return request(`/testees/${testeeId}`, testeeData, {
+  return request(`/testees/${String(testeeId)}`, testeeData, {
     host: config.collectionHost,
-    method: 'PATCH',
+    method: 'PUT',
     needToken: true
   });
 };
@@ -73,7 +86,7 @@ export const updateTestee = (testeeId, testeeData) => {
  * @returns {Promise<{message: string}>}
  */
 export const deleteTestee = (testeeId) => {
-  return request(`/testees/${testeeId}`, {}, {
+  return request(`/testees/${String(testeeId)}`, {}, {
     host: config.collectionHost,
     method: 'DELETE',
     needToken: true
@@ -81,6 +94,7 @@ export const deleteTestee = (testeeId) => {
 };
 
 export default {
+  checkTesteeExists,
   getMyTestees,
   createTestee,
   getTestee,
