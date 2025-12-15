@@ -1,14 +1,39 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Taro from "@tarojs/taro";
 import { View, Text } from "@tarojs/components";
 import { AtIcon } from "taro-ui";
 import "taro-ui/dist/style/components/icon.scss";
 
 import BottomMenu from "../../../components/bottomMenu";
+import { subscribeUserStore, getUserStoreState, initUserStore } from "../../../store/userStore";
 import "./index.less";
 
 const UserProfile = () => {
-  const [isLoggedIn] = useState(false); // 默认未登录
+  const [userState, setUserState] = useState(() => getUserStoreState());
+  
+  // 从 userStore 获取用户信息
+  const isLoggedIn = userState.userInfo && userState.userInfo.name;
+  const userName = userState.userInfo?.name || userState.userInfo?.nickname || "用户";
+  const userAvatar = userState.userInfo?.picture || userState.userInfo?.avatarUrl;
+  const userMobile = userState.userInfo?.mobile;
+
+  // 订阅 userStore 变化
+  useEffect(() => {
+    const unsubscribe = subscribeUserStore((snapshot) => {
+      setUserState(snapshot);
+    });
+
+    // 初始化用户数据
+    const initState = getUserStoreState();
+    if (!initState.isInitialized && !initState.isLoading) {
+      initUserStore().catch(err => {
+        console.error('[UserProfile] 初始化用户数据失败:', err);
+      });
+    }
+
+    return () => unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // 功能菜单项
   const menuItems = [
@@ -25,20 +50,19 @@ const UserProfile = () => {
   };
 
   const handleMenuItemClick = (item) => {
-    console.log("点击菜单项:", item.name);
     // TODO: 根据不同菜单项导航到相应页面
     switch (item.id) {
       case 1: // 个人档案
-        Taro.navigateTo({ url: "/pages/testee/editor/index" });
+        Taro.navigateTo({ url: "/pages/testee/list/index" });
         break;
       case 2: // 填写记录
-        // TODO: 导航到填写记录页面
+        Taro.navigateTo({ url: "/pages/answersheet/list/index" });
         break;
       case 3: // 测评报告
-        Taro.navigateTo({ url: "/pages/analysis/index" });
+        Taro.navigateTo({ url: "/pages/answersheet/list/index" });
         break;
       case 4: // 收藏记录
-        // TODO: 导航到收藏记录页面
+        Taro.navigateTo({ url: "/pages/questionnaire/list/index" });
         break;
       default:
         break;
@@ -75,18 +99,19 @@ const UserProfile = () => {
     <View className="user-profile-page">
       {/* 顶部渐变背景区域 */}
       <View className="profile-header">
-        {/* 页面标题 */}
-        <Text className="page-title">个人中心</Text>
-
         {/* 用户信息卡片 */}
         {isLoggedIn ? (
-          <View className="user-info">
+          <View className="user-info" onClick={() => Taro.navigateTo({ url: "/pages/testee/editor/index" })}>
             <View className="user-avatar">
-              <Text>👤</Text>
+              {userAvatar ? (
+                <image src={userAvatar} className="avatar-img" />
+              ) : (
+                <Text>👤</Text>
+              )}
             </View>
             <View className="user-details">
-              <Text className="user-name">用户名</Text>
-              <Text className="user-desc">点击查看个人信息</Text>
+              <Text className="user-name">{userName}</Text>
+              <Text className="user-desc">{userMobile || "点击查看个人信息"}</Text>
             </View>
           </View>
         ) : (
@@ -111,13 +136,13 @@ const UserProfile = () => {
           {menuItems.map((item) => (
             <View
               key={item.id}
-              className="menu-item"
+              className="profile-menu-item"
               onClick={() => handleMenuItemClick(item)}
             >
-              <View className="menu-icon" style={{ backgroundColor: item.bgColor }}>
+              <View className="profile-menu-icon" style={{ backgroundColor: item.bgColor }}>
                 <AtIcon value={item.icon} size="32" color={item.color} />
               </View>
-              <Text className="menu-name">{item.name}</Text>
+              <Text className="profile-menu-name">{item.name}</Text>
             </View>
           ))}
         </View>

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import Taro from "@tarojs/taro";
 import { View, Text, ScrollView } from "@tarojs/components";
 import { AtButton, AtLoadMore } from "taro-ui";
-import BottomMenu from "../../../components/bottomMenu";
 
 import "./index.less";
 import { 
@@ -39,11 +38,8 @@ const ChildrenList = () => {
   }, []);
 
   const loadChildren = async () => {
-    console.log('[ChildrenList] loadChildren 开始执行');
     try {
-      console.log('[ChildrenList] 调用 initTesteeStore');
-      const result = await initTesteeStore();
-      console.log('[ChildrenList] initTesteeStore 返回结果:', result);
+      await initTesteeStore();
     } catch (err) {
       console.error('[ChildrenList] 加载失败:', err);
       setError(err.message || '加载失败');
@@ -261,8 +257,6 @@ const ChildrenList = () => {
           + 添加受试者
         </AtButton>
       </View>
-
-      <BottomMenu activeKey="历史" />
     </View>
   );
 };

@@ -11,22 +11,8 @@
   // ===== 顶部渐变区域 =====
   .profile-header {
     background: linear-gradient(to bottom, #E6F7FF 0%, #F0F9FF 50%, #FAFAFA 100%);
-    padding: 220rpx 40rpx 48rpx;
+    padding: 48rpx 40rpx 48rpx;
     position: relative;
-  }
-
-  // ===== 页面标题 (绝对定位在顶部) =====
-  .page-title {
-    position: absolute;
-    top: 88rpx;
-    left: 0;
-    right: 0;
-    font-size: 34rpx;
-    font-weight: 700;
-    color: @text-primary;
-    text-align: center;
-    display: block;
-    z-index: 10;
   }
 
   // ===== 用户信息卡片 =====
@@ -97,7 +83,7 @@
     gap: 24rpx;
   }
 
-  .menu-item {
+  .profile-menu-item {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -115,7 +101,7 @@
     }
   }
 
-  .menu-icon {
+  .profile-menu-icon {
     width: 80rpx;
     height: 80rpx;
     border-radius: 50%;
@@ -126,7 +112,7 @@
     transition: all 0.2s;
   }
 
-  .menu-name {
+  .profile-menu-name {
     font-size: 24rpx;
     color: #595959;
     font-weight: 500;
@@ -137,7 +123,7 @@
 
   // ===== 操作区域 =====
   .action-section {
-    padding: 32rpx 32rpx 64rpx;
+    padding: 100rpx 32rpx 32rpx 32rpx;
     background: transparent;
     display: flex;
     flex-direction: column;
@@ -146,25 +132,26 @@
 
   .clear-cache-btn {
     background: #FFFFFF;
-    border: none;
-    border-radius: 24rpx;
-    height: 96rpx;
+    border: 2rpx solid #E5E7EB;
+    border-radius: 16rpx;
+    height: 88rpx;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.03);
     transition: all 0.2s;
     cursor: pointer;
 
     &:active {
-      background: #F5F5F5;
+      background: #F9FAFB;
+      border-color: #D1D5DB;
       transform: scale(0.98);
     }
   }
 
   .clear-cache-text {
     font-size: 28rpx;
-    color: #595959;
+    color: #4B5563;
     font-weight: 500;
     display: block;
   }

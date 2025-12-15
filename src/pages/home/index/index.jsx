@@ -13,7 +13,7 @@ const categories = [
   { id: 2, name: "睡眠评估", icon: "iphone", iconType: "outlined" },
   { id: 3, name: "慢性病管理", icon: "heart-2", iconType: "outlined" },
   { id: 4, name: "儿童发育", icon: "user", iconType: "outlined" },
-  { id: 5, name: "认知筛查", icon: "lightbulb", iconType: "outlined" },
+  { id: 5, name: "认知筛查", icon: "bookmark", iconType: "outlined" },
   { id: 6, name: "疼痛评估", icon: "alert-circle", iconType: "outlined" },
   { id: 7, name: "生活质量", icon: "star", iconType: "outlined" },
   { id: 8, name: "成瘾评估", icon: "blocked", iconType: "outlined" },
@@ -45,7 +45,6 @@ const HomeIndex = () => {
   const [searchText, setSearchText] = useState("");
 
   const handleCategoryClick = (category) => {
-    console.log("分类点击:", category.name);
     // 跳转到量表列表，按分类筛选
     Taro.navigateTo({ 
       url: `/pages/questionnaire/list/index?category=${category.name}` 
@@ -53,7 +52,6 @@ const HomeIndex = () => {
   };
 
   const handleScaleClick = (scale) => {
-    console.log("量表点击:", scale.title);
     // TODO: 跳转到量表填写页面
     Taro.navigateTo({ 
       url: `/pages/questionnaire/fill/index?code=${scale.id}` 

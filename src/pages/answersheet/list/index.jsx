@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
+import Taro from "@tarojs/taro";
 import { View } from "@tarojs/components";
 import TesteeListTab from "./widget/TesteeListTab";
 import AnswersheetListImp from "./widget/AnswersheetListImp";
+import BottomMenu from "../../../components/bottomMenu";
 import { initTesteeStore } from "../../../store/testeeStore.ts";
 import { paramsConcat } from "../../../util";
-import Taro from "@tarojs/taro";
 import {
   getTesteeList as getStoredTesteeList,
   setSelectedTesteeId,
@@ -15,17 +16,19 @@ import {
 const AnswersheetList = () => {
   const [ testeeList, setTesteeList ] = useState(() => getStoredTesteeList());
   
-  // 初始化受试者列表
-  useEffect(() => {
-    const unsubscribe = subscribeTesteeStore(({ testeeList }) => {
-      setTesteeList(testeeList);
-    });
-    initTesteeList();
-    return unsubscribe;
+  // 跳转到注册页面
+  const jumpToRegister = useCallback(() => {
+    const params = {
+      submitClose: 0,
+      goUrl: '/pages/home/index/index',
+      goParams: '{}'
+    };
+
+    Taro.redirectTo({ url: paramsConcat("/pages/user/register/index", params) });
   }, []);
 
   // 获取受试者列表
-  const initTesteeList = async () => {
+  const initTesteeList = useCallback(async () => {
     let storedList = getStoredTesteeList();
     if (!storedList.length) {
       await initTesteeStore();
@@ -41,18 +44,16 @@ const AnswersheetList = () => {
     if (!getSelectedTesteeId()) {
       setSelectedTesteeId(storedList[0].id);
     }
-  }
-
-  // 跳转到注册页面
-  const jumpToRegister = () => {
-    const params = {
-      submitClose: 0,
-      goUrl: '/pages/home/index/index',
-      goParams: '{}'
-    };
-
-    Taro.redirectTo({ url: paramsConcat("/pages/user/register/index", params) });
-  }
+  }, [jumpToRegister]);
+  
+  // 初始化受试者列表
+  useEffect(() => {
+    const unsubscribe = subscribeTesteeStore((store) => {
+      setTesteeList(store.testeeList);
+    });
+    initTesteeList();
+    return unsubscribe;
+  }, [initTesteeList]);
 
   return (
     <>
@@ -64,12 +65,14 @@ const AnswersheetList = () => {
             <TesteeListTab 
               testeeList={testeeList} 
               TabPanes={testeeList.map((testee) => {
-                return <AnswersheetListImp testee={testee} />
+                return <AnswersheetListImp key={testee.id} testee={testee} />
               })}
               onSelect={(testee) => testee?.id && setSelectedTesteeId(testee.id)}
             />
         }
       </View>
+
+      <BottomMenu activeKey="记录" />
     </>
   );
 };

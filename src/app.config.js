@@ -6,6 +6,7 @@ export default {
     'pages/answersheet/list/index',
     'pages/answersheet/detail/index',
     'pages/analysis/index',
+    'pages/analysis/detail/index',
     'pages/user/register/index',
     'pages/user/profile/index',
     'pages/testee/register/index',

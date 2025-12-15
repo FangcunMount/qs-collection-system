@@ -45,34 +45,7 @@ export const getAssessmentReportByAnswersheetId = async (answersheetId) => {
   return getAssessmentReport(assessmentId, testeeId);
 }
 
-/**
- * 获取测评分析（包括因子解读、T分等）
- * 这是对原 getAnalysis 的兼容包装，现在改用 getAssessmentReport
- * @param {number} answersheetId - 答卷ID（注意：需要对应的测评ID和受试者ID）
- * @returns {Promise<object>}
- * 
- * ⚠️ 此函数已弃用，建议直接使用 getAssessmentReport(assessmentId, testeeId)
- */
-export const getAnalysis = (answersheetId) => {
-  // 旧接口已下线，此处保留以兼容，但应该改为使用 getAssessmentReport
-  console.warn(
-    '[analysisApi] getAnalysis 已弃用，请改用 getAssessmentReport(assessmentId, testeeId)',
-    { answersheetId }
-  );
-  
-  // 如果需要从答卷ID获取测评数据，需要：
-  // 1. 先调用 getAnswersheet(answersheetId) 获取答卷信息
-  // 2. 从答卷信息中获取 assessment_id 和 testee_id
-  // 3. 再调用 getAssessmentReport(assessment_id, testee_id)
-  
-  return Promise.reject({
-    code: 'DEPRECATED',
-    message: 'getAnalysis API 已弃用，请改用 getAssessmentReport(assessmentId, testeeId)'
-  });
-}
-
 export default {
   getAssessmentReport,
   getAssessmentReportByAnswersheetId,
-  getAnalysis
 }

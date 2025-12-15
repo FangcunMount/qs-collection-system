@@ -1,14 +1,14 @@
 .color() {
   // 主色：各类按钮、链接文字、选中
-  primary: #478de2;
+  primary: #1890FF;
   // 次色：比主色淡一点
-  secondary: #e5f0ff;
+  secondary: #e6f7ff;
   // 积极色，如：创建成功、进行中
-  positive: #008000;
+  positive: #52C41A;
   // 警告色，如：不可搞作、等
-  warning: #fef8cb;
+  warning: #FA8C16;
   // 消极色，如：失败、金钱等
-  negative: #f44336;
+  negative: #F5222D;
 }
 
 .bgColor() {
@@ -188,4 +188,55 @@ each(.fontSizeB(), .(@v, @k, @i) {
 page {
   width: 100vw;
   height: 100vh;
+}
+
+// ===== 统一按钮主题色配置 =====
+// Taro UI 按钮主题色覆盖
+.at-button {
+  // 主要按钮
+  &--primary {
+    background: linear-gradient(135deg, #1890FF 0%, #096DD9 100%) !important;
+    border-color: #1890FF !important;
+    color: #fff !important;
+    
+    &:active {
+      background: linear-gradient(135deg, #40A9FF 0%, #1890FF 100%) !important;
+      opacity: 0.9;
+    }
+  }
+  
+  // 次要按钮
+  &--secondary {
+    background: #fff !important;
+    border-color: #1890FF !important;
+    color: #1890FF !important;
+    
+    &:active {
+      background: #E6F7FF !important;
+      border-color: #40A9FF !important;
+    }
+  }
+}
+
+// 自定义按钮样式类
+.primary-button {
+  background: linear-gradient(135deg, #1890FF 0%, #096DD9 100%);
+  color: #fff;
+  border: none;
+  border-radius: 12rpx;
+  
+  &:active {
+    opacity: 0.9;
+  }
+}
+
+.secondary-button {
+  background: #fff;
+  color: #1890FF;
+  border: 2rpx solid #1890FF;
+  border-radius: 12rpx;
+  
+  &:active {
+    background: #E6F7FF;
+  }
 }

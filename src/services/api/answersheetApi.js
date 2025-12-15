@@ -126,30 +126,8 @@ export const getAnswersheetidBySignid = (signid) => {
   });
 }
 
-/**
- * 获取答卷列表
- * 在 answersheetList 页面使用
- * ⚠️ 此接口 /readAnswerSheet/list 不在 collection.yaml 中定义，已弃用
- * collection.yaml 中没有答卷列表查询的接口
- * 可以使用 getAssessments API 来获取测评列表，再从测评中获取答卷信息
- * @deprecated 此接口已不再使用
- * @param {string|number} testeeId - 受试者ID（自动转为字符串避免精度问题）
- * @param {number} limit - 限制数量
- */
-export const getAnswersheetList = (testeeId, limit) => {
-  console.warn(
-    '[answersheetApi] getAnswersheetList 使用的接口不在 collection.yaml 中定义',
-    { testeeId, limit }
-  );
-  return Promise.reject({
-    code: 'UNSUPPORTED',
-    message: '该接口不在 collection.yaml 中定义，不支持获取答卷列表'
-  });
-}
-
 export default {
   submitAnswersheet,
   getAnswersheet,
   getAnswersheetidBySignid,
-  getAnswersheetList,
 }

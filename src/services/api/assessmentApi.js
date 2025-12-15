@@ -18,9 +18,16 @@ export const getAssessments = (testeeId, status, page = 1, pageSize = 20) => {
   const params = { testee_id: String(testeeId), page, page_size: pageSize };
   if (status) params.status = status;
   
-  return request('/assessments', {}, {
+  // 对于 GET 请求，需要将参数放在 URL 中
+  const queryString = Object.keys(params)
+    .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
+    .join('&');
+  
+  const urlWithParams = `/assessments?${queryString}`;
+  
+  return request(urlWithParams, {}, {
     host: config.collectionHost,
-    params,
+    method: 'GET',
     needToken: true
   });
 };
