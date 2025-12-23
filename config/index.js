@@ -41,7 +41,7 @@ const config = {
         }
       }
     },
-    // 添加 webpack 配置，忽略 mini-css-extract-plugin 的样式导入顺序警告
+    // 添加 webpack 配置，优化打包体积
     webpackChain(chain) {
       // 检查插件是否存在再配置
       if (chain.plugins.has('extract-css')) {
@@ -53,6 +53,9 @@ const config = {
           return args
         })
       }
+      
+      // 注意：小程序使用自己的分包机制（通过 app.config.js 的 subPackages 配置）
+      // 不要使用 webpack 的 splitChunks，这可能导致编译问题
     }
   },
   h5: {

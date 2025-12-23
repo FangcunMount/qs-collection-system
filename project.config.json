@@ -1,5 +1,5 @@
 {
-  "miniprogramRoot": "dist/",
+  "miniprogramRoot": "dist",
   "projectname": "问卷小程序",
   "description": "问卷小程序",
   "appid": "wx72ade250b619a649",

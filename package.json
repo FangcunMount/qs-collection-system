@@ -10,7 +10,9 @@
   },
   "scripts": {
     "build:weapp": "taro build --type weapp",
-    "dev:weapp": "npm run build:weapp -- --watch"
+    "build:weapp:prod": "NODE_ENV=production taro build --type weapp",
+    "dev:weapp": "npm run build:weapp -- --watch",
+    "dev:weapp:prod": "NODE_ENV=production npm run build:weapp -- --watch"
   },
   "browserslist": [
     "last 3 versions",
