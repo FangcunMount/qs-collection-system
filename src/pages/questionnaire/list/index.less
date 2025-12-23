@@ -41,54 +41,57 @@
     }
   }
 
-  // 筛选标签栏
-  .filter-tabs {
-    display: flex;
-    align-items: center;
-    gap: 16rpx;
-    padding: 16rpx 32rpx;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(8rpx);
-    box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
-    white-space: nowrap;
+  // 分类筛选
+  .category-filter {
+    padding: 16rpx 0;
+    margin: 16rpx 0;
+    background: #FFFFFF;
+    border-top: 2rpx solid #F9FAFB;
 
-    .filter-btn {
+    .category-scroll {
       display: flex;
-      align-items: center;
-      gap: 8rpx;
-      padding-right: 24rpx;
-      border-right: 2rpx solid #E5E7EB;
-      flex-shrink: 0;
-
-      .filter-text {
-        font-size: 24rpx;
-        font-weight: 500;
-        color: #4B5563;
-      }
+      flex-direction: row;
+      flex-wrap: wrap;
+      padding: 8rpx 32rpx;
+      gap: 20rpx 28rpx; // 上下间隙 20rpx，左右间隙 28rpx
     }
 
-    .filter-tab {
-      flex-shrink: 0;
-      padding: 12rpx 24rpx;
+    .category-item {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 14rpx 26rpx;
       background: #F3F4F6;
-      border-radius: 16rpx;
-      font-size: 24rpx;
-      font-weight: 500;
-      color: #4B5563;
+      border-radius: 24rpx;
+      border: 2rpx solid transparent;
       transition: all 0.2s;
+      flex-shrink: 0;
+      min-height: 64rpx;
+      box-sizing: border-box;
+      margin: 0; // 确保没有额外的 margin
+
+      .category-text {
+        font-size: 28rpx;
+        color: #4B5563;
+        font-weight: 500;
+        white-space: nowrap;
+        line-height: 1.2;
+      }
 
       &:active {
-        opacity: 0.7;
+        background: #E5E7EB;
+        transform: scale(0.98);
       }
 
       &.active {
-        background: @primary-color;
-        color: #FFFFFF;
-        box-shadow: 0 2rpx 8rpx rgba(24, 144, 255, 0.3);
-      }
+        background: #E6F7FF;
+        border-color: #91D5FF;
+        box-shadow: 0 2rpx 8rpx rgba(24, 144, 255, 0.15);
 
-      .filter-tab-text {
-        display: block;
+        .category-text {
+          color: #1890FF;
+          font-weight: 600;
+        }
       }
     }
   }
@@ -109,13 +112,14 @@
     background: #FFFFFF;
     border-radius: 24rpx;
     padding: 32rpx;
-    box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
-    border: 2rpx solid transparent;
-    transition: all 0.2s;
+    box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
+    border: 2rpx solid #F0F0F0;
+    transition: all 0.3s ease;
 
     &:active {
-      transform: scale(0.98);
-      opacity: 0.9;
+      transform: translateY(-2rpx);
+      box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.1);
+      border-color: #1890FF;
     }
 
     // 标题和标签行
@@ -126,45 +130,108 @@
       margin-bottom: 16rpx;
       gap: 16rpx;
 
-      .scale-title {
+      .scale-title-wrapper {
         flex: 1;
-        font-size: 30rpx;
-        font-weight: 700;
-        color: @text-primary;
-        line-height: 1.4;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        min-width: 0;
+
+        .scale-title {
+          font-size: 32rpx;
+          font-weight: 700;
+          color: @text-primary;
+          line-height: 1.4;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+        }
+      }
+    }
+
+    // 标签行 - stages 在左侧，tags 在右侧
+    .scale-tags-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16rpx;
+      margin-top: 12rpx;
+      margin-bottom: 16rpx;
+
+      .tags-left {
+        display: flex;
+        align-items: center;
+        flex: 1;
+
+        .stages-text {
+          font-size: 22rpx;
+          color: #52C41A;
+          font-weight: 500;
+          line-height: 1.4;
+        }
       }
 
-      .scale-tags {
+      .tags-right {
         display: flex;
-        gap: 12rpx;
-        flex-shrink: 0;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8rpx;
+        justify-content: flex-end;
+      }
 
-        .tag {
-          padding: 6rpx 12rpx;
-          border-radius: 8rpx;
-          font-size: 20rpx;
-          font-weight: 500;
+      .tag {
+        padding: 6rpx 12rpx;
+        border-radius: 8rpx;
+        font-size: 20rpx;
+        font-weight: 500;
+        white-space: nowrap;
+        line-height: 1.2;
 
-          &.tag-hot {
-            background: #FFF7ED;
-            color: #F97316;
-            border: 2rpx solid #FFEDD5;
+        &.tag-label {
+          background: #FFF7E6;
+          color: #FA8C16;
+          border: 1rpx solid #FFE7BA;
+        }
+
+        &.tag-more {
+          background: #F5F5F5;
+          color: #8C8C8C;
+          border: 1rpx solid #E0E0E0;
+          padding: 6rpx 10rpx;
+
+          .tag-more-text {
+            font-size: 20rpx;
+            font-weight: 500;
           }
+        }
 
-          &.tag-free {
-            background: #F0FDF4;
-            color: #16A34A;
-            border: 2rpx solid #DCFCE7;
-          }
+        &.tag-category {
+          background: #F0F5FF;
+          color: #2F54EB;
+          border: 1rpx solid #ADC6FF;
+        }
 
-          &.tag-new {
-            background: #EFF6FF;
-            color: #2563EB;
-            border: 2rpx solid #DBEAFE;
-          }
+        &.tag-stage {
+          background: #F6FFED;
+          color: #52C41A;
+          border: 1rpx solid #B7EB8F;
+        }
+
+        &.tag-hot {
+          background: #FFF7ED;
+          color: #F97316;
+          border: 2rpx solid #FFEDD5;
+        }
+
+        &.tag-free {
+          background: #F0FDF4;
+          color: #16A34A;
+          border: 2rpx solid #DCFCE7;
+        }
+
+        &.tag-new {
+          background: #EFF6FF;
+          color: #2563EB;
+          border: 2rpx solid #DBEAFE;
         }
       }
     }
@@ -183,35 +250,40 @@
       -webkit-box-orient: vertical;
     }
 
-    // 元信息行
-    .scale-meta {
-      display: flex;
-      align-items: center;
-      gap: 32rpx;
+    // 底部信息栏 - 分两行
+    .scale-footer {
       padding-top: 24rpx;
       border-top: 2rpx solid #F9FAFB;
+      display: flex;
+      flex-direction: column;
+      gap: 16rpx;
 
-      .meta-item {
+      .footer-row {
         display: flex;
         align-items: center;
         gap: 8rpx;
+        flex-wrap: wrap;
 
-        .meta-text {
+        .footer-text {
           font-size: 24rpx;
           color: @text-tertiary;
+          line-height: 1.4;
         }
-      }
 
-      .meta-hot {
-        display: flex;
-        align-items: center;
-        gap: 6rpx;
-        margin-left: auto;
+        .footer-item {
+          display: flex;
+          align-items: center;
+          gap: 6rpx;
+        }
 
-        .meta-hot-text {
-          font-size: 20rpx;
-          color: #9CA3AF;
-          font-family: ui-monospace, monospace;
+        .footer-question-count {
+          margin-left: auto;
+
+          .footer-question-text {
+            font-size: 24rpx;
+            font-weight: 500;
+            color: #1890FF;
+          }
         }
       }
     }
@@ -257,11 +329,11 @@
       margin-bottom: 16rpx;
     }
 
-    .empty-desc {
-      display: block;
-      font-size: 28rpx;
-      color: @text-tertiary;
-    }
+  .empty-desc {
+    display: block;
+    font-size: 28rpx;
+    color: @text-tertiary;
+  }
   }
 }
 

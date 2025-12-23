@@ -20,14 +20,265 @@
     }
   
     .analysis-header-subtitle {
-        font-size: 26rpx;
+        font-size: 28rpx;
         opacity: 0.9;
+        line-height: 1.5;
     }
 }
 
 // 内容区域
 .analysis-content {
     padding: 32rpx;
+}
+
+// 因子容器
+.factors-container {
+    background: #FFFFFF;
+    border-radius: 24rpx;
+    padding: 40rpx 32rpx;
+    margin-bottom: 32rpx;
+    box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
+    border: 2rpx solid #F0F0F0;
+
+    .factors-title {
+        font-size: 36rpx;
+        font-weight: bold;
+        color: #333333;
+        padding-bottom: 28rpx;
+        border-bottom: 2rpx solid #F0F0F0;
+        margin-bottom: 32rpx;
+    }
+
+    .factors-list {
+        display: flex;
+        flex-direction: column;
+        gap: 24rpx;
+
+        .factor-item {
+            padding: 32rpx 0;
+            border-bottom: 2rpx solid #F5F5F5;
+
+            &.last-item {
+                border-bottom: none;
+                padding-bottom: 0;
+            }
+
+            .factor-item-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 20rpx;
+                gap: 16rpx;
+
+                .factor-item-title {
+                    flex: 1;
+                    font-size: 32rpx;
+                    font-weight: 600;
+                    color: #333333;
+                    line-height: 1.5;
+                }
+
+                .factor-risk-badge {
+                    display: flex;
+                    align-items: center;
+                    gap: 4rpx;
+                    padding: 6rpx 12rpx;
+                    border-radius: 12rpx;
+                    font-size: 20rpx;
+                    font-weight: 500;
+                    flex-shrink: 0;
+                    white-space: nowrap;
+
+                    .at-icon {
+                        flex-shrink: 0;
+                    }
+
+                    .risk-label {
+                        display: block;
+                    }
+
+                    &.risk-high {
+                        background: #FFF1F0;
+                        color: #FF4D4F;
+                        border: 1rpx solid rgba(255, 77, 79, 0.3);
+                    }
+
+                    &.risk-medium {
+                        background: #FFF7E6;
+                        color: #FA8C16;
+                        border: 1rpx solid rgba(250, 140, 22, 0.3);
+                    }
+
+                    &.risk-low {
+                        background: #F6FFED;
+                        color: #52C41A;
+                        border: 1rpx solid rgba(82, 196, 26, 0.3);
+                    }
+
+                    &.risk-normal {
+                        background: #F0F5FF;
+                        color: #1890FF;
+                        border: 1rpx solid rgba(24, 144, 255, 0.3);
+                    }
+
+                    &.risk-none {
+                        display: none;
+                    }
+                }
+            }
+
+            .factor-item-body {
+                display: flex;
+                flex-direction: column;
+                gap: 20rpx;
+
+                .factor-score-section {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 16rpx;
+                    width: 100%;
+
+                    .score-info {
+                        display: flex;
+                        flex-direction: row;
+                        align-items: center;
+                        justify-content: space-between;
+                        gap: 16rpx;
+
+                        .score-label {
+                            font-size: 26rpx;
+                            color: #999999;
+                            font-weight: 500;
+                            white-space: nowrap;
+                        }
+
+                        .score-value {
+                            font-size: 34rpx;
+                            font-weight: 700;
+                            line-height: 1.2;
+
+                            &.risk-high {
+                                color: #FF4D4F;
+                            }
+
+                            &.risk-medium {
+                                color: #FA8C16;
+                            }
+
+                            &.risk-low {
+                                color: #52C41A;
+                            }
+
+                            &.risk-normal {
+                                color: #1890FF;
+                            }
+
+                            &.risk-none {
+                                color: #666666;
+                            }
+                        }
+                    }
+
+                    .score-progress-container {
+                        width: 100%;
+                        height: 20rpx;
+                        background: #F0F0F0;
+                        border-radius: 10rpx;
+                        overflow: hidden;
+                        position: relative;
+                        margin-top: 4rpx;
+
+                        .score-progress-bar {
+                            height: 100%;
+                            border-radius: 10rpx;
+                            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+                            box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.15);
+
+                            &.risk-high {
+                                background: linear-gradient(90deg, #FF4D4F 0%, #FF7875 100%);
+                            }
+
+                            &.risk-medium {
+                                background: linear-gradient(90deg, #FA8C16 0%, #FFA940 100%);
+                            }
+
+                            &.risk-low {
+                                background: linear-gradient(90deg, #52C41A 0%, #73D13D 100%);
+                            }
+
+                            &.risk-normal {
+                                background: linear-gradient(90deg, #1890FF 0%, #40A9FF 100%);
+                            }
+
+                            &.risk-none {
+                                background: linear-gradient(90deg, #666666 0%, #8C8C8C 100%);
+                            }
+                        }
+                    }
+                }
+
+                .factor-content-text {
+                    font-size: 28rpx;
+                    color: #666666;
+                    line-height: 1.8;
+                    margin-top: 8rpx;
+                    padding-top: 8rpx;
+                }
+            }
+        }
+    }
+}
+
+// 建议卡片
+.suggestions-card {
+    background: #FFFFFF;
+    border-radius: 24rpx;
+    padding: 32rpx;
+    margin-bottom: 32rpx;
+    box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
+    border: 2rpx solid #F0F0F0;
+
+    .suggestions-title {
+        font-size: 36rpx;
+        font-weight: bold;
+        color: #333333;
+        margin-bottom: 24rpx;
+        padding-bottom: 16rpx;
+        border-bottom: 2rpx solid #F0F0F0;
+    }
+
+    .suggestions-list {
+        display: flex;
+        flex-direction: column;
+        gap: 24rpx;
+
+        .suggestion-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 16rpx;
+
+            .suggestion-number {
+                flex-shrink: 0;
+                width: 48rpx;
+                height: 48rpx;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: @primary-color;
+                color: #FFFFFF;
+                border-radius: 50%;
+                font-size: 24rpx;
+                font-weight: bold;
+            }
+
+            .suggestion-text {
+                flex: 1;
+                font-size: 28rpx;
+                color: #333333;
+                line-height: 1.6;
+            }
+        }
+    }
 }
 
 // 空状态

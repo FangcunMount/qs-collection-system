@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { View } from "@tarojs/components";
+import { View, Text } from "@tarojs/components";
 import Taro from "@tarojs/taro";
-import { AtButton, AtActivityIndicator } from "taro-ui";
+import { AtButton, AtActivityIndicator, AtIcon } from "taro-ui";
 
 import { getAssessmentReport, getAssessmentReportByAnswersheetId } from "../../services/api/analysisApi";
 import PageContainer from "../../components/pageContainer/pageContainer";
@@ -22,6 +22,13 @@ const Analysis = () => {
   const [tScores, setTScores] = useState({});
   const [answersheetid, setAnswersheetid] = useState(-1);
   const [exportAnalysisFlag, setExportAnalysisFlag] = useState("");
+  const [reportInfo, setReportInfo] = useState({
+    scale_name: '',
+    scale_code: '',
+    risk_level: '',
+    suggestions: [],
+    created_at: ''
+  });
 
   const [isReady, setIsReady] = useState(false);
   const [isShowTotalAndFactorAnalysisCard, setIsShowTotalAndFactorAnalysisCard] = useState(false);
@@ -30,35 +37,58 @@ const Analysis = () => {
   /**
    * 处理报告数据
    * 映射 API 字段到组件期望的字段
+   * API 响应结构：{ data: AssessmentReportResponse } 或直接是 AssessmentReportResponse
    */
   const handleReportData = useCallback((result) => {
     logger.RUN('[Analysis] 原始报告数据:', result);
     
+    // 处理 API 响应结构：可能是 { data: {...} } 或直接是 {...}
+    const reportData = result.data || result;
+    
+    // 保存报告基本信息
+    setReportInfo({
+      scale_name: reportData.scale_name || '',
+      scale_code: reportData.scale_code || '',
+      risk_level: reportData.risk_level || '',
+      suggestions: reportData.suggestions || [],
+      created_at: reportData.created_at || ''
+    });
+    
     // 映射总分数据
-    if (result.conclusion) {
+    if (reportData.conclusion) {
       setTotal({
-        content: result.conclusion,
-        score: result.total_score
+        content: reportData.conclusion,
+        score: reportData.total_score
       });
     } else {
       setTotal(null);
     }
     
     // 映射因子维度数据
-    const mappedFactors = (result.dimensions || []).map(dimension => ({
+    // DimensionInterpretResponse: { description, factor_code, factor_name, raw_score, max_score, risk_level }
+    const mappedFactors = (reportData.dimensions || []).map(dimension => ({
       factor_code: dimension.factor_code,
       title: dimension.factor_name,
       content: dimension.description,
       score: dimension.raw_score,
-      max_score: dimension.max_score || 100, // 如果没有 max_score，默认 100
+      max_score: dimension.max_score,
       risk_level: dimension.risk_level
     }));
     setFactors(mappedFactors);
     
-    // T分数据（如果存在）
-    setTScores(result.t_score_interpretations || {});
+    // T分数据（如果存在，但 API 文档中没有这个字段，保留兼容性）
+    setTScores(reportData.t_score_interpretations || {});
     
-    logger.RUN('[Analysis] 映射后数据:', { total: { content: result.conclusion, score: result.total_score }, factors: mappedFactors });
+    logger.RUN('[Analysis] 映射后数据:', { 
+      reportInfo: {
+        scale_name: reportData.scale_name,
+        scale_code: reportData.scale_code,
+        risk_level: reportData.risk_level,
+        suggestions: reportData.suggestions
+      },
+      total: { content: reportData.conclusion, score: reportData.total_score }, 
+      factors: mappedFactors 
+    });
   }, []);
 
   /**
@@ -159,6 +189,101 @@ const Analysis = () => {
     }
   }, [tScores, total, factors]);
 
+  // 因子项组件
+  const FactorItem = ({ title, content, score, maxScore, riskLevel, isLast }) => {
+    const getRiskConfig = (riskLevel) => {
+      const riskMap = {
+        'high': {
+          className: 'risk-high',
+          label: '高风险',
+          icon: 'alert-circle',
+          textColor: '#FF4D4F',
+          scoreBg: 'rgba(255, 77, 79, 0.1)',
+          progressColor: '#FF4D4F'
+        },
+        'medium': {
+          className: 'risk-medium',
+          label: '中风险',
+          icon: 'alert-circle',
+          textColor: '#FA8C16',
+          scoreBg: 'rgba(250, 140, 22, 0.1)',
+          progressColor: '#FA8C16'
+        },
+        'low': {
+          className: 'risk-low',
+          label: '低风险',
+          icon: 'check-circle',
+          textColor: '#52C41A',
+          scoreBg: 'rgba(82, 196, 26, 0.1)',
+          progressColor: '#52C41A'
+        },
+        'normal': {
+          className: 'risk-normal',
+          label: '正常',
+          icon: 'check-circle',
+          textColor: '#1890FF',
+          scoreBg: 'rgba(24, 144, 255, 0.1)',
+          progressColor: '#1890FF'
+        },
+        'none': {
+          className: 'risk-none',
+          label: '',
+          icon: '',
+          textColor: '#666666',
+          scoreBg: 'rgba(0, 0, 0, 0.05)',
+          progressColor: '#666666'
+        }
+      };
+      return riskMap[riskLevel] || riskMap['none'];
+    };
+    
+    const riskConfig = getRiskConfig(riskLevel);
+    
+    return (
+      <View className={`factor-item ${riskConfig.className} ${isLast ? 'last-item' : ''}`}>
+        <View className="factor-item-header">
+          <Text className="factor-item-title">{title}</Text>
+          {riskConfig.label && (
+            <View className={`factor-risk-badge ${riskConfig.className}`}>
+              {riskConfig.icon && (
+                <AtIcon value={riskConfig.icon} size="12" color={riskConfig.textColor} />
+              )}
+              <Text className="risk-label">{riskConfig.label}</Text>
+            </View>
+          )}
+        </View>
+        
+        <View className="factor-item-body">
+          <View className="factor-score-section">
+            <View className="score-info">
+              <Text className="score-label">得分</Text>
+              <Text className={`score-value ${riskConfig.className}`}>
+                {score !== undefined && score !== null 
+                  ? (maxScore !== undefined && maxScore !== null 
+                      ? `${score}/${maxScore}` 
+                      : score)
+                  : '--'}
+              </Text>
+            </View>
+            {maxScore !== undefined && maxScore !== null && score !== undefined && score !== null && maxScore > 0 ? (
+              <View className="score-progress-container">
+                <View 
+                  className={`score-progress-bar ${riskConfig.className}`}
+                  style={{ 
+                    width: `${Math.min((score / maxScore) * 100, 100)}%`
+                  }}
+                />
+              </View>
+            ) : null}
+          </View>
+          {content && (
+            <Text className="factor-content-text">{content}</Text>
+          )}
+        </View>
+      </View>
+    );
+  };
+
   return (
     <>
       {exportAnalysisFlag && (
@@ -188,6 +313,12 @@ const Analysis = () => {
             {/* 页面标题区域 */}
             <View className="analysis-header">
               <View className="analysis-header-title">测评解读报告</View>
+              {reportInfo.scale_name && (
+                <View className="analysis-header-subtitle">
+                  {reportInfo.scale_name}
+                  {reportInfo.scale_code && ` (${reportInfo.scale_code})`}
+                </View>
+              )}
             </View>
 
             {/* 内容区域 */}
@@ -198,18 +329,42 @@ const Analysis = () => {
                 score={total.score}
               ></TotalAnalysisShowCard>
             ) : null}
-            {factors.map(v => {
-              return (
-                <FactorAnalysisShowCard
-                  key={v.factor_code}
-                  title={v.title}
-                  content={v.content}
-                  score={v.score}
-                  total={v.max_score}
-                  riskLevel={v.risk_level}
-                ></FactorAnalysisShowCard>
-              );
-            })}
+            
+            {/* 因子区域 - 所有因子放在一个卡片中 */}
+            {factors.length > 0 && (
+              <View className="factors-container">
+                <View className="factors-title">因子分析</View>
+                <View className="factors-list">
+                  {factors.map((v, index) => (
+                    <FactorItem
+                      key={v.factor_code}
+                      title={v.title}
+                      content={v.content}
+                      score={v.score}
+                      maxScore={v.max_score}
+                      riskLevel={v.risk_level}
+                      isLast={index === factors.length - 1}
+                    />
+                  ))}
+                </View>
+              </View>
+            )}
+            
+            {/* 建议展示 */}
+            {reportInfo.suggestions && reportInfo.suggestions.length > 0 && (
+              <View className="suggestions-card">
+                <View className="suggestions-title">建议</View>
+                <View className="suggestions-list">
+                  {reportInfo.suggestions.map((suggestion, index) => (
+                    <View key={index} className="suggestion-item">
+                      <View className="suggestion-number">{index + 1}</View>
+                      <Text className="suggestion-text">{suggestion}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+            
             {!haveAnalysis() ? (
               <View className="analysis-empty">
                 <View className="empty-icon">📋</View>

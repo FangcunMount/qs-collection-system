@@ -18,6 +18,9 @@ export * as assessment from './assessmentApi';
 // Collection 问卷 API
 export * as questionnaire from './questionnaireApi';
 
+// Collection 量表 API
+export * as scale from './scaleApi';
+
 // 答卷 API（保持兼容）
 export { default as answersheet } from './answersheetApi';
 

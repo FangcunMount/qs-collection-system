@@ -179,15 +179,23 @@ export default props => {
     // update radio or checkbox extend
     const handleChangeRadioExtend = (itemIndex, optionIndex, value) => {
       const tmp = { ...questionSheet };
-      tmp.questions[itemIndex].options[optionIndex].extend_content = value;
-      setQuestionSheet(tmp);
+      // 使用 question_code 查找题目，而不是索引，避免索引错位
+      const questionIndex = tmp.questions.findIndex(q => q.code === v.code);
+      if (questionIndex !== -1) {
+        tmp.questions[questionIndex].options[optionIndex].extend_content = value;
+        setQuestionSheet(tmp);
+      }
     };
 
     // update other question value (text/number/textarea) all question with have 'value'
     const handleChangeValue = (value, questionIndex) => {
       const tmp = { ...questionSheet };
-      tmp.questions[questionIndex].value = value;
-      setQuestionSheet(tmp);
+      // 使用 question_code 查找题目，而不是索引，避免索引错位
+      const actualIndex = tmp.questions.findIndex(q => q.code === v.code);
+      if (actualIndex !== -1) {
+        tmp.questions[actualIndex].value = value;
+        setQuestionSheet(tmp);
+      }
     };
 
     switch (v.type) {

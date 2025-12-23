@@ -1,11 +1,13 @@
 import React, { useEffect, useState, useCallback } from "react";
 import Taro, { usePullDownRefresh } from "@tarojs/taro";
-import { View, Text, Input } from "@tarojs/components";
-import { AtIcon, AtActivityIndicator, AtTabs, AtTabsPane } from "taro-ui";
+import { View, Text, Input, ScrollView } from "@tarojs/components";
+import { AtIcon, AtActivityIndicator } from "taro-ui";
 import BottomMenu from "../../../components/bottomMenu";
 
 import "./index.less";
-import { getQuestionnaires } from "../../../services/api/questionnaireApi";
+import { getScaleCategories } from "../../../services/api/scaleApi";
+import { request } from "../../../services/servers";
+import config from "../../../config";
 import { paramsConcat } from "../../../util";
 import { getLogger } from "../../../util/log";
 
@@ -15,16 +17,9 @@ const logger = getLogger(PAGE_NAME);
 const QuestionsheetList = () => {
   const [questionsheetList, setQuestionsheetList] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [currentFilterIndex, setCurrentFilterIndex] = useState(0);
   const [searchText, setSearchText] = useState("");
-  
-  // 筛选标签配置
-  const filterTabList = [
-    { title: "全部" },
-    { title: "热门推荐" },
-    { title: "仅看免费" },
-    { title: "最新上线" }
-  ];
+  const [selectedCategory, setSelectedCategory] = useState(null); // null 表示全部
+  const [categories, setCategories] = useState([]);
 
   // 页面级下拉刷新
   usePullDownRefresh(async () => {
@@ -32,36 +27,80 @@ const QuestionsheetList = () => {
     Taro.stopPullDownRefresh();
   });
 
-  useEffect(() => {
-    loadQuestionsheetList();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // 加载分类选项
+  const loadCategories = useCallback(async () => {
+    try {
+      const result = await getScaleCategories();
+      const categoryList = result.categories || [];
+      // 添加"全部"选项到开头
+      const allCategories = [
+        { value: null, label: '全部' },
+        ...categoryList
+      ];
+      setCategories(allCategories);
+    } catch (error) {
+      console.error('加载分类选项失败:', error);
+    }
   }, []);
 
-  // 加载问卷列表
+  // 初始化：从 URL 参数获取筛选条件
+  useEffect(() => {
+    const params = Taro.getCurrentInstance()?.router?.params || {};
+    if (params.keyword) {
+      setSearchText(params.keyword);
+    }
+    if (params.category) {
+      setSelectedCategory(params.category);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadCategories();
+  }, [loadCategories]);
+
+  // 加载量表列表
   const loadQuestionsheetList = useCallback(async () => {
     try {
       setLoading(true);
       
-      const result = await getQuestionnaires(1, 100, undefined, undefined);
-      const questionnaires = result.items || result.questionnaires || [];
+      const queryParams = { 
+        page: 1, 
+        page_size: 100 
+      };
+      if (searchText) queryParams.title = searchText;
+      if (selectedCategory) queryParams.category = selectedCategory;
       
-      const formattedList = questionnaires.map(item => ({
+      console.log('加载量表列表，参数:', queryParams);
+      
+      // 构建查询字符串
+      const queryString = Object.keys(queryParams)
+        .map(key => `${key}=${encodeURIComponent(queryParams[key])}`)
+        .join('&');
+      
+      const result = await request(`/scales?${queryString}`, {}, {
+        host: config.collectionHost,
+        needToken: true
+      });
+      
+      const scales = result.data?.scales || result.scales || [];
+      console.log('API 返回的数据量:', scales.length);
+      
+      const formattedList = scales.map(item => ({
         code: item.code,
-        name: item.title || item.name,
+        name: item.title,
         description: item.description || "专业心理测评工具，帮助您了解心理健康状况。",
-        category: item.category || item.tags?.[0] || "心理测评",
-        question_count: item.question_count || item.questions?.length || 20,
-        test_count: Math.floor(Math.random() * 15000) + 1000, // 模拟已测人数
-        is_hot: Math.random() > 0.6, // 热门标签
-        is_free: Math.random() > 0.5, // 免费标签
-        is_new: Math.random() > 0.8, // 最新标签
-        age_group: ["成人", "全年龄", "16岁+", "职场人"][Math.floor(Math.random() * 4)],
-        duration: Math.floor(Math.random() * 15) + 5, // 测试时长
+        category: item.category,
+        stages: item.stages || [],
+        applicableAges: item.applicable_ages || [],
+        reporters: item.reporters || [],
+        tags: item.tags || [],
+        question_count: item.question_count || 0, // 使用 API 返回的题目数量
         status: item.status
       }));
       
       setQuestionsheetList(formattedList);
     } catch (error) {
+      console.error('加载量表列表失败:', error);
       Taro.showToast({
         title: "加载失败，请重试",
         icon: "none",
@@ -70,13 +109,23 @@ const QuestionsheetList = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [searchText, selectedCategory]);
 
-  // 处理筛选切换
-  const handleFilterChange = useCallback((index) => {
-    setCurrentFilterIndex(index);
-    // TODO: 根据筛选条件过滤问卷列表
-  }, []);
+  // 当搜索文本或分类变化时，重新加载列表
+  useEffect(() => {
+    loadQuestionsheetList();
+  }, [loadQuestionsheetList]);
+
+  // 搜索处理
+  const handleSearch = useCallback(() => {
+    loadQuestionsheetList();
+  }, [loadQuestionsheetList]);
+
+  // 处理分类切换
+  const handleCategoryChange = (categoryValue) => {
+    console.log('handleCategoryChange 被调用，新分类值:', categoryValue, '当前分类:', selectedCategory);
+    setSelectedCategory(categoryValue);
+  };
 
   const handleQuestionsheetClick = questionsheet => {
     logger.RUN("点击量表", questionsheet);
@@ -96,44 +145,114 @@ const QuestionsheetList = () => {
     return count.toString();
   };
 
+  // 将 reporters 枚举值转换为中文
+  const formatReporter = (reporter) => {
+    const reporterMap = {
+      'parent': '家长',
+      'teacher': '教师',
+      'self': '自评',
+      'clinical': '临床'
+    };
+    return reporterMap[reporter] || reporter;
+  };
+
+  // 将 applicable_ages 枚举值转换为中文
+  const formatApplicableAge = (age) => {
+    const ageMap = {
+      'infant': '婴儿',
+      'preschool': '学龄前',
+      'school_child': '学龄儿童',
+      'adolescent': '青少年',
+      'adult': '成人'
+    };
+    return ageMap[age] || age;
+  };
+
+  // 将 stages 枚举值转换为中文（用于 tab 显示）
+  const formatStageLabel = (stageValue) => {
+    const stageMap = {
+      'screening': '筛查',
+      'deep_assessment': '深度评估',
+      'follow_up': '随访',
+      'outcome': '结局'
+    };
+    return stageMap[stageValue] || stageValue;
+  };
+
   const renderQuestionsheetCard = questionsheet => (
     <View
       key={questionsheet.code}
       className="scale-card"
       onClick={() => handleQuestionsheetClick(questionsheet)}
     >
-      {/* 标题和标签行 */}
+      {/* 标题行 */}
       <View className="scale-header">
-        <Text className="scale-title">{questionsheet.name}</Text>
-        <View className="scale-tags">
-          {questionsheet.is_hot && (
-            <View className="tag tag-hot">热门</View>
-          )}
-          {questionsheet.is_free && (
-            <View className="tag tag-free">免费</View>
-          )}
-          {questionsheet.is_new && (
-            <View className="tag tag-new">最新</View>
-          )}
+        <View className="scale-title-wrapper">
+          <Text className="scale-title">{questionsheet.name}</Text>
         </View>
       </View>
+
+      {/* 标签行 - stages 在左侧，tags 在右侧 */}
+      {(questionsheet.stages && questionsheet.stages.length > 0) || (questionsheet.tags && questionsheet.tags.length > 0) ? (
+        <View className="scale-tags-row">
+          {/* 左侧：stages */}
+          {questionsheet.stages && questionsheet.stages.length > 0 && (
+            <View className="tags-left">
+              <Text className="stages-text">
+                {questionsheet.stages.map(formatStageLabel).join(' / ')}
+              </Text>
+            </View>
+          )}
+          
+          {/* 右侧：tags */}
+          {questionsheet.tags && questionsheet.tags.length > 0 && (
+            <View className="tags-right">
+              {questionsheet.tags.slice(0, 3).map((tag, idx) => (
+                <View key={idx} className="tag tag-label">{tag}</View>
+              ))}
+              {questionsheet.tags.length > 3 && (
+                <View className="tag tag-more">
+                  <Text className="tag-more-text">+{questionsheet.tags.length - 3}</Text>
+                </View>
+              )}
+            </View>
+          )}
+        </View>
+      ) : null}
 
       {/* 描述 */}
       <Text className="scale-desc">{questionsheet.description}</Text>
 
-      {/* 元信息行 */}
-      <View className="scale-meta">
-        <View className="meta-item">
-          <AtIcon value="user" size="14" color="#9CA3AF" />
-          <Text className="meta-text">{questionsheet.age_group}</Text>
-        </View>
-        <View className="meta-item">
-          <AtIcon value="clock" size="14" color="#9CA3AF" />
-          <Text className="meta-text">{questionsheet.question_count}题 | 约{questionsheet.duration}分</Text>
-        </View>
-        <View className="meta-hot">
-          <AtIcon value="star" size="12" color="#F97316" />
-          <Text className="meta-hot-text">{formatCount(questionsheet.test_count)}</Text>
+      {/* 底部信息栏 - 分两行 */}
+      <View className="scale-footer">
+        {/* 第一行：使用年龄 */}
+        {questionsheet.applicableAges && questionsheet.applicableAges.length > 0 && (
+          <View className="footer-row">
+            <AtIcon value="user" size="14" color="#9CA3AF" />
+            <Text className="footer-text">
+              {questionsheet.applicableAges.map(formatApplicableAge).join('、')}
+            </Text>
+          </View>
+        )}
+        
+        {/* 第二行：填报人和题目数量 */}
+        <View className="footer-row">
+          {questionsheet.reporters && questionsheet.reporters.length > 0 && (
+            <View className="footer-item">
+              <AtIcon value="edit" size="14" color="#9CA3AF" />
+              <Text className="footer-text">
+                {questionsheet.reporters.map(formatReporter).join('、')}
+              </Text>
+            </View>
+          )}
+          {questionsheet.question_count > 0 && (
+            <View className="footer-item footer-question-count">
+              <AtIcon value="list" size="14" color="#1890FF" />
+              <Text className="footer-text footer-question-text">
+                {questionsheet.question_count} 道题目
+              </Text>
+            </View>
+          )}
         </View>
       </View>
     </View>
@@ -150,7 +269,7 @@ const QuestionsheetList = () => {
   return (
     <>
       <View className="questionnaire-list-page">
-        {/* 搜索和筛选区 */}
+        {/* 搜索和分类筛选区 */}
         <View className="search-filter-section">
           {/* 搜索框 */}
           <View className="search-box">
@@ -160,28 +279,26 @@ const QuestionsheetList = () => {
               placeholder="搜索量表或症状..."
               value={searchText}
               onInput={(e) => setSearchText(e.detail.value)}
+              onConfirm={handleSearch}
             />
           </View>
 
-          {/* 筛选标签栏 */}
-          <View className="filter-tabs">
-            <View className="filter-btn">
-              <AtIcon value="filter" size="16" color="#4B5563" />
-              <Text className="filter-text">筛选</Text>
+          {/* 分类筛选 */}
+          {categories.length > 0 && (
+            <View className="category-filter">
+              <ScrollView scrollX className="category-scroll">
+                {categories.map((category, index) => (
+                  <View
+                    key={category.value || 'all'}
+                    className={`category-item ${selectedCategory === category.value ? 'active' : ''}`}
+                    onClick={() => handleCategoryChange(category.value)}
+                  >
+                    <Text className="category-text">{category.label}</Text>
+                  </View>
+                ))}
+              </ScrollView>
             </View>
-            <AtTabs
-              scroll
-              current={currentFilterIndex}
-              tabList={filterTabList}
-              onClick={handleFilterChange}
-            >
-              {filterTabList.map((tab, index) => (
-                <AtTabsPane key={index} current={currentFilterIndex} index={index}>
-                  {/* 占位，实际内容在下方量表列表 */}
-                </AtTabsPane>
-              ))}
-            </AtTabs>
-          </View>
+          )}
         </View>
 
         {/* 量表列表 */}

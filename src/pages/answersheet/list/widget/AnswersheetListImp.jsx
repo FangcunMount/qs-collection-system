@@ -8,8 +8,12 @@ import "../index.less";
 import { getAssessments } from "../../../../services/api/assessmentApi";
 
 const AnswersheetListImp = ({ testee }) => {
-  const [ defaultLimit ] = useState(10);
-  const [ limit, setLimit ] = useState(defaultLimit);
+  const [ pagination, setPagination ] = useState({
+    page: 1,
+    page_size: 20,
+    total: 0,
+    total_pages: 0
+  });
   const [ answersheetList, setAnswersheetList ] = useState([]);
   const [ loading, setLoading ] = useState(true);
   const [ searchText, setSearchText ] = useState("");
@@ -24,9 +28,11 @@ const AnswersheetListImp = ({ testee }) => {
   ];
 
   // 获取测评列表  
-  const initAnswersheetList = useCallback(async () => {
+  const initAnswersheetList = useCallback(async (page = 1, append = false) => {
     try {
-      setLoading(true);
+      if (!append) {
+        setLoading(true);
+      }
       
       // 验证 testee.id 是否存在
       if (!testee || !testee.id) {
@@ -38,23 +44,41 @@ const AnswersheetListImp = ({ testee }) => {
         return;
       }
       
-      const data = await getAssessments(testee.id, undefined, 1, limit);
+      const pageSize = 20;
+      const result = await getAssessments(testee.id, undefined, page, pageSize);
       
-      // 转换数据结构以适配UI组件
+      // API 返回的数据结构：{ data: { items: [], page, page_size, total, total_pages } }
+      const data = result.data || result;
       const assessmentList = (data.items || []).map(item => ({
         id: item.id,
         answer_sheet_id: item.answer_sheet_id,
-        title: item.scale_name || item.questionnaire_code,
-        description: `测评编号: ${item.scale_code || item.questionnaire_code}`,
-        createtime: item.created_at || item.submitted_at,
-        status: item.status,
+        title: item.scale_name || item.questionnaire_code || '未知量表',
+        description: item.scale_code || item.questionnaire_code || '',
+        createtime: item.submitted_at || item.created_at,
+        status: item.status, // submitted/interpreting/completed/failed
         score: item.total_score,
-        risk_level: item.risk_level,
+        risk_level: item.risk_level, // high/medium/low/normal
         questionnaire_code: item.questionnaire_code,
+        questionnaire_version: item.questionnaire_version,
         scale_code: item.scale_code,
+        scale_name: item.scale_name,
         interpreted_at: item.interpreted_at,
+        origin_type: item.origin_type,
       }));
-      setAnswersheetList(assessmentList);
+      
+      if (append) {
+        setAnswersheetList(prev => [...prev, ...assessmentList]);
+      } else {
+        setAnswersheetList(assessmentList);
+      }
+      
+      // 更新分页信息
+      setPagination({
+        page: data.page || page,
+        page_size: data.page_size || pageSize,
+        total: data.total || 0,
+        total_pages: data.total_pages || 0
+      });
     } catch (error) {
       console.error('获取测评列表失败：', error);
       Taro.showToast({
@@ -64,7 +88,7 @@ const AnswersheetListImp = ({ testee }) => {
     } finally {
       setLoading(false);
     }
-  }, [testee, limit]);
+  }, [testee]);
 
   // 初始化答卷列表
   useEffect(() => {
@@ -148,36 +172,16 @@ const AnswersheetListImp = ({ testee }) => {
   }, [answersheetList, activeFilterIndex, searchText]);
 
   const handleLoadMore = async () => {
-    const theLimit = limit + defaultLimit;
-    try {
-      if (!testee || !testee.id) {
-        console.error('缺少受试者ID', { testee });
-        return;
-      }
-      
-      const data = await getAssessments(testee.id, undefined, 1, theLimit);
-      const assessmentList = (data.items || []).map(item => ({
-        id: item.id,
-        answer_sheet_id: item.answer_sheet_id,
-        title: item.scale_name || item.questionnaire_code,
-        description: `测评编号: ${item.scale_code || item.questionnaire_code}`,
-        createtime: item.created_at || item.submitted_at,
-        status: item.status,
-        score: item.total_score,
-        risk_level: item.risk_level,
-        questionnaire_code: item.questionnaire_code,
-        scale_code: item.scale_code,
-        interpreted_at: item.interpreted_at,
-      }));
-      setAnswersheetList(assessmentList);
-      setLimit(theLimit);
-    } catch (error) {
-      console.error('加载更多失败：', error);
+    if (pagination.page >= pagination.total_pages) {
       Taro.showToast({
-        title: error.message || '加载失败',
+        title: '没有更多数据了',
         icon: 'none'
       });
+      return;
     }
+    
+    const nextPage = pagination.page + 1;
+    await initAnswersheetList(nextPage, true);
   }
 
   // 跳转到答卷详情页
@@ -214,7 +218,7 @@ const AnswersheetListImp = ({ testee }) => {
       return 'pending'; // 待解读
     }
     if (assessment.status === 'failed') {
-      return 'abnormal'; // 失败
+      return 'failed'; // 失败
     }
     if (assessment.status === 'completed') {
       // 根据风险等级判断
@@ -241,13 +245,18 @@ const AnswersheetListImp = ({ testee }) => {
       },
       pending: {
         icon: 'clock',
-        text: '测评中',
+        text: '待解读',
         bgColor: 'status-tag-pending',
       },
       generating: {
         icon: 'reload',
         text: '报告生成中',
         bgColor: 'status-tag-generating',
+      },
+      failed: {
+        icon: 'close-circle',
+        text: '解读失败',
+        bgColor: 'status-tag-failed',
       },
     };
     
@@ -269,26 +278,25 @@ const AnswersheetListImp = ({ testee }) => {
       <View key={answersheet.id} className="answersheet-card">
         {/* 标题和时间 */}
         <View className="card-header">
-          <Text className="card-title">{answersheet.title}</Text>
+          <View className="card-title-wrapper">
+            <Text className="card-title">{answersheet.title}</Text>
+            {answersheet.scale_code && (
+              <Text className="card-code">{answersheet.scale_code}</Text>
+            )}
+          </View>
           <Text className="card-time">{getWriteTime(answersheet.createtime)}</Text>
         </View>
         
-        {/* 描述 */}
-        {answersheet.description && (
-          <Text className="card-desc">{answersheet.description}</Text>
-        )}
-        
-        {/* 状态标签 */}
+        {/* 状态标签和风险等级 */}
         <View className="card-tags">
           {renderStatusTag(status)}
-          {answersheet.is_free && (
-            <View className="tag tag-free">
-              <Text className="tag-text">免费</Text>
-            </View>
-          )}
-          {answersheet.is_professional && (
-            <View className="tag tag-professional">
-              <Text className="tag-text">专业版</Text>
+          {/* 只在异常情况下显示风险等级，避免与"结果正常"重复 */}
+          {answersheet.risk_level && status === 'abnormal' && (
+            <View className={`risk-tag risk-${answersheet.risk_level}`}>
+              <Text className="risk-text">
+                {answersheet.risk_level === 'high' ? '高风险' : 
+                 answersheet.risk_level === 'medium' ? '中风险' : '低风险'}
+              </Text>
             </View>
           )}
         </View>
@@ -297,25 +305,36 @@ const AnswersheetListImp = ({ testee }) => {
         <View className="card-actions">
           <View className="card-score">
             {status === 'pending' && (
-              <Text className="score-text-pending">剩余 {answersheet.remaining_questions || 0} 题</Text>
+              <Text className="score-text-pending">待解读</Text>
             )}
             {status === 'generating' && (
               <Text className="score-text-generating">分析中...</Text>
             )}
-            {(status === 'normal' || status === 'abnormal') && answersheet.score !== undefined && (
+            {status === 'failed' && (
+              <Text className="score-text-failed">解读失败</Text>
+            )}
+            {(status === 'normal' || status === 'abnormal') && answersheet.score !== undefined && answersheet.score !== null && (
               <Text className={`score-text-${status}`}>总分: {answersheet.score}</Text>
+            )}
+            {status === 'normal' && (answersheet.score === undefined || answersheet.score === null) && (
+              <Text className="score-text-normal">已完成</Text>
             )}
           </View>
           
           <View className="card-buttons">
             {status === 'pending' && (
               <View className="btn btn-primary-full" onClick={() => jumpToAnswersheetDetail(answersheet)}>
-                <Text className="btn-text">等待解读</Text>
+                <Text className="btn-text">查看详情</Text>
               </View>
             )}
             {status === 'generating' && (
               <View className="btn btn-disabled">
                 <Text className="btn-text">报告生成中</Text>
+              </View>
+            )}
+            {status === 'failed' && (
+              <View className="btn btn-secondary" onClick={() => jumpToAnswersheetDetail(answersheet)}>
+                <Text className="btn-text">查看详情</Text>
               </View>
             )}
             {(status === 'normal' || status === 'abnormal') && (
@@ -387,7 +406,7 @@ const AnswersheetListImp = ({ testee }) => {
             {filteredAnswersheetList.map(answersheet => renderAnswersheetCard(answersheet))}
             
             {/* 加载更多 */}
-            {answersheetList.length >= limit && answersheetList.length % defaultLimit === 0 && (
+            {pagination.page < pagination.total_pages && (
               <View className="load-more" onClick={handleLoadMore}>
                 <Text className="load-more-text">加载更多</Text>
                 <AtIcon value="chevron-down" size="14" color="#1890FF" />
