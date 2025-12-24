@@ -49,22 +49,27 @@ const AnswersheetListImp = ({ testee }) => {
       
       // API 返回的数据结构：{ data: { items: [], page, page_size, total, total_pages } }
       const data = result.data || result;
-      const assessmentList = (data.items || []).map(item => ({
-        id: item.id,
-        answer_sheet_id: item.answer_sheet_id,
-        title: item.scale_name || item.questionnaire_code || '未知量表',
-        description: item.scale_code || item.questionnaire_code || '',
-        createtime: item.submitted_at || item.created_at,
-        status: item.status, // submitted/interpreting/completed/failed
-        score: item.total_score,
-        risk_level: item.risk_level, // high/medium/low/normal
-        questionnaire_code: item.questionnaire_code,
-        questionnaire_version: item.questionnaire_version,
-        scale_code: item.scale_code,
-        scale_name: item.scale_name,
-        interpreted_at: item.interpreted_at,
-        origin_type: item.origin_type,
-      }));
+      const assessmentList = (data.items || []).map(item => {
+        // 确保 risk_level 正确提取（可能在不同字段中）
+        const riskLevel = item.risk_level || item.riskLevel || null;
+        
+        return {
+          id: item.id,
+          answer_sheet_id: item.answer_sheet_id,
+          title: item.scale_name || item.questionnaire_code || '未知量表',
+          description: item.scale_code || item.questionnaire_code || '',
+          createtime: item.submitted_at || item.created_at,
+          status: item.status, // submitted/interpreting/interpreted/completed/failed
+          score: item.total_score,
+          risk_level: riskLevel, // high/medium/low/normal
+          questionnaire_code: item.questionnaire_code,
+          questionnaire_version: item.questionnaire_version,
+          scale_code: item.scale_code,
+          scale_name: item.scale_name,
+          interpreted_at: item.interpreted_at,
+          origin_type: item.origin_type,
+        };
+      });
       
       if (append) {
         setAnswersheetList(prev => [...prev, ...assessmentList]);
@@ -153,12 +158,12 @@ const AnswersheetListImp = ({ testee }) => {
         break;
       case 2: // 已完成
         filtered = filtered.filter(item => 
-          item.status === 'completed'
+          item.status === 'interpreted' || item.status === 'completed'
         );
         break;
       case 3: // 仅看异常
         filtered = filtered.filter(item => 
-          item.status === 'completed' && 
+          (item.status === 'interpreted' || item.status === 'completed') && 
           (item.risk_level === 'high' || item.risk_level === 'medium')
         );
         break;
@@ -210,7 +215,7 @@ const AnswersheetListImp = ({ testee }) => {
   // 获取测评状态
   const getAnswersheetStatus = (assessment) => {
     // 根据 API 返回的状态判断
-    // 状态: submitted(已提交), interpreting(解读中), completed(已完成), failed(失败)
+    // 状态: submitted(已提交), interpreting(解读中), interpreted(已解读), completed(已完成), failed(失败)
     if (assessment.status === 'interpreting') {
       return 'generating'; // 报告生成中
     }
@@ -220,11 +225,14 @@ const AnswersheetListImp = ({ testee }) => {
     if (assessment.status === 'failed') {
       return 'failed'; // 失败
     }
-    if (assessment.status === 'completed') {
-      // 根据风险等级判断
-      if (assessment.risk_level === 'high' || assessment.risk_level === 'medium') {
+    // interpreted 和 completed 都表示已完成
+    if (assessment.status === 'interpreted' || assessment.status === 'completed') {
+      // 根据风险等级判断（确保 risk_level 存在且为字符串）
+      const riskLevel = assessment.risk_level?.toLowerCase?.() || assessment.risk_level;
+      if (riskLevel === 'high' || riskLevel === 'medium') {
         return 'abnormal'; // 结果异常
       }
+      // low 和 normal 都显示为正常
       return 'normal'; // 结果正常
     }
     return 'normal';
@@ -290,15 +298,20 @@ const AnswersheetListImp = ({ testee }) => {
         {/* 状态标签和风险等级 */}
         <View className="card-tags">
           {renderStatusTag(status)}
-          {/* 只在异常情况下显示风险等级，避免与"结果正常"重复 */}
-          {answersheet.risk_level && status === 'abnormal' && (
-            <View className={`risk-tag risk-${answersheet.risk_level}`}>
-              <Text className="risk-text">
-                {answersheet.risk_level === 'high' ? '高风险' : 
-                 answersheet.risk_level === 'medium' ? '中风险' : '低风险'}
-              </Text>
-            </View>
-          )}
+          {/* 显示风险等级（在 interpreted 或 completed 状态下显示） */}
+          {answersheet.risk_level && (answersheet.status === 'interpreted' || answersheet.status === 'completed') && (() => {
+            const riskLevel = answersheet.risk_level?.toLowerCase?.() || answersheet.risk_level;
+            return (
+              <View className={`risk-tag risk-${riskLevel}`}>
+                <Text className="risk-text">
+                  {riskLevel === 'high' ? '高风险' : 
+                   riskLevel === 'medium' ? '中风险' : 
+                   riskLevel === 'low' ? '低风险' : 
+                   riskLevel === 'normal' ? '正常' : ''}
+                </Text>
+              </View>
+            );
+          })()}
         </View>
         
         {/* 操作区 */}
