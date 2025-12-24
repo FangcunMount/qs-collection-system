@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Taro, { usePullDownRefresh } from "@tarojs/taro";
-import { View, Text, Input, ScrollView } from "@tarojs/components";
+import { View, Text, ScrollView } from "@tarojs/components";
 import { AtIcon, AtActivityIndicator } from "taro-ui";
 import "taro-ui/dist/style/components/icon.scss";
 
 import BottomMenu from "../../../components/bottomMenu";
+import { SearchBox } from "../../../components/common";
+import LoadingState from "../../common/components/LoadingState/LoadingState";
 import { getScales } from "../../../services/api/scaleApi";
 import { paramsConcat } from "../../../util";
 import "./index.less";
@@ -120,11 +122,8 @@ const HomeIndex = () => {
       <ScrollView scrollY className="home-content">
         {/* 欢迎与搜索模块 */}
         <View className="welcome-section">
-          
-          <View className="search-bar" onClick={handleSearch}>
-            <AtIcon value="search" size="20" color="#8c8c8c" className="search-icon" />
-            <Input
-              className="search-input"
+          <View onClick={handleSearch}>
+            <SearchBox
               placeholder="搜索量表名称或症状..."
               value={searchText}
               onInput={(e) => setSearchText(e.detail.value)}
@@ -164,9 +163,7 @@ const HomeIndex = () => {
           </View>
           
           {recommendedScalesLoading ? (
-            <View className="recommend-loading">
-              <AtActivityIndicator mode="center" content="加载中..." />
-            </View>
+            <LoadingState content="加载中..." />
           ) : recommendedScales.length > 0 ? (
             <View className="scale-list">
               {recommendedScales.map((scale, index) => (

@@ -11,7 +11,6 @@ import { initTesteeStore } from "../../../store/testeeStore.ts";
 
 import { paramsConcat, parsingScene } from "../../../util";
 import { getLogger } from "../../../util/log";
-import { getAnswersheetidBySignid } from "../../../services/api/answersheetApi";
 import { getMpEntryParams } from "../../../services/api/commonApi";
 import { getQuestionnaire } from "../../../services/api/questionnaireApi";
 import { getTestee } from "../../../services/api/testeeApi";
@@ -151,17 +150,8 @@ export default function Index() {
   const beforeEach = async (params, next) => {
     const { testeeid, signid } = params;
 
-    // 如果标记的id已有答卷id，直接跳转至答卷展示
-    if (signid) {
-      const res = await getAnswersheetidBySignid(signid);
-      if (res.answersheetid) {
-        Taro.hideLoading();
-        Taro.redirectTo({
-          url: `/pages/answersheet/detail/index?a=${res.answersheetid}`
-        });
-        return;
-      }
-    }
+    // 注意：signid 功能已废弃，不再支持通过 signid 查询答卷ID
+    // 如果将来需要恢复此功能，需要后端提供新的 API 接口
 
     // 如果没有 testeeid，阻断后续操作
     const verifyTesteeFlag = await verifyTestee(testeeid);

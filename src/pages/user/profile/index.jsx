@@ -5,7 +5,7 @@ import { AtIcon } from "taro-ui";
 import "taro-ui/dist/style/components/icon.scss";
 
 import BottomMenu from "../../../components/bottomMenu";
-import { subscribeUserStore, getUserStoreState, initUserStore } from "../../../store/userStore";
+import { subscribeUserStore, getUserStoreState, initUserStore } from "../../../store/userStore.ts";
 import "./index.less";
 
 const UserProfile = () => {

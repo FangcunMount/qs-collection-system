@@ -41,21 +41,14 @@ const config = {
         }
       }
     },
-    // 添加 webpack 配置，优化打包体积
+    // Webpack 配置
+    // 小程序使用自己的分包机制（通过 app.config.js 的 subPackages 配置）
+    // 不要使用 webpack 的 splitChunks，这可能导致编译问题
     webpackChain(chain) {
-      // 检查插件是否存在再配置
-      if (chain.plugins.has('extract-css')) {
-        chain.plugin('extract-css').tap(args => {
-          args[0] = {
-            ...args[0],
-            ignoreOrder: true  // 忽略 CSS 导入顺序警告
-          }
-          return args
-        })
-      }
-      
-      // 注意：小程序使用自己的分包机制（通过 app.config.js 的 subPackages 配置）
-      // 不要使用 webpack 的 splitChunks，这可能导致编译问题
+      // 注意：CSS 顺序警告不影响功能，可以安全忽略
+      // 如果确实需要消除警告，可以在 app.js 中统一导入样式（已实现）
+      // 这里不配置 mini-css-extract-plugin，因为插件名称在不同 Taro 版本中可能不同
+      // 避免因插件不存在导致编译错误
     }
   },
   h5: {

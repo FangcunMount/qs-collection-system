@@ -107,27 +107,7 @@ export const getAnswersheet = (id) => {
   })
 }
 
-/**
- * 通过 signid 获取答卷 ID
- * 在 questionsheet 页面使用
- * ⚠️ 此接口 /answersheet/GetAnswerSheetId 不在 collection.yaml 中定义，已弃用
- * collection.yaml 中没有对应的 signid 查询接口
- * @deprecated 此接口已不再使用
- * @param {string|number} signid - 签名ID（自动转为字符串避免精度问题）
- */
-export const getAnswersheetidBySignid = (signid) => {
-  console.warn(
-    '[answersheetApi] getAnswersheetidBySignid 使用的接口不在 collection.yaml 中定义',
-    { signid }
-  );
-  return Promise.reject({
-    code: 'UNSUPPORTED',
-    message: '该接口不在 collection.yaml 中定义，不支持通过 signid 查询答卷ID'
-  });
-}
-
 export default {
   submitAnswersheet,
   getAnswersheet,
-  getAnswersheetidBySignid,
 }

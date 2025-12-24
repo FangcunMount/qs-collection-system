@@ -6,6 +6,8 @@ import { AtActivityIndicator, AtIcon } from "taro-ui";
 import { getAssessmentReport, getAssessmentReportByAnswersheetId } from "../../services/api/analysisApi";
 import { getLogger } from "../../util/log";
 import { PrivacyAuthorization } from "../../components/privacyAuthorization/privacyAuthorization";
+import { getRiskConfig } from "../common/utils/statusFormatters";
+import { formatSimpleDate } from "../common/utils/dateFormatters";
 import RadarChart from "./widget/RadarChart";
 import "./index.less";
 
@@ -186,58 +188,6 @@ const Analysis = () => {
     }
   }, [initAnalysisByAssessmentId, initAnalysisByAnswersheetId]);
 
-  // 获取风险等级配置
-  const getRiskConfig = (riskLevel) => {
-    const riskMap = {
-      'high': {
-        label: '高风险',
-        className: 'risk-high',
-        bgColor: '#EF4444',
-        textColor: '#FFFFFF',
-        borderColor: 'transparent',
-        scoreBadgeBg: '#FFF7ED',
-        scoreBadgeColor: '#F97316'
-      },
-      'medium': {
-        label: '中风险',
-        className: 'risk-medium',
-        bgColor: '#F97316',
-        textColor: '#FFFFFF',
-        borderColor: 'transparent',
-        scoreBadgeBg: '#FFF7ED',
-        scoreBadgeColor: '#F97316'
-      },
-      'low': {
-        label: '低风险',
-        className: 'risk-low',
-        bgColor: '#22C55E',
-        textColor: '#FFFFFF',
-        borderColor: 'transparent',
-        scoreBadgeBg: '#F0FDF4',
-        scoreBadgeColor: '#22C55E'
-      },
-      'normal': {
-        label: '正常',
-        className: 'risk-normal',
-        bgColor: '#3B82F6',
-        textColor: '#FFFFFF',
-        borderColor: 'transparent',
-        scoreBadgeBg: '#EFF6FF',
-        scoreBadgeColor: '#3B82F6'
-      }
-    };
-    return riskMap[riskLevel] || riskMap['medium'];
-  };
-
-  // 格式化日期
-  const formatDate = (dateStr) => {
-    if (!dateStr) return new Date().toISOString().split('T')[0];
-    try {
-      return dateStr.split('T')[0];
-    } catch (e) {
-      return dateStr;
-    }
-  };
 
   // 因子卡片组件
   const FactorCard = ({ title, score, maxScore, content, riskLevel }) => {
@@ -396,7 +346,7 @@ const Analysis = () => {
         <View className="report-overview-card">
           <View className="report-header">
             <Text className="report-title">{reportInfo.scale_name || 'SNAP-IV量表测评报告'}</Text>
-            <Text className="report-date">{formatDate(reportInfo.created_at)}</Text>
+            <Text className="report-date">{formatSimpleDate(reportInfo.created_at)}</Text>
           </View>
 
           {/* 总分展示区 */}

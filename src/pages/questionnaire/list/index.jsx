@@ -1,8 +1,11 @@
 import React, { useEffect, useState, useCallback } from "react";
 import Taro, { usePullDownRefresh } from "@tarojs/taro";
-import { View, Text, Input, ScrollView } from "@tarojs/components";
-import { AtIcon, AtActivityIndicator } from "taro-ui";
+import { View, Text, ScrollView } from "@tarojs/components";
+import { AtActivityIndicator } from "taro-ui";
 import BottomMenu from "../../../components/bottomMenu";
+import { SearchBox, ScaleCard } from "../../../components/common";
+import LoadingState from "../../common/components/LoadingState/LoadingState";
+import EmptyState from "../../common/components/EmptyState/EmptyState";
 
 import "./index.less";
 import { getScaleCategories } from "../../../services/api/scaleApi";
@@ -137,134 +140,15 @@ const QuestionsheetList = () => {
     });
   };
 
-  // 格式化热度数字
-  const formatCount = (count) => {
-    if (count >= 10000) {
-      return `${(count / 1000).toFixed(1)}k`;
-    }
-    return count.toString();
-  };
-
-  // 将 reporters 枚举值转换为中文
-  const formatReporter = (reporter) => {
-    const reporterMap = {
-      'parent': '家长',
-      'teacher': '教师',
-      'self': '自评',
-      'clinical': '临床'
-    };
-    return reporterMap[reporter] || reporter;
-  };
-
-  // 将 applicable_ages 枚举值转换为中文
-  const formatApplicableAge = (age) => {
-    const ageMap = {
-      'infant': '婴儿',
-      'preschool': '学龄前',
-      'school_child': '学龄儿童',
-      'adolescent': '青少年',
-      'adult': '成人'
-    };
-    return ageMap[age] || age;
-  };
-
-  // 将 stages 枚举值转换为中文（用于 tab 显示）
-  const formatStageLabel = (stageValue) => {
-    const stageMap = {
-      'screening': '筛查',
-      'deep_assessment': '深度评估',
-      'follow_up': '随访',
-      'outcome': '结局'
-    };
-    return stageMap[stageValue] || stageValue;
-  };
 
   const renderQuestionsheetCard = questionsheet => (
-    <View
+    <ScaleCard
       key={questionsheet.code}
-      className="scale-card"
+      scale={questionsheet}
       onClick={() => handleQuestionsheetClick(questionsheet)}
-    >
-      {/* 标题行 */}
-      <View className="scale-header">
-        <View className="scale-title-wrapper">
-          <Text className="scale-title">{questionsheet.name}</Text>
-        </View>
-      </View>
-
-      {/* 标签行 - stages 在左侧，tags 在右侧 */}
-      {(questionsheet.stages && questionsheet.stages.length > 0) || (questionsheet.tags && questionsheet.tags.length > 0) ? (
-        <View className="scale-tags-row">
-          {/* 左侧：stages */}
-          {questionsheet.stages && questionsheet.stages.length > 0 && (
-            <View className="tags-left">
-              <Text className="stages-text">
-                {questionsheet.stages.map(formatStageLabel).join(' / ')}
-              </Text>
-            </View>
-          )}
-          
-          {/* 右侧：tags */}
-          {questionsheet.tags && questionsheet.tags.length > 0 && (
-            <View className="tags-right">
-              {questionsheet.tags.slice(0, 3).map((tag, idx) => (
-                <View key={idx} className="tag tag-label">{tag}</View>
-              ))}
-              {questionsheet.tags.length > 3 && (
-                <View className="tag tag-more">
-                  <Text className="tag-more-text">+{questionsheet.tags.length - 3}</Text>
-                </View>
-              )}
-            </View>
-          )}
-        </View>
-      ) : null}
-
-      {/* 描述 */}
-      <Text className="scale-desc">{questionsheet.description}</Text>
-
-      {/* 底部信息栏 - 分两行 */}
-      <View className="scale-footer">
-        {/* 第一行：使用年龄 */}
-        {questionsheet.applicableAges && questionsheet.applicableAges.length > 0 && (
-          <View className="footer-row">
-            <AtIcon value="user" size="14" color="#9CA3AF" />
-            <Text className="footer-text">
-              {questionsheet.applicableAges.map(formatApplicableAge).join('、')}
-            </Text>
-          </View>
-        )}
-        
-        {/* 第二行：填报人和题目数量 */}
-        <View className="footer-row">
-          {questionsheet.reporters && questionsheet.reporters.length > 0 && (
-            <View className="footer-item">
-              <AtIcon value="edit" size="14" color="#9CA3AF" />
-              <Text className="footer-text">
-                {questionsheet.reporters.map(formatReporter).join('、')}
-              </Text>
-            </View>
-          )}
-          {questionsheet.question_count > 0 && (
-            <View className="footer-item footer-question-count">
-              <AtIcon value="list" size="14" color="#1890FF" />
-              <Text className="footer-text footer-question-text">
-                {questionsheet.question_count} 道题目
-              </Text>
-            </View>
-          )}
-        </View>
-      </View>
-    </View>
+    />
   );
 
-  const renderEmptyState = () => (
-    <View className="empty-state">
-      <View className="empty-icon">📋</View>
-      <Text className="empty-title">暂无量表</Text>
-      <Text className="empty-desc">当前筛选条件下没有找到量表</Text>
-    </View>
-  );
 
   return (
     <>
@@ -272,16 +156,12 @@ const QuestionsheetList = () => {
         {/* 搜索和分类筛选区 */}
         <View className="search-filter-section">
           {/* 搜索框 */}
-          <View className="search-box">
-            <AtIcon value="search" size="18" color="#9CA3AF" />
-            <Input 
-              className="search-input"
-              placeholder="搜索量表或症状..."
-              value={searchText}
-              onInput={(e) => setSearchText(e.detail.value)}
-              onConfirm={handleSearch}
-            />
-          </View>
+          <SearchBox
+            placeholder="搜索量表或症状..."
+            value={searchText}
+            onInput={(e) => setSearchText(e.detail.value)}
+            onConfirm={handleSearch}
+          />
 
           {/* 分类筛选 */}
           {categories.length > 0 && (
@@ -304,9 +184,7 @@ const QuestionsheetList = () => {
         {/* 量表列表 */}
         <View className="scale-list-container">
           {loading ? (
-            <View className="loading-state">
-              <AtActivityIndicator mode="center" content="加载中..." />
-            </View>
+            <LoadingState content="加载中..." />
           ) : questionsheetList.length > 0 ? (
             <View className="scale-list">
               {questionsheetList.map(questionsheet =>
@@ -315,11 +193,13 @@ const QuestionsheetList = () => {
               {/* 加载更多提示 */}
               <View className="load-more">
                 <Text className="load-more-text">点击加载更多</Text>
-                <AtIcon value="chevron-down" size="14" color="#3B82F6" />
               </View>
             </View>
           ) : (
-            renderEmptyState()
+            <EmptyState 
+              text="暂无量表" 
+              icon="📋"
+            />
           )}
         </View>
       </View>

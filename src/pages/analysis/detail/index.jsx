@@ -1,66 +1,118 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, ScrollView } from "@tarojs/components";
 import Taro from "@tarojs/taro";
+import { AtActivityIndicator } from "taro-ui";
+import { getAssessmentReportByAnswersheetId } from "../../../services/api/analysisApi";
+import { formatSimpleDate } from "../../common/utils/dateFormatters";
+import { getRiskConfig } from "../../common/utils/statusFormatters";
+import { PrivacyAuthorization } from "../../../components/privacyAuthorization/privacyAuthorization";
+import LoadingState from "../../common/components/LoadingState/LoadingState";
+import EmptyState from "../../common/components/EmptyState/EmptyState";
 import "./index.less";
 
 const AnalysisDetailPage = () => {
   const [report, setReport] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const params = Taro.getCurrentInstance().router.params;
-    const reportId = params.id;
+  const loadReport = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const params = Taro.getCurrentInstance().router.params;
+      const answersheetId = params.a || params.id;
+      
+      if (!answersheetId) {
+        throw new Error('缺少必要参数');
+      }
 
-    // TODO: 接入真实 API
-    // 占位数据
-    setReport({
-      id: reportId || "rep-2025-0001",
-      title: "SCL-90 综合心理健康评估",
-      date: "2025-12-01",
-      testeeName: "张三",
-      summary: "总体心理状态良好，无明显异常，个别维度需适当关注。",
-      dimensions: [
-        { name: "躯体化", score: 1.2, level: "正常", desc: "无明显躯体不适" },
-        { name: "强迫症状", score: 1.8, level: "轻度", desc: "存在轻微强迫思维" },
-        { name: "人际关系敏感", score: 1.5, level: "正常", desc: "人际交往良好" },
-        { name: "抑郁", score: 1.3, level: "正常", desc: "情绪稳定" },
-        { name: "焦虑", score: 2.1, level: "轻度", desc: "存在轻度焦虑表现" },
-        { name: "敌对", score: 1.1, level: "正常", desc: "无明显敌对情绪" },
-        { name: "恐怖", score: 1.0, level: "正常", desc: "无恐怖倾向" },
-        { name: "偏执", score: 1.2, level: "正常", desc: "思维正常" },
-        { name: "精神病性", score: 1.0, level: "正常", desc: "无精神症状" },
-      ],
-      suggestions: [
-        "保持规律作息，保证充足睡眠",
-        "适度运动，每周3-5次有氧运动",
-        "学习放松技巧，如深呼吸、冥想",
-        "必要时寻求专业心理咨询",
-      ],
-    });
+      const result = await getAssessmentReportByAnswersheetId(answersheetId);
+      const reportData = result.data || result;
+      
+      // 映射数据格式
+      const mappedReport = {
+        id: answersheetId,
+        title: reportData.scale_name || '测评报告',
+        date: reportData.created_at || '',
+        testeeName: reportData.testee_name || '',
+        summary: reportData.conclusion || reportData.summary || '',
+        dimensions: (reportData.dimensions || []).map(dim => ({
+          name: dim.factor_name || dim.name,
+          score: dim.raw_score || dim.score,
+          level: dim.risk_level || 'normal',
+          desc: dim.description || dim.desc || ''
+        })),
+        suggestions: Array.isArray(reportData.suggestions) 
+          ? reportData.suggestions.map(s => 
+              typeof s === 'string' ? s : (s.content || s)
+            )
+          : []
+      };
+      
+      setReport(mappedReport);
+    } catch (err) {
+      console.error('加载报告失败:', err);
+      setError(err.message || '加载报告失败');
+      Taro.showToast({
+        title: err.message || '加载失败',
+        icon: 'none'
+      });
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
+  useEffect(() => {
+    loadReport();
+  }, [loadReport]);
+
   const getLevelColor = (level) => {
-    switch (level) {
-      case "正常": return "#52C41A"; // success
-      case "轻度": return "#FA8C16"; // warning
-      case "中度": return "#F5222D"; // error
-      case "重度": return "#9b2c2c"; // severe (keep darker tone)
-      default: return "#718096";
-    }
+    const config = getRiskConfig(level);
+    return config.bgColor;
   };
 
-  if (!report) {
-    return <View className="analysis-detail-page loading">加载中...</View>;
+  const getLevelLabel = (level) => {
+    const config = getRiskConfig(level);
+    return config.label;
+  };
+
+  if (loading) {
+    return (
+      <>
+        <PrivacyAuthorization />
+        <LoadingState content="加载中..." />
+      </>
+    );
+  }
+
+  if (error || !report) {
+    return (
+      <>
+        <PrivacyAuthorization />
+        <EmptyState 
+          text={error || "加载失败"} 
+          icon="⚠️"
+        />
+      </>
+    );
   }
 
   return (
-    <ScrollView scrollY className="analysis-detail-page">
-      <View className="detail-header">
-        <Text className="header-title">{report.title}</Text>
-        <View className="header-meta">
-          <Text className="meta-item">受试者：{report.testeeName}</Text>
-          <Text className="meta-item">日期：{report.date}</Text>
+    <>
+      <PrivacyAuthorization />
+      <ScrollView scrollY className="analysis-detail-page">
+        <View className="detail-header">
+          <Text className="header-title">{report.title}</Text>
+          <View className="header-meta">
+            {report.testeeName && (
+              <Text className="meta-item">受试者：{report.testeeName}</Text>
+            )}
+            {report.date && (
+              <Text className="meta-item">日期：{formatSimpleDate(report.date)}</Text>
+            )}
+          </View>
         </View>
-      </View>
 
       <View className="detail-section">
         <Text className="section-title">整体评价</Text>
@@ -77,7 +129,7 @@ const AnalysisDetailPage = () => {
               <View className="dim-header">
                 <Text className="dim-name">{dim.name}</Text>
                 <Text className="dim-level" style={{ color: getLevelColor(dim.level) }}>
-                  {dim.level}
+                  {getLevelLabel(dim.level)}
                 </Text>
               </View>
               <View className="dim-score">
@@ -102,8 +154,9 @@ const AnalysisDetailPage = () => {
         </View>
       </View>
 
-      <View style={{ height: "80rpx" }} />
-    </ScrollView>
+        <View style={{ height: "80rpx" }} />
+      </ScrollView>
+    </>
   );
 };
 
