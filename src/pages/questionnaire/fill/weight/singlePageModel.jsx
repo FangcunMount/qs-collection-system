@@ -269,10 +269,10 @@ export default props => {
     const submitData = clearData(questionSheet);
 
     submitQuestionsheet(submitData, writerRoleCode, subSignid)
-      .then(result => {
+      .then(async result => {
         Taro.showToast({ title: "提交成功", icon: "success" });
         // 传递答卷 ID 和测评 ID（如果有）给回调函数
-        writedCallback(result.id, result.assessment_id);
+        await writedCallback(result.id, result.assessment_id);
       })
       .catch(err => {
         Taro.showToast({ title: String(err?.errmsg ?? err?.message ?? '提交失败'), icon: "none" });

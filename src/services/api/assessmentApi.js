@@ -104,11 +104,35 @@ export const getFactorTrend = (testeeId, factorCode, limit = 10) => {
   });
 };
 
+/**
+ * 长轮询等待报告生成
+ * 等待测评报告生成，支持长轮询机制。如果报告已生成则立即返回，否则等待最多 timeout 秒
+ * @param {string|number} id - 测评ID
+ * @param {string|number} testeeId - 受试者ID
+ * @param {number} timeout - 超时时间（秒），范围 5-60，默认 15
+ * @returns {Promise<{status: string, risk_level?: string, total_score?: number, updated_at?: number}>}
+ */
+export const waitAssessmentReport = (id, testeeId, timeout = 15) => {
+  // 确保 timeout 在有效范围内
+  const validTimeout = Math.max(5, Math.min(60, timeout));
+  
+  // 对于 GET 请求，查询参数应该放在 data 中，Taro 会自动将其添加到 URL
+  return request(`/assessments/${String(id)}/wait-report`, {
+    testee_id: String(testeeId),
+    timeout: validTimeout
+  }, {
+    host: config.collectionHost,
+    method: 'GET',
+    needToken: true
+  });
+};
+
 export default {
   getAssessments,
   getAssessmentDetail,
   getAssessmentScores,
   getAssessmentReport,
   getHighRiskFactors,
-  getFactorTrend
+  getFactorTrend,
+  waitAssessmentReport
 };

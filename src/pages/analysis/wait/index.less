@@ -1,0 +1,164 @@
+@import "../../../styles/theme.less";
+
+// 医疗场景配色 - 简洁专业
+@primary-blue: #1890FF;
+@primary-blue-light: #E6F7FF;
+@text-dark: #262626;
+@text-gray: #8C8C8C;
+@text-light: #BFBFBF;
+@gray-bg: #FAFAFA;
+@gray-light: #F5F5F5;
+@white: #FFFFFF;
+@error-red: #FF4D4F;
+@error-red-light: #FFF1F0;
+@success-green: #52C41A;
+@success-green-light: #F6FFED;
+
+.analysis-wait-page {
+  min-height: 100vh;
+  background: @gray-bg;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 60rpx 32rpx 40rpx;
+}
+
+.wait-container {
+  width: 100%;
+  max-width: 600rpx;
+  background: @white;
+  border-radius: 16rpx;
+  padding: 60rpx 48rpx 60rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: fadeIn 0.4s ease-out;
+  margin-top: 150rpx;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.loading-wrapper {
+  margin-bottom: 32rpx;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 360rpx;
+  height: 360rpx;
+}
+
+.lottie-animation {
+  width: 100%;
+  height: 100%;
+}
+
+.status-text-wrapper {
+  margin-bottom: 24rpx;
+  text-align: center;
+  width: 100%;
+}
+
+.status-text {
+  font-size: 32rpx;
+  font-weight: 500;
+  color: @text-dark;
+  line-height: 1.6;
+}
+
+.tip-wrapper {
+  margin-top: 16rpx;
+  text-align: center;
+  padding: 16rpx 24rpx;
+  background: @gray-light;
+  border-radius: 8rpx;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.tip-text {
+  font-size: 26rpx;
+  color: @text-gray;
+  line-height: 1.5;
+}
+
+.error-wrapper {
+  margin-top: 40rpx;
+  width: 100%;
+}
+
+.error-icon {
+  width: 80rpx;
+  height: 80rpx;
+  margin: 0 auto 24rpx;
+  background: @error-red-light;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48rpx;
+  color: @error-red;
+}
+
+.error-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.error-button {
+  width: 100%;
+  height: 88rpx;
+  background: @primary-blue;
+  border-radius: 8rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.3s;
+
+  &:active {
+    opacity: 0.8;
+  }
+
+  &.secondary {
+    background: @white;
+    border: 1rpx solid #D9D9D9;
+  }
+}
+
+.error-button-text {
+  font-size: 32rpx;
+  font-weight: 500;
+  color: @white;
+
+  .error-button.secondary & {
+    color: @text-dark;
+  }
+}
+
+// 成功状态样式
+.success-wrapper {
+  margin-top: 24rpx;
+  text-align: center;
+}
+
+.success-icon {
+  width: 80rpx;
+  height: 80rpx;
+  margin: 0 auto 20rpx;
+  background: @success-green-light;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48rpx;
+  color: @success-green;
+}
+

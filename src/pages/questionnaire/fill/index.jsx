@@ -14,6 +14,8 @@ import { getLogger } from "../../../util/log";
 import { getMpEntryParams } from "../../../services/api/commonApi";
 import { getQuestionnaire } from "../../../services/api/questionnaireApi";
 import { getTestee } from "../../../services/api/testeeApi";
+import { request } from "../../../services/servers";
+import config from "../../../config";
 import {
   getTesteeList as getStoredTesteeList,
   getSelectedTesteeId,
@@ -201,12 +203,33 @@ export default function Index() {
   };
 
   /**
+   * 通过答卷ID获取测评ID
+   */
+  const getAssessmentIdByAnswersheetId = async (answersheetId) => {
+    try {
+      logger.RUN('[Fill] 通过答卷ID获取测评ID', { answersheetId });
+      const detail = await request(`/answersheets/${String(answersheetId)}/assessment`, {}, {
+        host: config.collectionHost,
+        needToken: true
+      });
+      
+      if (detail && detail.id) {
+        return String(detail.id);
+      }
+      return null;
+    } catch (error) {
+      logger.ERROR('[Fill] 通过答卷ID获取测评ID失败', error);
+      return null;
+    }
+  };
+
+  /**
    * 答卷提交成功回调
    * 根据问卷类型跳转到不同页面：
    * - Survey（调查问卷）：跳转到答卷详情页面
-   * - MedicalScale（医学量表）：跳转到解读报告页面
+   * - MedicalScale（医学量表）：先跳转到等待解析页面，等待解析完成后跳转到解读报告页面
    */
-  const writedCallback = (answersheetid, assessmentId) => {
+  const writedCallback = async (answersheetid, assessmentId) => {
     const questionnaireType = questionnaire?.type;
     const selectedTesteeId = getSelectedTesteeId();
     
@@ -223,11 +246,32 @@ export default function Index() {
         url: `/pages/answersheet/detail/index?a=${answersheetid}`
       });
     } else if (questionnaireType === 'MedicalScale') {
-      // 医学量表：统一使用答卷ID跳转到解读报告页面
-      // 好处：无需依赖 testee_id 与 assessment_id，逻辑更稳健
-      Taro.redirectTo({
-        url: `/pages/analysis/index?a=${answersheetid}`
-      });
+      // 医学量表：先跳转到等待解析页面
+      // 如果提交接口没有返回 assessmentId，则通过 answersheetId 获取
+      let finalAssessmentId = assessmentId;
+      if (!finalAssessmentId) {
+        logger.RUN('[Fill] 提交接口未返回 assessmentId，通过 answersheetId 获取', { 
+          answersheetid 
+        });
+        finalAssessmentId = await getAssessmentIdByAnswersheetId(answersheetid);
+      }
+
+      if (finalAssessmentId) {
+        // 有 assessmentId，跳转到等待解析页面
+        // 传递 assessmentId、answersheetId 和 testeeId
+        const testeeIdParam = selectedTesteeId ? `&t=${selectedTesteeId}` : '';
+        Taro.redirectTo({
+          url: `/pages/analysis/wait/index?aid=${finalAssessmentId}&a=${answersheetid}${testeeIdParam}`
+        });
+      } else {
+        // 如果仍然无法获取 assessmentId，直接跳转到解析页面（兼容旧逻辑）
+        logger.WARN('[Fill] 医学量表无法获取 assessmentId，直接跳转到解析页面', { 
+          answersheetid 
+        });
+        Taro.redirectTo({
+          url: `/pages/analysis/index?a=${answersheetid}`
+        });
+      }
     } else {
       // 未知类型或旧数据：默认跳转到答卷详情页面
       logger.WARN('[Fill] 问卷类型未知，默认跳转到答卷详情', { questionnaireType });

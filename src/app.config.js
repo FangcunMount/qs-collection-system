@@ -12,6 +12,7 @@ export default {
       pages: [
         'index',
         'detail/index',
+        'wait/index',
       ],
       independent: false
     },
