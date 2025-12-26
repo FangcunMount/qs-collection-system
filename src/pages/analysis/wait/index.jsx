@@ -27,8 +27,13 @@ const AnalysisWait = () => {
   const pollingCountRef = useRef(0);
   const isPollingRef = useRef(false);
   const lottieInstanceRef = useRef(null);
+  const startTimeRef = useRef(Date.now()); // 记录页面开始时间
+  const MIN_WAIT_TIME = 2000; // 最少等待时间 2 秒
 
   useEffect(() => {
+    // 记录页面开始时间
+    startTimeRef.current = Date.now();
+    
     const params = Taro.getCurrentInstance().router.params;
     logger.RUN("等待解析页面初始化", { 
       assessmentId: params.aid, 
@@ -216,19 +221,28 @@ const AnalysisWait = () => {
         });
 
         if (reportStatus === "interpreted") {
-          // 解析完成，直接跳转，保持"解析中"文案
+          // 解析完成，保持"解析中"文案
           logger.RUN("报告解析完成，跳转到解析页面", { answersheetId });
           setStatus("success");
-          // 保持"解析中"文案，不改变
           // 停止轮询，但保持动画播放
           isPollingRef.current = false;
           
-          // 短暂延迟后跳转
+          // 计算已经等待的时间
+          const elapsedTime = Date.now() - startTimeRef.current;
+          const remainingTime = Math.max(0, MIN_WAIT_TIME - elapsedTime);
+          
+          logger.RUN("等待时间计算", { 
+            elapsedTime, 
+            remainingTime, 
+            minWaitTime: MIN_WAIT_TIME 
+          });
+          
+          // 确保至少等待 2 秒
           setTimeout(() => {
             Taro.redirectTo({
               url: `/pages/analysis/index?a=${answersheetId}`
             });
-          }, 300); // 短暂延迟后跳转
+          }, remainingTime);
         } else if (reportStatus === "failed") {
           // 解析失败
           logger.ERROR("报告解析失败", { statusData });

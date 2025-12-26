@@ -257,51 +257,60 @@ const Analysis = () => {
     );
   };
 
-  // 根据建议类别获取配置
-  const getSuggestionConfig = (category) => {
-    const configMap = {
-      'general': {
-        icon: 'settings',
-        title: '总体建议',
-        bgColor: '#E6F4FF',
-        iconColor: '#1890FF',
-      },
-      'family': {
-        icon: 'user',
-        title: '家庭维度建议',
-        bgColor: '#FFF7E6',
-        iconColor: '#FA8C16',
-      },
-      'dimension': {
-        icon: 'analytics',
-        title: '因子维度建议',
-        bgColor: '#F6FFED',
-        iconColor: '#52C41A',
-      },
-      'lifestyle': {
-        icon: 'home',
-        title: '生活调整建议',
-        bgColor: '#F0F5FF',
-        iconColor: '#722ED1',
-      },
-      'professional': {
-        icon: 'user',
-        title: '专业咨询建议',
-        bgColor: '#FFF7E6',
-        iconColor: '#FA8C16',
-      },
-      'monitoring': {
-        icon: 'analytics',
-        title: '后续监测建议',
-        bgColor: '#F6FFED',
-        iconColor: '#52C41A',
-      },
+  // 图标列表 - 为每个卡片提供不同的图标
+  const iconList = [
+    'settings',      // 设置
+    'user',          // 用户
+    'analytics',     // 分析
+    'home',          // 家庭
+    'heart',         // 爱心
+    'star',          // 星星
+    'check-circle',  // 检查
+    'info-circle',   // 信息
+    'lightning',     // 闪电
+    'calendar',      // 日历
+    'file',          // 文件
+    'message',       // 消息
+  ];
+
+  // 颜色配置列表 - 为每个卡片提供不同的颜色组合
+  const colorConfigList = [
+    { bgColor: '#E6F4FF', iconColor: '#1890FF' },  // 蓝色
+    { bgColor: '#FFF7E6', iconColor: '#FA8C16' },  // 橙色
+    { bgColor: '#F6FFED', iconColor: '#52C41A' },  // 绿色
+    { bgColor: '#F0F5FF', iconColor: '#722ED1' },  // 紫色
+    { bgColor: '#FFF0F6', iconColor: '#EB2F96' },  // 粉色
+    { bgColor: '#E6FFFB', iconColor: '#13C2C2' },  // 青色
+    { bgColor: '#FFFBE6', iconColor: '#FADB14' },  // 黄色
+    { bgColor: '#F6FFED', iconColor: '#73D13D' },  // 浅绿
+    { bgColor: '#E6F7FF', iconColor: '#096DD9' },  // 深蓝
+    { bgColor: '#FFF1F0', iconColor: '#F5222D' },  // 红色
+    { bgColor: '#F9F0FF', iconColor: '#9254DE' },  // 深紫
+    { bgColor: '#E6FFE6', iconColor: '#389E0D' },  // 深绿
+  ];
+
+  // 根据建议类别获取标题（简化版，去掉"建议"等冗余词汇）
+  const getSuggestionTitle = (category) => {
+    const titleMap = {
+      'general': '总体',
+      'family': '家庭维度',
+      'dimension': '因子维度',
+      'lifestyle': '生活调整',
+      'professional': '专业咨询',
+      'monitoring': '后续监测',
     };
-    return configMap[category] || {
-      icon: 'info',
-      title: '建议',
-      bgColor: '#F5F5F5',
-      iconColor: '#8C8C8C',
+    return titleMap[category] || '';
+  };
+
+  // 根据索引获取建议配置（确保每个卡片都有不同的图标和颜色）
+  const getSuggestionConfigByIndex = (index) => {
+    const iconIndex = index % iconList.length;
+    const colorIndex = index % colorConfigList.length;
+    
+    return {
+      icon: iconList[iconIndex],
+      bgColor: colorConfigList[colorIndex].bgColor,
+      iconColor: colorConfigList[colorIndex].iconColor,
     };
   };
 
@@ -316,10 +325,19 @@ const Analysis = () => {
           className="suggestion-icon"
           style={{ background: bgColor }}
         >
-          <AtIcon value={icon} size="24" color={iconColor} />
+          <AtIcon value={icon} size="28" color={iconColor} />
         </View>
         <View className="suggestion-content">
-          <Text className="suggestion-title">{title}</Text>
+          {title && (
+            <View className="suggestion-title-wrapper">
+              <Text className="suggestion-title-badge" style={{ 
+                backgroundColor: bgColor,
+                color: iconColor 
+              }}>
+                {title}
+              </Text>
+            </View>
+          )}
           <Text className="suggestion-text">{content}</Text>
         </View>
       </View>
@@ -345,26 +363,39 @@ const Analysis = () => {
         {/* 报告概览卡片 */}
         <View className="report-overview-card">
           <View className="report-header">
-            <Text className="report-title">{reportInfo.scale_name || 'SNAP-IV量表测评报告'}</Text>
-            <Text className="report-date">{formatSimpleDate(reportInfo.created_at)}</Text>
+            <Text className="report-title">{reportInfo.scale_name || '量表测评报告'}</Text>
           </View>
 
           {/* 总分展示区 */}
-          <View className="score-display-area">
-            <View className="score-number">
+          <View className="score-display-area" style={{ 
+            background: overallRiskConfig.scoreBadgeBg ? overallRiskConfig.scoreBadgeBg : undefined 
+          }}>
+            <View className="score-number" style={{ 
+              color: overallRiskConfig.scoreBadgeColor || undefined 
+            }}>
               <Text className="score-main">{total?.score || 0}</Text>
               <Text className="score-unit">分</Text>
             </View>
-            <View className="risk-level-badge">
-              <Text>{overallRiskConfig.label}：{total?.content || '存在轻度注意缺陷倾向'}</Text>
+            <View className="risk-level-badge" style={{ 
+              backgroundColor: '#FFFFFF',
+              color: overallRiskConfig.scoreBadgeColor || '#F97316'
+            }}>
+              <Text className="risk-level-text">
+                {overallRiskConfig.label}
+                {total?.content && `:${total.content}`}
+              </Text>
             </View>
-            <Text className="score-description">
-              {Array.isArray(reportInfo.suggestions) && reportInfo.suggestions.length > 0 
-                ? (typeof reportInfo.suggestions[0].content === 'string' 
+
+            {/* 建议展示区 */}
+            {(Array.isArray(reportInfo.suggestions) && reportInfo.suggestions.length > 0) && (
+              <View className="suggestion-section">
+                <Text className="suggestion-content-text">
+                  {typeof reportInfo.suggestions[0].content === 'string' 
                     ? reportInfo.suggestions[0].content 
-                    : String(reportInfo.suggestions[0].content || ''))
-                : '您的得分水平高于常模参考值，建议关注日常行为表现并进行专业临床访谈。'}
-            </Text>
+                    : String(reportInfo.suggestions[0].content || '')}
+                </Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -432,14 +463,16 @@ const Analysis = () => {
                 {Array.isArray(reportInfo.suggestions) && reportInfo.suggestions
                   .filter(suggestion => suggestion && suggestion.category !== 'general')
                   .map((suggestion, index) => {
-                    const config = getSuggestionConfig(suggestion.category);
+                    // 根据索引获取不同的图标和颜色配置
+                    const config = getSuggestionConfigByIndex(index);
                     const content = typeof suggestion.content === 'string' 
                       ? suggestion.content 
                       : String(suggestion.content || '');
                     // 如果是 dimension 类别，显示因子名称
+                    const baseTitle = getSuggestionTitle(suggestion.category);
                     const title = suggestion.category === 'dimension' && suggestion.factor_code
-                      ? factors.find(f => f.factor_code === suggestion.factor_code)?.title + ' - ' + config.title
-                      : config.title;
+                      ? factors.find(f => f.factor_code === suggestion.factor_code)?.title
+                      : baseTitle;
                     return (
                       <SuggestionItem
                         key={`${suggestion.category}-${suggestion.factor_code || index}`}

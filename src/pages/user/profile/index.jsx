@@ -101,7 +101,7 @@ const UserProfile = () => {
       <View className="profile-header">
         {/* 用户信息卡片 */}
         {isLoggedIn ? (
-          <View className="user-info" onClick={() => Taro.navigateTo({ url: "/pages/testee/editor/index" })}>
+          <View className="user-info">
             <View className="user-avatar">
               {userAvatar ? (
                 <image src={userAvatar} className="avatar-img" />
@@ -111,7 +111,7 @@ const UserProfile = () => {
             </View>
             <View className="user-details">
               <Text className="user-name">{userName}</Text>
-              <Text className="user-desc">{userMobile || "点击查看个人信息"}</Text>
+              <Text className="user-desc">{userMobile || ''}</Text>
             </View>
           </View>
         ) : (
