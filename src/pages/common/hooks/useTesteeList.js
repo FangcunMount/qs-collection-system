@@ -52,8 +52,9 @@ export const useTesteeList = (options = {}) => {
 
       setTesteeList(storedList);
 
-      // 如果没有选中的受试者，自动选中第一个
-      if (!getSelectedTesteeId() && storedList.length > 0) {
+      // 如果没有选中的受试者，且只有一个档案时，自动选中
+      // 多个档案时不自动选择，让用户选择
+      if (!getSelectedTesteeId() && storedList.length === 1) {
         setSelectedTesteeId(storedList[0].id);
         setSelectedTestee(storedList[0].id);
       }

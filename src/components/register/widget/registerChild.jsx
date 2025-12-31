@@ -110,17 +110,17 @@ const RegisterChild = ({ childInfo, onChange }) => {
   return (
     <View>
       <View style={InputWrapperCSS}>
-        <View style={InputLabelCSS}>受试者姓名</View>
+        <View style={InputLabelCSS}>档案姓名</View>
         <Input
           value={childInfo.legalName}
           onInput={e => onChange("legalName", e.target.value)}
           style={InputCSS}
-          placeholder="请填写受试者姓名"
+          placeholder="请填写档案姓名"
         />
       </View>
 
       <View style={InputWrapperCSS}>
-        <View style={InputLabelCSS}>受试者性别</View>
+        <View style={InputLabelCSS}>档案性别</View>
         <View style={{ display: "flex", gap: "24rpx" }}>
           <View
             style={sexBody}
@@ -152,7 +152,7 @@ const RegisterChild = ({ childInfo, onChange }) => {
             value={childInfo.dob}
             disabled
             style={InputCSS}
-            placeholder="请选择受试者的出生日期"
+            placeholder="请选择档案的出生日期"
           />
         </SiDatePicker>
       </View>
@@ -195,7 +195,7 @@ const RegisterChild = ({ childInfo, onChange }) => {
       </View>
 
       <View style={InputWrapperCSS}>
-        <View style={InputLabelCSS}>与受试者关系</View>
+        <View style={InputLabelCSS}>关系</View>
         <Picker
           mode="selector"
           range={relationOptions}
@@ -237,7 +237,7 @@ const RegisterChild = ({ childInfo, onChange }) => {
             onChange("heightCm", value ? parseInt(value) : null);
           }}
           style={InputCSS}
-          placeholder="选填：受试者身高"
+          placeholder="选填：档案身高"
         />
       </View>
 
@@ -248,7 +248,7 @@ const RegisterChild = ({ childInfo, onChange }) => {
           value={childInfo.weightKg}
           onInput={e => onChange("weightKg", e.target.value)}
           style={InputCSS}
-          placeholder="选填：受试者体重"
+          placeholder="选填：档案体重"
         />
       </View>
     </View>

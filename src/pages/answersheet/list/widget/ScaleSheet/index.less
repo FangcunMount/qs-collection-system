@@ -1,0 +1,63 @@
+@import "../../../../../styles/theme.less";
+
+// 量表选择弹层内容
+.scale-sheet-content {
+  padding: 16rpx !important;
+  margin: 0;
+  width: 100%;
+  box-sizing: border-box;
+
+  .scale-sheet-section {
+    .scale-sheet-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12rpx;
+    }
+
+    .scale-sheet-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 32rpx 24rpx;
+      background: #F5F5F5;
+      border-radius: 16rpx;
+      transition: all 0.2s ease;
+      border: 2rpx solid transparent;
+
+      &:active {
+        opacity: 0.8;
+        transform: scale(0.98);
+      }
+
+      &.selected {
+        background: #E8F4FF;
+        border-color: @primary-color;
+        
+        .scale-sheet-item-name {
+          color: @primary-color;
+          font-weight: 600;
+        }
+      }
+
+      .scale-sheet-item-name {
+        font-size: 30rpx;
+        color: @text-primary;
+        font-weight: 500;
+        line-height: 1.4;
+        flex: 1;
+      }
+    }
+  }
+
+  .scale-sheet-empty {
+    padding: 120rpx 32rpx;
+    text-align: center;
+
+    .scale-sheet-empty-text {
+      font-size: 28rpx;
+      color: @text-tertiary;
+      line-height: 1.5;
+    }
+  }
+}
+

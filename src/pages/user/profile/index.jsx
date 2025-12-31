@@ -124,7 +124,7 @@ const UserProfile = () => {
                 <Text className="login-title">登录/注册</Text>
                 <AtIcon value="chevron-right" size="20" color="#BFBFBF" className="arrow-icon" />
               </View>
-              <Text className="login-subtitle">点击登录，享受完整医疗服务</Text>
+              <Text className="login-subtitle">点击登录，享受完整服务</Text>
             </View>
           </View>
         )}

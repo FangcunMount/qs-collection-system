@@ -26,6 +26,7 @@ import { submitQuestionsheet } from "../../../../services/api/questionsheetApi";
 import { useSubmit } from "../../../../util/useUtil";
 import { isEmpty } from "../../../../util/checkType";
 import { getLogger } from "../../../../util/log";
+import { filterNonSectionQuestions } from "../../../common/utils/questionUtils";
 
 const PAGE_NAME = "question_sheet";
 const logger = getLogger(PAGE_NAME);
@@ -447,10 +448,10 @@ export default function QuestionSheet({
                 return null;
               }
               // 计算实际题号（排除 Section 类型）
-              const questionNumber = questionSheet.questions
-                .slice(0, i)
-                .filter(q => q.type !== 'Section' && getQuestionIsShow(q.show_controller))
-                .length;
+              const questionNumber = filterNonSectionQuestions(
+                questionSheet.questions.slice(0, i),
+                getQuestionIsShow
+              ).length;
               
               return (
                 <View

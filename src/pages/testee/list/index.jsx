@@ -44,7 +44,7 @@ const ChildrenList = () => {
       console.error('[ChildrenList] 加载失败:', err);
       setError(err.message || '加载失败');
       Taro.showToast({
-        title: err.message || '加载受试者列表失败',
+        title: err.message || '加载档案列表失败',
         icon: 'none'
       });
     }
@@ -66,14 +66,14 @@ const ChildrenList = () => {
     }
   };
 
-  // 跳转到注册新受试者
+  // 跳转到注册新档案
   const handleAddChild = () => {
     Taro.navigateTo({
       url: '/pages/testee/register/index'
     });
   };
 
-  // 查看受试者详情（未来可扩展）
+  // 查看档案详情（未来可扩展）
   const handleViewChild = (child) => {
     // 跳转到编辑页面
     Taro.navigateTo({
@@ -122,8 +122,8 @@ const ChildrenList = () => {
   const renderEmpty = () => (
     <View className="empty-container">
       <View className="empty-icon">👶</View>
-      <View className="empty-text">暂无受试者信息</View>
-      <View className="empty-desc">点击下方按钮添加受试者</View>
+      <View className="empty-text">暂无档案信息</View>
+      <View className="empty-desc">点击下方按钮添加档案</View>
     </View>
   );
 
@@ -150,7 +150,7 @@ const ChildrenList = () => {
     </View>
   );
 
-  // 渲染受试者卡片
+  // 渲染档案卡片
   const renderChildCard = (child) => {
     const name = child.legalName || child.name || '未命名';
     const gender = child.gender || child.sex;
@@ -228,9 +228,9 @@ const ChildrenList = () => {
   return (
     <View className="children-list-container">
       <View className="page-header">
-        <View className="header-title">受试者管理</View>
+        <View className="header-title">档案管理</View>
         <View className="header-desc">
-          共 {children.length} 位受试者
+          共 {children.length} 份档案
         </View>
       </View>
 
@@ -254,7 +254,7 @@ const ChildrenList = () => {
           onClick={handleAddChild}
           className="add-button"
         >
-          + 添加受试者
+          + 添加档案
         </AtButton>
       </View>
     </View>

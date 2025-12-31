@@ -77,20 +77,20 @@ const Register = ({ type, goUrl, submitClose }) => {
     return true;
   };
 
-  // 验证受试者信息
+  // 验证档案信息
   const verifyChildInfo = () => {
     if (!childInfo.legalName) {
-      Taro.showToast({ title: "请填写受试者的姓名", icon: "none" });
+      Taro.showToast({ title: "请填写档案的姓名", icon: "none" });
       return false;
     }
 
     if (childInfo.gender === null) {
-      Taro.showToast({ title: "请选择受试者的性别", icon: "none" });
+      Taro.showToast({ title: "请选择档案的性别", icon: "none" });
       return false;
     }
 
     if (!childInfo.dob) {
-      Taro.showToast({ title: "请选择受试者的出生日期", icon: "none" });
+      Taro.showToast({ title: "请选择档案的出生日期", icon: "none" });
       return false;
     }
 
@@ -105,7 +105,7 @@ const Register = ({ type, goUrl, submitClose }) => {
     }
 
     if (!childInfo.relation) {
-      Taro.showToast({ title: "请选择与受试者的关系", icon: "none" });
+      Taro.showToast({ title: "请选择关系", icon: "none" });
       return false;
     }
 
@@ -158,10 +158,10 @@ const Register = ({ type, goUrl, submitClose }) => {
     }
   };
 
-  // 注册受试者
+  // 注册档案
   const registerChild = async () => {
     try {
-      console.log('[Register] 注册受试者');
+      console.log('[Register] 注册档案');
       // 准备注册数据 - registerService 需要特定的字段名
       const childPayload = {
         name: childInfo.legalName,           // 映射到 name
@@ -184,7 +184,7 @@ const Register = ({ type, goUrl, submitClose }) => {
       // 使用新的 registerService 完成完整的注册流程
       // 这会自动处理 IAM 注册 → Collection 创建 → Store 更新
       const { childId, testeeId } = await registerChildComplete(childPayload);
-      console.log('[Register] 受试者注册成功, childId:', childId, 'testeeId:', testeeId);
+      console.log('[Register] 档案注册成功, childId:', childId, 'testeeId:', testeeId);
 
       // 检查组件是否仍然挂载
       if (!isMountedRef.current) {
@@ -192,11 +192,11 @@ const Register = ({ type, goUrl, submitClose }) => {
         return;
       }
 
-      // 设置当前选中的受试者
+      // 设置当前选中的档案
       setSelectedTesteeId(testeeId);
       afterSubmit();
     } catch (error) {
-      console.error('[Register] 受试者注册失败:', error);
+      console.error('[Register] 档案注册失败:', error);
       
       // 检查组件是否仍然挂载
       if (!isMountedRef.current) {
@@ -239,8 +239,8 @@ const Register = ({ type, goUrl, submitClose }) => {
         // 用户注册成功，返回上一页或首页
         Taro.navigateBack({ delta: 1 });
       } else {
-        // 受试者注册成功，跳转到受试者列表页面
-        Taro.redirectTo({ url: '/pages/testee/list/index' });
+        // 档案注册成功，跳转到首页
+        Taro.redirectTo({ url: '/pages/home/index/index' });
       }
     }
   };
@@ -253,7 +253,7 @@ const Register = ({ type, goUrl, submitClose }) => {
     });
   };
 
-  // 更新受试者信息
+  // 更新档案信息
   const handleChangeChildInfo = (key, value) => {
     setChildInfo({
       ...childInfo,
@@ -263,7 +263,7 @@ const Register = ({ type, goUrl, submitClose }) => {
 
   const headerConfig = isUserRegister 
     ? { title: "用户注册", subtitle: "请填写您的基本信息" }
-    : { title: "受试者注册", subtitle: "请填写受试者的基本信息" };
+    : { title: "档案注册", subtitle: "请填写档案的基本信息" };
 
   return (
     <View className="register-container">

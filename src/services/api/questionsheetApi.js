@@ -112,7 +112,7 @@ export const submitQuestionsheet = async (questionsheet, writer_role_code, signi
   // 注意：writer_role_code 和 signid 参数保留是为了兼容旧调用方式，新 API 不使用这些参数
   const selectedTesteeId = getSelectedTesteeId();
   if (!selectedTesteeId) {
-    throw new Error('请先选择受试者');
+    throw new Error('请先选择档案');
   }
 
   // 转换答案格式：从旧格式转为新格式

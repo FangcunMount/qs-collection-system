@@ -1,36 +1,40 @@
-import React, { useEffect, useState, useMemo, useCallback } from "react";
-import moment from "moment";
-import Taro from "@tarojs/taro";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { View, Text } from "@tarojs/components";
-import { AtActivityIndicator, AtTabs, AtTabsPane } from "taro-ui";
-import { SearchBox, StatusTag, RiskTag } from "../../../../components/common";
-import LoadingState from "../../../common/components/LoadingState/LoadingState";
-import EmptyState from "../../../common/components/EmptyState/EmptyState";
-import { formatWriteTime } from "../../../common/utils/dateFormatters";
-import { getAssessmentStatus } from "../../../common/utils/statusFormatters";
-
-import "../index.less";
+import Taro from "@tarojs/taro";
+import TesteeSheet from "./TesteeSheet";
+import FilterSheet from "./FilterSheet";
+import AnswersheetList from "./AnswersheetList";
+import BottomSheet from "./BottomSheet";
 import { getAssessments } from "../../../../services/api/assessmentApi";
+import "../index.less"; // 需要 filter-capsule 样式
 
-const AnswersheetListImp = ({ testee }) => {
-  const [ pagination, setPagination ] = useState({
+/**
+ * 测评列表主组件（整合各个子组件）
+ */
+const AnswersheetListImp = ({ 
+  testee, 
+  showFilterBar = true,
+  showTesteeSheet = false,
+  showFilterSheet = false,
+  testeeList = [],
+  selectedTesteeId = '',
+  onSelectTestee,
+  onCloseTesteeSheet,
+  onCloseFilterSheet,
+  onScaleCapsuleInfo // callback to pass scale capsule info
+}) => {
+  const [pagination, setPagination] = useState({
     page: 1,
     page_size: 20,
     total: 0,
     total_pages: 0
   });
-  const [ answersheetList, setAnswersheetList ] = useState([]);
-  const [ loading, setLoading ] = useState(true);
-  const [ searchText, setSearchText ] = useState("");
-  const [ activeFilterIndex, setActiveFilterIndex ] = useState(0);
-  
-  // 筛选标签配置
-  const filterTabList = [
-    { title: "全部" },
-    { title: "最近一周" },
-    { title: "已完成" },
-    { title: "仅看异常" }
-  ];
+  const [answersheetList, setAnswersheetList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedScaleCode, setSelectedScaleCode] = useState(''); // 选中的量表代码，空字符串表示"全部"
+  const [showScaleSheet, setShowScaleSheet] = useState(false);
+  const [timeRange, setTimeRange] = useState('7'); // 7, 30, custom
+  const [riskLevel, setRiskLevel] = useState(''); // high, medium, low, ''
 
   // 获取测评列表  
   const initAnswersheetList = useCallback(async (page = 1, append = false) => {
@@ -41,9 +45,9 @@ const AnswersheetListImp = ({ testee }) => {
       
       // 验证 testee.id 是否存在
       if (!testee || !testee.id) {
-        console.error('缺少受试者ID', { testee });
+        console.error('缺少档案ID', { testee });
         Taro.showToast({
-          title: '缺少受试者信息',
+          title: '缺少档案信息',
           icon: 'none'
         });
         return;
@@ -106,57 +110,10 @@ const AnswersheetListImp = ({ testee }) => {
       return;
     }
 
+    // 切换档案时重置量表筛选
+    setSelectedScaleCode('');
     initAnswersheetList();
   }, [testee, initAnswersheetList]);
-
-
-  // 处理筛选切换
-  const handleFilterChange = (index) => {
-    setActiveFilterIndex(index);
-  };
-
-  // 根据筛选条件过滤答卷列表
-  const filteredAnswersheetList = useMemo(() => {
-    let filtered = [...answersheetList];
-    
-    // 根据搜索文本过滤
-    if (searchText.trim()) {
-      const searchLower = searchText.toLowerCase().trim();
-      filtered = filtered.filter(item => 
-        item.title?.toLowerCase().includes(searchLower) ||
-        item.description?.toLowerCase().includes(searchLower) ||
-        item.scale_code?.toLowerCase().includes(searchLower) ||
-        item.questionnaire_code?.toLowerCase().includes(searchLower)
-      );
-    }
-
-    // 根据筛选标签过滤
-    switch (activeFilterIndex) {
-      case 1: // 最近一周
-        const oneWeekAgo = moment().subtract(7, 'days');
-        filtered = filtered.filter(item => 
-          moment(item.createtime).isAfter(oneWeekAgo)
-        );
-        break;
-      case 2: // 已完成
-        filtered = filtered.filter(item => 
-          item.status === 'interpreted' || item.status === 'completed'
-        );
-        break;
-      case 3: // 仅看异常
-        filtered = filtered.filter(item => 
-          (item.status === 'interpreted' || item.status === 'completed') && 
-          (item.risk_level === 'high' || item.risk_level === 'medium')
-        );
-        break;
-      case 0: // 全部
-      default:
-        // 不进行额外过滤
-        break;
-    }
-
-    return filtered;
-  }, [answersheetList, activeFilterIndex, searchText]);
 
   const handleLoadMore = async () => {
     if (pagination.page >= pagination.total_pages) {
@@ -169,164 +126,134 @@ const AnswersheetListImp = ({ testee }) => {
     
     const nextPage = pagination.page + 1;
     await initAnswersheetList(nextPage, true);
-  }
-
-  // 跳转到答卷详情页
-  const jumpToAnswersheetDetail = (assessment) => {
-    if (!assessment.answer_sheet_id) {
-      Taro.showToast({ title: '答卷信息不存在', icon: 'none' });
-      return;
-    }
-    Taro.navigateTo({
-      url: `/pages/answersheet/detail/index?a=${assessment.answer_sheet_id}`
-    });
-  }
-  
-  // 跳转到测评报告页
-  const jumpToAssessmentReport = (assessment) => {
-    if (!assessment.answer_sheet_id) {
-      Taro.showToast({ title: '答卷信息不存在', icon: 'none' });
-      return;
-    }
-    // 使用答卷ID跳转，与提交后的跳转逻辑保持一致
-    Taro.navigateTo({
-      url: `/pages/analysis/index?a=${assessment.answer_sheet_id}`
-    });
-  }
-  
-  
-  // 渲染答卷卡片
-  const renderAnswersheetCard = (answersheet) => {
-    const status = getAssessmentStatus(answersheet);
-    
-    return (
-      <View key={answersheet.id} className="answersheet-card">
-        {/* 标题和时间 */}
-        <View className="card-header">
-          <View className="card-title-wrapper">
-            <Text className="card-title">{answersheet.title}</Text>
-            {answersheet.scale_code && (
-              <Text className="card-code">{answersheet.scale_code}</Text>
-            )}
-          </View>
-          <Text className="card-time">{formatWriteTime(answersheet.createtime)}</Text>
-        </View>
-        
-        {/* 状态标签和风险等级 */}
-        <View className="card-tags">
-          <StatusTag status={status} />
-          {/* 显示风险等级（在 interpreted 或 completed 状态下显示） */}
-          {answersheet.risk_level && (answersheet.status === 'interpreted' || answersheet.status === 'completed') && (
-            <RiskTag riskLevel={answersheet.risk_level} />
-          )}
-        </View>
-        
-        {/* 操作区 */}
-        <View className="card-actions">
-          <View className="card-score">
-            {status === 'pending' && (
-              <Text className="score-text-pending">待解读</Text>
-            )}
-            {status === 'generating' && (
-              <Text className="score-text-generating">分析中...</Text>
-            )}
-            {status === 'failed' && (
-              <Text className="score-text-failed">解读失败</Text>
-            )}
-            {(status === 'normal' || status === 'abnormal') && answersheet.score !== undefined && answersheet.score !== null && (
-              <Text className={`score-text-${status}`}>总分: {answersheet.score}</Text>
-            )}
-            {status === 'normal' && (answersheet.score === undefined || answersheet.score === null) && (
-              <Text className="score-text-normal">已完成</Text>
-            )}
-          </View>
-          
-          <View className="card-buttons">
-            {status === 'pending' && (
-              <View className="btn btn-primary-full" onClick={() => jumpToAnswersheetDetail(answersheet)}>
-                <Text className="btn-text">查看详情</Text>
-              </View>
-            )}
-            {status === 'generating' && (
-              <View className="btn btn-disabled">
-                <Text className="btn-text">报告生成中</Text>
-              </View>
-            )}
-            {status === 'failed' && (
-              <View className="btn btn-secondary" onClick={() => jumpToAnswersheetDetail(answersheet)}>
-                <Text className="btn-text">查看详情</Text>
-              </View>
-            )}
-            {(status === 'normal' || status === 'abnormal') && (
-              <>
-                <View className="btn btn-secondary" onClick={() => jumpToAnswersheetDetail(answersheet)}>
-                  <Text className="btn-text">查看详情</Text>
-                </View>
-                <View 
-                  className={status === 'abnormal' ? 'btn btn-primary' : 'btn btn-outline'}
-                  onClick={() => jumpToAssessmentReport(answersheet)}
-                >
-                  <Text className="btn-text">查看报告</Text>
-                </View>
-              </>
-            )}
-          </View>
-        </View>
-      </View>
-    );
   };
-  
 
-  return (
-    <View className="answersheet-list-page">
-      {/* 搜索和筛选区 */}
-      <View className="search-filter-section">
-        {/* 搜索框 */}
-        <SearchBox
-          placeholder="搜索量表名称或症状..."
-          value={searchText}
-          onInput={(e) => setSearchText(e.detail.value)}
-        />
+  // 提取所有唯一的量表列表
+  const scaleList = useMemo(() => {
+    const scaleMap = new Map();
+    answersheetList.forEach(item => {
+      const scaleCode = item.scale_code || item.questionnaire_code || '';
+      const scaleName = item.scale_name || item.title || '未知量表';
+      
+      if (scaleCode && !scaleMap.has(scaleCode)) {
+        scaleMap.set(scaleCode, {
+          code: scaleCode,
+          name: scaleName
+        });
+      }
+    });
+    
+    // 转换为数组，并添加"全部"选项
+    return [
+      { code: '', name: '全部量表' },
+      ...Array.from(scaleMap.values())
+    ];
+  }, [answersheetList]);
 
-        {/* 筛选标签栏 */}
-        <AtTabs
-          scroll
-          current={activeFilterIndex}
-          tabList={filterTabList}
-          onClick={handleFilterChange}
+  const selectedScale = scaleList.find(scale => scale.code === selectedScaleCode) || scaleList[0];
+
+  // 通过回调传递量表胶囊信息给父组件
+  useEffect(() => {
+    if (onScaleCapsuleInfo && showFilterBar) {
+      onScaleCapsuleInfo({
+        scaleList,
+        selectedScaleCode,
+        selectedScale,
+        showScaleSheet,
+        onSelectScale: setSelectedScaleCode,
+        onOpenScaleSheet: () => setShowScaleSheet(true),
+        onCloseScaleSheet: () => setShowScaleSheet(false)
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scaleList, selectedScaleCode, selectedScale, showScaleSheet, showFilterBar]);
+
+  // 渲染弹层（与列表内容同时存在，不互斥）
+  const renderSheets = () => (
+    <>
+      {/* 受试者选择弹层 */}
+      {showTesteeSheet && (
+        <BottomSheet
+          isOpened={showTesteeSheet}
+          onClose={onCloseTesteeSheet}
+          title="选择档案"
+          height="70vh"
         >
-          {filterTabList.map((tab, index) => (
-            <AtTabsPane key={index} current={activeFilterIndex} index={index}>
-              {/* 占位，实际内容在下方答卷列表 */}
-            </AtTabsPane>
-          ))}
-        </AtTabs>
-      </View>
-
-      {/* 答卷列表 */}
-      <View className="answersheet-list-container">
-        {loading ? (
-          <LoadingState content="加载中..." />
-        ) : filteredAnswersheetList.length > 0 ? (
-          <View className="answersheet-list">
-            {filteredAnswersheetList.map(answersheet => renderAnswersheetCard(answersheet))}
-            
-            {/* 加载更多 */}
-            {pagination.page < pagination.total_pages && (
-              <View className="load-more" onClick={handleLoadMore}>
-                <Text className="load-more-text">加载更多</Text>
-              </View>
-            )}
-          </View>
-        ) : (
-          <EmptyState 
-            text="暂无测评记录" 
-            icon="📋"
+          <TesteeSheet
+            testeeList={testeeList}
+            selectedTesteeId={selectedTesteeId}
+            onSelectTestee={onSelectTestee}
           />
-        )}
-      </View>
-    </View>
+        </BottomSheet>
+      )}
+
+      {/* 筛选弹层 */}
+      {showFilterSheet && (
+        <BottomSheet
+          isOpened={showFilterSheet}
+          onClose={onCloseFilterSheet}
+          title="筛选"
+          height="60vh"
+          showConfirm={true}
+          onConfirm={() => {
+            // 筛选条件已通过 state 更新，这里可以添加额外的确认逻辑
+          }}
+        >
+          <FilterSheet
+            timeRange={timeRange}
+            riskLevel={riskLevel}
+            onTimeRangeChange={setTimeRange}
+            onRiskLevelChange={setRiskLevel}
+          />
+        </BottomSheet>
+      )}
+    </>
   );
-}
+
+  // 如果只显示筛选条，返回列表内容
+  if (showFilterBar) {
+    return (
+      <>
+        {/* 量表选择弹层由 AnswersheetList 组件内部管理 */}
+        <AnswersheetList
+          testee={testee}
+          scaleList={scaleList}
+          selectedScaleCode={selectedScaleCode}
+          onSelectScale={setSelectedScaleCode}
+          showScaleSheet={showScaleSheet}
+          onCloseScaleSheet={() => setShowScaleSheet(false)}
+          timeRange={timeRange}
+          riskLevel={riskLevel}
+          answersheetList={answersheetList}
+          pagination={pagination}
+          loading={loading}
+          onLoadMore={handleLoadMore}
+        />
+        {renderSheets()}
+      </>
+    );
+  }
+
+  // 显示列表内容
+  return (
+    <>
+      <AnswersheetList
+        testee={testee}
+        scaleList={scaleList}
+        selectedScaleCode={selectedScaleCode}
+        onSelectScale={setSelectedScaleCode}
+        showScaleSheet={showScaleSheet}
+        onCloseScaleSheet={() => setShowScaleSheet(false)}
+        timeRange={timeRange}
+        riskLevel={riskLevel}
+        answersheetList={answersheetList}
+        pagination={pagination}
+        loading={loading}
+        onLoadMore={handleLoadMore}
+      />
+      {renderSheets()}
+    </>
+  );
+};
 
 export default AnswersheetListImp;

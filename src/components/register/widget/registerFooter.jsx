@@ -13,7 +13,7 @@ const RegisterFooter = ({ submit, buttonText = "立即注册" }) => {
       <View
         style={{
           height: "96rpx",
-          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+          background: "linear-gradient(135deg, #1890FF 0%, #096DD9 100%)",
           borderRadius: "48rpx",
           display: "flex",
           justifyContent: "center",
@@ -21,7 +21,7 @@ const RegisterFooter = ({ submit, buttonText = "立即注册" }) => {
           color: "#fff",
           fontSize: "32rpx",
           fontWeight: "600",
-          boxShadow: "0 8rpx 24rpx rgba(102, 126, 234, 0.35)",
+          boxShadow: "0 8rpx 24rpx rgba(24, 144, 255, 0.35)",
           transition: "all 0.3s ease"
         }}
         onClick={submit}

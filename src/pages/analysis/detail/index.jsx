@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, ScrollView } from "@tarojs/components";
 import Taro from "@tarojs/taro";
-import { AtActivityIndicator } from "taro-ui";
 import { getAssessmentReportByAnswersheetId } from "../../../services/api/analysisApi";
 import { formatSimpleDate } from "../../common/utils/dateFormatters";
 import { getRiskConfig } from "../../common/utils/statusFormatters";
@@ -106,7 +105,7 @@ const AnalysisDetailPage = () => {
           <Text className="header-title">{report.title}</Text>
           <View className="header-meta">
             {report.testeeName && (
-              <Text className="meta-item">受试者：{report.testeeName}</Text>
+              <Text className="meta-item">档案：{report.testeeName}</Text>
             )}
             {report.date && (
               <Text className="meta-item">日期：{formatSimpleDate(report.date)}</Text>

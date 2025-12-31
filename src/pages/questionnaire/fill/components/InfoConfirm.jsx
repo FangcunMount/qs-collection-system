@@ -46,9 +46,9 @@ const InfoConfirm = ({ questionnaire, testee, onConfirm }) => {
           </View>
         </View>
 
-        {/* 受试者信息 */}
+        {/* 档案信息 */}
         <View className="info-section">
-          <Text className="section-title">受试者信息</Text>
+          <Text className="section-title">档案信息</Text>
           <View className="testee-info">
             <View className="testee-item">
               <Text className="testee-label">姓名</Text>

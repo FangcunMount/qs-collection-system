@@ -32,12 +32,22 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 32rpx;
+    gap: 16rpx;
 
     .report-title {
       font-size: 34rpx;
       font-weight: 700;
       color: @text-dark;
       flex: 1;
+      min-width: 0;
+    }
+
+    .report-testee {
+      font-size: 28rpx;
+      color: @text-gray;
+      font-weight: 500;
+      flex-shrink: 0;
+      white-space: nowrap;
     }
 
     .report-date {

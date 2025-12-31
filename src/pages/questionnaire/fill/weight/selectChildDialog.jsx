@@ -16,7 +16,7 @@ const NeedDialog = ({ flag, title, childList, onSelectChild, onAddChild }) => {
   const handleSubmit = () => {
     if (selectChild === null) {
       return showToast({
-        title: "请选择受试者",
+        title: "请选择档案",
         icon: "none"
       });
     }
@@ -35,7 +35,7 @@ const NeedDialog = ({ flag, title, childList, onSelectChild, onAddChild }) => {
     >
       <AtModalContent className="s-row-center select-child--content">
         <View className="select-child--modal__header">
-          {title ?? "选择受试者"}
+          {title ?? "选择档案"}
         </View>
         <View className="select-child--modal__container">
           <SiRadio

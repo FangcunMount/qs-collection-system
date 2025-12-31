@@ -9,7 +9,7 @@ import { findTesteeById, updateTestee } from "../../store/testeeStore.ts";
 import { updateChild } from "../../services/api/iamIdentityApi";
 
 /**
- * 受试者信息编辑组件
+ * 档案信息编辑组件
  * 可编辑字段：legalName, gender, dob, heightCm, weightKg
  * 只读字段：idType, idNo, relation 等
  */
@@ -26,11 +26,11 @@ const TesteeEditor = ({ testeeId, onSuccess, onCancel }) => {
     weightKg: ""
   });
 
-  // 加载受试者数据
+  // 加载档案数据
   useEffect(() => {
     if (testeeId) {
       const data = findTesteeById(testeeId);
-      console.log('[TesteeEditor] 加载受试者数据:', data);
+      console.log('[TesteeEditor] 加载档案数据:', data);
       
       if (data) {
         setTestee(data);
@@ -43,7 +43,7 @@ const TesteeEditor = ({ testeeId, onSuccess, onCancel }) => {
         });
       } else {
         Taro.showToast({
-          title: '未找到受试者信息',
+          title: '未找到档案信息',
           icon: 'none'
         });
         onCancel?.();
@@ -173,7 +173,7 @@ const TesteeEditor = ({ testeeId, onSuccess, onCancel }) => {
   return (
     <View className="testee-editor-container">
       <View className="editor-header">
-        <View className="header-title">编辑受试者</View>
+        <View className="header-title">编辑档案</View>
         <View className="header-subtitle">带 * 的为必填项</View>
       </View>
 
@@ -282,7 +282,7 @@ const TesteeEditor = ({ testeeId, onSuccess, onCancel }) => {
           )}
 
           <View className="info-row">
-            <View className="info-label">受试者ID</View>
+            <View className="info-label">档案ID</View>
             <View className="info-value">{testee.id}</View>
           </View>
 

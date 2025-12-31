@@ -214,14 +214,20 @@ export function setTesteeList(list: TesteeInput[] = []): void {
   state.testeeList = normalized;
   state.lastUpdated = Date.now();
 
-  // 自动选择第一个受试者（如果当前没有选中或选中的不存在）
-  if (normalized.length > 0) {
+  // 只有在只有一个档案时才自动选择，多个档案时不自动选择（让用户选择）
+  if (normalized.length === 0) {
+    state.selectedTesteeId = '';
+  } else if (normalized.length === 1) {
+    // 只有一个档案时，自动选择
+    state.selectedTesteeId = normalized[0].id;
+  } else {
+    // 多个档案时，检查当前选中的是否仍然有效
     const hasSelected = normalized.some(item => item.id === state.selectedTesteeId);
     if (!hasSelected) {
-      state.selectedTesteeId = normalized[0].id;
+      // 如果当前选中的无效，清空选中状态，让用户选择
+      state.selectedTesteeId = '';
     }
-  } else {
-    state.selectedTesteeId = '';
+    // 如果当前选中的有效，保持选中状态不变
   }
 
   saveToStorage();

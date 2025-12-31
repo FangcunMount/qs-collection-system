@@ -1,3 +1,3 @@
 export default {
-  navigationBarTitleText: '受试者管理'
+  navigationBarTitleText: '档案管理'
 }

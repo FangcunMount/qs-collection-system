@@ -23,8 +23,8 @@ export const QUICK_ACTIONS = [
     icon: "📄"
   },
   {
-    label: "受试者管理",
-    desc: "管理受试者信息",
+    label: "档案管理",
+    desc: "管理档案信息",
     url: "/pages/testee/list/index",
     icon: "👶"
   },

@@ -1,3 +1,3 @@
 export default {
-  navigationBarTitleText: '编辑受试者'
+  navigationBarTitleText: '编辑档案'
 }

@@ -47,3 +47,33 @@ export const formatSimpleDate = (dateStr) => {
   }
 };
 
+/**
+ * 安全解析日期字符串，兼容 iOS
+ * 将 "YYYY-MM-DD HH:mm:ss" 格式转换为 iOS 兼容的 "YYYY-MM-DDTHH:mm:ss" 格式
+ * @param {string} dateStr - 日期字符串，格式如 "2025-12-26 13:22:49"
+ * @returns {Date} Date 对象
+ */
+export const parseDateSafe = (dateStr) => {
+  if (!dateStr) return new Date();
+  
+  try {
+    // 如果已经是 ISO 格式或包含 T，直接使用
+    if (dateStr.includes('T')) {
+      return new Date(dateStr);
+    }
+    
+    // 将 "YYYY-MM-DD HH:mm:ss" 转换为 "YYYY-MM-DDTHH:mm:ss"
+    const isoFormat = dateStr.replace(' ', 'T');
+    return new Date(isoFormat);
+  } catch (e) {
+    console.warn('日期解析失败:', dateStr, e);
+    // 如果解析失败，尝试使用 moment
+    try {
+      return moment(dateStr).toDate();
+    } catch (momentError) {
+      console.warn('moment 解析也失败:', momentError);
+      return new Date();
+    }
+  }
+};
+

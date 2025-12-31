@@ -8,6 +8,7 @@ import { getLogger } from "../../util/log";
 import { PrivacyAuthorization } from "../../components/privacyAuthorization/privacyAuthorization";
 import { getRiskConfig } from "../common/utils/statusFormatters";
 import { formatSimpleDate } from "../common/utils/dateFormatters";
+import { findTesteeById, getSelectedTesteeId } from "../../store";
 import RadarChart from "./widget/RadarChart";
 import "./index.less";
 
@@ -23,7 +24,9 @@ const Analysis = () => {
     scale_code: '',
     risk_level: '',
     suggestions: [],
-    created_at: ''
+    created_at: '',
+    testee_name: '',
+    testee_id: ''
   });
 
   const [isReady, setIsReady] = useState(false);
@@ -47,12 +50,30 @@ const Analysis = () => {
         }))
       : [];
     
+    // 获取受试者信息：优先使用 API 返回的，否则从 store 中获取
+    let testeeName = reportData.testee_name || '';
+    let testeeId = reportData.testee_id || '';
+    
+    if (!testeeName) {
+      // 尝试从 store 中获取
+      const selectedTesteeId = getSelectedTesteeId();
+      if (selectedTesteeId) {
+        const testee = findTesteeById(selectedTesteeId);
+        if (testee) {
+          testeeName = testee.legalName || testee.name || '';
+          testeeId = testee.id || '';
+        }
+      }
+    }
+    
     setReportInfo({
       scale_name: reportData.scale_name || '',
       scale_code: reportData.scale_code || '',
       risk_level: reportData.risk_level || '',
       suggestions: suggestions,
-      created_at: reportData.created_at || ''
+      created_at: reportData.created_at || '',
+      testee_name: testeeName,
+      testee_id: testeeId
     });
     
     // 映射总分数据
@@ -364,6 +385,9 @@ const Analysis = () => {
         <View className="report-overview-card">
           <View className="report-header">
             <Text className="report-title">{reportInfo.scale_name || '量表测评报告'}</Text>
+            {reportInfo.testee_name && (
+              <Text className="report-testee">{reportInfo.testee_name}</Text>
+            )}
           </View>
 
           {/* 总分展示区 */}
