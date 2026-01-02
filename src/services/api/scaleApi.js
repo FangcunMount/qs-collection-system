@@ -10,7 +10,7 @@ import config from '../../config';
  * 获取量表列表
  * @param {number} page - 页码
  * @param {number} pageSize - 每页数量
- * @param {string} status - 状态过滤（可选）
+ * @param {number} status - 状态过滤（可选）
  * @param {string} title - 标题过滤（可选）
  * @param {string} category - 主类过滤（可选）
  * @param {string} stage - 阶段过滤（可选）
@@ -31,7 +31,7 @@ export const getScales = (
   tags
 ) => {
   const queryParams = { page, page_size: pageSize };
-  if (status) queryParams.status = status;
+  if (status !== undefined && status !== null) queryParams.status = status;
   if (title) queryParams.title = title;
   if (category) queryParams.category = category;
   if (stage) queryParams.stage = stage;
@@ -81,4 +81,3 @@ export default {
   getScaleCategories,
   getScale
 };
-

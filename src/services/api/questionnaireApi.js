@@ -10,13 +10,13 @@ import config from '../../config';
  * 获取问卷列表
  * @param {number} page - 页码
  * @param {number} pageSize - 每页数量
- * @param {string} status - 状态过滤（可选）
+ * @param {number} status - 状态过滤（可选）
  * @param {string} title - 标题过滤（可选）
  * @returns {Promise<{items: Array, total: number, page: number, page_size: number}>}
  */
 export const getQuestionnaires = (page = 1, pageSize = 20, status, title) => {
   const queryParams = { page, page_size: pageSize };
-  if (status) queryParams.status = status;
+  if (status !== undefined && status !== null) queryParams.status = status;
   if (title) queryParams.title = title;
   
   // 构建查询字符串
