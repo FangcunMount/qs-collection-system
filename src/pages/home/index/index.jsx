@@ -17,14 +17,14 @@ import "./index.less";
  * 图标均使用项目中已验证存在的 taro-ui 图标
  */
 const SCALE_CATEGORIES = [
-  { value: "adhd", label: "ADHD", icon: "bookmark" },                  // 注意力缺陷多动障碍 - 学习/注意力相关
-  { value: "tic", label: "抽动障碍", icon: "alert-circle" },              // 抽动障碍 - 行为症状/警示
-  { value: "sensory", label: "感统", icon: "settings" },                 // 感统 - 感觉统合/协调设置
-  { value: "executive", label: "执行功能", icon: "list" },                // 执行功能 - 任务执行/认知管理
-  { value: "mental", label: "心理健康", icon: "heart" },                  // 心理健康 - 心理/情感标签
-  { value: "neurodev", label: "神经发育", icon: "user" },                // 神经发育 - 人群/成长发育
-  { value: "chronic", label: "慢性病管理", icon: "heart-2" },           // 慢性病管理 - 健康数据分析
-  { value: "qol", label: "生活质量", icon: "star" },                      // 生活质量 - 质量评估/信息
+  { value: "adhd", label: "多动障碍", icon: "bookmark" },                  // 注意力缺陷多动障碍
+  { value: "td", label: "抽动障碍", icon: "alert-circle" },              // 抽动障碍
+  { value: "asd", label: "自闭/孤独", icon: "user" },                        // 孤独症谱系障碍
+  { value: "ocd", label: "强迫/焦虑", icon: "help" },                        // 强迫症
+  { value: "sii", label: "感觉统合", icon: "settings" },                   // 感觉统合
+  { value: "efn", label: "执行功能", icon: "list" },                    // 执行功能
+  { value: "emt", label: "抑郁/情绪", icon: "heart" },                      // 情绪
+  { value: "slp", label: "失眠/睡眠", icon: "clock" },                      // 失眠/睡眠
 ];
 
 const HomeIndex = () => {
