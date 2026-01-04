@@ -17,14 +17,16 @@ import "./index.less";
  * 图标均使用项目中已验证存在的 taro-ui 图标
  */
 const SCALE_CATEGORIES = [
-  { value: "adhd", label: "多动障碍", icon: "bookmark" },                  
-  { value: "td", label: "抽动障碍", icon: "alert-circle" },              
-  { value: "asd", label: "自闭/孤独", icon: "user" },                    
-  { value: "ocd", label: "强迫/焦虑", icon: "help" },                    
+  { value: "adhd", label: "多动", icon: "bookmark" },                  
+  { value: "td", label: "抽动", icon: "alert-circle" },              
+  { value: "asd", label: "自闭", icon: "user" },                    
   { value: "sii", label: "感觉统合", icon: "settings" },                 
   { value: "efn", label: "执行功能", icon: "list" },                    
-  { value: "emt", label: "抑郁/情绪", icon: "heart" },                  
-  { value: "slp", label: "失眠/睡眠", icon: "clock" },                  
+  { value: "emt", label: "情绪", icon: "heart" },                  
+  { value: "slp", label: "睡眠", icon: "clock" },                  
+  { value: "pressure", label: "压力", icon: "alert-circle" },      
+  { value: "personality", label: "人格", icon: "sketch" },
+  { value: "mbti", label: "MBTI", icon: "bookmark" },    
 ];
 
 const normalizeCategoryValue = (item) => {
