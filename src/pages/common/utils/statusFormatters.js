@@ -41,7 +41,14 @@ export const getAssessmentStatus = (assessment) => {
  * 获取风险等级配置
  */
 export const getRiskConfig = (riskLevel) => {
-  const risk = riskLevel?.toLowerCase?.() || riskLevel;
+  const raw = riskLevel?.toLowerCase?.() || riskLevel || '';
+  const risk = (() => {
+    if (raw === 'high' || raw === 'high_risk' || raw === 'severe' || raw === 'critical') return 'high';
+    if (raw === 'medium' || raw === 'mid' || raw === 'moderate' || raw === 'medium_risk') return 'medium';
+    if (raw === 'low' || raw === 'mild' || raw === 'low_risk') return 'low';
+    if (raw === 'normal' || raw === 'none' || raw === 'healthy') return 'normal';
+    return raw;
+  })();
   
   const riskMap = {
     'high': {
@@ -82,7 +89,7 @@ export const getRiskConfig = (riskLevel) => {
     }
   };
   
-  return riskMap[risk] || riskMap['medium'];
+  return riskMap[risk] || riskMap['normal'];
 };
 
 /**
@@ -124,4 +131,3 @@ export const formatStageLabel = (stageValue) => {
   };
   return stageMap[stageValue] || stageValue;
 };
-

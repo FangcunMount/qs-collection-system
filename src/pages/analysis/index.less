@@ -230,8 +230,8 @@
   flex-direction: column;
   gap: 32rpx;
 
-  // 雷达图卡片
-  .radar-chart-card {
+  // 图表卡片
+  .factor-chart-card {
     background: #FFFFFF;
     border-radius: 24rpx;
     padding: 40rpx;
@@ -242,15 +242,46 @@
     display: block;
     z-index: 1;
 
+    .chart-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20rpx;
+      margin-bottom: 24rpx;
+    }
+
     .card-title {
       display: block;
       font-size: 32rpx;
       font-weight: 600;
       color: @text-dark;
       text-align: center;
-      margin-bottom: 32rpx;
       position: relative;  // 确保标题正常定位
       z-index: 2;
+    }
+
+    .chart-toggle {
+      display: flex;
+      gap: 16rpx;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .chart-toggle-button {
+      padding: 10rpx 24rpx;
+      border-radius: 999rpx;
+      border: 2rpx solid @gray-border;
+      background: #F8FAFC;
+      color: @text-gray;
+      font-size: 24rpx;
+      line-height: 1;
+    }
+
+    .chart-toggle-button.active {
+      background: #E6F4FF;
+      border-color: #BAE7FF;
+      color: #1890FF;
+      font-weight: 600;
     }
 
     .radar-chart-container {
@@ -269,6 +300,18 @@
         overflow: visible;  // 改为visible，确保标签不被裁剪
         margin: 0 auto;
       }
+    }
+
+    .bar-chart-container {
+      width: 100%;
+      padding: 8rpx 8rpx 24rpx;
+      box-sizing: border-box;
+    }
+
+    .scatter-chart-container {
+      width: 100%;
+      padding: 8rpx 8rpx 24rpx;
+      box-sizing: border-box;
     }
   }
 
@@ -295,13 +338,66 @@
   height: 100% !important;
 }
 
+.bar-chart-wrapper ec-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.bar-chart-wrapper canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.scatter-chart-wrapper ec-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.scatter-chart-wrapper canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
 // 因子卡片
 .factor-card {
   background: #FFFFFF;
   border-radius: 24rpx;
-  padding: 40rpx;
+  padding: 36rpx;
   box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
   border: 2rpx solid @gray-border;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  margin-bottom: 32rpx;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 6rpx;
+    background: @primary-blue;
+    opacity: 0.25;
+  }
+
+  &.risk-high::before {
+    background: @red-main;
+  }
+
+  &.risk-medium::before {
+    background: @orange-main;
+  }
+
+  &.risk-low::before {
+    background: @green-main;
+  }
+
+  &.risk-normal::before {
+    background: @primary-blue;
+  }
 
   .factor-card-header {
     display: flex;
@@ -454,6 +550,18 @@
       }
     }
 
+    .factor-section {
+      margin-top: 16rpx;
+    }
+
+    .factor-section-title {
+      font-size: 24rpx;
+      font-weight: 600;
+      color: @text-dark;
+      margin-bottom: 8rpx;
+      display: block;
+    }
+
     .factor-content {
       font-size: 26rpx;
       color: @text-gray;
@@ -462,7 +570,17 @@
       padding: 24rpx;
       border-radius: 16rpx;
       display: block;
-      margin-top: 4rpx;
+      margin-top: 0;
+    }
+
+    .factor-suggestion {
+      font-size: 26rpx;
+      color: @text-gray;
+      line-height: 1.8;
+      background: #FFF7ED;
+      padding: 24rpx;
+      border-radius: 16rpx;
+      display: block;
     }
   }
 }
@@ -472,86 +590,6 @@
   display: flex;
   flex-direction: column;
   padding-bottom: 48rpx;
-
-  .suggestions-list {
-    display: flex;
-    flex-direction: column;
-    gap: 32rpx;
-  }
-}
-
-// 建议项
-.suggestion-item {
-  background: #FFFFFF;
-  border-radius: 24rpx;
-  padding: 32rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
-  border: 2rpx solid @gray-border;
-  display: flex;
-  gap: 24rpx;
-  align-items: center;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-
-  // 左侧装饰条
-  &::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 6rpx;
-    background: currentColor;
-    opacity: 0.3;
-  }
-
-  .suggestion-icon {
-    flex-shrink: 0;
-    width: 104rpx;
-    height: 104rpx;
-    border-radius: 24rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.08);
-    position: relative;
-    z-index: 1;
-  }
-
-  .suggestion-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 20rpx;
-    min-width: 0; // 允许内容收缩
-
-    .suggestion-title-wrapper {
-      display: flex;
-      align-items: center;
-      margin-bottom: 2rpx;
-    }
-
-    .suggestion-title-badge {
-      display: inline-block;
-      padding: 12rpx 28rpx;
-      border-radius: 24rpx;
-      font-size: 28rpx;
-      font-weight: 600;
-      line-height: 1.4;
-      align-self: flex-start;
-    }
-
-    .suggestion-text {
-      font-size: 28rpx;
-      color: @text-gray;
-      line-height: 1.8;
-      display: block;
-      word-wrap: break-word;
-      word-break: break-all;
-      white-space: pre-wrap; // 保留换行和空格
-    }
-  }
 }
 
 // 操作按钮

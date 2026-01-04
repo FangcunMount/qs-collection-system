@@ -1,6 +1,7 @@
 import React, { useMemo, useRef, useEffect } from 'react';
 import { View } from '@tarojs/components';
 import * as echarts from '../../../components/ec-canvas/echarts';
+import { getRiskConfig } from '../../common/utils/statusFormatters';
 
 /**
  * Radar 图组件（基于 echarts-for-weixin）
@@ -10,34 +11,22 @@ const RadarChart = ({ data = [] }) => {
   const chartRef = useRef(null);
 
   // 根据风险等级获取颜色配置（医疗场景配色）
+  const hexToRgba = (hex, alpha) => {
+    const cleaned = hex.replace('#', '');
+    const bigint = parseInt(cleaned, 16);
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  };
+
   const getRiskColor = (riskLevel) => {
-    const colorMap = {
-      'high': {
-        line: '#EF4444',           // 红色 - 高风险
-        area: 'rgba(239, 68, 68, 0.2)',
-        point: '#EF4444',
-        gradient: ['rgba(239, 68, 68, 0.25)', 'rgba(239, 68, 68, 0.08)'],
-      },
-      'medium': {
-        line: '#F97316',           // 橙色 - 中风险
-        area: 'rgba(249, 115, 22, 0.2)',
-        point: '#F97316',
-        gradient: ['rgba(249, 115, 22, 0.25)', 'rgba(249, 115, 22, 0.08)'],
-      },
-      'low': {
-        line: '#22C55E',           // 绿色 - 低风险
-        area: 'rgba(34, 197, 94, 0.2)',
-        point: '#22C55E',
-        gradient: ['rgba(34, 197, 94, 0.25)', 'rgba(34, 197, 94, 0.08)'],
-      },
-      'normal': {
-        line: '#3B82F6',           // 蓝色 - 正常
-        area: 'rgba(59, 130, 246, 0.2)',
-        point: '#3B82F6',
-        gradient: ['rgba(59, 130, 246, 0.25)', 'rgba(59, 130, 246, 0.08)'],
-      },
+    const base = getRiskConfig(riskLevel).bgColor;
+    return {
+      line: base,
+      point: base,
+      gradient: [hexToRgba(base, 0.25), hexToRgba(base, 0.08)],
     };
-    return colorMap[riskLevel] || colorMap['normal'];
   };
 
   // 计算整体风险等级（取最高风险）
@@ -102,9 +91,22 @@ const RadarChart = ({ data = [] }) => {
       };
     }
 
+    const riskPriority = { high: 3, medium: 2, low: 1, normal: 0 };
+    const ranked = data
+      .map((item, index) => ({ ...item, index }))
+      .sort((a, b) => {
+        const pa = riskPriority[a.risk_level] ?? 0;
+        const pb = riskPriority[b.risk_level] ?? 0;
+        if (pb !== pa) return pb - pa;
+        const aScore = Number(a.score) || 0;
+        const bScore = Number(b.score) || 0;
+        return bScore - aScore;
+      });
+    const visibleSet = new Set(ranked.slice(0, 6).map((item) => item.index));
+
     // 使用百分比绘制雷达图，所有因子的最大值统一为100
-    const indicator = data.map((item) => ({
-      name: item.title || '',
+    const indicator = data.map((item, index) => ({
+      name: visibleSet.has(index) ? (item.title || '') : '',
       max: 100,  // 统一使用100作为最大值，表示百分比
     }));
 
@@ -139,14 +141,15 @@ const RadarChart = ({ data = [] }) => {
     return {
       tooltip: {
         trigger: 'item',
+        confine: true,
         backgroundColor: 'rgba(255, 255, 255, 0.98)',
         borderColor: '#E2E8F0',
         borderWidth: 1,
         borderRadius: 8,
-        padding: [12, 16],
+        padding: [8, 12],
         textStyle: {
           color: '#1E293B',
-          fontSize: 13,
+          fontSize: 12,
           fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif',
         },
         formatter: (params) => {
@@ -166,7 +169,9 @@ const RadarChart = ({ data = [] }) => {
                 const originalScore = Number(item.score) || 0;
                 const maxScore = Number(item.max_score) || 1;
                 const percent = percentValues[index] || 0;
-                tooltipContent += `${item?.title || ''}: ${originalScore} / ${maxScore} (${percent.toFixed(1)}%) [${riskLabel}]\n`;
+                if (item?.title) {
+                  tooltipContent += `${item.title}: ${originalScore}/${maxScore} ${percent.toFixed(0)}% ${riskLabel}\n`;
+                }
               }
             });
             return tooltipContent;
@@ -176,9 +181,9 @@ const RadarChart = ({ data = [] }) => {
       },
       radar: {
         indicator,
-        splitNumber: 4,  // 减少分割数，避免网格线太密集（0%, 33%, 67%, 100%）
+        splitNumber: 3,  // 减少分割数，避免网格线太密集
         center: ['50%', '52%'],  // 稍微上移，给底部标签更多空间
-        radius: '75%',  // 增大半径，让图表更宽松
+        radius: '78%',  // 增大半径，让图表更宽松
         // 柔和的网格线样式（医疗场景）
         splitLine: {
           show: true,
@@ -210,30 +215,18 @@ const RadarChart = ({ data = [] }) => {
         },
         // 刻度标签（显示百分比）- 只在关键位置显示
         axisLabel: {
-          show: true,
-          formatter: (value) => {
-            // 只显示关键刻度：0, 50, 100
-            if (value === 0 || value === 50 || value === 100) {
-              return `${value}%`;
-            }
-            return '';
-          },
-          textStyle: {
-            color: '#94A3B8',
-            fontSize: 10,
-            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif',
-          },
-          distance: 8,  // 标签距离轴线的距离
+          show: false,
         },
         // 标签样式（医疗场景风格）- 优化间距
         name: {
           textStyle: { 
             color: '#475569',       // 柔和的深灰色
-            fontSize: 12,  // 稍微减小字体
+            fontSize: 11,  // 稍微减小字体
             fontWeight: 500,
             fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif',
           },
           formatter: (name) => {
+            if (!name) return '';
             // 根据映射判断是否需要竖着显示
             const needVertical = verticalLabelMap.get(name);
             
@@ -241,18 +234,18 @@ const RadarChart = ({ data = [] }) => {
               // 左右两侧：竖着显示（每个字符一行）
               const chars = name.split('');
               // 限制最大长度，避免太长
-              const maxLength = 6;
+              const maxLength = 4;
               const displayChars = chars.length > maxLength 
                 ? chars.slice(0, maxLength).concat('...') 
                 : chars;
               return displayChars.join('\n');
             } else {
               // 上下两侧：横着显示
-              return name.length > 8 ? name.substring(0, 8) + '...' : name;
+              return name.length > 5 ? name.substring(0, 5) + '...' : name;
             }
           },
           // 增加标签与雷达图的距离
-          distance: 15,
+          distance: 10,
         },
       },
       series: [
@@ -340,4 +333,3 @@ const RadarChart = ({ data = [] }) => {
 };
 
 export default RadarChart;
-

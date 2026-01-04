@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, Button } from "@tarojs/components";
 import Taro from "@tarojs/taro";
-import { AtActivityIndicator, AtIcon } from "taro-ui";
+import { AtActivityIndicator } from "taro-ui";
 
 import { getAssessmentReport, getAssessmentReportByAnswersheetId } from "../../services/api/analysisApi";
 import { getLogger } from "../../util/log";
@@ -10,6 +10,8 @@ import { getRiskConfig } from "../common/utils/statusFormatters";
 import { formatSimpleDate } from "../common/utils/dateFormatters";
 import { findTesteeById, getSelectedTesteeId } from "../../store";
 import RadarChart from "./widget/RadarChart";
+import FactorBarChart from "./widget/FactorBarChart";
+import FactorScatterChart from "./widget/FactorScatterChart";
 import "./index.less";
 
 const PAGE_NAME = "analysis";
@@ -31,6 +33,7 @@ const Analysis = () => {
 
   const [isReady, setIsReady] = useState(false);
   const [activeTab, setActiveTab] = useState('factor-analysis'); // 'factor-analysis' or 'pro-advice'
+  const [chartType, setChartType] = useState('radar'); // 'radar' | 'bar' | 'scatter'
 
   /**
    * 处理报告数据
@@ -211,14 +214,14 @@ const Analysis = () => {
 
 
   // 因子卡片组件
-  const FactorCard = ({ title, score, maxScore, content, riskLevel }) => {
+  const FactorCard = ({ title, score, maxScore, content, riskLevel, suggestion }) => {
     const config = getRiskConfig(riskLevel);
     const hasScore = score !== undefined && score !== null;
     const hasMax = maxScore !== undefined && maxScore !== null && maxScore > 0;
     const percent = hasScore && hasMax ? Math.min((score / maxScore) * 100, 100) : 0;
     
     return (
-      <View className="factor-card">
+      <View className={`factor-card ${config.className}`}>
         <View className="factor-card-header">
           <Text className="factor-card-title">{title}</Text>
           <View className={`factor-risk-badge ${config.className}`}>
@@ -271,99 +274,22 @@ const Analysis = () => {
           )}
           </View>
           {content && (
-            <View className="factor-content">{content}</View>
-          )}
-        </View>
-      </View>
-    );
-  };
-
-  // 图标列表 - 为每个卡片提供不同的图标
-  const iconList = [
-    'settings',      // 设置
-    'user',          // 用户
-    'analytics',     // 分析
-    'home',          // 家庭
-    'heart',         // 爱心
-    'star',          // 星星
-    'check-circle',  // 检查
-    'info-circle',   // 信息
-    'lightning',     // 闪电
-    'calendar',      // 日历
-    'file',          // 文件
-    'message',       // 消息
-  ];
-
-  // 颜色配置列表 - 为每个卡片提供不同的颜色组合
-  const colorConfigList = [
-    { bgColor: '#E6F4FF', iconColor: '#1890FF' },  // 蓝色
-    { bgColor: '#FFF7E6', iconColor: '#FA8C16' },  // 橙色
-    { bgColor: '#F6FFED', iconColor: '#52C41A' },  // 绿色
-    { bgColor: '#F0F5FF', iconColor: '#722ED1' },  // 紫色
-    { bgColor: '#FFF0F6', iconColor: '#EB2F96' },  // 粉色
-    { bgColor: '#E6FFFB', iconColor: '#13C2C2' },  // 青色
-    { bgColor: '#FFFBE6', iconColor: '#FADB14' },  // 黄色
-    { bgColor: '#F6FFED', iconColor: '#73D13D' },  // 浅绿
-    { bgColor: '#E6F7FF', iconColor: '#096DD9' },  // 深蓝
-    { bgColor: '#FFF1F0', iconColor: '#F5222D' },  // 红色
-    { bgColor: '#F9F0FF', iconColor: '#9254DE' },  // 深紫
-    { bgColor: '#E6FFE6', iconColor: '#389E0D' },  // 深绿
-  ];
-
-  // 根据建议类别获取标题（简化版，去掉"建议"等冗余词汇）
-  const getSuggestionTitle = (category) => {
-    const titleMap = {
-      'general': '总体',
-      'family': '家庭维度',
-      'dimension': '因子维度',
-      'lifestyle': '生活调整',
-      'professional': '专业咨询',
-      'monitoring': '后续监测',
-    };
-    return titleMap[category] || '';
-  };
-
-  // 根据索引获取建议配置（确保每个卡片都有不同的图标和颜色）
-  const getSuggestionConfigByIndex = (index) => {
-    const iconIndex = index % iconList.length;
-    const colorIndex = index % colorConfigList.length;
-    
-    return {
-      icon: iconList[iconIndex],
-      bgColor: colorConfigList[colorIndex].bgColor,
-      iconColor: colorConfigList[colorIndex].iconColor,
-    };
-  };
-
-  // 建议项组件
-  const SuggestionItem = ({ icon, title, content, bgColor, iconColor }) => {
-    return (
-      <View 
-        className="suggestion-item"
-        style={{ color: iconColor }}
-      >
-        <View 
-          className="suggestion-icon"
-          style={{ background: bgColor }}
-        >
-          <AtIcon value={icon} size="28" color={iconColor} />
-        </View>
-        <View className="suggestion-content">
-          {title && (
-            <View className="suggestion-title-wrapper">
-              <Text className="suggestion-title-badge" style={{ 
-                backgroundColor: bgColor,
-                color: iconColor 
-              }}>
-                {title}
-              </Text>
+            <View className="factor-section">
+              <Text className="factor-section-title">解读</Text>
+              <View className="factor-content">{content}</View>
             </View>
           )}
-          <Text className="suggestion-text">{content}</Text>
+          {suggestion && (
+            <View className="factor-section">
+              <Text className="factor-section-title">建议</Text>
+              <View className="factor-suggestion">{suggestion}</View>
+            </View>
+          )}
         </View>
       </View>
     );
   };
+
 
   if (!isReady) {
     return (
@@ -448,27 +374,45 @@ const Analysis = () => {
             <View className="factor-analysis-content">
               {/* 雷达图卡片 */}
               {factors.length > 0 && (
-                <View className="radar-chart-card">
-                  <Text className="card-title">因子维度分布</Text>
-                  <View className="radar-chart-container">
-                    <RadarChart data={factors} />
+                <View className="factor-chart-card">
+                  <View className="chart-header">
+                    <Text className="card-title">因子维度分布</Text>
+                    <View className="chart-toggle">
+                      <View
+                        className={`chart-toggle-button ${chartType === 'radar' ? 'active' : ''}`}
+                        onClick={() => setChartType('radar')}
+                      >
+                        <Text className="chart-toggle-text">雷达图</Text>
+                      </View>
+                      <View
+                        className={`chart-toggle-button ${chartType === 'bar' ? 'active' : ''}`}
+                        onClick={() => setChartType('bar')}
+                      >
+                        <Text className="chart-toggle-text">条形图</Text>
+                      </View>
+                      <View
+                        className={`chart-toggle-button ${chartType === 'scatter' ? 'active' : ''}`}
+                        onClick={() => setChartType('scatter')}
+                      >
+                        <Text className="chart-toggle-text">散点图</Text>
+                      </View>
+                    </View>
                   </View>
+                  {chartType === 'radar' ? (
+                    <View className="radar-chart-container">
+                      <RadarChart data={factors} />
+                    </View>
+                  ) : chartType === 'bar' ? (
+                    <View className="bar-chart-container">
+                      <FactorBarChart data={factors} />
+                    </View>
+                  ) : (
+                    <View className="scatter-chart-container">
+                      <FactorScatterChart data={factors} />
+                    </View>
+                  )}
                 </View>
               )}
-
-              {/* 因子卡片列表 */}
-              <View className="factor-cards-list">
-                {factors.map((factor, index) => (
-                  <FactorCard
-                    key={factor.factor_code || index}
-                    title={factor.title}
-                    score={factor.score}
-                    maxScore={factor.max_score}
-                    content={factor.content}
-                    riskLevel={factor.risk_level}
-                  />
-                ))}
-              </View>
 
               {factors.length === 0 && (
                 <View className="empty-state">
@@ -482,58 +426,36 @@ const Analysis = () => {
           {/* 详细建议页 */}
           {activeTab === 'pro-advice' && (
             <View className="pro-advice-content">
-              <View className="suggestions-list">
-                {/* 显示其他类别的建议（不包括 general 类别） */}
-                {Array.isArray(reportInfo.suggestions) && reportInfo.suggestions
-                  .filter(suggestion => suggestion && suggestion.category !== 'general')
-                  .map((suggestion, index) => {
-                    // 根据索引获取不同的图标和颜色配置
-                    const config = getSuggestionConfigByIndex(index);
-                    const content = typeof suggestion.content === 'string' 
-                      ? suggestion.content 
-                      : String(suggestion.content || '');
-                    // 如果是 dimension 类别，显示因子名称
-                    const baseTitle = getSuggestionTitle(suggestion.category);
-                    const title = suggestion.category === 'dimension' && suggestion.factor_code
-                      ? factors.find(f => f.factor_code === suggestion.factor_code)?.title
-                      : baseTitle;
-                    return (
-                      <SuggestionItem
-                        key={`${suggestion.category}-${suggestion.factor_code || index}`}
-                        icon={config.icon}
-                        title={title}
-                        content={content}
-                        bgColor={config.bgColor}
-                        iconColor={config.iconColor}
-                      />
-                    );
-                  })}
-                
-                {/* 如果没有建议，显示空状态 */}
-                {(!Array.isArray(reportInfo.suggestions) || 
-                  reportInfo.suggestions.filter(s => s && s.category !== 'general').length === 0) && (
-                  <View className="empty-state">
-                    <Text className="empty-icon">💡</Text>
-                    <Text className="empty-text">暂无详细建议</Text>
-                  </View>
-                )}
+              <View className="factor-cards-list">
+                {factors.map((factor, index) => (
+                  <FactorCard
+                    key={factor.factor_code || index}
+                    title={factor.title}
+                    score={factor.score}
+                    maxScore={factor.max_score}
+                    content={factor.content}
+                    riskLevel={factor.risk_level}
+                    suggestion={factor.suggestion}
+                  />
+                ))}
               </View>
 
-              {/* 底部操作按钮 */}
-              <View className="action-buttons">
-                <Button 
-                  className="primary-button"
-                  onClick={() => {
-                    Taro.redirectTo({
-                      url: `/pages/answersheet/detail/index?a=${answersheetid}`
-                    });
-                  }}
-                >
-                  完成并查看历史记录
-                </Button>
-              </View>
             </View>
           )}
+        </View>
+
+        {/* 底部操作按钮 */}
+        <View className="action-buttons">
+          <Button 
+            className="primary-button"
+            onClick={() => {
+              Taro.redirectTo({
+                url: `/pages/answersheet/detail/index?a=${answersheetid}`
+              });
+            }}
+          >
+            完成并查看历史记录
+          </Button>
         </View>
       </View>
     </>
