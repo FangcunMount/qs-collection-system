@@ -3,7 +3,6 @@ import Taro, { useReady, useRouter, useShareAppMessage } from "@tarojs/taro";
 import { View, Text, Image, ScrollView, Picker } from "@tarojs/components";
 
 import "./index.less";
-import NeedDialog from "../../../components/needDialog";
 import QuestionSheet from "./weight/questionsheet";
 import SinglePageModel from "./weight/singlePageModel";
 import { initTesteeStore, refreshTesteeList } from "../../../store/testeeStore.ts";
@@ -61,7 +60,6 @@ export default function Index() {
   const [selectedTesteeId, setSelectedTesteeIdState] = useState(null);
 
   const canSubmit = true;
-  const [needTesteeidFlag, setNeedTesteeidFlag] = useState(false);
   const [isSinglePage, setIsSinglePage] = useState(false);
 
   const paramData = useRouter().params;
@@ -93,7 +91,7 @@ export default function Index() {
 
       beforeEach({ questionsheetCode, testeeid, signid }, async () => {
         setQuestionsheetid(questionsheetCode);
-        await initPageData(questionsheetCode, testeeid);
+        await initPageData(questionsheetCode, testeeid, result);
       });
     });
   }, []);
@@ -106,7 +104,7 @@ export default function Index() {
    * 2. 根据 testee 数量决定是否自动选择
    * 3. 加载问卷数据
    */
-  const initPageData = async (questionsheetCode, explicitTesteeId) => {
+  const initPageData = async (questionsheetCode, explicitTesteeId, entryParams) => {
     try {
       // 重新初始化 testee store
       await refreshTesteeList();
@@ -116,7 +114,12 @@ export default function Index() {
       // 如果没有档案
       if (!storedList.length) {
         Taro.hideLoading();
-        setNeedTesteeidFlag(true);
+        const params = {
+          submitClose: "0",
+          goUrl: "/pages/questionnaire/fill/index",
+          goParams: JSON.stringify(entryParams || paramData)
+        };
+        Taro.redirectTo({ url: paramsConcat("/pages/testee/register/index", params) });
         return;
       }
 
@@ -331,11 +334,6 @@ export default function Index() {
 
   return (
     <>
-      <NeedDialog
-        flag={needTesteeidFlag}
-        content="暂无档案，请联系客服。"
-      />
-      
       {/* 准备步骤：显示问卷信息和档案选择器 */}
       {currentStep === 'ready' && (
         <View className="fill-ready-page">

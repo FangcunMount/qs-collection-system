@@ -48,17 +48,35 @@ class AuthorizationHandler {
               success(requestRes) {
                 console.log('[Auth] 登录响应:', requestRes);
 
+                const resp = requestRes.data || {};
+
                 // 检查 HTTP 状态码
                 if (requestRes.statusCode !== 200) {
-                  console.error('[Auth] HTTP 错误:', requestRes.statusCode);
+                  const code = String(resp?.code ?? resp?.errno ?? resp?.error ?? '');
+                  const message = resp?.message ?? resp?.errmsg ?? resp?.error_description ?? '登录请求失败';
+                  console.error('[Auth] HTTP 错误:', requestRes.statusCode, { code, message });
+
+                  if (requestRes.statusCode === 401) {
+                    console.log('[Auth] 登录返回 401，跳转到注册页面');
+                    wxApi.reLaunch({
+                      url: '/pages/user/register/index',
+                    });
+                    reject({
+                      statusCode: requestRes.statusCode,
+                      code,
+                      message: authErrorMap[code] || message,
+                      needRegister: true
+                    });
+                    return;
+                  }
+
                   reject({
                     statusCode: requestRes.statusCode,
-                    message: '登录请求失败'
+                    code,
+                    message
                   });
                   return;
                 }
-
-                const resp = requestRes.data || {};
                 console.log('[Auth] 响应数据结构:', { 
                   hasAccessToken: !!resp.access_token,
                   hasData: !!resp.data,

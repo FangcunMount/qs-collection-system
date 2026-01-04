@@ -17,10 +17,10 @@ import "./index.less";
  * 图标均使用项目中已验证存在的 taro-ui 图标
  */
 const SCALE_CATEGORIES = [
-  { value: "adhd", label: "多动障碍", icon: "bookmark" },                  // 注意力缺陷多动障碍
-  { value: "td", label: "抽动障碍", icon: "alert-circle" },              // 抽动障碍
-  { value: "asd", label: "自闭/孤独", icon: "user" },                        // 孤独症谱系障碍
-  { value: "ocd", label: "强迫/焦虑", icon: "help" },                        // 强迫症
+  // { value: "adhd", label: "多动障碍", icon: "bookmark" },                  // 注意力缺陷多动障碍
+  // { value: "td", label: "抽动障碍", icon: "alert-circle" },              // 抽动障碍
+  // { value: "asd", label: "自闭/孤独", icon: "user" },                        // 孤独症谱系障碍
+  // { value: "ocd", label: "强迫/焦虑", icon: "help" },                        // 强迫症
   { value: "sii", label: "感觉统合", icon: "settings" },                   // 感觉统合
   { value: "efn", label: "执行功能", icon: "list" },                    // 执行功能
   { value: "emt", label: "抑郁/情绪", icon: "heart" },                      // 情绪

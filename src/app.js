@@ -15,9 +15,9 @@ import './pages/common/components/LoadingState/LoadingState.less'
 
 import { checkUpdateVersion } from './util/checkEnvironment'
 import { setGlobalData } from './util/globalData'
-import { initConfig } from './util/authorization'
+import { initConfig, authorizationHandler } from './util/authorization'
 import { initUserStore } from './store/userStore.ts'
-import { initTokenStore } from './store/tokenStore'
+import { initTokenStore, getAccessToken } from './store/tokenStore'
 import { initTesteeStore } from './store/testeeStore'
 import config from './config'
 
@@ -27,6 +27,19 @@ class App extends Component {
     
     // 初始化 Token Store（同步）
     initTokenStore();
+
+    // 启动时自动登录，未注册用户会在登录流程中跳转到注册页
+    try {
+      const accessToken = getAccessToken();
+      if (!accessToken) {
+        await authorizationHandler.login({ appId: config.appId });
+      }
+    } catch (error) {
+      if (error?.needRegister) {
+        return;
+      }
+      console.warn('[App] 自动登录失败:', error);
+    }
     
     // 初始化用户与受试者 store（异步，并行执行）
     try {

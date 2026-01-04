@@ -22,41 +22,23 @@ const InputWrapperCSS = {
   marginBottom: "32rpx"
 };
 
-const RegisterUser = ({ userInfo, onChange }) => {
-  const handleNameInput = (e) => {
-    const value = e.detail.value;
-    onChange("username", value);
-  };
-
-  const handlePhoneInput = (e) => {
-    const value = e.detail.value;
-    onChange("phone", value);
-  };
-
+const RegisterUser = ({ userInfo, onChange, onFetchProfile }) => {
   return (
     <View>
       <View style={InputWrapperCSS}>
-        <View style={InputLabelCSS}>您的姓名</View>
-        <Input
-          type="text"
-          placeholder="请输入您的姓名"
-          value={userInfo.username}
-          onInput={handleNameInput}
-          style={InputCSS}
-        />
+        <View style={InputLabelCSS}>用户昵称</View>
+        <View onClick={onFetchProfile}>
+          <Input
+            type="text"
+            placeholder="点击获取微信昵称"
+            value={userInfo.nickname}
+            onInput={e => onChange("nickname", e.detail.value)}
+            style={InputCSS}
+            disabled
+          />
+        </View>
       </View>
 
-      <View style={InputWrapperCSS}>
-        <View style={InputLabelCSS}>手机号码</View>
-        <Input
-          type="number"
-          placeholder="请输入11位手机号"
-          value={userInfo.phone}
-          onInput={handlePhoneInput}
-          maxlength={11}
-          style={InputCSS}
-        />
-      </View>
 
       <PrivacyAuthorization />
     </View>

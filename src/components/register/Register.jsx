@@ -15,6 +15,7 @@ import { setSelectedTesteeId } from "../../store/testeeStore.ts";
 import { registerUser } from "./model";
 import { authorizationHandler } from "../../util/authorization";
 import config from "../../config";
+import { getWxApi } from "../../util/wxApi";
 
 /**
  * 注册类型枚举
@@ -25,19 +26,15 @@ export const REGISTER_TYPE = {
 };
 
 const createInitialUserInfo = () => ({
-  username: "",
-  phone: ""
+  nickname: "",
+  avatar: ""
 });
 
 const createInitialChildInfo = () => ({
   legalName: "",
   gender: null,
   dob: "",
-  idType: "none",
-  idNo: "",
-  relation: "parent",
-  heightCm: null,
-  weightKg: ""
+  relation: "parent"
 });
 
 /**
@@ -64,16 +61,6 @@ const Register = ({ type, goUrl, submitClose }) => {
 
   // 验证用户信息
   const verifyUserInfo = () => {
-    if (!userInfo.username) {
-      Taro.showToast({ title: "请填写您的姓名", icon: "none" });
-      return false;
-    }
-
-    if (!userInfo.phone) {
-      Taro.showToast({ title: "请填写您的手机号码", icon: "none" });
-      return false;
-    }
-
     return true;
   };
 
@@ -94,16 +81,6 @@ const Register = ({ type, goUrl, submitClose }) => {
       return false;
     }
 
-    if (!childInfo.idType) {
-      Taro.showToast({ title: "请选择证件类型", icon: "none" });
-      return false;
-    }
-
-    if (!childInfo.idNo) {
-      Taro.showToast({ title: "请填写证件号码", icon: "none" });
-      return false;
-    }
-
     if (!childInfo.relation) {
       Taro.showToast({ title: "请选择关系", icon: "none" });
       return false;
@@ -116,7 +93,20 @@ const Register = ({ type, goUrl, submitClose }) => {
   const registerUserHandler = async () => {
     try {
       console.log('[Register] 注册用户', userInfo);
-      const userRes = await registerUser(userInfo);
+      const profile = userInfo.nickname ? null : await fetchUserProfile();
+      if (profile) {
+        setUserInfo(current => ({
+          ...current,
+          nickname: profile.nickName || "",
+          avatar: profile.avatarUrl || ""
+        }));
+      }
+      const userPayload = {
+        name: profile?.nickName || userInfo.nickname || "",
+        nickname: profile?.nickName || userInfo.nickname || "",
+        avatar: profile?.avatarUrl || userInfo.avatar || ""
+      };
+      const userRes = await registerUser(userPayload);
       console.log('[Register] 用户注册成功:', userRes);
       
       // 检查组件是否仍然挂载
@@ -149,10 +139,14 @@ const Register = ({ type, goUrl, submitClose }) => {
         console.warn('[Register] 组件已卸载，跳过错误处理');
         return;
       }
-      
-      Taro.showToast({ 
-        title: error.message || "注册失败，请重试", 
-        icon: "none" 
+
+      const errorMessage = (error?.errMsg?.includes('auth deny') || error?.errMsg?.includes('cancel'))
+        ? "需要授权获取头像昵称"
+        : (error?.message || "注册失败，请重试");
+
+      Taro.showToast({
+        title: errorMessage,
+        icon: "none"
       });
       throw error;
     }
@@ -166,18 +160,8 @@ const Register = ({ type, goUrl, submitClose }) => {
       const childPayload = {
         name: childInfo.legalName,           // 映射到 name
         birthday: childInfo.dob,              // 映射到 birthday
-        sex: childInfo.gender,                // 映射到 sex
-        idType: childInfo.idType,
-        idNo: childInfo.idNo
+        sex: childInfo.gender                // 映射到 sex
       };
-      
-      // 添加可选字段
-      if (childInfo.heightCm !== null && childInfo.heightCm !== '') {
-        childPayload.heightCm = Number(childInfo.heightCm);
-      }
-      if (childInfo.weightKg) {
-        childPayload.weightKg = Number(childInfo.weightKg);
-      }
       
       console.log('[Register] 准备调用 registerService, payload:', childPayload);
       
@@ -227,6 +211,49 @@ const Register = ({ type, goUrl, submitClose }) => {
       gobalLoadingTips: "注册中..."
     }
   });
+
+  const fetchUserProfile = () => {
+    return new Promise((resolve, reject) => {
+      try {
+        const wxApi = getWxApi();
+        if (!wxApi?.getUserProfile) {
+          reject(new Error("当前微信版本不支持获取用户信息"));
+          return;
+        }
+
+        wxApi.getUserProfile({
+          desc: "用于完善注册信息",
+          success(res) {
+            resolve(res?.userInfo || {});
+          },
+          fail(err) {
+            reject(err);
+          }
+        });
+      } catch (error) {
+        reject(error);
+      }
+    });
+  };
+
+  const handleFetchUserProfile = async () => {
+    try {
+      const profile = await fetchUserProfile();
+      setUserInfo(current => ({
+        ...current,
+        nickname: profile.nickName || "",
+        avatar: profile.avatarUrl || ""
+      }));
+    } catch (error) {
+      const errorMessage = (error?.errMsg?.includes('auth deny') || error?.errMsg?.includes('cancel'))
+        ? "需要授权获取头像昵称"
+        : (error?.message || "获取用户信息失败");
+      Taro.showToast({
+        title: errorMessage,
+        icon: "none"
+      });
+    }
+  };
 
   const afterSubmit = () => {
     if (submitClose) {
@@ -282,6 +309,7 @@ const Register = ({ type, goUrl, submitClose }) => {
           <RegisterUser
             userInfo={userInfo}
             onChange={handleChangeUserInfo}
+            onFetchProfile={handleFetchUserProfile}
           />
         ) : (
           <RegisterChild
