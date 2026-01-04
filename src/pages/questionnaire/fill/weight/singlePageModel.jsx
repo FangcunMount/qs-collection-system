@@ -260,8 +260,10 @@ export default props => {
      */
     const clearData = qs => {
       return {
+        name: qs.name || qs.title,
         title: qs.title,
-        questionsheet_code: qs.code,
+        code: qs.code,
+        version: qs.version || "1.0",
         answers: qs.questions.filter(v => getQuestionIsShow(v.show_controller))
       };
     };
