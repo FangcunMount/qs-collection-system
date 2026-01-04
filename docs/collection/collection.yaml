@@ -1403,7 +1403,7 @@ components:
         title:
           type: string
         type:
-          description: 问卷类型：Survey(调查问卷) / MedicalScale(医学量表)
+          description: 问卷类型：Survey(调查问卷) / MedicalScale(量表)
           type: string
         updated_at:
           type: string
@@ -1427,7 +1427,7 @@ components:
         title:
           type: string
         type:
-          description: 问卷类型：Survey(调查问卷) / MedicalScale(医学量表)
+          description: 问卷类型：Survey(调查问卷) / MedicalScale(量表)
           type: string
         updated_at:
           type: string

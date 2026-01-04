@@ -7,7 +7,7 @@ import "taro-ui/dist/style/components/icon.scss";
 import BottomMenu from "../../../components/bottomMenu";
 import { SearchBox } from "../../../components/common";
 import LoadingState from "../../common/components/LoadingState/LoadingState";
-import { getScales } from "../../../services/api/scaleApi";
+import { getScales, getScaleCategories } from "../../../services/api/scaleApi";
 import { paramsConcat } from "../../../util";
 import "./index.less";
 
@@ -17,29 +17,55 @@ import "./index.less";
  * 图标均使用项目中已验证存在的 taro-ui 图标
  */
 const SCALE_CATEGORIES = [
-  // { value: "adhd", label: "多动障碍", icon: "bookmark" },                  // 注意力缺陷多动障碍
-  // { value: "td", label: "抽动障碍", icon: "alert-circle" },              // 抽动障碍
-  // { value: "asd", label: "自闭/孤独", icon: "user" },                        // 孤独症谱系障碍
-  // { value: "ocd", label: "强迫/焦虑", icon: "help" },                        // 强迫症
-  { value: "sii", label: "感觉统合", icon: "settings" },                   // 感觉统合
-  { value: "efn", label: "执行功能", icon: "list" },                    // 执行功能
-  { value: "emt", label: "抑郁/情绪", icon: "heart" },                      // 情绪
-  { value: "slp", label: "失眠/睡眠", icon: "clock" },                      // 失眠/睡眠
+  { value: "adhd", label: "多动障碍", icon: "bookmark" },                  
+  { value: "td", label: "抽动障碍", icon: "alert-circle" },              
+  { value: "asd", label: "自闭/孤独", icon: "user" },                    
+  { value: "ocd", label: "强迫/焦虑", icon: "help" },                    
+  { value: "sii", label: "感觉统合", icon: "settings" },                 
+  { value: "efn", label: "执行功能", icon: "list" },                    
+  { value: "emt", label: "抑郁/情绪", icon: "heart" },                  
+  { value: "slp", label: "失眠/睡眠", icon: "clock" },                  
 ];
+
+const normalizeCategoryValue = (item) => {
+  if (!item) return "";
+  if (typeof item === "string") return item;
+  return item.value || item.code || item.name || item.label || item.id || "";
+};
+
+const buildCategoryItems = (availableCategories) => {
+  const values = (availableCategories || [])
+    .map(normalizeCategoryValue)
+    .filter(Boolean);
+  const availableSet = new Set(values);
+
+  return SCALE_CATEGORIES
+    .filter((cat) => availableSet.has(cat.value) || availableSet.has(cat.label))
+    .map((cat, index) => ({
+      id: cat.value || index,
+      name: cat.label,
+      value: cat.value,
+      icon: cat.icon,
+      iconType: "outlined"
+    }));
+};
 
 const HomeIndex = () => {
   const [searchText, setSearchText] = useState("");
   const [recommendedScales, setRecommendedScales] = useState([]);
   const [recommendedScalesLoading, setRecommendedScalesLoading] = useState(true);
+  const [categoryItems, setCategoryItems] = useState([]);
   
-  // 使用写死的分类数据
-  const categories = SCALE_CATEGORIES.map((cat, index) => ({
-    id: cat.value || index,
-    name: cat.label,
-    value: cat.value,
-    icon: cat.icon,
-    iconType: "outlined"
-  }));
+  const loadScaleCategories = useCallback(async () => {
+    try {
+      const result = await getScaleCategories();
+      const categories = result.data?.categories || result.categories || [];
+      setCategoryItems(buildCategoryItems(categories));
+    } catch (error) {
+      console.error("加载量表分类失败:", error);
+      setCategoryItems([]);
+    }
+  }, []);
 
   const handleCategoryClick = (category) => {
     // 跳转到量表列表，按分类筛选
@@ -112,7 +138,8 @@ const HomeIndex = () => {
 
   useEffect(() => {
     loadRecommendedScales();
-  }, [loadRecommendedScales]);
+    loadScaleCategories();
+  }, [loadRecommendedScales, loadScaleCategories]);
 
   return (
     <View className="home-page">
@@ -136,7 +163,7 @@ const HomeIndex = () => {
         <View className="category-section">
           <Text className="section-title">量表分类</Text>
           <View className="category-grid">
-            {categories.map((cat) => (
+            {categoryItems.map((cat) => (
               <View
                 key={cat.id || cat.value}
                 className="category-item"

@@ -10,7 +10,7 @@ import { getRiskConfig } from '../../common/utils/statusFormatters';
 const RadarChart = ({ data = [] }) => {
   const chartRef = useRef(null);
 
-  // 根据风险等级获取颜色配置（医疗场景配色）
+  // 根据风险等级获取颜色配置
   const hexToRgba = (hex, alpha) => {
     const cleaned = hex.replace('#', '');
     const bigint = parseInt(cleaned, 16);
@@ -184,7 +184,6 @@ const RadarChart = ({ data = [] }) => {
         splitNumber: 3,  // 减少分割数，避免网格线太密集
         center: ['50%', '52%'],  // 稍微上移，给底部标签更多空间
         radius: '78%',  // 增大半径，让图表更宽松
-        // 柔和的网格线样式（医疗场景）
         splitLine: {
           show: true,
           lineStyle: { 
@@ -217,7 +216,6 @@ const RadarChart = ({ data = [] }) => {
         axisLabel: {
           show: false,
         },
-        // 标签样式（医疗场景风格）- 优化间距
         name: {
           textStyle: { 
             color: '#475569',       // 柔和的深灰色
@@ -255,7 +253,6 @@ const RadarChart = ({ data = [] }) => {
             {
               value: values,
               name: '因子得分',
-              // 使用渐变填充（医疗场景风格）
               areaStyle: { 
                 color: {
                   type: 'radial',
@@ -274,7 +271,6 @@ const RadarChart = ({ data = [] }) => {
                 width: 2.5,
                 type: 'solid',
               },
-              // 数据点样式（医疗场景风格）
               itemStyle: {
                 color: colorConfig.point,
                 borderColor: '#FFFFFF',

@@ -225,7 +225,7 @@ export default function Index() {
     const questionCount = questionnaire?.questions?.length || 0;
     const questionnaireType = questionnaire?.type;
     
-    // 医学量表且题目数少于20时，使用单页单题模式
+    // 量表且题目数少于20时，使用单页单题模式
     if (questionnaireType === 'MedicalScale' && questionCount < 20 && !isSinglePage) {
       setIsSinglePage(true);
     }
@@ -284,7 +284,7 @@ export default function Index() {
         url: `/pages/answersheet/detail/index?a=${answersheetid}`
       });
     } else if (questionnaireType === 'MedicalScale') {
-      // 医学量表：先跳转到等待解析页面
+      // 量表：先跳转到等待解析页面
       let finalAssessmentId = assessmentId;
       if (!finalAssessmentId) {
         logger.RUN('[Fill] 提交接口未返回 assessmentId，通过 answersheetId 获取', { 
@@ -299,7 +299,7 @@ export default function Index() {
           url: `/pages/analysis/wait/index?aid=${finalAssessmentId}&a=${answersheetid}${testeeIdParam}`
         });
       } else {
-        logger.WARN('[Fill] 医学量表无法获取 assessmentId，直接跳转到解析页面', { 
+        logger.WARN('[Fill] 量表无法获取 assessmentId，直接跳转到解析页面', { 
           answersheetid 
         });
         Taro.redirectTo({

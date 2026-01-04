@@ -1,5 +1,5 @@
 export default {
-  navigationBarTitleText: '医学量表',
+  navigationBarTitleText: '量表测试',
   enablePullDownRefresh: true,
   backgroundTextStyle: 'dark'
 }
