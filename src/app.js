@@ -5,14 +5,6 @@ import 'taro-ui/dist/style/index.scss'       // taro-ui 全局样式
 import 'taro-ui-fc/dist/styles/index.less'   // taro-ui-fc 全局样式
 import './app.less'                           // 项目自定义全局样式
 
-// 统一导入通用组件样式，确保加载顺序一致，避免 CSS 顺序冲突警告
-import './components/common/SearchBox/index.less'
-import './components/common/StatusTag/index.less'
-import './components/common/RiskTag/index.less'
-import './components/common/ScaleCard/index.less'
-import './pages/common/components/EmptyState/EmptyState.less'
-import './pages/common/components/LoadingState/LoadingState.less'
-
 import { checkUpdateVersion } from './util/checkEnvironment'
 import { setGlobalData } from './util/globalData'
 import { initConfig, authorizationHandler } from './util/authorization'

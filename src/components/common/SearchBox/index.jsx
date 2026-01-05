@@ -4,7 +4,6 @@
 import React from "react";
 import { View, Input } from "@tarojs/components";
 import { AtIcon } from "taro-ui";
-import "./index.less";
 
 const SearchBox = ({
   placeholder = "搜索...",
@@ -32,4 +31,3 @@ const SearchBox = ({
 };
 
 export default SearchBox;
-

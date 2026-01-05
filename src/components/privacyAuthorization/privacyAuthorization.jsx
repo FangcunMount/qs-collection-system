@@ -41,13 +41,14 @@ export const PrivacyAuthorization = () => {
     };
 
     // 同意隐私协议
-    const handleAgree = () => {
+    const handleAgree = (e) => {
+        const buttonId = e?.detail?.buttonId || e?.target?.id || e?.currentTarget?.id || "agree-btn";
         // 用户同意后直接放行当前 pending 的隐私请求
         disPopUp();
         privacyResolves.forEach(resolve => {
             resolve({
                 event: 'agree',
-                buttonId: 'agree-btn'
+                buttonId
             });
         });
         privacyResolves.clear();
@@ -136,7 +137,7 @@ export const PrivacyAuthorization = () => {
                               type="primary"
                               class="qs-xs-btn btn-primary"
                               openType="agreePrivacyAuthorization"
-                              onClick={handleAgree}
+                              onAgreePrivacyAuthorization={handleAgree}
                             >同意</Button>
 
 

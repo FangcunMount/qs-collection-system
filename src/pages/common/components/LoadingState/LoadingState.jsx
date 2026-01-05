@@ -5,7 +5,6 @@
 import React from "react";
 import { View } from "@tarojs/components";
 import { AtActivityIndicator } from "taro-ui";
-import "./LoadingState.less";
 
 const LoadingState = ({ 
   content = "加载中...", 

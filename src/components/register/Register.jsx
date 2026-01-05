@@ -16,7 +16,6 @@ import { registerUser } from "./model";
 import { authorizationHandler } from "../../util/authorization";
 import config from "../../config";
 import { getWxApi } from "../../util/wxApi";
-import { requestPrivacyAuthorization } from "../privacyAuthorization/privacyAuthorization";
 
 /**
  * 注册类型枚举
@@ -62,6 +61,10 @@ const Register = ({ type, goUrl, submitClose }) => {
 
   // 验证用户信息
   const verifyUserInfo = () => {
+    if (!userInfo.nickname) {
+      Taro.showToast({ title: "请先获取微信昵称", icon: "none" });
+      return false;
+    }
     return true;
   };
 
@@ -94,19 +97,10 @@ const Register = ({ type, goUrl, submitClose }) => {
   const registerUserHandler = async () => {
     try {
       console.log('[Register] 注册用户', userInfo);
-      await requestPrivacyAuthorization();
-      const profile = userInfo.nickname ? null : await fetchUserProfile();
-      if (profile) {
-        setUserInfo(current => ({
-          ...current,
-          nickname: profile.nickName || "",
-          avatar: profile.avatarUrl || ""
-        }));
-      }
       const userPayload = {
-        name: profile?.nickName || userInfo.nickname || "",
-        nickname: profile?.nickName || userInfo.nickname || "",
-        avatar: profile?.avatarUrl || userInfo.avatar || ""
+        name: userInfo.nickname || "",
+        nickname: userInfo.nickname || "",
+        avatar: userInfo.avatar || ""
       };
       const userRes = await registerUser(userPayload);
       console.log('[Register] 用户注册成功:', userRes);
@@ -215,7 +209,6 @@ const Register = ({ type, goUrl, submitClose }) => {
   });
 
   const fetchUserProfile = async () => {
-    await requestPrivacyAuthorization();
     return new Promise((resolve, reject) => {
       try {
         const wxApi = getWxApi();
@@ -240,14 +233,17 @@ const Register = ({ type, goUrl, submitClose }) => {
   };
 
   const handleFetchUserProfile = async () => {
+    console.log('[Register] 开始获取用户信息');
     try {
       const profile = await fetchUserProfile();
+      console.log('[Register] 获取用户信息成功:', profile);
       setUserInfo(current => ({
         ...current,
         nickname: profile.nickName || "",
         avatar: profile.avatarUrl || ""
       }));
     } catch (error) {
+      console.error('[Register] 获取用户信息失败:', error);
       const errorMessage = (error?.errMsg?.includes('auth deny') || error?.errMsg?.includes('cancel'))
         ? "需要授权获取头像昵称"
         : (error?.message || "获取用户信息失败");

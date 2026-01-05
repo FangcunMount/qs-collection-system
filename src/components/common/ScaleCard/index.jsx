@@ -4,7 +4,6 @@
 import React from "react";
 import { View, Text } from "@tarojs/components";
 import { AtIcon } from "taro-ui";
-import "./index.less";
 
 const ScaleCard = ({
   scale,
@@ -132,4 +131,3 @@ const ScaleCard = ({
 };
 
 export default ScaleCard;
-
