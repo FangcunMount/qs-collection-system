@@ -153,7 +153,7 @@ const HomeIndex = () => {
         <View className="welcome-section">
           <View onClick={handleSearch}>
             <SearchBox
-              placeholder="搜索量表名称或症状..."
+              placeholder="搜索量表名称..."
               value={searchText}
               onInput={(e) => setSearchText(e.detail.value)}
               onConfirm={handleSearch}
