@@ -13,10 +13,20 @@ export const isNull = getType("Null");
 export const isUndefined = getType("Undefined");
 
 export function isEmpty(v) {
-  if (isNull(v) || isUndefined(v)) return false;
+  console.log('in isEmpty, v', v);
+  if (isNull(v) || isUndefined(v)) {
+    console.log('isEmpty, return true');
+    return true;
+  }
 
   let nv = v;
   if (isNumber(nv)) nv = String(nv);
 
-  return nv.length < 1
+  if (nv.length < 1) {
+    console.log('isEmpty, return true');
+    return true;
+  }
+
+  console.log('isEmpty, return false');
+  return false;
 }

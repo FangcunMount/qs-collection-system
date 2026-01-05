@@ -41,8 +41,10 @@ const getValidationRule = (rules, ruleType) => {
 };
 
 export function checkQuestion(question) {
+  console.log('in question check, question.value', question.title);
   // 适配新API的validation_rules结构
   const validationRules = question.validation_rules || [];
+  console.log('validationRules', validationRules);
   const required = getValidationRule(validationRules, 'required');
   const min_words = getValidationRule(validationRules, 'min_words');
   const max_words = getValidationRule(validationRules, 'max_words');
@@ -53,10 +55,21 @@ export function checkQuestion(question) {
   
   const showIndex = question.title.split(".")[0];
   const value = question.value;
+  const isValueEmpty = isEmpty(value);
+  console.log('question.value', question.value);
+  console.log('isValueEmpty', isValueEmpty);
 
   // 必填验证
-  if (required && (required === "1" || required === "true" || required === true)) {
-    if (isEmpty(value)) {
+  console.log('required', required);
+  console.log('required === 1', required === 1);
+  console.log('required === "1"', required === "1");
+  console.log('required === "true"', required === "true");
+  console.log('required === true', required === true);
+  if (required && (required === 1 || required === "1" || required === "true" || required === true)) {
+    console.log('isValueEmpty', isValueEmpty);
+    console.log('if (isValueEmpty)', isValueEmpty);
+    if (isValueEmpty) {
+      console.log('showToast');
       Taro.showToast({
         title: `第${showIndex}题为必填题`,
         icon: "none"
@@ -65,7 +78,12 @@ export function checkQuestion(question) {
     }
   }
 
-  if (min_words && value.length < Number(min_words)) {
+  if (isValueEmpty) return true;
+
+  const textValue = Array.isArray(value) ? value.join("") : String(value ?? "");
+  const selectCount = Array.isArray(value) ? value.length : (isValueEmpty ? 0 : 1);
+
+  if (min_words && textValue.length < Number(min_words)) {
     Taro.showToast({
       title: `第${showIndex}题最少字数为 ${min_words}，请检查答题内容`,
       icon: "none"
@@ -73,7 +91,7 @@ export function checkQuestion(question) {
     return false;
   }
 
-  if (max_words && value.length > Number(max_words)) {
+  if (max_words && textValue.length > Number(max_words)) {
     Taro.showToast({
       title: `第${showIndex}题最大字数为 ${max_words}，请检查答题内容`,
       icon: "none"
@@ -99,7 +117,7 @@ export function checkQuestion(question) {
     return false;
   }
 
-  if (min_select && value.length < Number(min_select)) {
+  if (min_select && selectCount < Number(min_select)) {
     Taro.showToast({
       title: `第${showIndex}题最少选择 ${min_select} 个选项`,
       icon: "none"
@@ -107,7 +125,7 @@ export function checkQuestion(question) {
     return false;
   }
 
-  if (max_select && value.length > Number(max_select)) {
+  if (max_select && selectCount > Number(max_select)) {
     Taro.showToast({
       title: `第${showIndex}题最多选择 ${max_select} 个选项`,
       icon: "none"

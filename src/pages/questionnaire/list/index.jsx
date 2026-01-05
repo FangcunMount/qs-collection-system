@@ -23,6 +23,7 @@ const QuestionsheetList = () => {
   const [searchText, setSearchText] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(null); // null 表示全部
   const [categories, setCategories] = useState([]);
+  const [isParamsReady, setIsParamsReady] = useState(false);
 
   // 页面级下拉刷新
   usePullDownRefresh(async () => {
@@ -55,6 +56,7 @@ const QuestionsheetList = () => {
     if (params.category) {
       setSelectedCategory(params.category);
     }
+    setIsParamsReady(true);
   }, []);
 
   useEffect(() => {
@@ -116,8 +118,10 @@ const QuestionsheetList = () => {
 
   // 当搜索文本或分类变化时，重新加载列表
   useEffect(() => {
-    loadQuestionsheetList();
-  }, [loadQuestionsheetList]);
+    if (isParamsReady) {
+      loadQuestionsheetList();
+    }
+  }, [isParamsReady, loadQuestionsheetList]);
 
   // 搜索处理
   const handleSearch = useCallback(() => {
