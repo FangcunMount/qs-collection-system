@@ -16,6 +16,7 @@ import { registerUser } from "./model";
 import { authorizationHandler } from "../../util/authorization";
 import config from "../../config";
 import { getWxApi } from "../../util/wxApi";
+import { requestPrivacyAuthorization } from "../privacyAuthorization/privacyAuthorization";
 
 /**
  * 注册类型枚举
@@ -93,6 +94,7 @@ const Register = ({ type, goUrl, submitClose }) => {
   const registerUserHandler = async () => {
     try {
       console.log('[Register] 注册用户', userInfo);
+      await requestPrivacyAuthorization();
       const profile = userInfo.nickname ? null : await fetchUserProfile();
       if (profile) {
         setUserInfo(current => ({
@@ -212,7 +214,8 @@ const Register = ({ type, goUrl, submitClose }) => {
     }
   });
 
-  const fetchUserProfile = () => {
+  const fetchUserProfile = async () => {
+    await requestPrivacyAuthorization();
     return new Promise((resolve, reject) => {
       try {
         const wxApi = getWxApi();

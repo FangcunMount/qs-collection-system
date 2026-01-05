@@ -49,7 +49,7 @@ export const getScales = (
   
   return request(`/scales?${queryString}`, {}, {
     host: config.collectionHost,
-    needToken: true
+    needToken: false
   });
 };
 
@@ -60,7 +60,7 @@ export const getScales = (
 export const getScaleCategories = () => {
   return request('/scales/categories', {}, {
     host: config.collectionHost,
-    needToken: true
+    needToken: false
   });
 };
 

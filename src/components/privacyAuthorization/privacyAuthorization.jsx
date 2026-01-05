@@ -164,3 +164,32 @@ export const PrivacyAuthorization = () => {
         </>
     );
 };
+
+export const requestPrivacyAuthorization = () => {
+    return new Promise((resolve, reject) => {
+        if (!wx?.getPrivacySetting) {
+            resolve();
+            return;
+        }
+
+        wx.getPrivacySetting({
+            success: res => {
+                if (!res.needAuthorization) {
+                    resolve(res);
+                    return;
+                }
+
+                if (!wx?.requirePrivacyAuthorize) {
+                    reject(new Error("当前微信版本不支持隐私授权"));
+                    return;
+                }
+
+                wx.requirePrivacyAuthorize({
+                    success: resolve,
+                    fail: reject
+                });
+            },
+            fail: reject
+        });
+    });
+};

@@ -6,7 +6,7 @@
 import { registerChild } from './api/iamIdentityApi';
 import { createTestee } from './api/testeeApi';
 import { addTestee } from '../store/testeeStore';
-import { getUserInfo } from '../store/userStore.ts';
+import { getUserInfo } from '../store/userStore';
 
 /**
  * 儿童注册数据类型
