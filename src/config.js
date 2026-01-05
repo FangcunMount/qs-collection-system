@@ -19,7 +19,7 @@ const configMap = {
     appId: 'wx72ade250b619a649',
     domain: 'yangshujie.com',
     iamHost: 'https://iam.yangshujie.com/api/v1',
-    collectionHost: 'https://collect.staging.yangshujie.com/api/v1'
+    collectionHost: 'https://collect.yangshujie.com/api/v1'
   },
   // 线上版
   release: {
