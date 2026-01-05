@@ -42,31 +42,15 @@ export const PrivacyAuthorization = () => {
 
     // 同意隐私协议
     const handleAgree = () => {
-        setTimeout(() => {
-            wx.getPrivacySetting({
-                success: res => {
-                  if (res.needAuthorization) {
-                    return;
-                  }
-
-                  // 用户已经同意过隐私协议，关闭隐私弹窗
-                  disPopUp();
-                    
-                  // 同时调用多个wx隐私接口时要如何处理：
-                  // 让隐私弹窗保持单例，点击一次同意按钮即可让所有pending中的wx隐私接口继续执行 
-                  privacyResolves.forEach(resolve => {
-                      resolve({
-                          event: 'agree',
-                          buttonId: 'agree-btn'
-                      })
-                  })
-
-                  privacyResolves.clear() 
-                },
-                fail: () => {},
-                complete: () => {}
-              })                
-        }, 100);
+        // 用户同意后直接放行当前 pending 的隐私请求
+        disPopUp();
+        privacyResolves.forEach(resolve => {
+            resolve({
+                event: 'agree',
+                buttonId: 'agree-btn'
+            });
+        });
+        privacyResolves.clear();
     };
 
     // 不同意隐私协议
