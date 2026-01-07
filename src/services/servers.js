@@ -130,7 +130,11 @@ function loadToken() {
   return null;
 }
 
-function baseRequest(params, retryCount = 0) {
+const QPS_STATUS_CODE = 429;
+const QPS_RETRY_LIMIT = 3;
+const QPS_BACKOFF_BASE_MS = 800;
+
+function baseRequest(params, retryCount = 0, qpsRetry = 0) {
   if (params.isNeedLoading) {
     Taro.showLoading({ title: params.loadingText });
   }
@@ -140,15 +144,43 @@ function baseRequest(params, retryCount = 0) {
       ...params,
       complete: () => { params.isNeedLoading && Taro.hideLoading() },
       success: (res) => {
+        const statusCode = res.statusCode ?? 0;
         const data = res.data || {};
         
         console.log('[BaseRequest] 原始响应:', {
-          statusCode: res.statusCode,
+          statusCode: statusCode,
           data: data,
           dataType: typeof data,
           hasDataField: 'data' in data,
           dataKeys: Object.keys(data)
         });
+
+        if (statusCode === QPS_STATUS_CODE) {
+          if (qpsRetry >= QPS_RETRY_LIMIT) {
+            const throttledMessage = data?.message || data?.errmsg || '请求过于频繁，请稍候再试';
+            console.warn('[BaseRequest] 接口返回 429，重试次数已达上限', {
+              url: params.url,
+              qpsRetry,
+              limit: QPS_RETRY_LIMIT
+            });
+            Taro.showToast({ title: throttledMessage, icon: 'none' });
+            reject({ code: '429', message: throttledMessage, statusCode, data });
+            return;
+          }
+
+          const nextAttempt = qpsRetry + 1;
+          const delayMs = QPS_BACKOFF_BASE_MS * Math.pow(2, qpsRetry);
+          console.warn('[BaseRequest] 接口返回 429，准备重试', {
+            url: params.url,
+            attempt: nextAttempt,
+            delayMs,
+            limit: QPS_RETRY_LIMIT
+          });
+          setTimeout(() => {
+            baseRequest(params, retryCount, nextAttempt).then(resolve).catch(reject);
+          }, delayMs);
+          return;
+        }
 
         // 兼容新旧响应格式:优先使用 code/message,其次使用 errno/errmsg
         const code = String(data?.code ?? data?.errno ?? '');
@@ -188,7 +220,7 @@ function baseRequest(params, retryCount = 0) {
               .then((newToken) => {
                 console.log('[BaseRequest] Token 已被其他请求刷新，使用新 token 重试');
                 params.header['Authorization'] = `Bearer ${newToken}`;
-                baseRequest(params, retryCount + 1).then(resolve).catch(reject);
+                baseRequest(params, retryCount + 1, qpsRetry).then(resolve).catch(reject);
               })
               .catch((err) => {
                 console.error('[BaseRequest] Token 刷新失败');
@@ -205,7 +237,7 @@ function baseRequest(params, retryCount = 0) {
               
               // 使用新 token 重试原请求
               params.header['Authorization'] = `Bearer ${newToken}`;
-              return baseRequest(params, retryCount + 1);
+              return baseRequest(params, retryCount + 1, qpsRetry);
             })
             .catch((err) => {
               console.error('[BaseRequest] Token 刷新失败:', err);

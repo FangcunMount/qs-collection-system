@@ -1,45 +1,109 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro from "@tarojs/taro";
 import BottomMenu from "../../../components/bottomMenu";
+import LoadingState from "../../common/components/LoadingState/LoadingState";
+import EmptyState from "../../common/components/EmptyState/EmptyState";
+import { getAssessments } from "../../../services/api/assessmentApi";
+import { refreshTesteeList } from "../../../store/testeeStore.ts";
+import {
+  getTesteeList as getStoredTesteeList,
+  getSelectedTesteeId,
+  setSelectedTesteeId,
+  findTesteeById
+} from "../../../store";
+import { formatWriteTime } from "../../common/utils/dateFormatters";
+import { getAssessmentStatus, getRiskConfig } from "../../common/utils/statusFormatters";
 import "./index.less";
-
-// 占位：后续可改为真实 API
-const mockInterpretations = [
-  {
-    id: "rep-2025-0001",
-    title: "SCL-90 综合心理健康评估",
-    date: "2025-12-01",
-    status: "已生成",
-    summary: "总体状况较好，个别维度需关注，如焦虑、强迫。",
-  },
-  {
-    id: "rep-2025-0002",
-    title: "焦虑自评量表（SAS）",
-    date: "2025-12-03",
-    status: "已生成",
-    summary: "轻度焦虑表现，建议规律作息与适度运动。",
-  },
-  {
-    id: "rep-2025-0003",
-    title: "抑郁自评量表（SDS）",
-    date: "2025-12-10",
-    status: "待生成",
-    summary: "数据分析中，请稍后查看。",
-  },
-];
 
 const AnalysisListPage = () => {
   const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedTesteeId, setSelectedTesteeIdState] = useState(() => getSelectedTesteeId() || '');
+
+  const ensureTesteeReady = useCallback(async () => {
+    await refreshTesteeList();
+    const storedList = getStoredTesteeList();
+    if (!storedList.length) {
+      Taro.redirectTo({ url: "/pages/testee/register/index" });
+      return null;
+    }
+
+    let currentSelectedId = getSelectedTesteeId();
+    const exists = currentSelectedId && storedList.some(item => item.id === currentSelectedId);
+    if (!exists) {
+      currentSelectedId = storedList[0].id;
+      setSelectedTesteeId(currentSelectedId);
+    }
+
+    setSelectedTesteeIdState(currentSelectedId);
+    return findTesteeById(currentSelectedId) || storedList[0];
+  }, []);
+
+  const loadAssessments = useCallback(async (testeeId) => {
+    const result = await getAssessments(testeeId, undefined, 1, 50);
+    const data = result.data || result;
+    const mapped = (data.items || []).map((item) => {
+      const status = getAssessmentStatus(item);
+      const statusLabelMap = {
+        normal: "已生成",
+        abnormal: "已生成",
+        pending: "待解读",
+        generating: "生成中",
+        failed: "生成失败"
+      };
+
+      const summaryParts = [];
+      if (item.risk_level) {
+        summaryParts.push(`风险：${getRiskConfig(item.risk_level).label}`);
+      }
+      if (item.total_score !== undefined && item.total_score !== null) {
+        summaryParts.push(`总分：${item.total_score}`);
+      }
+      if (!summaryParts.length) {
+        summaryParts.push("暂无风险等级与分数");
+      }
+
+      return {
+        id: item.answer_sheet_id || item.id,
+        title: item.scale_name || item.questionnaire_code || "未知量表",
+        date: item.submitted_at || item.created_at || "",
+        status,
+        statusLabel: statusLabelMap[status] || "已生成",
+        summary: summaryParts.join(" · "),
+        isReady: status === "normal" || status === "abnormal"
+      };
+    });
+    setItems(mapped);
+  }, []);
 
   useEffect(() => {
-    // TODO: 替换为 answersheet/analysis 的真实接口
-    setItems(mockInterpretations);
-  }, []);
+    let isActive = true;
+    const init = async () => {
+      try {
+        setLoading(true);
+        const testee = await ensureTesteeReady();
+        if (!testee || !isActive) return;
+        await loadAssessments(testee.id);
+      } catch (error) {
+        console.error("加载测评列表失败:", error);
+        Taro.showToast({ title: "加载测评列表失败", icon: "none" });
+      } finally {
+        if (isActive) {
+          setLoading(false);
+        }
+      }
+    };
+
+    init();
+    return () => {
+      isActive = false;
+    };
+  }, [ensureTesteeReady, loadAssessments]);
 
   const handleOpenDetail = (id) => {
     // 跳转到解读详情页（后续实现）
-    Taro.navigateTo({ url: `/pages/analysis/detail/index?id=${id}` });
+    Taro.navigateTo({ url: `/pages/analysis/detail/index?a=${id}` });
   };
 
   return (
@@ -50,19 +114,25 @@ const AnalysisListPage = () => {
       </View>
 
       <View className="list-container">
-        {items.map((it) => (
-          <View key={it.id} className="list-card" onClick={() => handleOpenDetail(it.id)}>
-            <View className="card-header">
-              <Text className="card-title">{it.title}</Text>
-              <Text className={`card-status ${it.status === '已生成' ? 'is-ready' : 'is-pending'}`}>{it.status}</Text>
+        {loading ? (
+          <LoadingState content="加载中..." />
+        ) : items.length ? (
+          items.map((it) => (
+            <View key={it.id} className="list-card" onClick={() => handleOpenDetail(it.id)}>
+              <View className="card-header">
+                <Text className="card-title">{it.title}</Text>
+                <Text className={`card-status ${it.isReady ? 'is-ready' : 'is-pending'}`}>{it.statusLabel}</Text>
+              </View>
+              <Text className="card-summary">{it.summary}</Text>
+              <View className="card-meta">
+                <Text className="meta-id">编号：{it.id}</Text>
+                <Text className="meta-date">日期：{formatWriteTime(it.date)}</Text>
+              </View>
             </View>
-            <Text className="card-summary">{it.summary}</Text>
-            <View className="card-meta">
-              <Text className="meta-id">编号：{it.id}</Text>
-              <Text className="meta-date">日期：{it.date}</Text>
-            </View>
-          </View>
-        ))}
+          ))
+        ) : (
+          <EmptyState text="暂无测评记录" icon="📋" />
+        )}
       </View>
 
       <BottomMenu activeKey="历史" />

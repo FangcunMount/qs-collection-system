@@ -37,6 +37,55 @@ export const submitAnswersheet = (data) => {
   });
 };
 
+const SUBMIT_STATUS_POLL_INTERVAL = 2000;
+const SUBMIT_STATUS_MAX_ATTEMPTS = 30;
+const SUBMIT_STATUS_FAILURES = new Set(['failed', 'error', 'rejected', 'cancelled', 'canceled']);
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+export const getSubmitStatus = (requestId) => {
+  if (!requestId) {
+    return Promise.reject(new Error('request_id 为空，无法查询提交状态'));
+  }
+
+  return request('/answersheets/submit-status', { request_id: requestId }, {
+    host: config.collectionHost,
+    method: 'GET',
+    needToken: true
+  });
+};
+
+export const waitForSubmitCompletion = async (requestId, options = {}) => {
+  const interval = options.interval ?? SUBMIT_STATUS_POLL_INTERVAL;
+  const maxAttempts = options.maxAttempts ?? SUBMIT_STATUS_MAX_ATTEMPTS;
+
+  if (!requestId) {
+    throw new Error('缺少 request_id，无法等待提交结果');
+  }
+
+  let attempts = 0;
+  while (attempts < maxAttempts) {
+    const statusResult = await getSubmitStatus(requestId);
+
+    if (statusResult && statusResult.answersheet_id) {
+      return statusResult;
+    }
+
+    const normalizedStatus = (statusResult?.status || '').toLowerCase();
+    if (statusResult && SUBMIT_STATUS_FAILURES.has(normalizedStatus)) {
+      throw new Error('答卷提交处理失败，请稍后重试');
+    }
+
+    attempts += 1;
+    if (attempts >= maxAttempts) {
+      break;
+    }
+
+    await delay(interval);
+  }
+
+  throw new Error('等待答卷提交结果超时，请稍后在答卷列表查看或重试');
+};
+
 /**
  * 获取答卷详情（原始数据）
  * 在 answersheet 页面使用
@@ -110,4 +159,6 @@ export const getAnswersheet = (id) => {
 export default {
   submitAnswersheet,
   getAnswersheet,
+  getSubmitStatus,
+  waitForSubmitCompletion
 }

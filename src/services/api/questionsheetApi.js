@@ -1,7 +1,7 @@
 import { boolToOneZero } from '../../util';
 import { request } from '../servers';
 import { getSelectedTesteeId } from '../../store';
-import { submitAnswersheet } from './answersheetApi';
+import { submitAnswersheet, waitForSubmitCompletion } from './answersheetApi';
 
 // 获取量表列表
 export const getQuestionsheetList = () => {
@@ -168,7 +168,32 @@ export const submitQuestionsheet = async (questionsheet, writer_role_code, signi
 
   console.log('[submitQuestionsheet] 提交数据:', requestData);
 
-  return submitAnswersheet(requestData);
+  const submitResult = await submitAnswersheet(requestData);
+
+  const requestId = submitResult?.request_id || submitResult?.id;
+  if (!requestId) {
+    throw new Error('提交失败：未获取到 request_id');
+  }
+
+  let finalAnswersheetId = submitResult?.answersheet_id ?? null;
+  if (!finalAnswersheetId && !submitResult?.request_id) {
+    finalAnswersheetId = submitResult?.id ?? null;
+  }
+
+  if (!finalAnswersheetId) {
+    const statusResult = await waitForSubmitCompletion(requestId);
+    finalAnswersheetId = statusResult?.answersheet_id;
+  }
+
+  if (!finalAnswersheetId) {
+    throw new Error('提交失败：未获取到答卷编号');
+  }
+
+  return {
+    ...submitResult,
+    id: String(finalAnswersheetId),
+    request_id: requestId
+  };
 };
 
 export default {

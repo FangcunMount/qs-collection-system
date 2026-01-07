@@ -63,6 +63,61 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/core.ErrResponse'
+        '429':
+          description: Too Many Requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+  /answersheets/submit-status:
+    get:
+      tags:
+      - 答卷
+      summary: 查询提交状态
+      description: 根据 request_id 查询提交处理状态
+      operationId: 查询提交状态
+      parameters:
+      - type: string
+        description: 请求ID
+        name: request_id
+        in: query
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/core.Response'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/answersheet.SubmitStatusResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '429':
+          description: Too Many Requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
         '500':
           description: Internal Server Error
           content:
@@ -106,6 +161,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/core.ErrResponse'
+        '429':
+          description: Too Many Requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
         '500':
           description: Internal Server Error
           content:
@@ -145,6 +206,12 @@ paths:
                 $ref: '#/components/schemas/core.ErrResponse'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '429':
+          description: Too Many Requests
           content:
             application/json:
               schema:
@@ -200,6 +267,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/core.ErrResponse'
+        '429':
+          description: Too Many Requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
         '500':
           description: Internal Server Error
           content:
@@ -245,6 +318,12 @@ paths:
                         $ref: '#/components/schemas/evaluation.TrendPointResponse'
         '400':
           description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '429':
+          description: Too Many Requests
           content:
             application/json:
               schema:
@@ -297,6 +376,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/core.ErrResponse'
+        '429':
+          description: Too Many Requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
         '500':
           description: Internal Server Error
           content:
@@ -337,6 +422,12 @@ paths:
                         $ref: '#/components/schemas/evaluation.FactorScoreResponse'
         '400':
           description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '429':
+          description: Too Many Requests
           content:
             application/json:
               schema:
@@ -388,6 +479,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/core.ErrResponse'
+        '429':
+          description: Too Many Requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
         '500':
           description: Internal Server Error
           content:
@@ -428,6 +525,12 @@ paths:
                         $ref: '#/components/schemas/evaluation.FactorScoreResponse'
         '400':
           description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '429':
+          description: Too Many Requests
           content:
             application/json:
               schema:
@@ -477,6 +580,12 @@ paths:
                       $ref: '#/components/schemas/evaluation.AssessmentStatusResponse'
         '400':
           description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '429':
+          description: Too Many Requests
           content:
             application/json:
               schema:
@@ -556,7 +665,7 @@ paths:
       tags:
       - 问卷
       summary: 获取问卷详情
-      description: 根据问卷编码获取问卷详情
+      description: 根据问卷编码获取问卷详情，问题包含校验规则
       operationId: 获取问卷详情
       parameters:
       - type: string
@@ -1099,6 +1208,15 @@ components:
           type: string
         message:
           type: string
+    answersheet.SubmitStatusResponse:
+      type: object
+      properties:
+        answersheet_id:
+          type: string
+        status:
+          type: string
+        updated_at:
+          type: integer
     core.ErrResponse:
       type: object
       properties:
@@ -1403,7 +1521,7 @@ components:
         title:
           type: string
         type:
-          description: 问卷类型：Survey(调查问卷) / MedicalScale(量表)
+          description: 问卷类型：Survey(调查问卷) / MedicalScale(医学量表)
           type: string
         updated_at:
           type: string
@@ -1427,7 +1545,7 @@ components:
         title:
           type: string
         type:
-          description: 问卷类型：Survey(调查问卷) / MedicalScale(量表)
+          description: 问卷类型：Survey(调查问卷) / MedicalScale(医学量表)
           type: string
         updated_at:
           type: string

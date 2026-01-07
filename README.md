@@ -15,7 +15,7 @@
 
 - **前端框架**：Taro 3.6.25 + React 18，统一小程序多端开发方案
 - **组件体系**：taro-ui、taro-ui-fc 以及自定义业务组件（问卷题型、页面容器、隐私授权）
-- **服务层**：`src/services/servers.js` 封装请求、鉴权与全局 Loading；`src/services/api/` 按领域划分业务接口
+- **服务层**：`src/services/servers.js` 封装请求、鉴权与全局 Loading，新增 429 限流检测并自动重试；`src/services/api/` 按领域划分业务接口
 - **工具层**：`src/util/` 提供 URL 构造、场景解析、环境检测、日志等通用能力
 
 ## 快速开始
