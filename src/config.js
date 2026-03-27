@@ -6,27 +6,27 @@ const configMap = {
   // 开发版Config（开发环境可以使用独立的 host）
   develop: {
     appId: 'wx72ade250b619a649',
-    domain: 'yangshujie.com',
+    domain: 'fangcunmount.cn',
     // 开发环境：使用内网IP代替localhost，或勾选"不校验合法域名"
     // 将下面的 192.168.x.x 替换为您的实际内网IP
-    iamHost: 'https://iam.yangshujie.com/api/v1',  // 请替换为实际IP
-    collectionHost: 'https://collect.yangshujie.com/api/v1'
+    iamHost: 'https://iam.fangcunmount.cn/api/v1',  // 请替换为实际IP
+    collectionHost: 'https://collect.fangcunmount.cn/api/v1'
     // iamHost: 'http://localhost:18081/api/v1',  // 请替换为实际IP
     // collectionHost: 'http://localhost:18081/api/v1/api/v1'
   },
   // 体验版
   trial: {
     appId: 'wx72ade250b619a649',
-    domain: 'yangshujie.com',
-    iamHost: 'https://iam.yangshujie.com/api/v1',
-    collectionHost: 'https://collect.yangshujie.com/api/v1'
+    domain: 'fangcunmount.cn',
+    iamHost: 'https://iam.fangcunmount.cn/api/v1',
+    collectionHost: 'https://collect.fangcunmount.cn/api/v1'
   },
   // 线上版
   release: {
     appId: 'wx72ade250b619a649',
-    domain: 'yangshujie.com',
-    iamHost: 'https://iam.yangshujie.com/api/v1',
-    collectionHost: 'https://collect.yangshujie.com/api/v1'
+    domain: 'fangcunmount.cn',
+    iamHost: 'https://iam.fangcunmount.cn/api/v1',
+    collectionHost: 'https://collect.fangcunmount.cn/api/v1'
   }
 };
 
