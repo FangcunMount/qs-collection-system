@@ -94,6 +94,50 @@
     }
   }
 
+  .advanced-filter-scroll {
+    background: @bg-card;
+    padding: 0 0 @spacing-md;
+  }
+
+  .advanced-filter-row {
+    display: flex;
+    gap: 16rpx;
+    padding: 0 32rpx;
+  }
+
+  .advanced-filter-chip {
+    flex-shrink: 0;
+    padding: 16rpx 24rpx;
+    background: @bg-hover;
+    border: 1rpx solid @border-light;
+    border-radius: @radius-round;
+
+    &__text {
+      font-size: 24rpx;
+      color: @text-secondary;
+    }
+  }
+
+  .active-filter-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12rpx;
+    padding: 0 32rpx 16rpx;
+    background: @bg-card;
+  }
+
+  .active-filter-tag {
+    padding: 12rpx 20rpx;
+    background: @primary-light;
+    border-radius: @radius-round;
+
+    &__text {
+      font-size: 22rpx;
+      color: @primary-color;
+      font-weight: 500;
+    }
+  }
+
   // ===== 量表列表区域 =====
   .scale-list-container {
     padding: 32rpx 32rpx 16rpx;
@@ -103,6 +147,17 @@
     display: flex;
     flex-direction: column;
     gap: 24rpx;
+  }
+
+  .load-more {
+    margin-top: 12rpx;
+    padding: 24rpx 0 48rpx;
+    text-align: center;
+
+    .load-more-text {
+      font-size: 26rpx;
+      color: @text-tertiary;
+    }
   }
 
   // 量表卡片
@@ -332,7 +387,6 @@
   }
   }
 }
-
 
 
 

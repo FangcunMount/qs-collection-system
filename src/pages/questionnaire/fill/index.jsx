@@ -18,6 +18,8 @@ import {
   getTesteeList as getStoredTesteeList,
   getSelectedTesteeId,
   setSelectedTesteeId,
+  getEntryContext,
+  setEntryContext,
   subscribeTesteeStore,
   findTesteeById
 } from "../../../store";
@@ -27,6 +29,34 @@ import { PrivacyAuthorization } from "../../../components/privacyAuthorization/p
 
 const PAGE_NAME = "question_sheet";
 const logger = getLogger(PAGE_NAME);
+
+const INVALID_ENTRY_STATUSES = new Set(["inactive", "disabled", "revoked", "expired"]);
+
+const resolveEntryStatusText = (status) => {
+  switch (status) {
+    case "inactive":
+    case "disabled":
+      return "当前入口已停用";
+    case "revoked":
+      return "当前入口已失效";
+    case "expired":
+      return "当前入口已过期";
+    default:
+      return "";
+  }
+};
+
+const hasEntryContext = (context) => {
+  if (!context) return false;
+  return Boolean(
+    context.mpqrcodeid ||
+      context.entry_title ||
+      context.entry_description ||
+      context.clinician_name ||
+      context.target_code
+  );
+};
+
 const handleEntryParams = params => {
   return new Promise((resolve, reject) => {
     if (!params.scene) {
@@ -58,6 +88,7 @@ export default function Index() {
   const [testeeInfo, setTesteeInfo] = useState(null);
   const [testeeList, setTesteeList] = useState([]);
   const [selectedTesteeId, setSelectedTesteeIdState] = useState(null);
+  const [entryContext, setEntryContextState] = useState(() => getEntryContext());
 
   const canSubmit = true;
   const [isSinglePage, setIsSinglePage] = useState(false);
@@ -80,6 +111,10 @@ export default function Index() {
 
     handleEntryParams(paramData).then(result => {
       logger.RUN("did show <RUN>, cleared params: ", result);
+      if (paramData.scene || hasEntryContext(result)) {
+        setEntryContext(result);
+        setEntryContextState(getEntryContext());
+      }
       const {
         q: questionsheetCode,
         t: testeeid,
@@ -211,6 +246,11 @@ export default function Index() {
    * 开始填写问卷
    */
   const handleStartFill = () => {
+    if (entryContext?.entry_status && INVALID_ENTRY_STATUSES.has(entryContext.entry_status)) {
+      Taro.showToast({ title: resolveEntryStatusText(entryContext.entry_status), icon: 'none' });
+      return;
+    }
+
     if (!selectedTesteeId) {
       Taro.showToast({ title: '请先选择档案', icon: 'none' });
       return;
@@ -331,6 +371,8 @@ export default function Index() {
   }));
 
   const selectedTesteeIndex = testeeList.findIndex(item => item.id === selectedTesteeId);
+  const entryStatusText = resolveEntryStatusText(entryContext?.entry_status);
+  const startDisabled = !selectedTesteeId || Boolean(entryStatusText);
 
   return (
     <>
@@ -430,6 +472,37 @@ export default function Index() {
               )}
             </View>
 
+            {hasEntryContext(entryContext) && (
+              <View className="entry-context-section">
+                <Text className="section-title">当前入口来源</Text>
+                <View className="entry-context-card">
+                  {entryContext?.entry_title && (
+                    <Text className="entry-context-title">{entryContext.entry_title}</Text>
+                  )}
+                  {entryContext?.clinician_name && (
+                    <Text className="entry-context-meta">
+                      {entryContext.clinician_name}
+                      {entryContext.clinician_title ? ` · ${entryContext.clinician_title}` : ''}
+                    </Text>
+                  )}
+                  {entryContext?.entry_description && (
+                    <Text className="entry-context-desc">{entryContext.entry_description}</Text>
+                  )}
+                  {(entryContext?.target_type || entryContext?.target_code) && (
+                    <Text className="entry-context-target">
+                      {entryContext.target_type || 'questionnaire'}
+                      {entryContext.target_code ? ` · ${entryContext.target_code}` : ''}
+                    </Text>
+                  )}
+                  {entryStatusText && (
+                    <View className="entry-context-warning">
+                      <Text className="entry-context-warning-text">{entryStatusText}</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            )}
+
             {/* 量表简介 */}
             <View className="questionnaire-intro-section">
               <Text className="section-title">量表简介</Text>
@@ -446,10 +519,10 @@ export default function Index() {
           {/* 底部固定按钮 */}
           <View className="fill-ready-footer">
             <View 
-              className={`start-button ${!selectedTesteeId ? 'disabled' : ''}`}
+              className={`start-button ${startDisabled ? 'disabled' : ''}`}
               onClick={handleStartFill}
             >
-              <Text className="button-text">开始测评</Text>
+              <Text className="button-text">{entryStatusText || '开始测评'}</Text>
             </View>
           </View>
         </View>

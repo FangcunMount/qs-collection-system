@@ -17,12 +17,19 @@ import {
 import "./index.less";
 
 const AnswersheetList = () => {
+  const statusTabs = [
+    { key: '', label: '全部' },
+    { key: 'pending', label: '待解读' },
+    { key: 'done', label: '已出报告' },
+    { key: 'failed', label: '失败' }
+  ];
   const [testeeList, setTesteeList] = useState(() => getStoredTesteeList());
   const [selectedTesteeId, setSelectedTesteeIdState] = useState(() => getSelectedTesteeId() || '');
   const [selectedTestee, setSelectedTestee] = useState(() => {
     const id = getSelectedTesteeId();
     return id ? findTesteeById(id) : null;
   });
+  const [statusFilter, setStatusFilter] = useState('');
   const [showTesteeSheet, setShowTesteeSheet] = useState(false);
   const [showFilterSheet, setShowFilterSheet] = useState(false);
   const [scaleCapsuleInfo, setScaleCapsuleInfo] = useState(null);
@@ -149,23 +156,38 @@ const AnswersheetList = () => {
           </View>
         )}
 
-        {/* 答卷列表 */}
+      {/* 答卷列表 */}
         {selectedTestee && (
-          <AnswersheetListImp 
-            testee={selectedTestee} 
-            showFilterBar={true}
-            showTesteeSheet={showTesteeSheet}
-            showFilterSheet={showFilterSheet}
-            testeeList={testeeList}
-            selectedTesteeId={selectedTesteeId}
-            onSelectTestee={(testeeId) => {
-              handleTesteeChange(testeeId);
-              setShowTesteeSheet(false);
-            }}
-            onCloseTesteeSheet={() => setShowTesteeSheet(false)}
-            onCloseFilterSheet={() => setShowFilterSheet(false)}
-            onScaleCapsuleInfo={setScaleCapsuleInfo}
-          />
+          <>
+            <View className="record-status-tabs">
+              {statusTabs.map(tab => (
+                <View
+                  key={tab.key || 'all'}
+                  className={`record-status-tab ${statusFilter === tab.key ? 'active' : ''}`}
+                  onClick={() => setStatusFilter(tab.key)}
+                >
+                  <Text className="record-status-tab__text">{tab.label}</Text>
+                </View>
+              ))}
+            </View>
+
+            <AnswersheetListImp 
+              testee={selectedTestee}
+              statusFilter={statusFilter}
+              showFilterBar={true}
+              showTesteeSheet={showTesteeSheet}
+              showFilterSheet={showFilterSheet}
+              testeeList={testeeList}
+              selectedTesteeId={selectedTesteeId}
+              onSelectTestee={(testeeId) => {
+                handleTesteeChange(testeeId);
+                setShowTesteeSheet(false);
+              }}
+              onCloseTesteeSheet={() => setShowTesteeSheet(false)}
+              onCloseFilterSheet={() => setShowFilterSheet(false)}
+              onScaleCapsuleInfo={setScaleCapsuleInfo}
+            />
+          </>
         )}
       </View>
 

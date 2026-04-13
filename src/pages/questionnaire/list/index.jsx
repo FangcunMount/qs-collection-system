@@ -1,61 +1,79 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import Taro, { usePullDownRefresh } from "@tarojs/taro";
 import { View, Text, ScrollView } from "@tarojs/components";
-import { AtActivityIndicator } from "taro-ui";
 import BottomMenu from "../../../components/bottomMenu";
 import { SearchBox, ScaleCard } from "../../../components/common";
 import LoadingState from "../../common/components/LoadingState/LoadingState";
 import EmptyState from "../../common/components/EmptyState/EmptyState";
-
 import "./index.less";
-import { getScaleCategories } from "../../../services/api/scaleApi";
-import { request } from "../../../services/servers";
-import config from "../../../config";
+import { getScaleCategories, getScales } from "../../../services/api/scaleApi";
 import { paramsConcat } from "../../../util";
 import { getLogger } from "../../../util/log";
 
 const PAGE_NAME = "questionsheet_list";
 const logger = getLogger(PAGE_NAME);
 
+const FILTER_ACTIONS = [
+  { key: "stage", title: "阶段" },
+  { key: "applicableAge", title: "年龄" },
+  { key: "reporter", title: "填报人" },
+  { key: "tag", title: "标签" }
+];
+
 const QuestionsheetList = () => {
-  const [questionsheetList, setQuestionsheetList] = useState([]);
+  const [scaleList, setScaleList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState(null); // null 表示全部
+  const [selectedCategory, setSelectedCategory] = useState(null);
   const [categories, setCategories] = useState([]);
+  const [filterMeta, setFilterMeta] = useState({
+    stages: [],
+    applicable_ages: [],
+    reporters: [],
+    tags: []
+  });
+  const [selectedStage, setSelectedStage] = useState("");
+  const [selectedApplicableAge, setSelectedApplicableAge] = useState("");
+  const [selectedReporter, setSelectedReporter] = useState("");
+  const [selectedTag, setSelectedTag] = useState("");
+  const [pagination, setPagination] = useState({
+    page: 1,
+    page_size: 20,
+    total: 0,
+    total_pages: 0
+  });
   const [isParamsReady, setIsParamsReady] = useState(false);
 
-  // 页面级下拉刷新
   usePullDownRefresh(async () => {
-    await loadQuestionsheetList();
+    await loadScaleList(1, false);
     Taro.stopPullDownRefresh();
   });
 
-  // 加载分类选项
   const loadCategories = useCallback(async () => {
     try {
       const result = await getScaleCategories();
-      const categoryList = result.categories || [];
-      // 添加"全部"选项到开头
-      const allCategories = [
-        { value: null, label: '全部' },
-        ...categoryList
-      ];
-      setCategories(allCategories);
+      const payload = result.data || result;
+      const categoryList = payload.categories || [];
+      setCategories([{ value: null, label: '全部' }, ...categoryList]);
+      setFilterMeta({
+        stages: payload.stages || [],
+        applicable_ages: payload.applicable_ages || [],
+        reporters: payload.reporters || [],
+        tags: payload.tags || []
+      });
     } catch (error) {
-      console.error('加载分类选项失败:', error);
+      console.error('加载筛选元数据失败:', error);
     }
   }, []);
 
-  // 初始化：从 URL 参数获取筛选条件
   useEffect(() => {
     const params = Taro.getCurrentInstance()?.router?.params || {};
-    if (params.keyword) {
-      setSearchText(params.keyword);
-    }
-    if (params.category) {
-      setSelectedCategory(params.category);
-    }
+    if (params.keyword) setSearchText(params.keyword);
+    if (params.category) setSelectedCategory(params.category);
+    if (params.stage) setSelectedStage(params.stage);
+    if (params.applicable_age) setSelectedApplicableAge(params.applicable_age);
+    if (params.reporter) setSelectedReporter(params.reporter);
+    if (params.tag) setSelectedTag(params.tag);
     setIsParamsReady(true);
   }, []);
 
@@ -63,34 +81,22 @@ const QuestionsheetList = () => {
     loadCategories();
   }, [loadCategories]);
 
-  // 加载量表列表
-  const loadQuestionsheetList = useCallback(async () => {
+  const loadScaleList = useCallback(async (page = 1, append = false) => {
     try {
       setLoading(true);
-      
-      const queryParams = { 
-        page: 1, 
-        page_size: 100 
-      };
-      if (searchText) queryParams.title = searchText;
-      if (selectedCategory) queryParams.category = selectedCategory;
-      
-      console.log('加载量表列表，参数:', queryParams);
-      
-      // 构建查询字符串
-      const queryString = Object.keys(queryParams)
-        .map(key => `${key}=${encodeURIComponent(queryParams[key])}`)
-        .join('&');
-      
-      const result = await request(`/scales?${queryString}`, {}, {
-        host: config.collectionHost,
-        needToken: true
+      const result = await getScales({
+        page,
+        pageSize: 20,
+        title: searchText,
+        category: selectedCategory,
+        stages: selectedStage ? [selectedStage] : [],
+        applicableAges: selectedApplicableAge ? [selectedApplicableAge] : [],
+        reporters: selectedReporter ? [selectedReporter] : [],
+        tags: selectedTag ? [selectedTag] : []
       });
-      
-      const scales = result.data?.scales || result.scales || [];
-      console.log('API 返回的数据量:', scales.length);
-      
-      const formattedList = scales.map(item => ({
+      const payload = result.data || result;
+      const scales = payload.scales || [];
+      const formatted = scales.map(item => ({
         code: item.code,
         name: item.title,
         description: item.description || "专业心理测评工具，帮助您了解心理健康状况。",
@@ -99,11 +105,17 @@ const QuestionsheetList = () => {
         applicableAges: item.applicable_ages || [],
         reporters: item.reporters || [],
         tags: item.tags || [],
-        question_count: item.question_count || 0, // 使用 API 返回的题目数量
+        question_count: item.question_count || 0,
         status: item.status
       }));
-      
-      setQuestionsheetList(formattedList);
+
+      setScaleList(prev => (append ? [...prev, ...formatted] : formatted));
+      setPagination({
+        page: payload.page || page,
+        page_size: payload.page_size || 20,
+        total: payload.total || 0,
+        total_pages: payload.total_pages || 0
+      });
     } catch (error) {
       console.error('加载量表列表失败:', error);
       Taro.showToast({
@@ -114,52 +126,65 @@ const QuestionsheetList = () => {
     } finally {
       setLoading(false);
     }
-  }, [searchText, selectedCategory]);
+  }, [searchText, selectedApplicableAge, selectedCategory, selectedReporter, selectedStage, selectedTag]);
 
-  // 当搜索文本或分类变化时，重新加载列表
   useEffect(() => {
     if (isParamsReady) {
-      loadQuestionsheetList();
+      loadScaleList(1, false);
     }
-  }, [isParamsReady, loadQuestionsheetList]);
+  }, [isParamsReady, loadScaleList]);
 
-  // 搜索处理
   const handleSearch = useCallback(() => {
-    loadQuestionsheetList();
-  }, [loadQuestionsheetList]);
+    loadScaleList(1, false);
+  }, [loadScaleList]);
 
-  // 处理分类切换
-  const handleCategoryChange = (categoryValue) => {
-    console.log('handleCategoryChange 被调用，新分类值:', categoryValue, '当前分类:', selectedCategory);
-    setSelectedCategory(categoryValue);
-  };
-
-  const handleQuestionsheetClick = questionsheet => {
-    logger.RUN("点击量表", questionsheet);
-    const params = {
-      q: questionsheet.code
-    };
+  const handleScaleClick = (scale) => {
+    logger.RUN("点击量表", scale);
     Taro.navigateTo({
-      url: paramsConcat("/pages/questionnaire/fill/index", params)
+      url: paramsConcat("/pages/questionnaire/fill/index", { q: scale.code })
     });
   };
 
+  const openFilterActionSheet = useCallback((type) => {
+    const source = {
+      stage: filterMeta.stages,
+      applicableAge: filterMeta.applicable_ages,
+      reporter: filterMeta.reporters,
+      tag: filterMeta.tags
+    }[type] || [];
 
-  const renderQuestionsheetCard = questionsheet => (
-    <ScaleCard
-      key={questionsheet.code}
-      scale={questionsheet}
-      onClick={() => handleQuestionsheetClick(questionsheet)}
-    />
-  );
+    const labels = ['全部', ...source];
+    Taro.showActionSheet({
+      itemList: labels,
+      success: ({ tapIndex }) => {
+        const value = tapIndex === 0 ? '' : source[tapIndex - 1];
+        if (type === 'stage') setSelectedStage(value);
+        if (type === 'applicableAge') setSelectedApplicableAge(value);
+        if (type === 'reporter') setSelectedReporter(value);
+        if (type === 'tag') setSelectedTag(value);
+      }
+    });
+  }, [filterMeta]);
 
+  const activeFilters = useMemo(() => ([
+    selectedStage && { label: `阶段 · ${selectedStage}`, onClear: () => setSelectedStage('') },
+    selectedApplicableAge && { label: `年龄 · ${selectedApplicableAge}`, onClear: () => setSelectedApplicableAge('') },
+    selectedReporter && { label: `填报人 · ${selectedReporter}`, onClear: () => setSelectedReporter('') },
+    selectedTag && { label: `标签 · ${selectedTag}`, onClear: () => setSelectedTag('') }
+  ].filter(Boolean)), [selectedApplicableAge, selectedReporter, selectedStage, selectedTag]);
+
+  const handleLoadMore = () => {
+    if (pagination.page >= pagination.total_pages) {
+      Taro.showToast({ title: '没有更多量表了', icon: 'none' });
+      return;
+    }
+    loadScaleList(pagination.page + 1, true);
+  };
 
   return (
     <>
       <View className="questionnaire-list-page">
-        {/* 搜索和分类筛选区 */}
         <View className="search-filter-section">
-          {/* 搜索框 */}
           <SearchBox
             placeholder="搜索量表名称..."
             value={searchText}
@@ -167,15 +192,14 @@ const QuestionsheetList = () => {
             onConfirm={handleSearch}
           />
 
-          {/* 分类筛选 */}
           {categories.length > 0 && (
             <View className="category-filter">
               <ScrollView scrollX className="category-scroll">
-                {categories.map((category, index) => (
+                {categories.map((category) => (
                   <View
                     key={category.value || 'all'}
                     className={`category-item ${selectedCategory === category.value ? 'active' : ''}`}
-                    onClick={() => handleCategoryChange(category.value)}
+                    onClick={() => setSelectedCategory(category.value)}
                   >
                     <Text className="category-text">{category.label}</Text>
                   </View>
@@ -183,27 +207,52 @@ const QuestionsheetList = () => {
               </ScrollView>
             </View>
           )}
+
+          <ScrollView scrollX className="advanced-filter-scroll">
+            <View className="advanced-filter-row">
+              {FILTER_ACTIONS.map((filter) => (
+                <View
+                  key={filter.key}
+                  className="advanced-filter-chip"
+                  onClick={() => openFilterActionSheet(filter.key)}
+                >
+                  <Text className="advanced-filter-chip__text">{filter.title}</Text>
+                </View>
+              ))}
+            </View>
+          </ScrollView>
+
+          {activeFilters.length > 0 && (
+            <View className="active-filter-list">
+              {activeFilters.map(filter => (
+                <View key={filter.label} className="active-filter-tag" onClick={filter.onClear}>
+                  <Text className="active-filter-tag__text">{filter.label}</Text>
+                </View>
+              ))}
+            </View>
+          )}
         </View>
 
-        {/* 量表列表 */}
         <View className="scale-list-container">
-          {loading ? (
+          {loading && scaleList.length === 0 ? (
             <LoadingState content="加载中..." />
-          ) : questionsheetList.length > 0 ? (
+          ) : scaleList.length > 0 ? (
             <View className="scale-list">
-              {questionsheetList.map(questionsheet =>
-                renderQuestionsheetCard(questionsheet)
+              {scaleList.map(scale => (
+                <ScaleCard
+                  key={scale.code}
+                  scale={scale}
+                  onClick={() => handleScaleClick(scale)}
+                />
+              ))}
+              {pagination.page < pagination.total_pages && (
+                <View className="load-more" onClick={handleLoadMore}>
+                  <Text className="load-more-text">加载更多</Text>
+                </View>
               )}
-              {/* 加载更多提示 */}
-              <View className="load-more">
-                <Text className="load-more-text">点击加载更多</Text>
-              </View>
             </View>
           ) : (
-            <EmptyState 
-              text="暂无量表" 
-              icon="📋"
-            />
+            <EmptyState text="暂无量表" icon="📋" />
           )}
         </View>
       </View>

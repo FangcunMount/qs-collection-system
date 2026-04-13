@@ -67,6 +67,18 @@ export const getTestee = (testeeId) => {
 };
 
 /**
+ * 获取受试者照护上下文
+ * @param {string|number} testeeId - 受试者ID
+ * @returns {Promise<object>}
+ */
+export const getTesteeCareContext = (testeeId) => {
+  return request(`/testees/${String(testeeId)}/care-context`, {}, {
+    host: config.collectionHost,
+    needToken: true
+  });
+};
+
+/**
  * 更新受试者信息
  * @param {string|number} testeeId - 受试者ID
  * @param {object} testeeData - 受试者数据
@@ -98,6 +110,7 @@ export default {
   getMyTestees,
   createTestee,
   getTestee,
+  getTesteeCareContext,
   updateTestee,
   deleteTestee
 };

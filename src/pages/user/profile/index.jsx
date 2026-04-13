@@ -37,10 +37,9 @@ const UserProfile = () => {
 
   // 功能菜单项
   const menuItems = [
-    { id: 1, name: "个人档案", icon: "user", color: "#4A90E2", bgColor: "rgba(74, 144, 226, 0.15)" },
-    { id: 2, name: "填写记录", icon: "list", color: "#2ECC71", bgColor: "rgba(46, 204, 113, 0.15)" },
-    { id: 3, name: "测评报告", icon: "bookmark", color: "#9B59B6", bgColor: "rgba(155, 89, 182, 0.15)" },
-    { id: 4, name: "收藏记录", icon: "tag", color: "#F39C12", bgColor: "rgba(243, 156, 18, 0.15)" }
+    { id: 1, name: "我的档案", icon: "user", color: "#4A90E2", bgColor: "rgba(74, 144, 226, 0.15)" },
+    { id: 2, name: "我的记录", icon: "list", color: "#2ECC71", bgColor: "rgba(46, 204, 113, 0.15)" },
+    { id: 3, name: "设置", icon: "settings", color: "#F39C12", bgColor: "rgba(243, 156, 18, 0.15)" }
   ];
 
   const handleLoginClick = () => {
@@ -58,11 +57,8 @@ const UserProfile = () => {
       case 2: // 填写记录
         Taro.navigateTo({ url: "/pages/answersheet/list/index" });
         break;
-      case 3: // 测评报告
-        Taro.navigateTo({ url: "/pages/answersheet/list/index" });
-        break;
-      case 4: // 收藏记录
-        Taro.navigateTo({ url: "/pages/questionnaire/list/index" });
+      case 3: // 设置
+        Taro.pageScrollTo({ scrollTop: 9999, duration: 200 });
         break;
       default:
         break;
@@ -86,6 +82,27 @@ const UserProfile = () => {
           } catch (error) {
             Taro.showToast({
               title: "清除失败",
+              icon: "none",
+              duration: 2000
+            });
+          }
+        }
+      }
+    });
+  };
+
+  const handleLogout = () => {
+    Taro.showModal({
+      title: "退出登录",
+      content: "确定要退出当前登录状态吗？",
+      success: (res) => {
+        if (res.confirm) {
+          try {
+            Taro.clearStorage();
+            Taro.redirectTo({ url: "/pages/user/register/index" });
+          } catch (error) {
+            Taro.showToast({
+              title: "退出失败",
               icon: "none",
               duration: 2000
             });
@@ -130,7 +147,7 @@ const UserProfile = () => {
         )}
       </View>
 
-      {/* 功能菜单网格 (4列) */}
+      {/* 功能菜单网格 */}
       <View className="menu-section">
         <View className="menu-grid">
           {menuItems.map((item) => (
@@ -150,9 +167,24 @@ const UserProfile = () => {
 
       {/* 操作区域 */}
       <View className="action-section">
+        <View className="settings-card">
+          <View className="settings-item" onClick={handleClearCache}>
+            <Text className="settings-item__label">清除缓存</Text>
+            <AtIcon value="chevron-right" size="18" color="#BFBFBF" />
+          </View>
+          <View className="settings-item" onClick={() => Taro.showModal({
+            title: "隐私授权说明",
+            content: "小程序仅在完成登录、档案管理和测评记录查询时使用必要的身份与档案信息。",
+            showCancel: false
+          })}>
+            <Text className="settings-item__label">隐私授权说明</Text>
+            <AtIcon value="chevron-right" size="18" color="#BFBFBF" />
+          </View>
+        </View>
+
         {/* 清除缓存按钮 */}
-        <View className="clear-cache-btn" onClick={handleClearCache}>
-          <Text className="clear-cache-text">清除缓存</Text>
+        <View className="clear-cache-btn" onClick={handleLogout}>
+          <Text className="clear-cache-text">退出登录</Text>
         </View>
         
         {/* 版本信息 */}

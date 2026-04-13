@@ -6,25 +6,61 @@ import config from '../../config';
  * 负责测评（assessment）、因子、报告的查询
  */
 
+const buildQueryString = (params = {}) => {
+  const pairs = [];
+  Object.keys(params).forEach((key) => {
+    const value = params[key];
+    if (value === undefined || value === null || value === '') return;
+    if (Array.isArray(value)) {
+      value
+        .filter(item => item !== undefined && item !== null && item !== '')
+        .forEach(item => {
+          pairs.push(`${encodeURIComponent(key)}=${encodeURIComponent(item)}`);
+        });
+      return;
+    }
+    pairs.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`);
+  });
+  return pairs.join('&');
+};
+
 /**
- * 获取测评列表
- * @param {string|number} testeeId - 受试者ID
- * @param {string} status - 状态筛选（可选）
- * @param {number} page - 页码
- * @param {number} pageSize - 每页数量
+ * 获取测评记录列表
+ * @param {object} options
+ * @param {string|number} options.testeeId
+ * @param {string} [options.status]
+ * @param {string} [options.scaleCode]
+ * @param {string} [options.riskLevel]
+ * @param {string} [options.dateFrom]
+ * @param {string} [options.dateTo]
+ * @param {number} [options.page]
+ * @param {number} [options.pageSize]
  * @returns {Promise<{items: Array, total: number, page: number, page_size: number}>}
  */
-export const getAssessments = (testeeId, status, page = 1, pageSize = 20) => {
-  const params = { testee_id: String(testeeId), page, page_size: pageSize };
-  if (status) params.status = status;
-  
-  // 对于 GET 请求，需要将参数放在 URL 中
-  const queryString = Object.keys(params)
-    .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
-    .join('&');
-  
-  const urlWithParams = `/assessments?${queryString}`;
-  
+export const getAssessments = ({
+  testeeId,
+  status,
+  scaleCode,
+  riskLevel,
+  dateFrom,
+  dateTo,
+  page = 1,
+  pageSize = 20
+} = {}) => {
+  const params = {
+    testee_id: testeeId ? String(testeeId) : '',
+    status,
+    scale_code: scaleCode,
+    risk_level: riskLevel,
+    date_from: dateFrom,
+    date_to: dateTo,
+    page,
+    page_size: pageSize
+  };
+
+  const queryString = buildQueryString(params);
+  const urlWithParams = queryString ? `/assessments?${queryString}` : '/assessments';
+
   return request(urlWithParams, {}, {
     host: config.collectionHost,
     method: 'GET',
@@ -106,17 +142,14 @@ export const getFactorTrend = (testeeId, factorCode, limit = 10) => {
 
 /**
  * 长轮询等待报告生成
- * 等待测评报告生成，支持长轮询机制。如果报告已生成则立即返回，否则等待最多 timeout 秒
  * @param {string|number} id - 测评ID
  * @param {string|number} testeeId - 受试者ID
  * @param {number} timeout - 超时时间（秒），范围 5-60，默认 15
  * @returns {Promise<{status: string, risk_level?: string, total_score?: number, updated_at?: number}>}
  */
 export const waitAssessmentReport = (id, testeeId, timeout = 15) => {
-  // 确保 timeout 在有效范围内
   const validTimeout = Math.max(5, Math.min(60, timeout));
-  
-  // 对于 GET 请求，查询参数应该放在 data 中，Taro 会自动将其添加到 URL
+
   return request(`/assessments/${String(id)}/wait-report`, {
     testee_id: String(testeeId),
     timeout: validTimeout

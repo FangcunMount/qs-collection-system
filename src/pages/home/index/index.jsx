@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Taro, { usePullDownRefresh } from "@tarojs/taro";
 import { View, Text, ScrollView } from "@tarojs/components";
-import { AtIcon, AtActivityIndicator } from "taro-ui";
+import { AtIcon } from "taro-ui";
 import "taro-ui/dist/style/components/icon.scss";
 
 import BottomMenu from "../../../components/bottomMenu";
@@ -10,6 +10,13 @@ import LoadingState from "../../common/components/LoadingState/LoadingState";
 import { getScales, getScaleCategories } from "../../../services/api/scaleApi";
 import { paramsConcat } from "../../../util";
 import "./index.less";
+import {
+  getEntryContext,
+  getSelectedTesteeId,
+  findTesteeById,
+  subscribeEntryContext,
+  subscribeTesteeStore
+} from "../../../store";
 
 /**
  * 量表分类配置（写死数据）
@@ -57,6 +64,11 @@ const HomeIndex = () => {
   const [recommendedScales, setRecommendedScales] = useState([]);
   const [recommendedScalesLoading, setRecommendedScalesLoading] = useState(true);
   const [categoryItems, setCategoryItems] = useState([]);
+  const [entryContext, setEntryContext] = useState(() => getEntryContext());
+  const [currentTestee, setCurrentTestee] = useState(() => {
+    const selectedId = getSelectedTesteeId();
+    return selectedId ? findTesteeById(selectedId) : null;
+  });
   
   const loadScaleCategories = useCallback(async () => {
     try {
@@ -87,6 +99,14 @@ const HomeIndex = () => {
     });
   };
 
+  const handleContinueEntry = () => {
+    const nextCode = entryContext?.q || entryContext?.target_code;
+    if (!nextCode) return;
+    Taro.navigateTo({
+      url: paramsConcat("/pages/questionnaire/fill/index", { q: nextCode, t: currentTestee?.id })
+    });
+  };
+
   const handleSearch = () => {
     if (searchText.trim()) {
       Taro.navigateTo({ 
@@ -100,7 +120,7 @@ const HomeIndex = () => {
   const loadRecommendedScales = useCallback(async () => {
     try {
       setRecommendedScalesLoading(true);
-      const result = await getScales(1, 10);
+      const result = await getScales({ page: 1, pageSize: 10 });
       const scales = result.data?.scales || result.scales || [];
       
       // 随机选择3个
@@ -143,6 +163,19 @@ const HomeIndex = () => {
     loadScaleCategories();
   }, [loadRecommendedScales, loadScaleCategories]);
 
+  useEffect(() => {
+    const unsubscribeEntry = subscribeEntryContext((snapshot) => {
+      setEntryContext(snapshot);
+    });
+    const unsubscribeTestee = subscribeTesteeStore(({ selectedTesteeId }) => {
+      setCurrentTestee(selectedTesteeId ? findTesteeById(selectedTesteeId) : null);
+    });
+    return () => {
+      unsubscribeEntry();
+      unsubscribeTestee();
+    };
+  }, []);
+
   return (
     <View className="home-page">
       {/* 顶部标题栏 */}
@@ -160,6 +193,46 @@ const HomeIndex = () => {
             />
           </View>
         </View>
+
+        {(entryContext?.entry_title || entryContext?.clinician_name) && (
+          <View className="entry-context-panel" onClick={handleContinueEntry}>
+            <View className="entry-context-panel__header">
+              <Text className="entry-context-panel__eyebrow">最近入口</Text>
+              <Text className="entry-context-panel__action">继续填写</Text>
+            </View>
+            {entryContext?.entry_title && (
+              <Text className="entry-context-panel__title">{entryContext.entry_title}</Text>
+            )}
+            {(entryContext?.clinician_name || entryContext?.clinician_title) && (
+              <Text className="entry-context-panel__meta">
+                {entryContext?.clinician_name || '临床人员'}
+                {entryContext?.clinician_title ? ` · ${entryContext.clinician_title}` : ''}
+              </Text>
+            )}
+            {entryContext?.entry_description && (
+              <Text className="entry-context-panel__desc">{entryContext.entry_description}</Text>
+            )}
+          </View>
+        )}
+
+        {currentTestee && (
+          <View
+            className="current-testee-panel"
+            onClick={() => Taro.navigateTo({ url: "/pages/testee/list/index" })}
+          >
+            <View className="current-testee-panel__header">
+              <Text className="current-testee-panel__eyebrow">当前档案</Text>
+              <Text className="current-testee-panel__action">管理档案</Text>
+            </View>
+            <Text className="current-testee-panel__title">
+              {currentTestee.legalName || currentTestee.name || '未命名'}
+            </Text>
+            <Text className="current-testee-panel__meta">
+              {currentTestee.gender === 1 ? '男' : currentTestee.gender === 2 ? '女' : '其他'}
+              {currentTestee.dob ? ` · ${currentTestee.dob}` : ''}
+            </Text>
+          </View>
+        )}
 
         {/* 量表分类导航 */}
         <View className="category-section">

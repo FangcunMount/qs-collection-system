@@ -7,7 +7,7 @@ import "taro-ui/dist/style/components/icon.scss";
 const bottomMenu = [
   { label: "首页", icon: "home", url: "/pages/home/index/index" },
   { label: "发现", icon: "search", url: "/pages/questionnaire/list/index" },
-  { label: "历史", icon: "clock", url: "/pages/answersheet/list/index" },
+  { label: "记录", icon: "clock", url: "/pages/answersheet/list/index" },
   { label: "我的", icon: "user", url: "/pages/user/profile/index" }
 ];
 

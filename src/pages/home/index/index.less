@@ -72,6 +72,54 @@
   margin-bottom: @spacing-xl;
 }
 
+.entry-context-panel,
+.current-testee-panel {
+  margin-bottom: @spacing-xl;
+  padding: 28rpx 32rpx;
+  border-radius: @radius-base;
+  background: @bg-card;
+  border: 1rpx solid @border-base;
+  box-shadow: @shadow-sm;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12rpx;
+  }
+
+  &__eyebrow {
+    font-size: 22rpx;
+    color: @text-tertiary;
+    letter-spacing: 1rpx;
+  }
+
+  &__action {
+    font-size: 24rpx;
+    color: @primary-color;
+  }
+
+  &__title {
+    display: block;
+    font-size: 32rpx;
+    color: @text-primary;
+    font-weight: 600;
+    margin-bottom: 10rpx;
+  }
+
+  &__meta,
+  &__desc {
+    display: block;
+    font-size: 24rpx;
+    color: @text-secondary;
+    line-height: 1.6;
+  }
+}
+
+.entry-context-panel {
+  background: linear-gradient(135deg, #F0F9FF 0%, #FFFFFF 100%);
+}
+
 .welcome-title {
   font-size: 48rpx;
   font-weight: 700;

@@ -6,48 +6,53 @@ import config from '../../config';
  * 负责量表的查询和管理
  */
 
+const buildQueryString = (params = {}) => {
+  const pairs = [];
+  Object.keys(params).forEach((key) => {
+    const value = params[key];
+    if (value === undefined || value === null || value === '') return;
+    if (Array.isArray(value)) {
+      value
+        .filter(item => item !== undefined && item !== null && item !== '')
+        .forEach(item => {
+          pairs.push(`${encodeURIComponent(key)}=${encodeURIComponent(item)}`);
+        });
+      return;
+    }
+    pairs.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`);
+  });
+  return pairs.join('&');
+};
+
 /**
  * 获取量表列表
- * @param {number} page - 页码
- * @param {number} pageSize - 每页数量
- * @param {string} status - 状态过滤（draft/published/archived，可选）
- * @param {string} title - 标题过滤（可选）
- * @param {string} category - 主类过滤（可选）
- * @param {string} stage - 阶段过滤（可选）
- * @param {string} applicableAge - 使用年龄过滤（可选）
- * @param {string} reporter - 填报人过滤（可选）
- * @param {string[]} tags - 标签过滤（可选，数组）
+ * @param {object} options
  * @returns {Promise<{scales: Array, total: number, page: number, page_size: number}>}
  */
-export const getScales = (
+export const getScales = ({
   page = 1,
   pageSize = 20,
   status,
   title,
   category,
-  stage,
-  applicableAge,
-  reporter,
-  tags
-) => {
-  const queryParams = { page, page_size: pageSize };
-  if (status) queryParams.status = status;
-  if (title) queryParams.title = title;
-  if (category) queryParams.category = category;
-  if (stage) queryParams.stage = stage;
-  if (applicableAge) queryParams.applicable_age = applicableAge;
-  if (reporter) queryParams.reporter = reporter;
-  if (tags && Array.isArray(tags) && tags.length > 0) {
-    // 标签数组使用 CSV 格式
-    queryParams.tags = tags.join(',');
-  }
-  
-  // 构建查询字符串
-  const queryString = Object.keys(queryParams)
-    .map(key => `${key}=${encodeURIComponent(queryParams[key])}`)
-    .join('&');
-  
-  return request(`/scales?${queryString}`, {}, {
+  stages = [],
+  applicableAges = [],
+  reporters = [],
+  tags = []
+} = {}) => {
+  const queryString = buildQueryString({
+    page,
+    page_size: pageSize,
+    status,
+    title,
+    category,
+    stages,
+    applicable_ages: applicableAges,
+    reporters,
+    tags
+  });
+
+  return request(queryString ? `/scales?${queryString}` : '/scales', {}, {
     host: config.collectionHost,
     needToken: false
   });

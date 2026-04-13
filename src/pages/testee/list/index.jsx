@@ -7,13 +7,18 @@ import "./index.less";
 import { 
   subscribeTesteeStore, 
   initTesteeStore,
-  refreshTesteeList 
+  refreshTesteeList,
+  getSelectedTesteeId,
+  setSelectedTesteeId
 } from "../../../store/testeeStore.ts";
+import { getTesteeCareContext } from "../../../services/api/testeeApi";
 
 const ChildrenList = () => {
   const [children, setChildren] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedId, setSelectedId] = useState(() => getSelectedTesteeId());
+  const [careContextMap, setCareContextMap] = useState({});
 
   useEffect(() => {
     // 订阅 TesteeStore 状态变化
@@ -21,6 +26,7 @@ const ChildrenList = () => {
       console.log('[ChildrenList] Store 状态更新:', state);
       setChildren(state.testeeList);
       setLoading(state.isLoading);
+      setSelectedId(state.selectedTesteeId);
       
       if (!state.isLoading && !state.isInitialized) {
         setError('加载失败');
@@ -80,6 +86,36 @@ const ChildrenList = () => {
       url: `/pages/testee/editor/index?testeeId=${child.id}`
     });
   };
+
+  const handleSelectCurrent = (childId) => {
+    setSelectedTesteeId(childId);
+    Taro.showToast({
+      title: '已切换当前档案',
+      icon: 'success'
+    });
+  };
+
+  useEffect(() => {
+    const loadCareContext = async () => {
+      if (!children.length) {
+        setCareContextMap({});
+        return;
+      }
+      const pairs = await Promise.all(children.map(async (child) => {
+        try {
+          const result = await getTesteeCareContext(child.id);
+          const payload = result.data || result;
+          return [child.id, payload];
+        } catch (error) {
+          return [child.id, null];
+        }
+      }));
+
+      setCareContextMap(Object.fromEntries(pairs));
+    };
+
+    loadCareContext();
+  }, [children]);
 
   // 格式化性别
   const formatGender = (gender) => {
@@ -157,7 +193,8 @@ const ChildrenList = () => {
     const dob = child.dob || child.birthday;
     const relation = child.relation;
     const id = child.id || child.childid;
-    
+    const careContext = careContextMap[id];
+
     console.log('[ChildrenList] 渲染卡片:', { id, name, gender, dob });
 
     return (
@@ -171,7 +208,14 @@ const ChildrenList = () => {
             {gender === 1 || gender === '1' ? '👦' : gender === 2 || gender === '2' ? '👧' : '👤'}
           </View>
           <View className="child-info">
-            <View className="child-name">{name}</View>
+            <View className="child-name-row">
+              <View className="child-name">{name}</View>
+              {selectedId === id && (
+                <View className="current-badge">
+                  <Text className="current-badge__text">当前档案</Text>
+                </View>
+              )}
+            </View>
             <View className="child-meta">
               {gender && (
                 <>
@@ -218,6 +262,31 @@ const ChildrenList = () => {
             <View className="info-row">
               <Text className="info-label">体重</Text>
               <Text className="info-value">{child.weightKg} kg</Text>
+            </View>
+          )}
+          {careContext?.clinician_name && (
+            <View className="info-row">
+              <Text className="info-label">跟进人员</Text>
+              <Text className="info-value">
+                {careContext.clinician_name}
+                {careContext.relation_type ? ` · ${careContext.relation_type}` : ''}
+              </Text>
+            </View>
+          )}
+          {careContext?.entry_title && (
+            <View className="info-row">
+              <Text className="info-label">入口来源</Text>
+              <Text className="info-value">{careContext.entry_title}</Text>
+            </View>
+          )}
+          {selectedId !== id && (
+            <View className="child-card-actions">
+              <AtButton size="small" type="secondary" onClick={(e) => {
+                e.stopPropagation();
+                handleSelectCurrent(id);
+              }}>
+                设为当前档案
+              </AtButton>
             </View>
           )}
         </View>

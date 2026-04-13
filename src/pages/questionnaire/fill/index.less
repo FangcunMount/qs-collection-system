@@ -247,6 +247,78 @@
   }
 }
 
+.entry-context-section {
+  margin: 0 32rpx 24rpx;
+  padding: 32rpx;
+  background: @bg-card;
+  border-radius: @radius-base;
+  box-shadow: @shadow-sm;
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    font-size: 32rpx;
+    font-weight: 600;
+    color: @primary-color;
+    margin-bottom: 24rpx;
+
+    &::before {
+      content: '';
+      display: inline-block;
+      width: 6rpx;
+      height: 28rpx;
+      background: @gradient-primary;
+      border-radius: 3rpx;
+      margin-right: 12rpx;
+    }
+  }
+
+  .entry-context-card {
+    padding: 24rpx;
+    background: @bg-section;
+    border-radius: @radius-base;
+    border: 1rpx solid @border-light;
+  }
+
+  .entry-context-title {
+    display: block;
+    font-size: 30rpx;
+    color: @text-primary;
+    font-weight: 600;
+    margin-bottom: 12rpx;
+  }
+
+  .entry-context-meta,
+  .entry-context-target {
+    display: block;
+    font-size: 24rpx;
+    color: @text-tertiary;
+    margin-bottom: 8rpx;
+  }
+
+  .entry-context-desc {
+    display: block;
+    font-size: 26rpx;
+    color: @text-secondary;
+    line-height: 1.7;
+    margin-bottom: 12rpx;
+  }
+
+  .entry-context-warning {
+    margin-top: 16rpx;
+    padding: 16rpx 20rpx;
+    background: #FFF7E6;
+    border-radius: @radius-base;
+    border: 1rpx solid #FFE7BA;
+  }
+
+  .entry-context-warning-text {
+    font-size: 24rpx;
+    color: #D46B08;
+    font-weight: 500;
+  }
+}
+
 // 量表简介
 .questionnaire-intro-section {
   margin: 0 32rpx 24rpx;
@@ -328,4 +400,3 @@
     }
   }
 }
-

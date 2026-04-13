@@ -11,7 +11,6 @@ export default {
       name: 'analysis',
       pages: [
         'index',
-        'detail/index',
         'wait/index',
       ],
       independent: false

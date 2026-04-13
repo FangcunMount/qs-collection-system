@@ -79,7 +79,7 @@
 
   .menu-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 24rpx;
   }
 
@@ -123,11 +123,36 @@
 
   // ===== 操作区域 =====
   .action-section {
-    padding: 100rpx 32rpx 32rpx 32rpx;
+    padding: 48rpx 32rpx 32rpx 32rpx;
     background: transparent;
     display: flex;
     flex-direction: column;
     gap: 24rpx;
+  }
+
+  .settings-card {
+    background: #FFFFFF;
+    border-radius: 16rpx;
+    overflow: hidden;
+    box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.03);
+  }
+
+  .settings-item {
+    height: 92rpx;
+    padding: 0 28rpx;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1rpx solid #F3F4F6;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &__label {
+      font-size: 28rpx;
+      color: #374151;
+    }
   }
 
   .clear-cache-btn {

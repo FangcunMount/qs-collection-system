@@ -83,5 +83,37 @@
     }
   }
 
+  .record-status-tabs {
+    display: flex;
+    gap: 16rpx;
+    padding: 20rpx 32rpx 12rpx;
+    background: #FAFAFA;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .record-status-tab {
+    flex-shrink: 0;
+    padding: 14rpx 24rpx;
+    background: #FFFFFF;
+    border: 1rpx solid @border-light;
+    border-radius: 999rpx;
+
+    &.active {
+      background: @primary-light;
+      border-color: @primary-color;
+    }
+
+    &__text {
+      font-size: 24rpx;
+      color: @text-secondary;
+    }
+
+    &.active &__text {
+      color: @primary-color;
+      font-weight: 600;
+    }
+  }
+
   // 样式已拆分到各组件中，这里只保留页面级别的样式
 }

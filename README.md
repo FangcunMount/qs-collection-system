@@ -61,7 +61,7 @@ npm install
 ```
 
 ### 构建
-
+0.scale:3adyde
 ```bash
 # 构建微信小程序
 npm run build:weapp

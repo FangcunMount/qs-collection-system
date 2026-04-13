@@ -8,7 +8,7 @@ import { getLogger } from "../../util/log";
 import { PrivacyAuthorization } from "../../components/privacyAuthorization/privacyAuthorization";
 import { getRiskConfig } from "../common/utils/statusFormatters";
 import { formatSimpleDate } from "../common/utils/dateFormatters";
-import { findTesteeById, getSelectedTesteeId } from "../../store";
+import { findTesteeById, getSelectedTesteeId, getEntryContext } from "../../store";
 import RadarChart from "./widget/RadarChart";
 import FactorBarChart from "./widget/FactorBarChart";
 import FactorScatterChart from "./widget/FactorScatterChart";
@@ -34,6 +34,7 @@ const Analysis = () => {
   const [isReady, setIsReady] = useState(false);
   const [activeTab, setActiveTab] = useState('factor-analysis'); // 'factor-analysis' or 'pro-advice'
   const [chartType, setChartType] = useState('radar'); // 'radar' | 'bar' | 'scatter'
+  const [entryContext] = useState(() => getEntryContext());
 
   /**
    * 处理报告数据
@@ -315,6 +316,26 @@ const Analysis = () => {
               <Text className="report-testee">{reportInfo.testee_name}</Text>
             )}
           </View>
+          {(reportInfo.created_at || entryContext?.clinician_name || entryContext?.entry_title) && (
+            <View className="report-context">
+              {reportInfo.created_at && (
+                <Text className="report-context__text">
+                  生成时间 · {formatSimpleDate(reportInfo.created_at)}
+                </Text>
+              )}
+              {entryContext?.clinician_name && (
+                <Text className="report-context__text">
+                  来源人员 · {entryContext.clinician_name}
+                  {entryContext?.clinician_title ? ` · ${entryContext.clinician_title}` : ''}
+                </Text>
+              )}
+              {entryContext?.entry_title && (
+                <Text className="report-context__text">
+                  来源入口 · {entryContext.entry_title}
+                </Text>
+              )}
+            </View>
+          )}
 
           {/* 总分展示区 */}
           <View className="score-display-area" style={{ 
@@ -454,7 +475,7 @@ const Analysis = () => {
               });
             }}
           >
-            完成并查看历史记录
+            完成并查看测评记录
           </Button>
         </View>
       </View>

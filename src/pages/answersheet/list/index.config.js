@@ -1,3 +1,3 @@
 export default {
-  navigationBarTitleText: '测评历史'
+  navigationBarTitleText: '测评记录'
 }
