@@ -3,7 +3,7 @@
  */
 
 // 量表分类
-export const QUESTIONSHEET_CATEGORIES = [
+export const QUESTIONNAIRE_CATEGORIES = [
   { value: "all", label: "全部" },
   { value: "psychology", label: "心理评估" },
   { value: "cognition", label: "认知评估" },
@@ -27,7 +27,7 @@ export const QUESTION_TYPE_MAP = {
 };
 
 // 问卷状态
-export const QUESTIONSHEET_STATUS = {
+export const QUESTIONNAIRE_STATUS = {
   DRAFT: { value: 0, label: "草稿" },
   PUBLISHED: { value: 1, label: "已发布" },
   CLOSED: { value: 2, label: "已结束" }

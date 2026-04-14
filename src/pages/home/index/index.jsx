@@ -9,6 +9,7 @@ import { SearchBox } from "../../../components/common";
 import LoadingState from "../../common/components/LoadingState/LoadingState";
 import { getScales, getScaleCategories } from "../../../services/api/scaleApi";
 import { paramsConcat } from "../../../util";
+import { buildAssessmentScanTargetUrl, isScanCancelError } from "../../../util/entryScan";
 import "./index.less";
 import {
   getEntryContext,
@@ -102,9 +103,47 @@ const HomeIndex = () => {
   const handleContinueEntry = () => {
     const nextCode = entryContext?.q || entryContext?.target_code;
     if (!nextCode) return;
+    const params = {
+      q: nextCode,
+      t: currentTestee?.id
+    };
+    if (entryContext?.task_id) {
+      params.task_id = entryContext.task_id;
+    }
+    if (entryContext?.token) {
+      params.token = entryContext.token;
+    }
     Taro.navigateTo({
-      url: paramsConcat("/pages/questionnaire/fill/index", { q: nextCode, t: currentTestee?.id })
+      url: paramsConcat("/pages/questionnaire/fill/index", params)
     });
+  };
+
+  const handleRescanEntry = async (event) => {
+    event?.stopPropagation?.();
+    try {
+      const result = await Taro.scanCode({
+        onlyFromCamera: false,
+        scanType: ["qrCode"]
+      });
+      const targetUrl = buildAssessmentScanTargetUrl(result);
+      if (!targetUrl) {
+        Taro.showToast({
+          title: "未识别到可用测评入口",
+          icon: "none"
+        });
+        return;
+      }
+      Taro.navigateTo({ url: targetUrl });
+    } catch (error) {
+      if (isScanCancelError(error)) {
+        return;
+      }
+      console.error("首页重新扫码失败:", error);
+      Taro.showToast({
+        title: "扫码失败，请重试",
+        icon: "none"
+      });
+    }
   };
 
   const handleSearch = () => {
@@ -198,7 +237,10 @@ const HomeIndex = () => {
           <View className="entry-context-panel" onClick={handleContinueEntry}>
             <View className="entry-context-panel__header">
               <Text className="entry-context-panel__eyebrow">最近入口</Text>
-              <Text className="entry-context-panel__action">继续填写</Text>
+              <View className="entry-context-panel__actions">
+                <Text className="entry-context-panel__action entry-context-panel__action--secondary" onClick={handleRescanEntry}>重新扫码</Text>
+                <Text className="entry-context-panel__action">继续填写</Text>
+              </View>
             </View>
             {entryContext?.entry_title && (
               <Text className="entry-context-panel__title">{entryContext.entry_title}</Text>

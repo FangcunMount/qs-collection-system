@@ -1,7 +1,7 @@
 @import "../../../../../styles/theme.less";
 
 // 答卷卡片
-.answersheet-card {
+.assessment-record-card {
   background: #FFFFFF;
   border-radius: 24rpx;
   padding: 32rpx;
@@ -101,7 +101,9 @@
 
     .card-buttons {
       display: flex;
-      gap: 24rpx;
+      gap: 16rpx;
+      flex-wrap: wrap;
+      justify-content: flex-end;
 
       .btn {
         padding: 16rpx 24rpx;
@@ -144,6 +146,12 @@
         border: 2rpx solid #E5E5E5;
       }
 
+      .btn-light {
+        background: #EFF6FF;
+        color: #2563EB;
+        border: 2rpx solid #BFDBFE;
+      }
+
       .btn-disabled {
         background: #F5F5F5;
         color: #999999;
@@ -153,4 +161,3 @@
     }
   }
 }
-

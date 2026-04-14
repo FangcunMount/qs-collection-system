@@ -2,9 +2,10 @@ import React, { useState, useMemo, useEffect, useCallback } from "react";
 import Taro from "@tarojs/taro";
 import TesteeSheet from "./TesteeSheet";
 import FilterSheet from "./FilterSheet";
-import AnswersheetList from "./AnswersheetList";
+import AssessmentRecordList from "./AssessmentRecordList";
 import BottomSheet from "./BottomSheet";
 import { getAssessments } from "../../../../services/api/assessmentApi";
+import { buildAssessmentScanTargetUrl, isScanCancelError } from "../../../../util/entryScan";
 import "../index.less";
 
 const formatDate = (value) => {
@@ -35,7 +36,7 @@ const resolveDateRange = (timeRange) => {
 /**
  * 测评记录主组件（整合筛选和分页）
  */
-const AnswersheetListImp = ({
+const AssessmentRecordListContainer = ({
   testee,
   statusFilter = "",
   showFilterBar = true,
@@ -136,6 +137,33 @@ const AnswersheetListImp = ({
     await fetchRecords(pagination.page + 1, true);
   };
 
+  const handleEmptyScan = useCallback(async () => {
+    try {
+      const result = await Taro.scanCode({
+        onlyFromCamera: false,
+        scanType: ["qrCode"]
+      });
+      const targetUrl = buildAssessmentScanTargetUrl(result);
+      if (!targetUrl) {
+        Taro.showToast({
+          title: "未识别到可用测评入口",
+          icon: "none"
+        });
+        return;
+      }
+      Taro.navigateTo({ url: targetUrl });
+    } catch (error) {
+      if (isScanCancelError(error)) {
+        return;
+      }
+      console.error("记录中心重新扫码失败：", error);
+      Taro.showToast({
+        title: "扫码失败，请重试",
+        icon: "none"
+      });
+    }
+  }, []);
+
   const scaleList = useMemo(() => {
     const scaleMap = new Map();
     records.forEach((item) => {
@@ -210,8 +238,8 @@ const AnswersheetListImp = ({
 
   return (
     <>
-      <AnswersheetList
-        testee={testee}
+      <AssessmentRecordList
+        testeeId={testee?.id}
         scaleList={scaleList}
         selectedScaleCode={selectedScaleCode}
         onSelectScale={(code) => {
@@ -220,14 +248,15 @@ const AnswersheetListImp = ({
         }}
         showScaleSheet={showScaleSheet}
         onCloseScaleSheet={() => setShowScaleSheet(false)}
-        answersheetList={records}
+        records={records}
         pagination={pagination}
         loading={loading}
         onLoadMore={handleLoadMore}
+        onEmptyScan={handleEmptyScan}
       />
       {renderSheets()}
     </>
   );
 };
 
-export default AnswersheetListImp;
+export default AssessmentRecordListContainer;

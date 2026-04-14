@@ -9,13 +9,13 @@
  * - 问卷: import { getQuestionnaires } from '@/services/api/questionnaireApi'
  */
 
-import questionsheetApi from "./api/questionsheetApi";
+import questionnaireSubmissionApi from "./api/questionnaireSubmissionApi";
 import answersheetApi from "./api/answersheetApi";
 import analysisApi from "./api/analysisApi";
 import questionnaireApi from "./api/questionnaireApi";
 
 export default {
-  ...questionsheetApi,
+  ...questionnaireSubmissionApi,
   ...answersheetApi,
   ...analysisApi,
   ...questionnaireApi

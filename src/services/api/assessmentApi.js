@@ -83,6 +83,18 @@ export const getAssessmentDetail = (id, testeeId) => {
 };
 
 /**
+ * 通过答卷ID获取测评详情
+ * @param {string|number} answersheetId - 答卷ID
+ * @returns {Promise<object>}
+ */
+export const getAssessmentByAnswersheetId = (answersheetId) => {
+  return request(`/answersheets/${String(answersheetId)}/assessment`, {}, {
+    host: config.collectionHost,
+    needToken: true
+  });
+};
+
+/**
  * 获取测评得分详情
  * @param {string|number} id - 测评ID
  * @param {string|number} testeeId - 受试者ID
@@ -104,6 +116,20 @@ export const getAssessmentScores = (id, testeeId) => {
  */
 export const getAssessmentReport = (id, testeeId) => {
   return request(`/assessments/${String(id)}/report`, {}, {
+    host: config.collectionHost,
+    params: { testee_id: String(testeeId) },
+    needToken: true
+  });
+};
+
+/**
+ * 获取测评趋势摘要
+ * @param {string|number} id - 测评ID
+ * @param {string|number} testeeId - 受试者ID
+ * @returns {Promise<object>}
+ */
+export const getAssessmentTrendSummary = (id, testeeId) => {
+  return request(`/assessments/${String(id)}/trend-summary`, {}, {
     host: config.collectionHost,
     params: { testee_id: String(testeeId) },
     needToken: true
@@ -162,9 +188,11 @@ export const waitAssessmentReport = (id, testeeId, timeout = 15) => {
 
 export default {
   getAssessments,
+  getAssessmentByAnswersheetId,
   getAssessmentDetail,
   getAssessmentScores,
   getAssessmentReport,
+  getAssessmentTrendSummary,
   getHighRiskFactors,
   getFactorTrend,
   waitAssessmentReport

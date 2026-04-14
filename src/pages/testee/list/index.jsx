@@ -4,6 +4,7 @@ import { View, Text, ScrollView } from "@tarojs/components";
 import { AtButton, AtLoadMore } from "taro-ui";
 
 import "./index.less";
+import { buildAssessmentScanTargetUrl, isScanCancelError } from "../../../util/entryScan";
 import { 
   subscribeTesteeStore, 
   initTesteeStore,
@@ -13,8 +14,8 @@ import {
 } from "../../../store/testeeStore.ts";
 import { getTesteeCareContext } from "../../../services/api/testeeApi";
 
-const ChildrenList = () => {
-  const [children, setChildren] = useState([]);
+const TesteeListPage = () => {
+  const [testees, setTestees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedId, setSelectedId] = useState(() => getSelectedTesteeId());
@@ -23,8 +24,8 @@ const ChildrenList = () => {
   useEffect(() => {
     // 订阅 TesteeStore 状态变化
     const unsubscribe = subscribeTesteeStore((state) => {
-      console.log('[ChildrenList] Store 状态更新:', state);
-      setChildren(state.testeeList);
+      console.log('[TesteeList] Store 状态更新:', state);
+      setTestees(state.testeeList);
       setLoading(state.isLoading);
       setSelectedId(state.selectedTesteeId);
       
@@ -36,18 +37,18 @@ const ChildrenList = () => {
     });
 
     // 初始化
-    loadChildren();
+    loadTestees();
 
     return () => {
       unsubscribe();
     };
   }, []);
 
-  const loadChildren = async () => {
+  const loadTestees = async () => {
     try {
       await initTesteeStore();
     } catch (err) {
-      console.error('[ChildrenList] 加载失败:', err);
+      console.error('[TesteeList] 加载失败:', err);
       setError(err.message || '加载失败');
       Taro.showToast({
         title: err.message || '加载档案列表失败',
@@ -64,7 +65,7 @@ const ChildrenList = () => {
         icon: 'success'
       });
     } catch (err) {
-      console.error('[ChildrenList] 刷新失败:', err);
+      console.error('[TesteeList] 刷新失败:', err);
       Taro.showToast({
         title: '刷新失败',
         icon: 'none'
@@ -73,17 +74,44 @@ const ChildrenList = () => {
   };
 
   // 跳转到注册新档案
-  const handleAddChild = () => {
+  const handleAddTestee = () => {
     Taro.navigateTo({
       url: '/pages/testee/register/index'
     });
   };
 
+  const handleRescan = async () => {
+    try {
+      const result = await Taro.scanCode({
+        onlyFromCamera: false,
+        scanType: ["qrCode"]
+      });
+      const targetUrl = buildAssessmentScanTargetUrl(result);
+      if (!targetUrl) {
+        Taro.showToast({
+          title: "未识别到可用测评入口",
+          icon: "none"
+        });
+        return;
+      }
+      Taro.navigateTo({ url: targetUrl });
+    } catch (error) {
+      if (isScanCancelError(error)) {
+        return;
+      }
+      console.error("[TesteeList] 重新扫码失败:", error);
+      Taro.showToast({
+        title: "扫码失败，请重试",
+        icon: "none"
+      });
+    }
+  };
+
   // 查看档案详情（未来可扩展）
-  const handleViewChild = (child) => {
+  const handleViewTestee = (testee) => {
     // 跳转到编辑页面
     Taro.navigateTo({
-      url: `/pages/testee/editor/index?testeeId=${child.id}`
+      url: `/pages/testee/editor/index?testeeId=${testee.id}`
     });
   };
 
@@ -97,17 +125,17 @@ const ChildrenList = () => {
 
   useEffect(() => {
     const loadCareContext = async () => {
-      if (!children.length) {
+      if (!testees.length) {
         setCareContextMap({});
         return;
       }
-      const pairs = await Promise.all(children.map(async (child) => {
+      const pairs = await Promise.all(testees.map(async (testee) => {
         try {
-          const result = await getTesteeCareContext(child.id);
+          const result = await getTesteeCareContext(testee.id);
           const payload = result.data || result;
-          return [child.id, payload];
+          return [testee.id, payload];
         } catch (error) {
-          return [child.id, null];
+          return [testee.id, null];
         }
       }));
 
@@ -115,7 +143,7 @@ const ChildrenList = () => {
     };
 
     loadCareContext();
-  }, [children]);
+  }, [testees]);
 
   // 格式化性别
   const formatGender = (gender) => {
@@ -160,6 +188,14 @@ const ChildrenList = () => {
       <View className="empty-icon">👶</View>
       <View className="empty-text">暂无档案信息</View>
       <View className="empty-desc">点击下方按钮添加档案</View>
+      <AtButton
+        size="small"
+        type="secondary"
+        onClick={handleRescan}
+        className="empty-scan-button"
+      >
+        重新扫码
+      </AtButton>
     </View>
   );
 
@@ -187,23 +223,23 @@ const ChildrenList = () => {
   );
 
   // 渲染档案卡片
-  const renderChildCard = (child) => {
-    const name = child.legalName || child.name || '未命名';
-    const gender = child.gender || child.sex;
-    const dob = child.dob || child.birthday;
-    const relation = child.relation;
-    const id = child.id || child.childid;
+  const renderTesteeCard = (testee) => {
+    const name = testee.legalName || testee.name || '未命名';
+    const gender = testee.gender || testee.sex;
+    const dob = testee.dob || testee.birthday;
+    const relation = testee.relation;
+    const id = testee.id;
     const careContext = careContextMap[id];
 
-    console.log('[ChildrenList] 渲染卡片:', { id, name, gender, dob });
+    console.log('[TesteeList] 渲染卡片:', { id, name, gender, dob });
 
     return (
       <View 
         key={id} 
-        className="child-card"
-        onClick={() => handleViewChild(child)}
+        className="testee-card"
+        onClick={() => handleViewTestee(testee)}
       >
-        <View className="child-card-header">
+        <View className="testee-card-header">
           <View className="child-avatar">
             {gender === 1 || gender === '1' ? '👦' : gender === 2 || gender === '2' ? '👧' : '👤'}
           </View>
@@ -235,33 +271,33 @@ const ChildrenList = () => {
           <View className="child-arrow">›</View>
         </View>
         
-        <View className="child-card-body">
+        <View className="testee-card-body">
           {dob && (
             <View className="info-row">
               <Text className="info-label">出生日期</Text>
               <Text className="info-value">{dob}</Text>
             </View>
           )}
-          {child.idType && child.idType !== 'none' && (
+          {testee.idType && testee.idType !== 'none' && (
             <View className="info-row">
               <Text className="info-label">证件类型</Text>
               <Text className="info-value">
-                {child.idType === 'idcard' ? '身份证' : 
-                 child.idType === 'passport' ? '护照' : 
-                 child.idType === 'birth_cert' ? '出生证明' : child.idType}
+                {testee.idType === 'idcard' ? '身份证' : 
+                 testee.idType === 'passport' ? '护照' : 
+                 testee.idType === 'birth_cert' ? '出生证明' : testee.idType}
               </Text>
             </View>
           )}
-          {child.heightCm && (
+          {testee.heightCm && (
             <View className="info-row">
               <Text className="info-label">身高</Text>
-              <Text className="info-value">{child.heightCm} cm</Text>
+              <Text className="info-value">{testee.heightCm} cm</Text>
             </View>
           )}
-          {child.weightKg && (
+          {testee.weightKg && (
             <View className="info-row">
               <Text className="info-label">体重</Text>
-              <Text className="info-value">{child.weightKg} kg</Text>
+              <Text className="info-value">{testee.weightKg} kg</Text>
             </View>
           )}
           {careContext?.clinician_name && (
@@ -280,7 +316,7 @@ const ChildrenList = () => {
             </View>
           )}
           {selectedId !== id && (
-            <View className="child-card-actions">
+            <View className="testee-card-actions">
               <AtButton size="small" type="secondary" onClick={(e) => {
                 e.stopPropagation();
                 handleSelectCurrent(id);
@@ -295,32 +331,32 @@ const ChildrenList = () => {
   };
 
   return (
-    <View className="children-list-container">
+    <View className="testee-list-container">
       <View className="page-header">
         <View className="header-title">档案管理</View>
         <View className="header-desc">
-          共 {children.length} 份档案
+          共 {testees.length} 份档案
         </View>
       </View>
 
       <ScrollView
-        className="children-scroll"
+        className="testee-scroll"
         scrollY
         enhanced
         showScrollbar={false}
       >
-        <View className="children-list">
+        <View className="testee-list">
           {loading && renderLoading()}
           {!loading && error && renderError()}
-          {!loading && !error && children.length === 0 && renderEmpty()}
-          {!loading && !error && children.length > 0 && children.map(renderChildCard)}
+          {!loading && !error && testees.length === 0 && renderEmpty()}
+          {!loading && !error && testees.length > 0 && testees.map(renderTesteeCard)}
         </View>
       </ScrollView>
 
       <View className="page-footer">
         <AtButton 
           type="primary" 
-          onClick={handleAddChild}
+          onClick={handleAddTestee}
           className="add-button"
         >
           + 添加档案
@@ -330,4 +366,4 @@ const ChildrenList = () => {
   );
 };
 
-export default ChildrenList;
+export default TesteeListPage;

@@ -5,8 +5,8 @@ import Taro from "@tarojs/taro";
 import { AtButton } from "taro-ui";
 
 import { getQuestionnaire } from "../../../../services/api/questionnaireApi";
-import { submitQuestionsheet } from "../../../../services/api/questionsheetApi";
-import "./singlePageModel.less";
+import { submitQuestionnaire } from "../../../../services/api/questionnaireSubmissionApi";
+import "./SinglePageQuestionnaire.less";
 
 import QsSection from "../../../../components/question/section";
 import QsRadio from "../../../../components/question/radio";
@@ -18,11 +18,11 @@ import QsCheckbox from "../../../../components/question/checkbox";
 import QsScoreRadio from "../../../../components/question/scoreRadio";
 import QsSelect from "../../../../components/question/select";
 import WriterRoleDialog from "./WriterRoleDialog";
-import { checkQuestion } from "./questionsheet";
+import { checkQuestion } from "./QuestionnaireForm";
 import { useThrottle } from "../../../../util/useUtil";
 
 export default props => {
-  const { questionsheetid, subSignid, writedCallback, canSubmit } = props;
+  const { questionnaireCode, subSignid, writedCallback, canSubmit } = props;
 
   const [questionSheet, setQuestionSheet] = useState(null);
   const [curQuestionIndex, setCurQuestionIndex] = useState(-1);
@@ -32,12 +32,12 @@ export default props => {
   const [needWriterRole, setNeedWriterRole] = useState(false);
 
   useEffect(() => {
-    if (questionsheetid) {
-      initQuestionSheet(questionsheetid);
+    if (questionnaireCode) {
+      initQuestionnaire(questionnaireCode);
     }
-  }, [questionsheetid]);
+  }, [questionnaireCode]);
 
-  const initQuestionSheet = id => {
+  const initQuestionnaire = id => {
     Taro.showLoading();
     setQuestionSheet(null);
     setWriterRoles([]);
@@ -270,7 +270,7 @@ export default props => {
 
     const submitData = clearData(questionSheet);
 
-    submitQuestionsheet(submitData, writerRoleCode, subSignid)
+    submitQuestionnaire(submitData, writerRoleCode, subSignid)
       .then(async result => {
         Taro.showToast({ title: "提交成功", icon: "success" });
         // 传递答卷 ID 和测评 ID（如果有）给回调函数
@@ -367,10 +367,10 @@ export default props => {
   };
 
   return (
-    <View className='questionsheet'>
+    <View className='questionnaire-single-page'>
       {questionSheet ? (
         <View
-          className='questionsheet-progress'
+          className='questionnaire-single-page__progress'
           style={{
             width: `${parseInt(
               (curQuestionIndex / questionSheet.questions.length) * 100

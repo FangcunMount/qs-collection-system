@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import Taro, { usePullDownRefresh } from "@tarojs/taro";
 import { View, Text, ScrollView } from "@tarojs/components";
 import BottomMenu from "../../../components/bottomMenu";
@@ -10,15 +10,8 @@ import { getScaleCategories, getScales } from "../../../services/api/scaleApi";
 import { paramsConcat } from "../../../util";
 import { getLogger } from "../../../util/log";
 
-const PAGE_NAME = "questionsheet_list";
+const PAGE_NAME = "questionnaire_list";
 const logger = getLogger(PAGE_NAME);
-
-const FILTER_ACTIONS = [
-  { key: "stage", title: "阶段" },
-  { key: "applicableAge", title: "年龄" },
-  { key: "reporter", title: "填报人" },
-  { key: "tag", title: "标签" }
-];
 
 const QuestionsheetList = () => {
   const [scaleList, setScaleList] = useState([]);
@@ -26,16 +19,6 @@ const QuestionsheetList = () => {
   const [searchText, setSearchText] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [categories, setCategories] = useState([]);
-  const [filterMeta, setFilterMeta] = useState({
-    stages: [],
-    applicable_ages: [],
-    reporters: [],
-    tags: []
-  });
-  const [selectedStage, setSelectedStage] = useState("");
-  const [selectedApplicableAge, setSelectedApplicableAge] = useState("");
-  const [selectedReporter, setSelectedReporter] = useState("");
-  const [selectedTag, setSelectedTag] = useState("");
   const [pagination, setPagination] = useState({
     page: 1,
     page_size: 20,
@@ -55,12 +38,6 @@ const QuestionsheetList = () => {
       const payload = result.data || result;
       const categoryList = payload.categories || [];
       setCategories([{ value: null, label: '全部' }, ...categoryList]);
-      setFilterMeta({
-        stages: payload.stages || [],
-        applicable_ages: payload.applicable_ages || [],
-        reporters: payload.reporters || [],
-        tags: payload.tags || []
-      });
     } catch (error) {
       console.error('加载筛选元数据失败:', error);
     }
@@ -70,10 +47,6 @@ const QuestionsheetList = () => {
     const params = Taro.getCurrentInstance()?.router?.params || {};
     if (params.keyword) setSearchText(params.keyword);
     if (params.category) setSelectedCategory(params.category);
-    if (params.stage) setSelectedStage(params.stage);
-    if (params.applicable_age) setSelectedApplicableAge(params.applicable_age);
-    if (params.reporter) setSelectedReporter(params.reporter);
-    if (params.tag) setSelectedTag(params.tag);
     setIsParamsReady(true);
   }, []);
 
@@ -88,11 +61,7 @@ const QuestionsheetList = () => {
         page,
         pageSize: 20,
         title: searchText,
-        category: selectedCategory,
-        stages: selectedStage ? [selectedStage] : [],
-        applicableAges: selectedApplicableAge ? [selectedApplicableAge] : [],
-        reporters: selectedReporter ? [selectedReporter] : [],
-        tags: selectedTag ? [selectedTag] : []
+        category: selectedCategory
       });
       const payload = result.data || result;
       const scales = payload.scales || [];
@@ -126,7 +95,7 @@ const QuestionsheetList = () => {
     } finally {
       setLoading(false);
     }
-  }, [searchText, selectedApplicableAge, selectedCategory, selectedReporter, selectedStage, selectedTag]);
+  }, [searchText, selectedCategory]);
 
   useEffect(() => {
     if (isParamsReady) {
@@ -144,34 +113,6 @@ const QuestionsheetList = () => {
       url: paramsConcat("/pages/questionnaire/fill/index", { q: scale.code })
     });
   };
-
-  const openFilterActionSheet = useCallback((type) => {
-    const source = {
-      stage: filterMeta.stages,
-      applicableAge: filterMeta.applicable_ages,
-      reporter: filterMeta.reporters,
-      tag: filterMeta.tags
-    }[type] || [];
-
-    const labels = ['全部', ...source];
-    Taro.showActionSheet({
-      itemList: labels,
-      success: ({ tapIndex }) => {
-        const value = tapIndex === 0 ? '' : source[tapIndex - 1];
-        if (type === 'stage') setSelectedStage(value);
-        if (type === 'applicableAge') setSelectedApplicableAge(value);
-        if (type === 'reporter') setSelectedReporter(value);
-        if (type === 'tag') setSelectedTag(value);
-      }
-    });
-  }, [filterMeta]);
-
-  const activeFilters = useMemo(() => ([
-    selectedStage && { label: `阶段 · ${selectedStage}`, onClear: () => setSelectedStage('') },
-    selectedApplicableAge && { label: `年龄 · ${selectedApplicableAge}`, onClear: () => setSelectedApplicableAge('') },
-    selectedReporter && { label: `填报人 · ${selectedReporter}`, onClear: () => setSelectedReporter('') },
-    selectedTag && { label: `标签 · ${selectedTag}`, onClear: () => setSelectedTag('') }
-  ].filter(Boolean)), [selectedApplicableAge, selectedReporter, selectedStage, selectedTag]);
 
   const handleLoadMore = () => {
     if (pagination.page >= pagination.total_pages) {
@@ -205,30 +146,6 @@ const QuestionsheetList = () => {
                   </View>
                 ))}
               </ScrollView>
-            </View>
-          )}
-
-          <ScrollView scrollX className="advanced-filter-scroll">
-            <View className="advanced-filter-row">
-              {FILTER_ACTIONS.map((filter) => (
-                <View
-                  key={filter.key}
-                  className="advanced-filter-chip"
-                  onClick={() => openFilterActionSheet(filter.key)}
-                >
-                  <Text className="advanced-filter-chip__text">{filter.title}</Text>
-                </View>
-              ))}
-            </View>
-          </ScrollView>
-
-          {activeFilters.length > 0 && (
-            <View className="active-filter-list">
-              {activeFilters.map(filter => (
-                <View key={filter.label} className="active-filter-tag" onClick={filter.onClear}>
-                  <Text className="active-filter-tag__text">{filter.label}</Text>
-                </View>
-              ))}
             </View>
           )}
         </View>

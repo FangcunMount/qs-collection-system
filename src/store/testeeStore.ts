@@ -35,7 +35,6 @@ export interface Testee {
  */
 export type TesteeInput = Partial<Testee> & {
   id?: string | number;
-  childid?: string | number;
   testeeid?: string | number;
   name?: string;
   legal_name?: string;
@@ -139,7 +138,7 @@ function normalizeTestee(testee: TesteeInput): Testee | null {
   }
 
   // 兼容多种 ID 字段
-  const id = testee.id ?? testee.testeeid ?? testee.childid;
+  const id = testee.id ?? testee.testeeid;
   if (!id) {
     console.log('[TesteeStore] normalizeTestee: 缺少 ID', testee);
     return null;
@@ -447,43 +446,43 @@ export function subscribeTesteeStore(listener: Listener): () => void {
 }
 
 /**
- * 从 IAM 加载儿童列表
+ * 从 IAM 加载受试者列表
  */
-export async function loadChildrenFromIAM(): Promise<Testee[]> {
-  console.log('[TesteeStore] 从 IAM 加载儿童列表');
+export async function loadTesteesFromIAM(): Promise<Testee[]> {
+  console.log('[TesteeStore] 从 IAM 加载受试者列表');
   
   try {
     const { getMyChildren } = await import('../services/api/iamIdentityApi');
     const response = await getMyChildren();
     console.log('[TesteeStore] IAM 响应:', response);
     
-    // 转换 IAM children 格式到 testee 格式（兼容驼峰和下划线格式）
-    const children = response?.items || [];
-    console.log('[TesteeStore] 原始 children 数据:', children);
+    // 转换 IAM identity children 格式到 testee 格式（兼容驼峰和下划线格式）
+    const items = response?.items || [];
+    console.log('[TesteeStore] IAM 原始数据:', items);
     
-    const testees = children.map((child: any) => {
+    const testees = items.map((item: any) => {
       const testee = {
-        id: String(child.id),
-        legalName: child.legalName || child.legal_name || '',
-        gender: child.gender,
-        dob: child.dob || '',
-        idType: child.idType || child.id_type,
-        idNo: child.idNo || child.id_no,
-        idMasked: child.idMasked || child.id_masked,
-        relation: child.relation,
-        heightCm: child.heightCm || child.height_cm,
-        weightKg: child.weightKg || child.weight_kg,
-        createdAt: child.createdAt || child.created_at,
-        updatedAt: child.updatedAt || child.updated_at
+        id: String(item.id),
+        legalName: item.legalName || item.legal_name || '',
+        gender: item.gender,
+        dob: item.dob || '',
+        idType: item.idType || item.id_type,
+        idNo: item.idNo || item.id_no,
+        idMasked: item.idMasked || item.id_masked,
+        relation: item.relation,
+        heightCm: item.heightCm || item.height_cm,
+        weightKg: item.weightKg || item.weight_kg,
+        createdAt: item.createdAt || item.created_at,
+        updatedAt: item.updatedAt || item.updated_at
       };
-      console.log('[TesteeStore] 转换单个 child:', { 
-        原始: { id: child.id, legalName: child.legalName, legal_name: child.legal_name },
+      console.log('[TesteeStore] 转换单个 IAM testee:', {
+        原始: { id: item.id, legalName: item.legalName, legal_name: item.legal_name },
         结果: { id: testee.id, legalName: testee.legalName }
       });
       return testee;
     });
     
-    console.log('[TesteeStore] 从 IAM 加载了', testees.length, '个儿童, 转换后:', testees);
+    console.log('[TesteeStore] 从 IAM 加载了', testees.length, '个受试者, 转换后:', testees);
     return testees;
   } catch (error) {
     console.error('[TesteeStore] 从 IAM 加载儿童失败:', error);
@@ -592,9 +591,9 @@ export async function initTesteeStore(force: boolean = false): Promise<TesteeSto
       
       try {
         // 如果 Collection 失败，回退到 IAM API
-        console.log('[TesteeStore] 从 IAM 加载儿童列表');
-        list = await loadChildrenFromIAM();
-        console.log('[TesteeStore] IAM 加载成功，共', list.length, '个儿童');
+        console.log('[TesteeStore] 从 IAM 加载受试者列表');
+        list = await loadTesteesFromIAM();
+        console.log('[TesteeStore] IAM 加载成功，共', list.length, '个受试者');
       } catch (iamError) {
         console.error('[TesteeStore] IAM 也加载失败:', iamError);
         throw iamError;
@@ -676,7 +675,7 @@ const TesteeStore = {
   refreshTesteeList,
   
   // IAM & Collection 集成
-  loadChildrenFromIAM,
+  loadTesteesFromIAM,
   loadTesteesFromCollection
 };
 

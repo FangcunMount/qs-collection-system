@@ -3,24 +3,45 @@ import { View, Text, Button } from "@tarojs/components";
 import Taro from "@tarojs/taro";
 import { AtActivityIndicator } from "taro-ui";
 
-import { getAssessmentReport, getAssessmentReportByAnswersheetId } from "../../services/api/analysisApi";
+import { getAssessmentReport } from "../../services/api/analysisApi";
+import { getAssessmentByAnswersheetId, getAssessmentTrendSummary } from "../../services/api/assessmentApi";
 import { getLogger } from "../../util/log";
+import { RiskTag } from "../../components/common";
 import { PrivacyAuthorization } from "../../components/privacyAuthorization/privacyAuthorization";
+import PlanSubscribeConfirm from "../../components/planSubscribeConfirm";
 import { getRiskConfig } from "../common/utils/statusFormatters";
 import { formatSimpleDate } from "../common/utils/dateFormatters";
 import { findTesteeById, getSelectedTesteeId, getEntryContext } from "../../store";
 import RadarChart from "./widget/RadarChart";
 import FactorBarChart from "./widget/FactorBarChart";
 import FactorScatterChart from "./widget/FactorScatterChart";
+import TrendLineChart from "./widget/TrendLineChart";
 import "./index.less";
 
 const PAGE_NAME = "analysis";
 const logger = getLogger(PAGE_NAME);
 
+const getDeltaDirection = (delta) => {
+  if (Math.abs(delta) < 0.01) return "flat";
+  return delta > 0 ? "up" : "down";
+};
+
+const formatDelta = (delta) => {
+  const direction = getDeltaDirection(delta);
+  if (direction === "flat") return "持平";
+  return `${direction === "up" ? "上升" : "下降"} ${Math.abs(delta).toFixed(1)} 分`;
+};
+
 const Analysis = () => {
   const [total, setTotal] = useState(null);
   const [factors, setFactors] = useState([]);
   const [answersheetid, setAnswersheetid] = useState(-1);
+  const [assessmentContext, setAssessmentContext] = useState({
+    assessment_id: "",
+    testee_id: "",
+  });
+  const [trendSummary, setTrendSummary] = useState(null);
+  const [trendLoading, setTrendLoading] = useState(false);
   const [reportInfo, setReportInfo] = useState({
     scale_name: '',
     scale_code: '',
@@ -35,6 +56,8 @@ const Analysis = () => {
   const [activeTab, setActiveTab] = useState('factor-analysis'); // 'factor-analysis' or 'pro-advice'
   const [chartType, setChartType] = useState('radar'); // 'radar' | 'bar' | 'scatter'
   const [entryContext] = useState(() => getEntryContext());
+  const routeParams = Taro.getCurrentInstance().router.params || {};
+  const planTaskId = routeParams.task_id || '';
 
   /**
    * 处理报告数据
@@ -115,6 +138,25 @@ const Analysis = () => {
     });
   }, []);
 
+  const loadTrendSummary = useCallback(async (assessmentId, testeeId) => {
+    if (!assessmentId || !testeeId) {
+      setTrendSummary(null);
+      return;
+    }
+
+    setTrendSummary(null);
+    setTrendLoading(true);
+    try {
+      const result = await getAssessmentTrendSummary(assessmentId, testeeId);
+      setTrendSummary(result?.data || result || null);
+    } catch (error) {
+      logger.ERROR("[Analysis] 获取趋势摘要失败:", error);
+      setTrendSummary(null);
+    } finally {
+      setTrendLoading(false);
+    }
+  }, []);
+
   /**
    * 根据测评ID和受试者ID获取分析报告
    */
@@ -136,10 +178,16 @@ const Analysis = () => {
       // 忽略 showLoading 错误
     }
 
+    setAssessmentContext({
+      assessment_id: String(assessmentId),
+      testee_id: String(testeeId),
+    });
+
     getAssessmentReport(assessmentId, testeeId)
       .then(result => {
         logger.RUN('[Analysis] 获取测评报告成功:', { assessmentId });
         handleReportData(result);
+        loadTrendSummary(assessmentId, testeeId);
         setIsReady(true);
       })
       .catch(err => {
@@ -159,7 +207,7 @@ const Analysis = () => {
           }
         }
       });
-  }, [handleReportData]);
+  }, [handleReportData, loadTrendSummary]);
 
   /**
    * 根据答卷ID获取分析报告
@@ -177,10 +225,25 @@ const Analysis = () => {
     
     try {
       logger.RUN('[Analysis] 通过答卷ID获取报告:', { answersheetId });
-      const reportResult = await getAssessmentReportByAnswersheetId(answersheetId);
+      const detailResult = await getAssessmentByAnswersheetId(answersheetId);
+      const detail = detailResult?.data || detailResult || {};
+      const assessmentId = detail.id || '';
+      const testeeId = detail.testee_id || '';
+
+      if (!assessmentId || !testeeId) {
+        throw new Error('缺少 assessment_id 或 testee_id');
+      }
+
+      setAssessmentContext({
+        assessment_id: String(assessmentId),
+        testee_id: String(testeeId),
+      });
+
+      const reportResult = await getAssessmentReport(assessmentId, testeeId);
       logger.RUN('[Analysis] 通过答卷ID获取报告成功');
       
       handleReportData(reportResult);
+      await loadTrendSummary(assessmentId, testeeId);
       setIsReady(true);
       
     } catch (err) {
@@ -199,7 +262,7 @@ const Analysis = () => {
         }
       }
     }
-  }, [handleReportData]);
+  }, [handleReportData, loadTrendSummary]);
 
   useEffect(() => {
     const params = Taro.getCurrentInstance().router.params;
@@ -238,15 +301,15 @@ const Analysis = () => {
               <Text className="score-value-text">
                 {hasScore ? score : '--'}
                 {hasMax && <Text className="score-max-text"> / {maxScore}</Text>}
-            </Text>
-          </View>
+              </Text>
+            </View>
             {hasMax && hasScore ? (
               <View className="score-progress-container">
                 <View className="score-progress-track">
-              <View
-                className="score-progress-bar"
-                style={{
-                  width: `${percent}%`,
+                  <View
+                    className="score-progress-bar"
+                    style={{
+                      width: `${percent}%`,
                       backgroundColor: config.bgColor
                     }}
                   >
@@ -271,8 +334,8 @@ const Analysis = () => {
                 <Text className="score-progress-text-outside" style={{ color: '#9CA3AF' }}>
                   --
                 </Text>
-            </View>
-          )}
+              </View>
+            )}
           </View>
           {content && (
             <View className="factor-section">
@@ -302,6 +365,18 @@ const Analysis = () => {
   }
 
   const overallRiskConfig = getRiskConfig(reportInfo.risk_level || 'normal');
+  const comparableCount = Number(trendSummary?.meta?.comparable_count || 0);
+  const trendTimeline = trendSummary?.timeline || [];
+  const trendCurrent = trendSummary?.current || null;
+  const trendPrevious = trendSummary?.previous || null;
+  const recentTrendPoints = trendTimeline.slice(-5).map((item) => ({
+    label: formatSimpleDate(item.submitted_at),
+    value: Number(item.total_score || 0),
+  }));
+  const totalDelta = trendCurrent && trendPrevious
+    ? Number(trendCurrent.total_score || 0) - Number(trendPrevious.total_score || 0)
+    : 0;
+  const canOpenTrendDetail = Boolean(assessmentContext.assessment_id && assessmentContext.testee_id);
 
   return (
     <>
@@ -338,19 +413,28 @@ const Analysis = () => {
           )}
 
           {/* 总分展示区 */}
-          <View className="score-display-area" style={{ 
-            background: overallRiskConfig.scoreBadgeBg ? overallRiskConfig.scoreBadgeBg : undefined 
-          }}>
-            <View className="score-number" style={{ 
-              color: overallRiskConfig.scoreBadgeColor || undefined 
-            }}>
+          <View
+            className="score-display-area"
+            style={{
+              background: overallRiskConfig.scoreBadgeBg ? overallRiskConfig.scoreBadgeBg : undefined
+            }}
+          >
+            <View
+              className="score-number"
+              style={{
+                color: overallRiskConfig.scoreBadgeColor || undefined
+              }}
+            >
               <Text className="score-main">{total?.score || 0}</Text>
               <Text className="score-unit">分</Text>
             </View>
-            <View className="risk-level-badge" style={{ 
-              backgroundColor: '#FFFFFF',
-              color: overallRiskConfig.scoreBadgeColor || '#F97316'
-            }}>
+            <View
+              className="risk-level-badge"
+              style={{
+                backgroundColor: '#FFFFFF',
+                color: overallRiskConfig.scoreBadgeColor || '#F97316'
+              }}
+            >
               <Text className="risk-level-text">
                 {overallRiskConfig.label}
                 {total?.content && `:${total.content}`}
@@ -368,6 +452,100 @@ const Analysis = () => {
               </View>
             )}
           </View>
+        </View>
+
+        <PlanSubscribeConfirm
+          taskId={planTaskId}
+          planName={entryContext?.plan_name}
+          entryTitle={entryContext?.entry_title || reportInfo.scale_name}
+          clinicianName={entryContext?.clinician_name}
+        />
+
+        <View className="trend-summary-card">
+          <View className="trend-summary-header">
+            <View>
+              <Text className="trend-summary-title">变化趋势</Text>
+              <Text className="trend-summary-subtitle">只对比同一量表、同一版本的历史记录</Text>
+            </View>
+            {canOpenTrendDetail && comparableCount >= 2 && (
+              <View
+                className="trend-summary-link"
+                onClick={() => {
+                  Taro.navigateTo({
+                    url: `/pages/analysis/trend/index?aid=${assessmentContext.assessment_id}&t=${assessmentContext.testee_id}`,
+                  });
+                }}
+              >
+                <Text className="trend-summary-link__text">查看完整趋势</Text>
+              </View>
+            )}
+          </View>
+
+          {trendLoading ? (
+            <AtActivityIndicator mode="center" content="加载趋势中..." />
+          ) : comparableCount >= 2 ? (
+            <View className="trend-summary-content">
+              <View className="trend-summary-metrics">
+                <View className="trend-metric-card">
+                  <Text className="trend-metric-card__label">总分较上次</Text>
+                  <Text className="trend-metric-card__value">
+                    {trendPrevious ? formatDelta(totalDelta) : "暂无上次记录"}
+                  </Text>
+                  {trendPrevious && (
+                    <Text className="trend-metric-card__detail">
+                      {trendPrevious.total_score} → {trendCurrent?.total_score}
+                    </Text>
+                  )}
+                </View>
+                <View className="trend-metric-card">
+                  <Text className="trend-metric-card__label">风险等级变化</Text>
+                  <View className="trend-metric-card__risk-row">
+                    <RiskTag riskLevel={trendPrevious?.risk_level || "normal"} />
+                    <Text className="trend-metric-card__arrow">→</Text>
+                    <RiskTag riskLevel={trendCurrent?.risk_level || reportInfo.risk_level || "normal"} />
+                  </View>
+                  <Text className="trend-metric-card__detail">
+                    {trendPrevious?.risk_level === trendCurrent?.risk_level ? "等级持平" : "等级发生变化"}
+                  </Text>
+                </View>
+              </View>
+
+              {(trendSummary?.factor_changes || []).length > 0 && (
+                <View className="trend-factor-grid">
+                  {(trendSummary.factor_changes || []).slice(0, 3).map((factor) => (
+                    <View key={factor.factor_code} className="trend-factor-card">
+                      <Text className="trend-factor-card__title">{factor.factor_name}</Text>
+                      <View className="trend-factor-card__meta">
+                        <RiskTag riskLevel={factor.risk_level} />
+                        <Text className="trend-factor-card__delta">{formatDelta(factor.delta)}</Text>
+                      </View>
+                      <Text className="trend-factor-card__detail">
+                        {factor.previous_score} → {factor.current_score}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              <View className="trend-chart-panel">
+                <Text className="trend-chart-panel__title">最近趋势</Text>
+                <TrendLineChart
+                  chartId="analysis-summary-trend"
+                  points={recentTrendPoints}
+                  lineColor="#2563EB"
+                  areaColor="rgba(37, 99, 235, 0.12)"
+                  height="280rpx"
+                />
+              </View>
+            </View>
+          ) : (
+            <View className="trend-summary-empty">
+              <Text className="trend-summary-empty__title">趋势暂未形成</Text>
+              <Text className="trend-summary-empty__text">
+                {trendSummary?.meta?.note || "完成 2 次同量表测评后可查看变化趋势。"}
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* 标签页控制器 */}
@@ -471,7 +649,7 @@ const Analysis = () => {
             className="primary-button"
             onClick={() => {
               Taro.redirectTo({
-                url: `/pages/answersheet/detail/index?a=${answersheetid}`
+                url: `/pages/answersheet/detail/index?a=${answersheetid}${planTaskId ? `&task_id=${encodeURIComponent(planTaskId)}` : ''}`
               });
             }}
           >

@@ -3,13 +3,14 @@ import Taro, { useReady, useRouter, useShareAppMessage } from "@tarojs/taro";
 import { View, Text, Image, ScrollView, Picker } from "@tarojs/components";
 
 import "./index.less";
-import QuestionSheet from "./weight/questionsheet";
-import SinglePageModel from "./weight/singlePageModel";
+import QuestionnaireForm from "./weight/QuestionnaireForm";
+import SinglePageQuestionnaire from "./weight/SinglePageQuestionnaire";
 import { initTesteeStore, refreshTesteeList } from "../../../store/testeeStore.ts";
 
 import { paramsConcat, parsingScene } from "../../../util";
 import { getLogger } from "../../../util/log";
 import { getMpEntryParams } from "../../../services/api/commonApi";
+import { resolveAssessmentEntry } from "../../../services/api/assessmentEntryApi";
 import { getQuestionnaire } from "../../../services/api/questionnaireApi";
 import { getTestee } from "../../../services/api/testeeApi";
 import { request } from "../../../services/servers";
@@ -26,8 +27,9 @@ import {
 import { getValidQuestionCount, getEstimatedTime } from "../../common/utils/questionUtils";
 
 import { PrivacyAuthorization } from "../../../components/privacyAuthorization/privacyAuthorization";
+import PlanSubscribeConfirm from "../../../components/planSubscribeConfirm";
 
-const PAGE_NAME = "question_sheet";
+const PAGE_NAME = "questionnaire_fill";
 const logger = getLogger(PAGE_NAME);
 
 const INVALID_ENTRY_STATUSES = new Set(["inactive", "disabled", "revoked", "expired"]);
@@ -46,6 +48,20 @@ const resolveEntryStatusText = (status) => {
   }
 };
 
+const buildEntryErrorUrl = ({ title, text, desc, buttonText, buttonUrl }) => {
+  const query = [];
+  if (title) query.push(`title=${encodeURIComponent(title)}`);
+  if (text) query.push(`text=${encodeURIComponent(text)}`);
+  if (desc) query.push(`desc=${encodeURIComponent(desc)}`);
+  if (buttonText) query.push(`buttonText=${encodeURIComponent(buttonText)}`);
+  if (buttonUrl) query.push(`buttonUrl=${encodeURIComponent(buttonUrl)}`);
+  return `/pages/system/error/errpage?${query.join("&")}`;
+};
+
+const redirectToEntryError = (options) => {
+  Taro.redirectTo({ url: buildEntryErrorUrl(options) });
+};
+
 const hasEntryContext = (context) => {
   if (!context) return false;
   return Boolean(
@@ -57,10 +73,61 @@ const hasEntryContext = (context) => {
   );
 };
 
+const isAssessmentEntryToken = (value) => /^ae_[A-Za-z0-9_]+$/.test(String(value || "").trim());
+
+const toResolvedEntryStatus = (entry) => {
+  if (!entry) return "";
+  if (!entry.is_active) return "inactive";
+  if (entry.expires_at && new Date(entry.expires_at).getTime() <= Date.now()) return "expired";
+  return "active";
+};
+
+const mapResolvedAssessmentEntry = (token, result) => {
+  const entry = result?.entry || {};
+  const clinician = result?.clinician || {};
+  const targetCode = entry.target_code || "";
+  const targetType = entry.target_type || "";
+  const targetVersion = entry.target_version || "";
+  const clinicianName = clinician.name || "";
+  const clinicianTitle = clinician.title || clinician.clinician_type || "";
+
+  return {
+    token,
+    q: targetCode,
+    target_code: targetCode,
+    target_type: targetType,
+    target_version: targetVersion,
+    entry_title: clinicianName ? `${clinicianName} 推荐测评` : "扫码测评入口",
+    entry_description: targetCode ? `来源入口 · ${targetCode}` : "请按入口指引完成测评。",
+    entry_status: toResolvedEntryStatus(entry),
+    clinician_name: clinicianName,
+    clinician_title: clinicianTitle,
+    raw: result
+  };
+};
+
 const handleEntryParams = params => {
   return new Promise((resolve, reject) => {
+    if (params.token && isAssessmentEntryToken(params.token)) {
+      resolveAssessmentEntry(params.token)
+        .then(result => {
+          resolve(mapResolvedAssessmentEntry(params.token, result));
+        })
+        .catch(reject);
+      return;
+    }
+
     if (!params.scene) {
       return resolve(params);
+    }
+
+    if (!String(params.scene).includes("=") && isAssessmentEntryToken(params.scene)) {
+      resolveAssessmentEntry(params.scene)
+        .then(result => {
+          resolve(mapResolvedAssessmentEntry(params.scene, result));
+        })
+        .catch(reject);
+      return;
     }
 
     const np = parsingScene(params.scene);
@@ -70,7 +137,10 @@ const handleEntryParams = params => {
 
     getMpEntryParams(np.mpqrcodeid)
       .then(result => {
-        resolve(result.entry_data);
+        resolve({
+          ...np,
+          ...(result.entry_data || {})
+        });
       })
       .catch(err => {
         reject(err);
@@ -78,8 +148,17 @@ const handleEntryParams = params => {
   });
 };
 
+const resolvePlanTaskId = (params, context) => {
+  return String(
+    context?.task_id ||
+      context?.raw?.task_id ||
+      params?.task_id ||
+      ""
+  );
+};
+
 export default function Index() {
-  const [questionsheetid, setQuestionsheetid] = useState(null);
+  const [questionnaireCode, setQuestionnaireCode] = useState(null);
   const [subSignid, setSubSignid] = useState("");
   
   // 状态管理
@@ -94,6 +173,7 @@ export default function Index() {
   const [isSinglePage, setIsSinglePage] = useState(false);
 
   const paramData = useRouter().params;
+  const planTaskId = resolvePlanTaskId(paramData, entryContext);
 
   // 订阅 testee store 变化
   useEffect(() => {
@@ -116,17 +196,48 @@ export default function Index() {
         setEntryContextState(getEntryContext());
       }
       const {
-        q: questionsheetCode,
+        q: nextQuestionnaireCode,
         t: testeeid,
         signid
       } = result;
 
+      if ((paramData.scene || hasEntryContext(result)) && result?.entry_status && INVALID_ENTRY_STATUSES.has(result.entry_status)) {
+        redirectToEntryError({
+          title: "入口暂不可用",
+          text: resolveEntryStatusText(result.entry_status),
+          desc: "请联系推荐人员获取新的测评入口，或返回首页重新选择量表。",
+          buttonText: "返回首页",
+          buttonUrl: "/pages/home/index/index"
+        });
+        return;
+      }
+
+      if ((paramData.scene || hasEntryContext(result)) && !result?.q) {
+        redirectToEntryError({
+          title: "入口内容不存在",
+          text: "当前入口未找到可填写的问卷或量表",
+          desc: "该入口可能已失效，或对应内容已下线。",
+          buttonText: "返回首页",
+          buttonUrl: "/pages/home/index/index"
+        });
+        return;
+      }
+
       signid && setSubSignid(signid);
       result.sp && setIsSinglePage(result.sp === "1");
 
-      beforeEach({ questionsheetCode, testeeid, signid }, async () => {
-        setQuestionsheetid(questionsheetCode);
-        await initPageData(questionsheetCode, testeeid, result);
+      beforeEach({ questionnaireCode: nextQuestionnaireCode, testeeid, signid }, async () => {
+        setQuestionnaireCode(nextQuestionnaireCode);
+        await initPageData(nextQuestionnaireCode, testeeid, result);
+      });
+    }).catch((error) => {
+      console.error('解析入口参数失败:', error);
+      redirectToEntryError({
+        title: "入口解析失败",
+        text: "当前二维码或入口链接无法识别",
+        desc: "请重新扫码，或联系推荐人员确认入口是否有效。",
+        buttonText: "返回首页",
+        buttonUrl: "/pages/home/index/index"
       });
     });
   }, []);
@@ -139,7 +250,7 @@ export default function Index() {
    * 2. 根据 testee 数量决定是否自动选择
    * 3. 加载问卷数据
    */
-  const initPageData = async (questionsheetCode, explicitTesteeId, entryParams) => {
+  const initPageData = async (nextQuestionnaireCode, explicitTesteeId, entryParams) => {
     try {
       // 重新初始化 testee store
       await refreshTesteeList();
@@ -161,7 +272,7 @@ export default function Index() {
       // 如果有明确的 testeeid，使用它
       if (explicitTesteeId) {
         setSelectedTesteeId(explicitTesteeId);
-        await loadQuestionnaire(questionsheetCode, explicitTesteeId);
+        await loadQuestionnaire(nextQuestionnaireCode, explicitTesteeId, entryParams);
         return;
       }
 
@@ -170,13 +281,13 @@ export default function Index() {
         // 只有一个档案，自动选择
         const singleTesteeId = storedList[0].id;
         setSelectedTesteeId(singleTesteeId);
-        await loadQuestionnaire(questionsheetCode, singleTesteeId);
+        await loadQuestionnaire(nextQuestionnaireCode, singleTesteeId, entryParams);
       } else {
         // 多个档案，清空选中状态，让用户选择
         setSelectedTesteeId(null);
         setTesteeList(storedList);
         // 加载问卷信息（不加载档案信息）
-        await loadQuestionnaireOnly(questionsheetCode);
+        await loadQuestionnaireOnly(nextQuestionnaireCode, entryParams);
       }
     } catch (error) {
       console.error('初始化页面数据失败:', error);
@@ -188,15 +299,25 @@ export default function Index() {
   /**
    * 只加载问卷信息（不加载档案信息）
    */
-  const loadQuestionnaireOnly = async (questionsheetCode) => {
+  const loadQuestionnaireOnly = async (nextQuestionnaireCode, entryParams) => {
     try {
-      const questionnaireData = await getQuestionnaire(questionsheetCode);
+      const questionnaireData = await getQuestionnaire(nextQuestionnaireCode);
       setQuestionnaire(questionnaireData);
       setCurrentStep('ready'); // 进入准备步骤，等待用户选择档案
       Taro.hideLoading();
     } catch (error) {
       console.error('加载问卷失败:', error);
       Taro.hideLoading();
+      if (hasEntryContext(entryParams)) {
+        redirectToEntryError({
+          title: "入口内容暂不可用",
+          text: "当前入口对应的量表或问卷无法打开",
+          desc: "内容可能已下线，或该入口已失效。",
+          buttonText: "返回首页",
+          buttonUrl: "/pages/home/index/index"
+        });
+        return;
+      }
       Taro.showToast({ title: '加载问卷失败，请重试', icon: 'none' });
     }
   };
@@ -204,11 +325,11 @@ export default function Index() {
   /**
    * 加载问卷和档案信息
    */
-  const loadQuestionnaire = async (questionsheetCode, testeeId) => {
+  const loadQuestionnaire = async (nextQuestionnaireCode, testeeId, entryParams) => {
     try {
       // 并行加载问卷和档案信息
       const [questionnaireData, testeeData] = await Promise.all([
-        getQuestionnaire(questionsheetCode),
+        getQuestionnaire(nextQuestionnaireCode),
         getTestee(testeeId)
       ]);
 
@@ -220,6 +341,16 @@ export default function Index() {
     } catch (error) {
       console.error('加载数据失败:', error);
       Taro.hideLoading();
+      if (hasEntryContext(entryParams)) {
+        redirectToEntryError({
+          title: "入口内容暂不可用",
+          text: "当前入口对应的量表或档案信息无法加载",
+          desc: "请稍后重试，或联系推荐人员确认入口状态。",
+          buttonText: "返回首页",
+          buttonUrl: "/pages/home/index/index"
+        });
+        return;
+      }
       Taro.showToast({ title: '加载失败，请重试', icon: 'none' });
     }
   };
@@ -247,7 +378,13 @@ export default function Index() {
    */
   const handleStartFill = () => {
     if (entryContext?.entry_status && INVALID_ENTRY_STATUSES.has(entryContext.entry_status)) {
-      Taro.showToast({ title: resolveEntryStatusText(entryContext.entry_status), icon: 'none' });
+      redirectToEntryError({
+        title: "入口暂不可用",
+        text: resolveEntryStatusText(entryContext.entry_status),
+        desc: "请联系推荐人员获取新的测评入口，或返回首页重新选择量表。",
+        buttonText: "返回首页",
+        buttonUrl: "/pages/home/index/index"
+      });
       return;
     }
 
@@ -310,6 +447,7 @@ export default function Index() {
   const writedCallback = async (answersheetid, assessmentId) => {
     const questionnaireType = questionnaire?.type;
     const selectedTesteeId = getSelectedTesteeId();
+    const taskIdParam = planTaskId ? `&task_id=${encodeURIComponent(planTaskId)}` : '';
     
     logger.RUN('[Fill] 答卷提交成功', { 
       answersheetid, 
@@ -321,7 +459,7 @@ export default function Index() {
     if (questionnaireType === 'Survey') {
       // 调查问卷：跳转到答卷详情页面
       Taro.redirectTo({
-        url: `/pages/answersheet/detail/index?a=${answersheetid}`
+        url: `/pages/answersheet/detail/index?a=${answersheetid}${taskIdParam}`
       });
     } else if (questionnaireType === 'MedicalScale') {
       // 量表：先跳转到等待解析页面
@@ -336,21 +474,21 @@ export default function Index() {
       if (finalAssessmentId) {
         const testeeIdParam = selectedTesteeId ? `&t=${selectedTesteeId}` : '';
         Taro.redirectTo({
-          url: `/pages/analysis/wait/index?aid=${finalAssessmentId}&a=${answersheetid}${testeeIdParam}`
+          url: `/pages/analysis/wait/index?aid=${finalAssessmentId}&a=${answersheetid}${testeeIdParam}${taskIdParam}`
         });
       } else {
         logger.WARN('[Fill] 量表无法获取 assessmentId，直接跳转到解析页面', { 
           answersheetid 
         });
         Taro.redirectTo({
-          url: `/pages/analysis/index?a=${answersheetid}`
+          url: `/pages/analysis/index?a=${answersheetid}${taskIdParam}`
         });
       }
     } else {
       // 未知类型或旧数据：默认跳转到答卷详情页面
       logger.WARN('[Fill] 问卷类型未知，默认跳转到答卷详情', { questionnaireType });
       Taro.redirectTo({
-        url: `/pages/answersheet/detail/index?a=${answersheetid}`
+        url: `/pages/answersheet/detail/index?a=${answersheetid}${taskIdParam}`
       });
     }
   };
@@ -503,6 +641,13 @@ export default function Index() {
               </View>
             )}
 
+            <PlanSubscribeConfirm
+              taskId={planTaskId}
+              planName={entryContext?.plan_name}
+              entryTitle={entryContext?.entry_title || questionnaire?.title}
+              clinicianName={entryContext?.clinician_name}
+            />
+
             {/* 量表简介 */}
             <View className="questionnaire-intro-section">
               <Text className="section-title">量表简介</Text>
@@ -532,15 +677,15 @@ export default function Index() {
       {currentStep === 'filling' && (
         <>
           {isSinglePage ? (
-            <SinglePageModel
-              questionsheetid={questionsheetid}
+            <SinglePageQuestionnaire
+              questionnaireCode={questionnaireCode}
               subSignid={subSignid}
               writedCallback={writedCallback}
               canSubmit={canSubmit}
             />
           ) : (
-            <QuestionSheet
-              questionsheetid={questionsheetid}
+            <QuestionnaireForm
+              questionnaireCode={questionnaireCode}
               subSignid={subSignid}
               writedCallback={writedCallback}
               canSubmit={canSubmit}

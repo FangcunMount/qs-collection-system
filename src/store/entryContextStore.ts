@@ -2,6 +2,9 @@ import Taro from '@tarojs/taro';
 
 export interface EntryContext {
   mpqrcodeid?: string;
+  task_id?: string;
+  token?: string;
+  plan_name?: string;
   clinician_name?: string;
   clinician_title?: string;
   clinician_avatar?: string;
@@ -78,6 +81,9 @@ export function setEntryContext(input: Record<string, any> | null | undefined): 
 
   state = {
     mpqrcodeid: input.mpqrcodeid ? String(input.mpqrcodeid) : undefined,
+    task_id: input.task_id ? String(input.task_id) : undefined,
+    token: input.token ? String(input.token) : undefined,
+    plan_name: input.plan_name || input.planName || '',
     clinician_name: input.clinician_name || input.clinicianName || '',
     clinician_title: input.clinician_title || input.clinicianTitle || '',
     clinician_avatar: input.clinician_avatar || input.clinicianAvatar || '',

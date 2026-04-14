@@ -17,18 +17,18 @@ import QsSelect from "../../../../components/question/select";
 import QsImageRadio from "../../../../components/question/imageRadio";
 import QsImageCheckbox from "../../../../components/question/imageCheckBox";
 
-import "./questionsheet.less";
+import "./QuestionnaireForm.less";
 
 import SelectWriterRole from "./selectWriterRole";
 
 import { getQuestionnaire } from "../../../../services/api/questionnaireApi";
-import { submitQuestionsheet } from "../../../../services/api/questionsheetApi";
+import { submitQuestionnaire } from "../../../../services/api/questionnaireSubmissionApi";
 import { useSubmit } from "../../../../util/useUtil";
 import { isEmpty } from "../../../../util/checkType";
 import { getLogger } from "../../../../util/log";
 import { filterNonSectionQuestions } from "../../../common/utils/questionUtils";
 
-const PAGE_NAME = "question_sheet";
+const PAGE_NAME = "questionnaire_form";
 const logger = getLogger(PAGE_NAME);
 
 /**
@@ -136,9 +136,9 @@ export function checkQuestion(question) {
   return true;
 }
 
-export default function QuestionSheet({
+export default function QuestionnaireForm({
   canSubmit,
-  questionsheetid,
+  questionnaireCode,
   subSignid,
   writedCallback
 }) {
@@ -148,23 +148,23 @@ export default function QuestionSheet({
   const [scrollTop, setScrollTop] = useState(-1);
 
   useEffect(() => {
-    if (questionsheetid) {
-      initQuestionSheet(questionsheetid);
+    if (questionnaireCode) {
+      initQuestionnaire(questionnaireCode);
     }
-  }, [questionsheetid]);
+  }, [questionnaireCode]);
 
   /**
    * @description 初始化问卷
-   * @param questionsheetid questionsheet code（问卷 code，标志当前要填写的问卷）
+   * @param questionnaireCode 问卷 code
    */
-  const initQuestionSheet = id => {
+  const initQuestionnaire = id => {
     Taro.showLoading();
     setQuestionSheet(null);
     setWriterRoles([]);
     setWriterRoleCode(null);
 
     getQuestionnaire(id).then(result => {
-      logger.RUN('[QuestionSheet] 问卷数据加载成功:', {
+      logger.RUN('[QuestionnaireForm] 问卷数据加载成功:', {
         code: result?.code,
         title: result?.title,
         questionsCount: result?.questions?.length,
@@ -423,12 +423,12 @@ export default function QuestionSheet({
     submit: async () => {
       const submitData = clearData(questionSheet);
 
-      logger.RUN("handleSubmitQuestionSheet <RUN>, params: ", {
+      logger.RUN("handleSubmitQuestionnaire <RUN>, params: ", {
         writerRoleCode,
         subSignid
       });
 
-      const res = await submitQuestionsheet(
+      const res = await submitQuestionnaire(
         submitData,
         writerRoleCode,
         subSignid

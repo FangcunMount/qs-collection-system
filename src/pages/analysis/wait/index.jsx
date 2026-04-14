@@ -44,6 +44,7 @@ const AnalysisWait = () => {
     const assessmentId = params.aid;
     const answersheetId = params.a;
     const testeeIdFromUrl = params.t; // 从 URL 参数获取 testeeId
+    const taskId = params.task_id;
 
     if (!assessmentId) {
       logger.ERROR("缺少测评ID参数");
@@ -53,7 +54,7 @@ const AnalysisWait = () => {
     }
 
     // 开始轮询，传递 testeeId（如果有）
-    startPolling(assessmentId, answersheetId, testeeIdFromUrl);
+    startPolling(assessmentId, answersheetId, testeeIdFromUrl, taskId);
   }, []);
 
   // 点动画效果
@@ -185,7 +186,7 @@ const AnalysisWait = () => {
   /**
    * 开始轮询等待报告生成
    */
-  const startPolling = async (assessmentId, answersheetId, testeeIdFromUrl) => {
+  const startPolling = async (assessmentId, answersheetId, testeeIdFromUrl, taskId) => {
     if (isPollingRef.current) {
       logger.WARN("轮询已在进行中，跳过");
       return;
@@ -240,7 +241,7 @@ const AnalysisWait = () => {
           // 确保至少等待 2 秒
           setTimeout(() => {
             Taro.redirectTo({
-              url: `/pages/analysis/index?a=${answersheetId}`
+              url: `/pages/analysis/index?a=${answersheetId}${taskId ? `&task_id=${encodeURIComponent(taskId)}` : ''}`
             });
           }, remainingTime);
         } else if (reportStatus === "failed") {
@@ -360,4 +361,3 @@ const AnalysisWait = () => {
 };
 
 export default AnalysisWait;
-

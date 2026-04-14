@@ -1,19 +1,20 @@
 import { boolToOneZero } from '../../util';
 import { request } from '../servers';
-import { getSelectedTesteeId } from '../../store';
+import { getEntryContext, getSelectedTesteeId } from '../../store';
 import { submitAnswersheet, waitForSubmitCompletion } from './answersheetApi';
 
 // 获取量表列表
-export const getQuestionsheetList = () => {
+export const getQuestionnaireListLegacy = () => {
   return request('/questionsheet/list', {}, { method: 'GET' })
 }
 
-export const getQuestionsheet = (code) => {
+export const getQuestionnaireLegacy = (code) => {
   return new Promise((resolve, reject) => {
     request('/questionsheet/one', { code })
       .then((result) => {
+        const questionnaire = result.questionnaire || result.questionsheet || result;
         let currentQuestionIndex = 1;
-        result.questionsheet.questions = result.questionsheet.questions.map((v) => {
+        questionnaire.questions = questionnaire.questions.map((v) => {
           // section 题型需要跳过（无需题号）
           if (v.type === "Section") {
             return v;
@@ -33,18 +34,18 @@ export const getQuestionsheet = (code) => {
           return v;
         });
 
-        resolve(result)
+        resolve({ ...result, questionnaire })
       }).catch((err) => {
         reject(err)
       });
   })
 }
 
-export const postQuestionsheet = (questionsheet, writer_role_code, signid) => {
+export const postQuestionnaireLegacy = (questionnaire, writer_role_code, signid) => {
   const submitData = {}
   submitData['answersheet'] = {
-    ...questionsheet,
-    answers: questionsheet.answers.map(v => {
+    ...questionnaire,
+    answers: questionnaire.answers.map(v => {
       v.question_code = v.code;
 
       if (v.type !== "Section") {
@@ -96,19 +97,19 @@ export const postQuestionsheet = (questionsheet, writer_role_code, signid) => {
 
 /**
  * 提交问卷答卷（使用新 API）
- * @param {Object} questionsheet - 问卷数据
+ * @param {Object} questionnaire - 问卷数据
  * @param {string} writer_role_code - 填写人角色代码（可选，暂不使用）
  * @param {string} signid - 签名ID（可选，暂不使用）
  * @returns {Promise<{id: number, message: string}>}
  */
 /**
  * 提交答卷 - 新 API 适配器
- * @param {Object} questionsheet - 问卷数据
+ * @param {Object} questionnaire - 问卷数据
  * @param {string} writer_role_code - 旧参数，保持兼容性，新 API 不使用
  * @param {string} signid - 旧参数，保持兼容性，新 API 不使用
  */
 // eslint-disable-next-line no-unused-vars
-export const submitQuestionsheet = async (questionsheet, writer_role_code, signid) => {
+export const submitQuestionnaire = async (questionnaire, writer_role_code, signid) => {
   // 注意：writer_role_code 和 signid 参数保留是为了兼容旧调用方式，新 API 不使用这些参数
   const selectedTesteeId = getSelectedTesteeId();
   if (!selectedTesteeId) {
@@ -116,7 +117,7 @@ export const submitQuestionsheet = async (questionsheet, writer_role_code, signi
   }
 
   // 转换答案格式：从旧格式转为新格式
-  const answers = questionsheet.answers
+  const answers = questionnaire.answers
     .filter(v => v.type !== 'Section') // 过滤掉章节
     .map(v => {
       let value = '';
@@ -159,14 +160,19 @@ export const submitQuestionsheet = async (questionsheet, writer_role_code, signi
 
   // 构建新 API 的请求数据
   const requestData = {
-    questionnaire_code: questionsheet.code,
-    questionnaire_version: questionsheet.version || '1.0',
+    questionnaire_code: questionnaire.code,
+    questionnaire_version: questionnaire.version || '1.0',
     testee_id: selectedTesteeId, // 保持原始格式，避免精度丢失
     answers: answers,
-    title: questionsheet.name || questionsheet.title
+    title: questionnaire.name || questionnaire.title
   };
 
-  console.log('[submitQuestionsheet] 提交数据:', requestData);
+  const entryContext = getEntryContext();
+  if (entryContext?.task_id) {
+    requestData.task_id = entryContext.task_id;
+  }
+
+  console.log('[submitQuestionnaire] 提交数据:', requestData);
 
   const submitResult = await submitAnswersheet(requestData);
 
@@ -196,9 +202,12 @@ export const submitQuestionsheet = async (questionsheet, writer_role_code, signi
   };
 };
 
+export const submitQuestionsheet = submitQuestionnaire;
+
 export default {
-  getQuestionsheetList,
-  getQuestionsheet,
-  postQuestionsheet,
+  getQuestionnaireListLegacy,
+  getQuestionnaireLegacy,
+  postQuestionnaireLegacy,
+  submitQuestionnaire,
   submitQuestionsheet
 }

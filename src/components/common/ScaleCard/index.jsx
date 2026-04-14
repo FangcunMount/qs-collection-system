@@ -11,7 +11,6 @@ const ScaleCard = ({
   className = ""
 }) => {
   const {
-    code,
     name,
     description,
     stages = [],
@@ -77,7 +76,7 @@ const ScaleCard = ({
               </Text>
             </View>
           )}
-          
+
           {tags.length > 0 && (
             <View className="tags-right">
               {tags.slice(0, 3).map((tag, idx) => (
@@ -98,32 +97,34 @@ const ScaleCard = ({
 
       {/* 底部信息栏 */}
       <View className="scale-footer">
-        {applicableAges.length > 0 && (
-          <View className="footer-row">
-            <AtIcon value="user" size="14" color="#9CA3AF" />
-            <Text className="footer-text">
-              {applicableAges.map(formatApplicableAge).join('、')}
-            </Text>
-          </View>
-        )}
-        
         <View className="footer-row">
-          {reporters.length > 0 && (
-            <View className="footer-item">
-              <AtIcon value="edit" size="14" color="#9CA3AF" />
+          {applicableAges.length > 0 && (
+            <View className="footer-item footer-item-primary">
+              <AtIcon value="user" size="14" color="#9CA3AF" />
               <Text className="footer-text">
-                {reporters.map(formatReporter).join('、')}
+                {applicableAges.map(formatApplicableAge).join('、')}
               </Text>
             </View>
           )}
-          {question_count > 0 && (
-            <View className="footer-item footer-question-count">
-              <AtIcon value="list" size="14" color="#1890FF" />
-              <Text className="footer-text footer-question-text">
-                {question_count} 道题目
-              </Text>
-            </View>
-          )}
+
+          <View className="footer-row-right">
+            {question_count > 0 && (
+              <View className="footer-item footer-question-count">
+                <AtIcon value="list" size="14" color="#1890FF" />
+                <Text className="footer-text footer-question-text">
+                  {question_count} 道题目
+                </Text>
+              </View>
+            )}
+            {reporters.length > 0 && (
+              <View className="footer-item footer-reporter">
+                <AtIcon value="edit" size="14" color="#9CA3AF" />
+                <Text className="footer-text">
+                  {reporters.map(formatReporter).join('、')}
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
       </View>
     </View>

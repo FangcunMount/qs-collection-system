@@ -10,6 +10,33 @@ import {
 import { getUrl } from '../util'
 import config from '../config'
 
+function appendQueryParams(url, query = {}) {
+  const pairs = [];
+
+  Object.keys(query).forEach((key) => {
+    const value = query[key];
+    if (value === undefined || value === null || value === '') return;
+
+    if (Array.isArray(value)) {
+      value
+        .filter(item => item !== undefined && item !== null && item !== '')
+        .forEach(item => {
+          pairs.push(`${encodeURIComponent(key)}=${encodeURIComponent(item)}`);
+        });
+      return;
+    }
+
+    pairs.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`);
+  });
+
+  if (pairs.length === 0) {
+    return url;
+  }
+
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}${pairs.join('&')}`;
+}
+
 /**
  * 通用请求函数，自动处理 token 和错误
  * @param {string} url - API 路径
@@ -45,7 +72,7 @@ export async function request(url, params = {}, options = {}) {
   
   const requestParams = interceptorsRequest({
     ...options,
-    url: getUrl(url, options.host),
+    url: appendQueryParams(getUrl(url, options.host), options.params),
     data: params
   })
 

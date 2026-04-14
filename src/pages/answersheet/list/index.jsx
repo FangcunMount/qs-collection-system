@@ -3,7 +3,7 @@ import Taro from "@tarojs/taro";
 import { View, Text } from "@tarojs/components";
 import { AtIcon } from "taro-ui";
 import "taro-ui/dist/style/components/icon.scss";
-import AnswersheetListImp from "./widget/AnswersheetListImp";
+import AssessmentRecordListContainer from "./widget/AssessmentRecordListContainer";
 import BottomMenu from "../../../components/bottomMenu";
 import { refreshTesteeList } from "../../../store/testeeStore.ts";
 import { paramsConcat } from "../../../util";
@@ -16,7 +16,7 @@ import {
 } from "../../../store";
 import "./index.less";
 
-const AnswersheetList = () => {
+const AssessmentRecordCenterPage = () => {
   const statusTabs = [
     { key: '', label: '全部' },
     { key: 'pending', label: '待解读' },
@@ -117,7 +117,7 @@ const AnswersheetList = () => {
 
   return (
     <>
-      <View className="answersheet-list-page">
+      <View className="assessment-record-page">
         {/* 筛选条 - 一行胶囊 */}
         {selectedTestee && (
           <View className="filter-bar">
@@ -171,7 +171,7 @@ const AnswersheetList = () => {
               ))}
             </View>
 
-            <AnswersheetListImp 
+            <AssessmentRecordListContainer 
               testee={selectedTestee}
               statusFilter={statusFilter}
               showFilterBar={true}
@@ -196,4 +196,4 @@ const AnswersheetList = () => {
   );
 };
 
-export default AnswersheetList;
+export default AssessmentRecordCenterPage;

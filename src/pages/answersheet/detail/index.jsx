@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Taro from "@tarojs/taro";
-import { View } from "@tarojs/components";
+import { View, Text as TaroText } from "@tarojs/components";
 
 import { AtButton } from "taro-ui";
 
@@ -24,6 +24,8 @@ import ExportImageDialog from "./widget/exportImageDialog";
 import { getLogger } from "../../../util/log";
 
 import { PrivacyAuthorization } from "../../../components/privacyAuthorization/privacyAuthorization";
+import PlanSubscribeConfirm from "../../../components/planSubscribeConfirm";
+import { getEntryContext } from "../../../store";
 
 const PAGE_NAME = "answersheet";
 const logger = getLogger(PAGE_NAME);
@@ -37,10 +39,13 @@ const AnswerSheet = () => {
 
   const [needCloseFlag, setNeedCloseFlag] = useState(false);
   const [exportImageFlag, setExportImageFlag] = useState(false);
+  const [entryContext] = useState(() => getEntryContext());
+  const [planTaskId, setPlanTaskId] = useState("");
 
   useEffect(() => {
     const params = Taro.getCurrentInstance().router.params;
     logger.RUN("did effect <RUN> | params: ", { answersheetid: params.a });
+    setPlanTaskId(params.task_id || "");
     initAnswerSheet(params.a);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -269,6 +274,12 @@ const AnswerSheet = () => {
 
           {/* 问题列表 */}
           <View className="answersheet-content">
+            <PlanSubscribeConfirm
+              taskId={planTaskId}
+              planName={entryContext?.plan_name}
+              entryTitle={entryContext?.entry_title || questionnaireTitle}
+              clinicianName={entryContext?.clinician_name}
+            />
             <NeedDialog
               flag={needCloseFlag}
               title="警告"
@@ -290,11 +301,11 @@ const AnswerSheet = () => {
                 className="footer-btn"
                 onClick={() => {
                   Taro.redirectTo({
-                    url: `/pages/analysis/index?a=${answersheetid}`
+                    url: `/pages/analysis/index?a=${answersheetid}${planTaskId ? `&task_id=${encodeURIComponent(planTaskId)}` : ''}`
                   });
                 }}
               >
-                查看解读报告
+                <TaroText>查看解读报告</TaroText>
               </AtButton>
             </View>
           )}

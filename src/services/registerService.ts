@@ -143,7 +143,6 @@ export async function registerChildComplete(childData: ChildRegisterData): Promi
     try {
       addTestee({
         id: testeeId,
-        childid: childId,
         legalName: iamChild.legalName || iamChild.legal_name,
         name: iamChild.legalName || iamChild.legal_name,
         dob: iamChild.dob,
