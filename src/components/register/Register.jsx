@@ -15,7 +15,6 @@ import { setSelectedTesteeId } from "../../store/testeeStore.ts";
 import { registerUser } from "./model";
 import { authorizationHandler } from "../../util/authorization";
 import config from "../../config";
-import { getWxApi } from "../../util/wxApi";
 
 /**
  * 注册类型枚举
@@ -62,7 +61,7 @@ const Register = ({ type, goUrl, submitClose }) => {
   // 验证用户信息
   const verifyUserInfo = () => {
     if (!userInfo.nickname) {
-      Taro.showToast({ title: "请先获取微信昵称", icon: "none" });
+      Taro.showToast({ title: "请输入昵称", icon: "none" });
       return false;
     }
     return true;
@@ -208,52 +207,6 @@ const Register = ({ type, goUrl, submitClose }) => {
     }
   });
 
-  const fetchUserProfile = async () => {
-    return new Promise((resolve, reject) => {
-      try {
-        const wxApi = getWxApi();
-        if (!wxApi?.getUserProfile) {
-          reject(new Error("当前微信版本不支持获取用户信息"));
-          return;
-        }
-
-        wxApi.getUserProfile({
-          desc: "用于完善注册信息",
-          success(res) {
-            resolve(res?.userInfo || {});
-          },
-          fail(err) {
-            reject(err);
-          }
-        });
-      } catch (error) {
-        reject(error);
-      }
-    });
-  };
-
-  const handleFetchUserProfile = async () => {
-    console.log('[Register] 开始获取用户信息');
-    try {
-      const profile = await fetchUserProfile();
-      console.log('[Register] 获取用户信息成功:', profile);
-      setUserInfo(current => ({
-        ...current,
-        nickname: profile.nickName || "",
-        avatar: profile.avatarUrl || ""
-      }));
-    } catch (error) {
-      console.error('[Register] 获取用户信息失败:', error);
-      const errorMessage = (error?.errMsg?.includes('auth deny') || error?.errMsg?.includes('cancel'))
-        ? "需要授权获取头像昵称"
-        : (error?.message || "获取用户信息失败");
-      Taro.showToast({
-        title: errorMessage,
-        icon: "none"
-      });
-    }
-  };
-
   const afterSubmit = () => {
     if (submitClose) {
       setNeedCloseFlag(true);
@@ -308,7 +261,6 @@ const Register = ({ type, goUrl, submitClose }) => {
           <RegisterUser
             userInfo={userInfo}
             onChange={handleChangeUserInfo}
-            onFetchProfile={handleFetchUserProfile}
           />
         ) : (
           <RegisterChild

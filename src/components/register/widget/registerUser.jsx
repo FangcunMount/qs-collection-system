@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Input } from "@tarojs/components";
+import { View, Input, Text } from "@tarojs/components";
 import { PrivacyAuthorization } from "../../privacyAuthorization/privacyAuthorization";
 
 const InputLabelCSS = {
@@ -22,21 +22,28 @@ const InputWrapperCSS = {
   marginBottom: "32rpx"
 };
 
-const RegisterUser = ({ userInfo, onChange, onFetchProfile }) => {
+const HintCSS = {
+  marginTop: "12rpx",
+  color: "#8c8c8c",
+  fontSize: "24rpx",
+  lineHeight: "36rpx"
+};
+
+const RegisterUser = ({ userInfo, onChange }) => {
   return (
     <View>
       <View style={InputWrapperCSS}>
         <View style={InputLabelCSS}>用户昵称</View>
-        <View onClick={onFetchProfile}>
-          <Input
-            type="text"
-            placeholder="点击获取微信昵称"
-            value={userInfo.nickname}
-            onInput={e => onChange("nickname", e.detail.value)}
-            style={InputCSS}
-            disabled
-          />
-        </View>
+        <Input
+          type="nickname"
+          placeholder="请输入昵称"
+          value={userInfo.nickname}
+          onInput={e => onChange("nickname", e.detail.value)}
+          style={InputCSS}
+        />
+        <Text style={HintCSS}>
+          请直接填写昵称，使用微信昵称输入能力。
+        </Text>
       </View>
 
 
