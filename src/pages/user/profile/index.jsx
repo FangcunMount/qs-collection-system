@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Taro from "@tarojs/taro";
-import { View, Text } from "@tarojs/components";
+import { View, Text, OpenData } from "@tarojs/components";
 import { AtIcon } from "taro-ui";
 import "taro-ui/dist/style/components/icon.scss";
 
@@ -16,6 +16,7 @@ const UserProfile = () => {
   const userName = userState.userInfo?.name || userState.userInfo?.nickname || "用户";
   const userAvatar = userState.userInfo?.picture || userState.userInfo?.avatarUrl;
   const userMobile = userState.userInfo?.mobile;
+  const canUseWechatOpenData = process.env.TARO_ENV === "weapp";
 
   // 订阅 userStore 变化
   useEffect(() => {
@@ -120,7 +121,9 @@ const UserProfile = () => {
         {isLoggedIn ? (
           <View className="user-info">
             <View className="user-avatar">
-              {userAvatar ? (
+              {canUseWechatOpenData ? (
+                <OpenData type="userAvatarUrl" className="avatar-open-data" />
+              ) : userAvatar ? (
                 <image src={userAvatar} className="avatar-img" />
               ) : (
                 <Text>👤</Text>

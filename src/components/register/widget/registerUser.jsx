@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Input, Text } from "@tarojs/components";
+import { View, Input, Text, Button } from "@tarojs/components";
 import { PrivacyAuthorization } from "../../privacyAuthorization/privacyAuthorization";
 
 const InputLabelCSS = {
@@ -29,9 +29,29 @@ const HintCSS = {
   lineHeight: "36rpx"
 };
 
-const RegisterUser = ({ userInfo, onChange }) => {
+const SecondaryButtonCSS = {
+  width: "100%",
+  height: "84rpx",
+  lineHeight: "84rpx",
+  borderRadius: "12rpx",
+  background: "#f3f8ff",
+  color: "#1677ff",
+  fontSize: "28rpx",
+  border: "2rpx solid #b7d4ff"
+};
+
+const RegisterUser = ({ userInfo, onChange, onUseWechatProfile }) => {
   return (
     <View>
+      <View style={InputWrapperCSS}>
+        <Button style={SecondaryButtonCSS} onClick={onUseWechatProfile}>
+          使用微信昵称
+        </Button>
+        <Text style={HintCSS}>
+          昵称需要你主动确认后才能回填，头像不在注册阶段获取。
+        </Text>
+      </View>
+
       <View style={InputWrapperCSS}>
         <View style={InputLabelCSS}>用户昵称</View>
         <Input
@@ -42,7 +62,7 @@ const RegisterUser = ({ userInfo, onChange }) => {
           style={InputCSS}
         />
         <Text style={HintCSS}>
-          请直接填写昵称，使用微信昵称输入能力。
+          可直接填写，也可以点击上方按钮使用微信昵称回填。
         </Text>
       </View>
 

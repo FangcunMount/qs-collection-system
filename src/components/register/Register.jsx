@@ -15,6 +15,7 @@ import { setSelectedTesteeId } from "../../store/testeeStore.ts";
 import { registerUser } from "./model";
 import { authorizationHandler } from "../../util/authorization";
 import config from "../../config";
+import { getWxApi } from "../../util/wxApi";
 
 /**
  * 注册类型枚举
@@ -65,6 +66,51 @@ const Register = ({ type, goUrl, submitClose }) => {
       return false;
     }
     return true;
+  };
+
+  const handleUseWechatProfile = async () => {
+    try {
+      const wxApi = getWxApi();
+      if (!wxApi?.getUserProfile) {
+        Taro.showToast({
+          title: "当前微信版本不支持获取微信资料",
+          icon: "none"
+        });
+        return;
+      }
+
+      const profileRes = await new Promise((resolve, reject) => {
+        wxApi.getUserProfile({
+          desc: "用于完善注册信息中的昵称和头像",
+          success: resolve,
+          fail: reject
+        });
+      });
+
+      const profile = profileRes?.userInfo || {};
+      setUserInfo((prev) => ({
+        ...prev,
+        nickname: profile.nickName || prev.nickname
+      }));
+
+      Taro.showToast({
+        title: "已填充微信资料",
+        icon: "success"
+      });
+    } catch (error) {
+      if (error?.errMsg?.includes("auth deny") || error?.errMsg?.includes("cancel")) {
+        Taro.showToast({
+          title: "已取消获取微信资料",
+          icon: "none"
+        });
+        return;
+      }
+
+      Taro.showToast({
+        title: "获取微信资料失败",
+        icon: "none"
+      });
+    }
   };
 
   // 验证档案信息
@@ -261,6 +307,7 @@ const Register = ({ type, goUrl, submitClose }) => {
           <RegisterUser
             userInfo={userInfo}
             onChange={handleChangeUserInfo}
+            onUseWechatProfile={handleUseWechatProfile}
           />
         ) : (
           <RegisterChild
