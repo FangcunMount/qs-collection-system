@@ -2,7 +2,6 @@ import React, { useEffect, useState, useCallback } from "react";
 import Taro from "@tarojs/taro";
 import { View, Text } from "@tarojs/components";
 import { AtIcon } from "taro-ui";
-import "taro-ui/dist/style/components/icon.scss";
 import AssessmentRecordListContainer from "./widget/AssessmentRecordListContainer";
 import BottomMenu from "../../../components/bottomMenu";
 import { refreshTesteeList } from "../../../store/testeeStore.ts";

@@ -2,8 +2,8 @@ import React from "react";
 import { View, Text } from "@tarojs/components";
 import { AtIcon } from "taro-ui";
 import Taro from "@tarojs/taro";
-import "taro-ui/dist/style/components/icon.scss";
 import { buildAssessmentScanTargetUrl, isScanCancelError } from "../../util/entryScan";
+import "./index.less";
 
 const bottomMenu = [
   { label: "首页", icon: "home", url: "/pages/home/index/index" },

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import Taro from "@tarojs/taro";
 import { View, Text, OpenData } from "@tarojs/components";
 import { AtIcon } from "taro-ui";
-import "taro-ui/dist/style/components/icon.scss";
 
 import BottomMenu from "../../../components/bottomMenu";
 import { subscribeUserStore, getUserStoreState, initUserStore } from "../../../store/userStore.ts";

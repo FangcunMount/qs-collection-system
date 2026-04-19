@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from "react";
 import Taro, { usePullDownRefresh, useReady, useRouter } from "@tarojs/taro";
 import { View, Text, ScrollView } from "@tarojs/components";
 import { AtIcon } from "taro-ui";
-import "taro-ui/dist/style/components/icon.scss";
 
 import BottomMenu from "../../../components/bottomMenu";
 import { SearchBox } from "../../../components/common";

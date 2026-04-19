@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useEffect } from 'react';
 import { View } from '@tarojs/components';
-import * as echarts from '../../../components/ec-canvas/echarts';
+import * as echarts from '../components/ec-canvas/echarts';
 import { getRiskConfig } from '../../common/utils/statusFormatters';
 
 /**

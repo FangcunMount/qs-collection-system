@@ -3,6 +3,7 @@
  */
 import React from "react";
 import { View, Text } from "@tarojs/components";
+import "./index.less";
 
 const RISK_CONFIG = {
   high: {

@@ -1,7 +1,6 @@
 import React from "react";
 import { View, Text } from "@tarojs/components";
 import { AtFloatLayout } from "taro-ui";
-import "taro-ui/dist/style/components/float-layout.scss";
 import "./BottomSheet.less";
 
 const BottomSheet = ({ isOpened, onClose, title, children, height = "60vh", showConfirm = false, onConfirm }) => {
@@ -38,4 +37,3 @@ const BottomSheet = ({ isOpened, onClose, title, children, height = "60vh", show
 };
 
 export default BottomSheet;
-

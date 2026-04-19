@@ -1,8 +1,8 @@
 import { Component } from 'react'
 
 // 统一在最顶部导入所有第三方样式，避免在各个页面/组件中分散导入
-import 'taro-ui/dist/style/index.scss'       // taro-ui 全局样式
-import 'taro-ui-fc/dist/styles/index.less'   // taro-ui-fc 全局样式
+import './styles/taro-ui.scss'               // taro-ui 按需样式
+import './styles/taro-ui-fc.less'            // taro-ui-fc 按需样式
 import './app.less'                           // 项目自定义全局样式
 
 import { checkUpdateVersion } from './util/checkEnvironment'

@@ -5,6 +5,7 @@
 import React from "react";
 import { View, Text } from "@tarojs/components";
 import { AtButton } from "taro-ui";
+import "./EmptyState.less";
 
 const EmptyState = ({
   text = "暂无数据",
