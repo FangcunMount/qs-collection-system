@@ -18,7 +18,17 @@ let refreshPromise = null;
 let isHomeRedirecting = false;
 let isRegisterRedirecting = false;
 
+function logSessionEvent(event, meta = {}) {
+  console.info(`[SessionManager] ${event}`, meta);
+}
+
 function setSessionStatus(status) {
+  if (sessionStatus !== status) {
+    logSessionEvent('状态迁移', {
+      from: sessionStatus,
+      to: status
+    });
+  }
   sessionStatus = status;
 }
 
@@ -44,6 +54,11 @@ function persistSession(tokenResult) {
     expires_in: tokenResult.expiresIn
   });
   setSessionStatus(SESSION_STATUS.AUTHENTICATED);
+  logSessionEvent('持久化会话成功', {
+    accessTokenLength: tokenResult.accessToken?.length ?? 0,
+    refreshTokenLength: tokenResult.refreshToken?.length ?? 0,
+    expiresIn: tokenResult.expiresIn ?? null
+  });
   return tokenResult.accessToken;
 }
 
@@ -54,17 +69,25 @@ function clearInFlight() {
 
 async function getWechatLoginCode() {
   const wxApi = getWxApi();
+  logSessionEvent('调用 wx.login 获取登录凭证');
 
   return new Promise((resolve, reject) => {
     wxApi.login({
       success(loginRes) {
         if (loginRes?.code) {
+          logSessionEvent('wx.login 成功', {
+            codeLength: loginRes.code.length
+          });
           resolve(loginRes.code);
           return;
         }
+        logSessionEvent('wx.login 未返回有效 code');
         reject(createSessionError('login_failed', '获取微信登录凭证失败'));
       },
       fail(error) {
+        console.warn('[SessionManager] wx.login 调用失败', {
+          message: error?.errMsg ?? '调用 wx.login 失败'
+        });
         reject(createSessionError('network_error', error?.errMsg || '调用 wx.login 失败', { raw: error }));
       }
     });
@@ -72,13 +95,22 @@ async function getWechatLoginCode() {
 }
 
 async function performLogin() {
+  logSessionEvent('开始执行登录流程', {
+    appId: config.appId
+  });
   const code = await getWechatLoginCode();
   const result = await iamAuthn.login(code, config.appId);
 
   if (result.ok) {
+    logSessionEvent('登录流程成功');
     return persistSession(result);
   }
 
+  console.warn('[SessionManager] 登录流程失败', {
+    reason: result.reason,
+    code: result.code ?? '',
+    message: result.message
+  });
   if (result.reason === 'unregistered') {
     handleUnregisteredUser();
   }
@@ -92,12 +124,21 @@ async function performRefresh() {
     throw createSessionError('session_expired', '未找到 refresh token');
   }
 
+  logSessionEvent('开始执行刷新流程', {
+    refreshTokenLength: refreshToken.length
+  });
   const result = await iamAuthn.refreshToken(refreshToken);
 
   if (result.ok) {
+    logSessionEvent('刷新流程成功');
     return persistSession(result);
   }
 
+  console.warn('[SessionManager] 刷新流程失败', {
+    reason: result.reason,
+    code: result.code ?? '',
+    message: result.message
+  });
   if (result.reason === 'unregistered') {
     handleUnregisteredUser();
   }
@@ -135,6 +176,10 @@ export function getSessionStatus() {
 
 export function clearSession(reason = 'manual', options = {}) {
   const { navigateHome = false } = options;
+  logSessionEvent('清理会话', {
+    reason,
+    navigateHome
+  });
   clearToken();
   clearInFlight();
   setSessionStatus(reason === 'unregistered' ? SESSION_STATUS.UNREGISTERED : SESSION_STATUS.ANONYMOUS);
@@ -145,6 +190,7 @@ export function clearSession(reason = 'manual', options = {}) {
 }
 
 export function handleUnregisteredUser() {
+  logSessionEvent('识别到未注册用户，跳转注册页');
   clearSession('unregistered');
   navigateRegisterSafely();
   return { status: SESSION_STATUS.UNREGISTERED };
@@ -152,6 +198,7 @@ export function handleUnregisteredUser() {
 
 export function loginSession() {
   if (loginPromise) {
+    logSessionEvent('复用进行中的登录 Promise');
     return loginPromise;
   }
 
@@ -170,6 +217,7 @@ export function loginSession() {
 
 export function refreshSession() {
   if (refreshPromise) {
+    logSessionEvent('复用进行中的刷新 Promise');
     return refreshPromise;
   }
 
@@ -189,21 +237,35 @@ export function refreshSession() {
 export async function bootstrapSession() {
   const accessToken = getAccessToken();
   const refreshToken = getRefreshToken();
+  logSessionEvent('启动会话引导', {
+    hasAccessToken: Boolean(accessToken),
+    accessTokenLength: accessToken?.length ?? 0,
+    hasRefreshToken: Boolean(refreshToken),
+    refreshTokenLength: refreshToken?.length ?? 0,
+    accessTokenExpired: accessToken ? isTokenExpired() : null
+  });
 
   if (accessToken && !isTokenExpired()) {
     setSessionStatus(SESSION_STATUS.AUTHENTICATED);
+    logSessionEvent('启动命中有效 access token');
     return { status: SESSION_STATUS.AUTHENTICATED };
   }
 
   if (refreshToken) {
     try {
       await refreshSession();
+      logSessionEvent('启动阶段通过 refresh token 恢复会话');
       return { status: SESSION_STATUS.AUTHENTICATED };
     } catch (error) {
       if (error?.reason === 'unregistered') {
         return { status: SESSION_STATUS.UNREGISTERED };
       }
 
+      console.warn('[SessionManager] 启动阶段刷新失败', {
+        reason: error?.reason,
+        code: error?.code,
+        message: error?.message
+      });
       clearSession(error?.reason || 'session_expired', { navigateHome: true });
       return { status: SESSION_STATUS.ANONYMOUS };
     }
@@ -216,12 +278,18 @@ export async function bootstrapSession() {
 
   try {
     await loginSession();
+    logSessionEvent('启动阶段通过交互登录建立会话');
     return { status: SESSION_STATUS.AUTHENTICATED };
   } catch (error) {
     if (error?.reason === 'unregistered') {
       return { status: SESSION_STATUS.UNREGISTERED };
     }
 
+    console.warn('[SessionManager] 启动阶段登录失败', {
+      reason: error?.reason,
+      code: error?.code,
+      message: error?.message
+    });
     clearSession(error?.reason || 'anonymous');
     return { status: SESSION_STATUS.ANONYMOUS };
   }
@@ -231,20 +299,38 @@ export async function ensureValidAccessToken(options = {}) {
   const { allowInteractiveLogin = true, forceRefresh = false } = options;
   const accessToken = getAccessToken();
   const refreshToken = getRefreshToken();
+  logSessionEvent('校验 access token', {
+    allowInteractiveLogin,
+    forceRefresh,
+    hasAccessToken: Boolean(accessToken),
+    accessTokenLength: accessToken?.length ?? 0,
+    hasRefreshToken: Boolean(refreshToken),
+    refreshTokenLength: refreshToken?.length ?? 0,
+    accessTokenExpired: accessToken ? isTokenExpired() : null
+  });
 
   if (!forceRefresh && accessToken && !isTokenExpired()) {
     setSessionStatus(SESSION_STATUS.AUTHENTICATED);
+    logSessionEvent('复用当前 access token');
     return accessToken;
   }
 
   if (refreshToken && (forceRefresh || !accessToken || isTokenExpired())) {
     try {
+      logSessionEvent('准备通过 refresh token 获取新的 access token', {
+        forceRefresh
+      });
       return await refreshSession();
     } catch (error) {
       if (error?.reason === 'unregistered') {
         throw error;
       }
 
+      console.warn('[SessionManager] access token 校验时刷新失败', {
+        reason: error?.reason,
+        code: error?.code,
+        message: error?.message
+      });
       clearSession(error?.reason || 'session_expired', { navigateHome: true });
       throw error;
     }

@@ -2,6 +2,33 @@ import { request } from '../servers';
 import config from '../../config';
 import { isSessionExpiredCode, isUnregisteredCode } from '../../util/authorization';
 
+function maskIdentifier(value) {
+  if (!value) return '';
+  if (value.length <= 8) return value;
+  return `${value.slice(0, 4)}***${value.slice(-4)}`;
+}
+
+function summarizeTokenPayload(payload) {
+  return {
+    hasAccessToken: Boolean(payload?.access_token),
+    accessTokenLength: payload?.access_token?.length ?? 0,
+    hasRefreshToken: Boolean(payload?.refresh_token),
+    refreshTokenLength: payload?.refresh_token?.length ?? 0,
+    tokenType: payload?.token_type ?? 'Bearer',
+    expiresIn: payload?.expires_in ?? null
+  };
+}
+
+function summarizeAuthError(error) {
+  return {
+    code: String(error?.code ?? error?.statusCode ?? error?.errno ?? ''),
+    statusCode: error?.statusCode ?? null,
+    message: error?.message ?? error?.errmsg ?? '认证请求失败',
+    needRegister: Boolean(error?.needRegister),
+    needRelogin: Boolean(error?.needRelogin)
+  };
+}
+
 function createTokenResult(payload) {
   if (!payload?.access_token) {
     return {
@@ -48,11 +75,22 @@ function normalizeAuthError(error, fallbackReason = 'network_error') {
  * @returns {Promise<{ok: boolean, accessToken?: string, refreshToken?: string, tokenType?: string, expiresIn?: number, reason?: string, message?: string}>}
  */
 export const login = async (code, appId) => {
+  const resolvedAppId = appId || config.appId;
+  console.info('[IAM Authn] 发起登录请求', {
+    method: 'wechat',
+    audience: 'mobile',
+    host: config.iamHost,
+    appId: maskIdentifier(resolvedAppId),
+    hasCode: Boolean(code),
+    codeLength: code?.length ?? 0
+  });
+
   try {
     const payload = await request('/authn/login', {
-      method: 'wechat_miniprogram',
+      // IAM authn 合同中小程序登录仍复用通用 wechat 方法值。
+      method: 'wechat',
       credentials: {
-        app_id: appId || config.appId,
+        app_id: resolvedAppId,
         code
       },
       audience: 'mobile'
@@ -62,9 +100,24 @@ export const login = async (code, appId) => {
       needToken: false
     });
 
-    return createTokenResult(payload);
+    const result = createTokenResult(payload);
+    if (result.ok) {
+      console.info('[IAM Authn] 登录成功', summarizeTokenPayload(payload));
+    } else {
+      console.warn('[IAM Authn] 登录响应结构异常', {
+        reason: result.reason,
+        message: result.message,
+        payloadKeys: Object.keys(payload || {})
+      });
+    }
+    return result;
   } catch (error) {
-    return normalizeAuthError(error, 'network_error');
+    const normalized = normalizeAuthError(error, 'network_error');
+    console.warn('[IAM Authn] 登录失败', {
+      reason: normalized.reason,
+      ...summarizeAuthError(error)
+    });
+    return normalized;
   }
 };
 
@@ -74,6 +127,12 @@ export const login = async (code, appId) => {
  * @returns {Promise<{ok: boolean, accessToken?: string, refreshToken?: string, tokenType?: string, expiresIn?: number, reason?: string, message?: string}>}
  */
 export const refreshToken = async (refreshTokenValue) => {
+  console.info('[IAM Authn] 发起刷新请求', {
+    host: config.iamHost,
+    hasRefreshToken: Boolean(refreshTokenValue),
+    refreshTokenLength: refreshTokenValue?.length ?? 0
+  });
+
   try {
     const payload = await request('/authn/refresh_token', {
       refresh_token: refreshTokenValue
@@ -83,9 +142,24 @@ export const refreshToken = async (refreshTokenValue) => {
       needToken: false
     });
 
-    return createTokenResult(payload);
+    const result = createTokenResult(payload);
+    if (result.ok) {
+      console.info('[IAM Authn] 刷新成功', summarizeTokenPayload(payload));
+    } else {
+      console.warn('[IAM Authn] 刷新响应结构异常', {
+        reason: result.reason,
+        message: result.message,
+        payloadKeys: Object.keys(payload || {})
+      });
+    }
+    return result;
   } catch (error) {
-    return normalizeAuthError(error, 'session_expired');
+    const normalized = normalizeAuthError(error, 'session_expired');
+    console.warn('[IAM Authn] 刷新失败', {
+      reason: normalized.reason,
+      ...summarizeAuthError(error)
+    });
+    return normalized;
   }
 };
 

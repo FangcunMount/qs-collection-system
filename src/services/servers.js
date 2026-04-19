@@ -6,6 +6,18 @@ import sessionManager from './auth/sessionManager';
 import { getUrl } from '../util';
 import config from '../config';
 
+function summarizeRequestAuth(requestParams, options = {}) {
+  return {
+    url: requestParams.url,
+    method: requestParams.method,
+    needToken: requestParams.needToken,
+    shouldHandleAuth: options.shouldHandleAuth ?? false,
+    hasAuthorizationHeader: Boolean(requestParams.header?.Authorization),
+    authRetryCount: options.authRetryCount ?? 0,
+    qpsRetryCount: options.qpsRetryCount ?? 0
+  };
+}
+
 function appendQueryParams(url, query = {}) {
   const pairs = [];
 
@@ -77,11 +89,16 @@ export async function request(url, params = {}, options = {}) {
 
   const configToken = getConfigToken();
   const shouldHandleAuth = requestParams.needToken && !configToken;
+  console.info('[Request] 鉴权上下文', summarizeRequestAuth(requestParams, { shouldHandleAuth }));
 
   if (shouldHandleAuth) {
     try {
       const token = await sessionManager.ensureValidAccessToken({ allowInteractiveLogin: true });
       requestParams.header['Authorization'] = `Bearer ${token}`;
+      console.info('[Request] 已注入可用 access token', {
+        url: requestParams.url,
+        tokenLength: token?.length ?? 0
+      });
     } catch (error) {
       console.error('[Request] 获取可用 access_token 失败:', error);
 
@@ -133,8 +150,14 @@ function createRequestError(meta, extra = {}) {
 }
 
 async function retryWithFreshToken(params, context) {
+  console.info('[BaseRequest] 开始强制刷新并重放请求', summarizeRequestAuth(params, context));
   const newToken = await sessionManager.refreshSession();
   params.header['Authorization'] = `Bearer ${newToken}`;
+  console.info('[BaseRequest] 强制刷新成功，准备重放请求', {
+    url: params.url,
+    newTokenLength: newToken?.length ?? 0,
+    nextAuthRetryCount: context.authRetryCount + 1
+  });
   return baseRequest(params, {
     ...context,
     authRetryCount: context.authRetryCount + 1
@@ -198,7 +221,13 @@ function baseRequest(params, context) {
         }
 
         if (context.shouldHandleAuth && isSessionExpiredCode(meta.code)) {
-          console.log('[BaseRequest] 收到会话失效响应，尝试强制刷新 token');
+          console.warn('[BaseRequest] 收到会话失效响应，尝试强制刷新 token', {
+            url: params.url,
+            statusCode: meta.statusCode,
+            code: meta.code,
+            message: meta.message,
+            authRetryCount: context.authRetryCount
+          });
 
           if (context.authRetryCount >= 1) {
             console.error('[BaseRequest] Token 刷新后仍然鉴权失败，结束当前会话');
@@ -211,7 +240,12 @@ function baseRequest(params, context) {
             const retryResult = await retryWithFreshToken(params, context);
             resolve(retryResult);
           } catch (error) {
-            console.error('[BaseRequest] 强制刷新 token 失败:', error);
+            console.error('[BaseRequest] 强制刷新 token 失败:', {
+              url: params.url,
+              reason: error?.reason,
+              code: error?.code,
+              message: error?.message
+            });
             sessionManager.clearSession(error?.reason || 'session_expired', { navigateHome: true });
             reject({
               ...createRequestError(meta, { needRelogin: true }),
