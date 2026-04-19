@@ -24,10 +24,6 @@ export interface TokenData {
 export interface TokenStoreState {
   /** Token 数据 */
   tokenData: TokenData | null;
-  /** 是否正在刷新 Token */
-  isRefreshing: boolean;
-  /** 刷新 Promise（用于防止并发刷新） */
-  refreshPromise: Promise<string> | null;
 }
 
 /**
@@ -44,9 +40,7 @@ const STORAGE_KEY = 'token';
 
 /** 当前状态 */
 const state: TokenStoreState = {
-  tokenData: null,
-  isRefreshing: false,
-  refreshPromise: null
+  tokenData: null
 };
 
 /** 监听器集合 */
@@ -56,9 +50,7 @@ const listeners = new Set<Listener>();
  * 克隆当前状态
  */
 const cloneState = (): TokenStoreState => ({
-  tokenData: state.tokenData ? { ...state.tokenData } : null,
-  isRefreshing: state.isRefreshing,
-  refreshPromise: state.refreshPromise
+  tokenData: state.tokenData ? { ...state.tokenData } : null
 });
 
 /**
@@ -279,8 +271,6 @@ export function updateAccessToken(newAccessToken: string, newRefreshToken?: stri
  */
 export function clearToken(): void {
   state.tokenData = null;
-  state.isRefreshing = false;
-  state.refreshPromise = null;
 
   try {
     Taro.removeStorageSync(STORAGE_KEY);
@@ -346,36 +336,6 @@ export function getTokenRemainingTime(): number | null {
 }
 
 /**
- * 刷新状态
- */
-export interface RefreshingState {
-  isRefreshing: boolean;
-  refreshPromise: Promise<string> | null;
-}
-
-/**
- * 设置刷新状态
- * @param isRefreshing - 是否正在刷新
- * @param promise - 刷新 Promise
- */
-export function setRefreshingState(isRefreshing: boolean, promise: Promise<string> | null = null): void {
-  state.isRefreshing = isRefreshing;
-  state.refreshPromise = promise;
-  notify();
-}
-
-/**
- * 获取刷新状态
- * @returns 刷新状态
- */
-export function getRefreshingState(): RefreshingState {
-  return {
-    isRefreshing: state.isRefreshing,
-    refreshPromise: state.refreshPromise
-  };
-}
-
-/**
  * 订阅 Token 变化
  * @param listener - 监听器函数
  * @returns 取消订阅函数
@@ -425,8 +385,6 @@ const TokenStore = {
   hasToken,
   isTokenExpired,
   getTokenRemainingTime,
-  setRefreshingState,
-  getRefreshingState,
   subscribeTokenStore,
   getTokenStoreState,
   initTokenStore

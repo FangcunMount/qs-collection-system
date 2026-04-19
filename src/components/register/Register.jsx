@@ -13,8 +13,7 @@ import { registerChildComplete } from "../../services/registerService.ts";
 import { useSubmit } from "../../util/useUtil";
 import { setSelectedTesteeId } from "../../store/testeeStore.ts";
 import { registerUser } from "./model";
-import { authorizationHandler } from "../../util/authorization";
-import config from "../../config";
+import sessionManager from "../../services/auth/sessionManager";
 import { getWxApi } from "../../util/wxApi";
 
 /**
@@ -161,17 +160,17 @@ const Register = ({ type, goUrl, submitClose }) => {
       
       // 尝试自动登录，然后跳转到首页
       try {
-        const token = await authorizationHandler.login({ appId: config.appId });
-        console.log('[Register] 自动登录成功，token:', token);
-        
-        // login 方法已经通过 tokenStore 保存了完整的 token 数据
-        // 使用 reLaunch 以清空页面栈，回到首页
-        Taro.reLaunch({ url: '/pages/home/index/index' });
-        return;
+        const session = await sessionManager.bootstrapSession();
+        if (session.status === 'authenticated') {
+          console.log('[Register] 自动登录成功，回到首页');
+          Taro.reLaunch({ url: '/pages/home/index/index' });
+          return;
+        }
       } catch (loginErr) {
         console.warn('[Register] 自动登录失败，回退到原有跳转逻辑', loginErr);
-        afterSubmit();
       }
+
+      afterSubmit();
     } catch (error) {
       console.error('[Register] 用户注册失败:', error);
       

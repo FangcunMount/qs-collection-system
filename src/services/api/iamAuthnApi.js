@@ -1,64 +1,117 @@
 import { request } from '../servers';
 import config from '../../config';
+import { isSessionExpiredCode, isUnregisteredCode } from '../../util/authorization';
 
-/**
- * IAM 认证 API (authn.v1)
- * 负责用户登录、令牌管理、账户管理
- */
+function createTokenResult(payload) {
+  if (!payload?.access_token) {
+    return {
+      ok: false,
+      reason: 'invalid_response',
+      message: '认证响应中未返回有效 token',
+      raw: payload
+    };
+  }
+
+  return {
+    ok: true,
+    accessToken: payload.access_token,
+    refreshToken: payload.refresh_token ?? null,
+    tokenType: payload.token_type ?? 'Bearer',
+    expiresIn: payload.expires_in,
+    raw: payload
+  };
+}
+
+function normalizeAuthError(error, fallbackReason = 'network_error') {
+  const code = String(error?.code ?? error?.statusCode ?? error?.errno ?? '');
+  const message = error?.message ?? error?.errmsg ?? '认证请求失败';
+
+  if (error?.needRegister || isUnregisteredCode(code)) {
+    return { ok: false, reason: 'unregistered', code, message, raw: error };
+  }
+
+  if (error?.needRelogin || isSessionExpiredCode(code) || error?.statusCode === 401 || error?.statusCode === 403) {
+    return { ok: false, reason: 'session_expired', code, message, raw: error };
+  }
+
+  if (code === '-1') {
+    return { ok: false, reason: 'network_error', code, message, raw: error };
+  }
+
+  return { ok: false, reason: fallbackReason, code, message, raw: error };
+}
 
 /**
  * 用户登录（微信小程序）
  * @param {string} code - 微信登录凭证
  * @param {string} appId - 微信小程序 AppID
- * @returns {Promise<{access_token: string, refresh_token: string, token_type: string, expires_in: number}>}
+ * @returns {Promise<{ok: boolean, accessToken?: string, refreshToken?: string, tokenType?: string, expiresIn?: number, reason?: string, message?: string}>}
  */
-export const login = (code, appId) => {
-  return request('/authn/login', {
-    method: 'wechat_miniprogram',
-    credentials: {
-      app_id: appId || config.appId,
-      code: code
-    },
-    audience: 'mobile'
-  }, {
-    host: config.iamHost,
-    method: 'POST',
-    needToken: false
-  });
+export const login = async (code, appId) => {
+  try {
+    const payload = await request('/authn/login', {
+      method: 'wechat_miniprogram',
+      credentials: {
+        app_id: appId || config.appId,
+        code
+      },
+      audience: 'mobile'
+    }, {
+      host: config.iamHost,
+      method: 'POST',
+      needToken: false
+    });
+
+    return createTokenResult(payload);
+  } catch (error) {
+    return normalizeAuthError(error, 'network_error');
+  }
 };
 
 /**
  * 刷新访问令牌
  * @param {string} refreshTokenValue - 刷新令牌
- * @returns {Promise<{access_token: string, refresh_token: string, token_type: string, expires_in: number}>}
+ * @returns {Promise<{ok: boolean, accessToken?: string, refreshToken?: string, tokenType?: string, expiresIn?: number, reason?: string, message?: string}>}
  */
-export const refreshToken = (refreshTokenValue) => {
-  return request('/authn/refresh_token', {
-    refresh_token: refreshTokenValue
-  }, {
-    host: config.iamHost,
-    method: 'POST',
-    needToken: false
-  });
+export const refreshToken = async (refreshTokenValue) => {
+  try {
+    const payload = await request('/authn/refresh_token', {
+      refresh_token: refreshTokenValue
+    }, {
+      host: config.iamHost,
+      method: 'POST',
+      needToken: false
+    });
+
+    return createTokenResult(payload);
+  } catch (error) {
+    return normalizeAuthError(error, 'session_expired');
+  }
 };
 
 /**
  * 用户登出
  * @param {string} accessToken - 访问令牌
  * @param {string} refreshTokenValue - 刷新令牌（可选）
- * @returns {Promise<{message: string}>}
+ * @returns {Promise<{ok: boolean, raw?: any, message?: string}>}
  */
-export const logout = (accessToken, refreshTokenValue) => {
+export const logout = async (accessToken, refreshTokenValue) => {
   const data = { access_token: accessToken };
   if (refreshTokenValue) {
     data.refresh_token = refreshTokenValue;
   }
-  
-  return request('/authn/logout', data, {
-    host: config.iamHost,
-    method: 'POST',
-    needToken: true
-  });
+
+  try {
+    const payload = await request('/authn/logout', data, {
+      host: config.iamHost,
+      method: 'POST',
+      needToken: false,
+      header: accessToken ? { Authorization: `Bearer ${accessToken}` } : {}
+    });
+    return { ok: true, raw: payload };
+  } catch (error) {
+    return { ok: false, message: error?.message ?? '登出失败', raw: error };
+  }
 };
 
 /**

@@ -18,15 +18,6 @@
  * Token Store 状态
  * @typedef {Object} TokenStoreState
  * @property {TokenData|null} tokenData - Token 数据
- * @property {boolean} isRefreshing - 是否正在刷新 Token
- * @property {Promise<string>|null} refreshPromise - 刷新 Promise（用于防止并发刷新）
- */
-
-/**
- * 刷新状态
- * @typedef {Object} RefreshingState
- * @property {boolean} isRefreshing - 是否正在刷新
- * @property {Promise<string>|null} refreshPromise - 刷新 Promise
  */
 
 /**
