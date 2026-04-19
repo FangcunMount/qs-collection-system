@@ -34,6 +34,7 @@ const TrendLineChart = ({
     }
 
     const categories = points.map((item) => item[labelKey]);
+    const tooltipLabels = points.map((item) => item.fullLabel || item[labelKey]);
     const values = points.map((item) => Number(item[valueKey] || 0));
 
     return {
@@ -57,7 +58,8 @@ const TrendLineChart = ({
         formatter: (params = []) => {
           const point = params[0];
           if (!point) return "";
-          return `${point.axisValue}<br/>${point.seriesName}: ${point.data}`;
+          const label = tooltipLabels[point.dataIndex] || point.axisValue;
+          return `${label}<br/>${point.seriesName}: ${point.data}`;
         },
       },
       xAxis: {

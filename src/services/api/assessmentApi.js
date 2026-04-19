@@ -87,10 +87,11 @@ export const getAssessmentDetail = (id, testeeId) => {
  * @param {string|number} answersheetId - 答卷ID
  * @returns {Promise<object>}
  */
-export const getAssessmentByAnswersheetId = (answersheetId) => {
+export const getAssessmentByAnswersheetId = (answersheetId, options = {}) => {
   return request(`/answersheets/${String(answersheetId)}/assessment`, {}, {
     host: config.collectionHost,
-    needToken: true
+    needToken: true,
+    ...options
   });
 };
 

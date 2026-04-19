@@ -10,7 +10,7 @@ import { RiskTag } from "../../components/common";
 import { PrivacyAuthorization } from "../../components/privacyAuthorization/privacyAuthorization";
 import PlanSubscribeConfirm from "../../components/planSubscribeConfirm";
 import { getRiskConfig } from "../common/utils/statusFormatters";
-import { formatSimpleDate } from "../common/utils/dateFormatters";
+import { formatChartDateLabel, formatSimpleDate } from "../common/utils/dateFormatters";
 import { findTesteeById, getSelectedTesteeId, getEntryContext } from "../../store";
 import RadarChart from "./widget/RadarChart";
 import FactorBarChart from "./widget/FactorBarChart";
@@ -370,7 +370,8 @@ const Analysis = () => {
   const trendCurrent = trendSummary?.current || null;
   const trendPrevious = trendSummary?.previous || null;
   const recentTrendPoints = trendTimeline.slice(-5).map((item) => ({
-    label: formatSimpleDate(item.submitted_at),
+    label: formatChartDateLabel(item.submitted_at),
+    fullLabel: item.submitted_at,
     value: Number(item.total_score || 0),
   }));
   const totalDelta = trendCurrent && trendPrevious
@@ -391,22 +392,11 @@ const Analysis = () => {
               <Text className="report-testee">{reportInfo.testee_name}</Text>
             )}
           </View>
-          {(reportInfo.created_at || entryContext?.clinician_name || entryContext?.entry_title) && (
+          {reportInfo.created_at && (
             <View className="report-context">
               {reportInfo.created_at && (
                 <Text className="report-context__text">
                   生成时间 · {formatSimpleDate(reportInfo.created_at)}
-                </Text>
-              )}
-              {entryContext?.clinician_name && (
-                <Text className="report-context__text">
-                  来源人员 · {entryContext.clinician_name}
-                  {entryContext?.clinician_title ? ` · ${entryContext.clinician_title}` : ''}
-                </Text>
-              )}
-              {entryContext?.entry_title && (
-                <Text className="report-context__text">
-                  来源入口 · {entryContext.entry_title}
                 </Text>
               )}
             </View>

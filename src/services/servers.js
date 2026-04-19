@@ -190,7 +190,9 @@ function baseRequest(params, retryCount = 0, qpsRetry = 0) {
               qpsRetry,
               limit: QPS_RETRY_LIMIT
             });
-            Taro.showToast({ title: throttledMessage, icon: 'none' });
+            if (!params.suppressErrorToast) {
+              Taro.showToast({ title: throttledMessage, icon: 'none' });
+            }
             reject({ code: '429', message: throttledMessage, statusCode, data });
             return;
           }
@@ -284,14 +286,16 @@ function baseRequest(params, retryCount = 0, qpsRetry = 0) {
         
         // 其他认证错误
         if (!authVerifyResult) {
-          reject({ code, message, data: payload });
+          reject({ code, message, data: payload, statusCode });
           return;
         }
 
         // 判定成功：code/errno === '0' 或者两者都不存在但有 payload 时视为成功
         if (code && code !== '0') {
-          Taro.showToast({ title: message || '请求失败', icon: 'none' })
-          reject({ code, message, data: payload });
+          if (!params.suppressErrorToast) {
+            Taro.showToast({ title: message || '请求失败', icon: 'none' });
+          }
+          reject({ code, message, data: payload, statusCode });
           return;
         }
 
@@ -299,7 +303,9 @@ function baseRequest(params, retryCount = 0, qpsRetry = 0) {
       },
       fail: (err) => {
         const message = err?.message ?? '请求失败'
-        Taro.showToast({ title: message, icon: 'none' })
+        if (!params.suppressErrorToast) {
+          Taro.showToast({ title: message, icon: 'none' });
+        }
         reject({ code: '-1', message, error: err })
       }
     })
@@ -317,8 +323,9 @@ function interceptorsRequest(options) {
     responseType: 'text',
     isNeedLoading: false,
     loadingText: '正在加载...',
-    needToken: true
-  }
+    needToken: true,
+    suppressErrorToast: false
+  };
 
   const requestParam = {
     url: options.url ?? defaultConfig.url,
@@ -329,8 +336,9 @@ function interceptorsRequest(options) {
     responseType: options.responseType ?? defaultConfig.responseType,
     isNeedLoading: options.isNeedLoading ?? defaultConfig.isNeedLoading,
     loadingText: options.loadingText ?? defaultConfig.loadingText,
-    needToken: options.needToken ?? defaultConfig.needToken
-  }
+    needToken: options.needToken ?? defaultConfig.needToken,
+    suppressErrorToast: options.suppressErrorToast ?? defaultConfig.suppressErrorToast
+  };
 
   // token 已在 request 函数中处理，这里只设置其他通用 header
   const token = loadToken();

@@ -5,7 +5,7 @@ import { AtActivityIndicator } from "taro-ui";
 import { PrivacyAuthorization } from "../../../components/privacyAuthorization/privacyAuthorization";
 import { RiskTag } from "../../../components/common";
 import { getAssessmentTrendSummary } from "../../../services/api/assessmentApi";
-import { formatSimpleDate } from "../../common/utils/dateFormatters";
+import { formatChartDateLabel, formatSimpleDate } from "../../common/utils/dateFormatters";
 import TrendLineChart from "../widget/TrendLineChart";
 import "./index.less";
 
@@ -75,7 +75,7 @@ const TrendPage = () => {
   const totalTrendPoints = useMemo(
     () =>
       timeline.map((item) => ({
-        label: formatSimpleDate(item.submitted_at),
+        label: formatChartDateLabel(item.submitted_at),
         fullLabel: item.submitted_at,
         value: Number(item.total_score || 0),
       })),
@@ -85,7 +85,7 @@ const TrendPage = () => {
   const factorTrendPoints = useMemo(
     () =>
       (selectedFactor?.points || []).map((item) => ({
-        label: formatSimpleDate(item.submitted_at),
+        label: formatChartDateLabel(item.submitted_at),
         fullLabel: item.submitted_at,
         value: Number(item.score || 0),
       })),

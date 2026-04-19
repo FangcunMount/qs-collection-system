@@ -13,8 +13,6 @@ import { getMpEntryParams } from "../../../services/api/commonApi";
 import { resolveAssessmentEntry } from "../../../services/api/assessmentEntryApi";
 import { getQuestionnaire } from "../../../services/api/questionnaireApi";
 import { getTestee } from "../../../services/api/testeeApi";
-import { request } from "../../../services/servers";
-import config from "../../../config";
 import {
   getTesteeList as getStoredTesteeList,
   getSelectedTesteeId,
@@ -421,27 +419,6 @@ export default function Index() {
   };
 
   /**
-   * 通过答卷ID获取测评ID
-   */
-  const getAssessmentIdByAnswersheetId = async (answersheetId) => {
-    try {
-      logger.RUN('[Fill] 通过答卷ID获取测评ID', { answersheetId });
-      const detail = await request(`/answersheets/${String(answersheetId)}/assessment`, {}, {
-        host: config.collectionHost,
-        needToken: true
-      });
-      
-      if (detail && detail.id) {
-        return String(detail.id);
-      }
-      return null;
-    } catch (error) {
-      logger.ERROR('[Fill] 通过答卷ID获取测评ID失败', error);
-      return null;
-    }
-  };
-
-  /**
    * 答卷提交成功回调
    */
   const writedCallback = async (answersheetid, assessmentId) => {
@@ -462,28 +439,17 @@ export default function Index() {
         url: `/pages/answersheet/detail/index?a=${answersheetid}${taskIdParam}`
       });
     } else if (questionnaireType === 'MedicalScale') {
-      // 量表：先跳转到等待解析页面
-      let finalAssessmentId = assessmentId;
-      if (!finalAssessmentId) {
-        logger.RUN('[Fill] 提交接口未返回 assessmentId，通过 answersheetId 获取', { 
-          answersheetid 
-        });
-        finalAssessmentId = await getAssessmentIdByAnswersheetId(answersheetid);
-      }
-
-      if (finalAssessmentId) {
-        const testeeIdParam = selectedTesteeId ? `&t=${selectedTesteeId}` : '';
-        Taro.redirectTo({
-          url: `/pages/analysis/wait/index?aid=${finalAssessmentId}&a=${answersheetid}${testeeIdParam}${taskIdParam}`
-        });
-      } else {
-        logger.WARN('[Fill] 量表无法获取 assessmentId，直接跳转到解析页面', { 
-          answersheetid 
-        });
-        Taro.redirectTo({
-          url: `/pages/analysis/index?a=${answersheetid}${taskIdParam}`
-        });
-      }
+      const testeeIdParam = selectedTesteeId ? `&t=${selectedTesteeId}` : '';
+      const assessmentIdParam = assessmentId ? `&aid=${assessmentId}` : '';
+      logger.RUN('[Fill] 量表提交成功，跳转等待页', {
+        answersheetid,
+        assessmentId,
+        hasAssessmentId: !!assessmentId,
+        testeeId: selectedTesteeId
+      });
+      Taro.redirectTo({
+        url: `/pages/analysis/wait/index?a=${answersheetid}${assessmentIdParam}${testeeIdParam}${taskIdParam}`
+      });
     } else {
       // 未知类型或旧数据：默认跳转到答卷详情页面
       logger.WARN('[Fill] 问卷类型未知，默认跳转到答卷详情', { questionnaireType });

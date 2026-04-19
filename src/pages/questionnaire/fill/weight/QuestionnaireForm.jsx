@@ -431,8 +431,31 @@ export default function QuestionnaireForm({
       const res = await submitQuestionnaire(
         submitData,
         writerRoleCode,
-        subSignid
+        subSignid,
+        {
+          onQueued: ({ requestId }) => {
+            logger.WARN('[QuestionnaireForm] 提交已进入队列', {
+              requestId,
+              questionnaireCode: submitData.code
+            });
+            Taro.showLoading({
+              title: '排队处理中',
+              mask: true
+            });
+          },
+          onQueueCompleted: ({ requestId, statusResult }) => {
+            logger.RUN('[QuestionnaireForm] 队列处理完成', {
+              requestId,
+              answersheetId: statusResult?.answersheet_id ?? null
+            });
+          }
+        }
       );
+      logger.RUN('[QuestionnaireForm] 提交完成', {
+        answersheetId: res.id,
+        submitMode: res.submit_mode,
+        queued: res.queued
+      });
       if (res.id) {
         Taro.showToast({ title: "提交成功", icon: "success", mask: true });
         // 传递答卷 ID 和测评 ID（如果有）给回调函数

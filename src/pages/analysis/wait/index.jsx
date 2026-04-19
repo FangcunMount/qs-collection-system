@@ -3,7 +3,7 @@ import { View, Text, Canvas } from "@tarojs/components";
 import Taro from "@tarojs/taro";
 import lottie from "lottie-miniprogram";
 
-import { waitAssessmentReport } from "../../../services/api/assessmentApi";
+import { getAssessmentByAnswersheetId, waitAssessmentReport } from "../../../services/api/assessmentApi";
 import { getLogger } from "../../../util/log";
 import { PrivacyAuthorization } from "../../../components/privacyAuthorization/privacyAuthorization";
 import { getSelectedTesteeId } from "../../../store";
@@ -19,12 +19,29 @@ const logger = getLogger(PAGE_NAME);
 const MAX_POLLING_COUNT = 20;
 // 每次轮询的超时时间（秒）
 const POLLING_TIMEOUT = 15;
+// 等待 assessment 生成的最大轮询次数
+const MAX_ASSESSMENT_LOOKUP_COUNT = 30;
+const ASSESSMENT_LOOKUP_INTERVAL = 1000;
+const ASSESSMENT_NOT_READY_CODES = new Set(["404", "112001"]);
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const shouldRetryAssessmentLookup = (error) => {
+  const code = String(error?.code ?? error?.data?.code ?? error?.statusCode ?? "");
+  if (ASSESSMENT_NOT_READY_CODES.has(code)) {
+    return true;
+  }
+
+  const message = String(error?.message ?? error?.data?.message ?? "").toLowerCase();
+  return message.includes("assessment not found") || message.includes("测评不存在");
+};
 
 const AnalysisWait = () => {
   const [status, setStatus] = useState("waiting"); // waiting | success | error
   const [message, setMessage] = useState("正在解析测评报告，请稍候...");
   const [dots, setDots] = useState("");
   const pollingCountRef = useRef(0);
+  const assessmentLookupCountRef = useRef(0);
   const isPollingRef = useRef(false);
   const lottieInstanceRef = useRef(null);
   const startTimeRef = useRef(Date.now()); // 记录页面开始时间
@@ -46,15 +63,14 @@ const AnalysisWait = () => {
     const testeeIdFromUrl = params.t; // 从 URL 参数获取 testeeId
     const taskId = params.task_id;
 
-    if (!assessmentId) {
-      logger.ERROR("缺少测评ID参数");
+    if (!answersheetId) {
+      logger.ERROR("缺少答卷ID参数");
       setStatus("error");
       setMessage("参数错误，请重新提交");
       return;
     }
 
-    // 开始轮询，传递 testeeId（如果有）
-    startPolling(assessmentId, answersheetId, testeeIdFromUrl, taskId);
+    startWaitFlow(assessmentId, answersheetId, testeeIdFromUrl, taskId);
   }, []);
 
   // 点动画效果
@@ -184,25 +200,83 @@ const AnalysisWait = () => {
   };
 
   /**
+   * 等待 assessment 生成
+   */
+  const resolveAssessmentContext = async (assessmentIdFromUrl, answersheetId, testeeIdFromUrl) => {
+    let assessmentId = assessmentIdFromUrl ? String(assessmentIdFromUrl) : "";
+    let testeeId = testeeIdFromUrl ? String(testeeIdFromUrl) : "";
+
+    if (!assessmentId) {
+      setMessage("正在生成测评记录，请稍候...");
+
+      while (assessmentLookupCountRef.current < MAX_ASSESSMENT_LOOKUP_COUNT) {
+        assessmentLookupCountRef.current += 1;
+
+        try {
+          const detail = await getAssessmentByAnswersheetId(answersheetId, {
+            suppressErrorToast: true
+          });
+
+          if (detail?.id) {
+            assessmentId = String(detail.id);
+            testeeId = testeeId || (detail.testee_id ? String(detail.testee_id) : "");
+            logger.RUN("[AnalysisWait] 获取到 assessment", {
+              answersheetId,
+              assessmentId,
+              testeeId,
+              attempt: assessmentLookupCountRef.current
+            });
+            break;
+          }
+
+          logger.WARN("[AnalysisWait] assessment 查询成功但结果为空，继续等待", {
+            answersheetId,
+            attempt: assessmentLookupCountRef.current
+          });
+        } catch (error) {
+          if (!shouldRetryAssessmentLookup(error)) {
+            throw error;
+          }
+
+          logger.RUN("[AnalysisWait] assessment 暂未生成，继续等待", {
+            answersheetId,
+            attempt: assessmentLookupCountRef.current,
+            code: error?.code,
+            message: error?.message
+          });
+        }
+
+        await sleep(ASSESSMENT_LOOKUP_INTERVAL);
+      }
+    }
+
+    if (!assessmentId) {
+      throw new Error("测评记录生成时间过长，请稍后查看报告");
+    }
+
+    if (!testeeId) {
+      testeeId = await getTesteeId(testeeIdFromUrl, answersheetId);
+    }
+
+    if (!testeeId) {
+      throw new Error("未找到受试者信息，请稍后重试");
+    }
+
+    return { assessmentId, testeeId };
+  };
+
+  /**
    * 开始轮询等待报告生成
    */
-  const startPolling = async (assessmentId, answersheetId, testeeIdFromUrl, taskId) => {
+  const startPolling = async (assessmentId, answersheetId, testeeId, taskId) => {
     if (isPollingRef.current) {
       logger.WARN("轮询已在进行中，跳过");
       return;
     }
 
     isPollingRef.current = true;
-    
-    // 获取受试者ID
-    const testeeId = await getTesteeId(testeeIdFromUrl, answersheetId);
-    if (!testeeId) {
-      logger.ERROR("未找到受试者ID");
-      setStatus("error");
-      setMessage("未找到受试者信息，请稍后重试");
-      isPollingRef.current = false;
-      return;
-    }
+    pollingCountRef.current = 0;
+    setMessage("正在解析测评报告，请稍候...");
 
     const poll = async () => {
       try {
@@ -288,6 +362,29 @@ const AnalysisWait = () => {
     poll();
   };
 
+  const startWaitFlow = async (assessmentIdFromUrl, answersheetId, testeeIdFromUrl, taskId) => {
+    try {
+      const context = await resolveAssessmentContext(
+        assessmentIdFromUrl,
+        answersheetId,
+        testeeIdFromUrl
+      );
+
+      logger.RUN("[AnalysisWait] 进入报告等待轮询", {
+        answersheetId,
+        assessmentId: context.assessmentId,
+        testeeId: context.testeeId
+      });
+
+      startPolling(context.assessmentId, answersheetId, context.testeeId, taskId);
+    } catch (error) {
+      logger.ERROR("[AnalysisWait] 等待流程初始化失败", error);
+      setStatus("error");
+      setMessage(error?.message || "加载测评状态失败，请稍后重试");
+      isPollingRef.current = false;
+    }
+  };
+
   return (
     <>
       <PrivacyAuthorization />
@@ -326,21 +423,22 @@ const AnalysisWait = () => {
               <View className="error-icon">
                 <Text>⚠</Text>
               </View>
-              <View className="error-buttons">
-                <View 
-                  className="error-button"
-                  onClick={() => {
-                    const params = Taro.getCurrentInstance().router.params;
-                    const answersheetId = params.a;
-                    if (answersheetId) {
-                      Taro.redirectTo({
-                        url: `/pages/analysis/index?a=${answersheetId}`
-                      });
-                    } else {
-                      Taro.navigateBack();
-                    }
-                  }}
-                >
+	              <View className="error-buttons">
+	                <View
+	                  className="error-button"
+	                  onClick={() => {
+	                    const params = Taro.getCurrentInstance().router.params;
+	                    const answersheetId = params.a;
+	                    const taskId = params.task_id;
+	                    if (answersheetId) {
+	                      Taro.redirectTo({
+	                        url: `/pages/analysis/index?a=${answersheetId}${taskId ? `&task_id=${encodeURIComponent(taskId)}` : ''}`
+	                      });
+	                    } else {
+	                      Taro.navigateBack();
+	                    }
+	                  }}
+	                >
                   <Text className="error-button-text">查看报告</Text>
                 </View>
                 <View 

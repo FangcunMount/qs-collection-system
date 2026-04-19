@@ -41,9 +41,30 @@ export const formatWriteTime = (time) => {
 export const formatSimpleDate = (dateStr) => {
   if (!dateStr) return '';
   try {
-    return dateStr.split('T')[0];
+    const parsed = parseDateSafe(dateStr);
+    if (Number.isNaN(parsed.getTime())) {
+      return String(dateStr).split('T')[0].split(' ')[0];
+    }
+    return moment(parsed).format('YYYY-MM-DD');
   } catch (e) {
     return dateStr;
+  }
+};
+
+/**
+ * 格式化图表日期标签
+ * 图表 x 轴只展示月-日，避免时间字符串过长
+ */
+export const formatChartDateLabel = (dateStr) => {
+  if (!dateStr) return '';
+  try {
+    const parsed = parseDateSafe(dateStr);
+    if (Number.isNaN(parsed.getTime())) {
+      return String(dateStr).split('T')[0].split(' ')[0].slice(5).replace('/', '-');
+    }
+    return moment(parsed).format('MM-DD');
+  } catch (e) {
+    return String(dateStr).split('T')[0].split(' ')[0].slice(5).replace('/', '-');
   }
 };
 
@@ -76,4 +97,3 @@ export const parseDateSafe = (dateStr) => {
     }
   }
 };
-

@@ -2,6 +2,9 @@ import { boolToOneZero } from '../../util';
 import { request } from '../servers';
 import { getEntryContext, getSelectedTesteeId } from '../../store';
 import { submitAnswersheet, waitForSubmitCompletion } from './answersheetApi';
+import { getLogger } from '../../util/log';
+
+const logger = getLogger('questionnaire_submission_api');
 
 // 获取量表列表
 export const getQuestionnaireListLegacy = () => {
@@ -107,9 +110,10 @@ export const postQuestionnaireLegacy = (questionnaire, writer_role_code, signid)
  * @param {Object} questionnaire - 问卷数据
  * @param {string} writer_role_code - 旧参数，保持兼容性，新 API 不使用
  * @param {string} signid - 旧参数，保持兼容性，新 API 不使用
+ * @param {Object} lifecycle - 提交生命周期回调
  */
 // eslint-disable-next-line no-unused-vars
-export const submitQuestionnaire = async (questionnaire, writer_role_code, signid) => {
+export const submitQuestionnaire = async (questionnaire, writer_role_code, signid, lifecycle = {}) => {
   // 注意：writer_role_code 和 signid 参数保留是为了兼容旧调用方式，新 API 不使用这些参数
   const selectedTesteeId = getSelectedTesteeId();
   if (!selectedTesteeId) {
@@ -172,13 +176,37 @@ export const submitQuestionnaire = async (questionnaire, writer_role_code, signi
     requestData.task_id = entryContext.task_id;
   }
 
-  console.log('[submitQuestionnaire] 提交数据:', requestData);
+  logger.RUN('[submitQuestionnaire] 开始提交', {
+    questionnaireCode: requestData.questionnaire_code,
+    questionnaireVersion: requestData.questionnaire_version,
+    testeeId: requestData.testee_id,
+    answerCount: requestData.answers.length,
+    hasTaskId: Boolean(requestData.task_id)
+  });
 
   const submitResult = await submitAnswersheet(requestData);
+  const queued = Boolean(submitResult?.request_id) &&
+    !submitResult?.answersheet_id &&
+    typeof submitResult?.id === 'undefined';
 
   const requestId = submitResult?.request_id || submitResult?.id;
   if (!requestId) {
     throw new Error('提交失败：未获取到 request_id');
+  }
+
+  if (queued) {
+    logger.WARN('[submitQuestionnaire] 提交已入队，等待异步处理', {
+      requestId,
+      status: submitResult?.status ?? 'queued'
+    });
+    if (typeof lifecycle?.onQueued === 'function') {
+      lifecycle.onQueued({ requestId, submitResult });
+    }
+  } else {
+    logger.RUN('[submitQuestionnaire] 提交已直接完成', {
+      requestId,
+      answersheetId: submitResult?.answersheet_id ?? submitResult?.id ?? null
+    });
   }
 
   let finalAnswersheetId = submitResult?.answersheet_id ?? null;
@@ -187,7 +215,28 @@ export const submitQuestionnaire = async (questionnaire, writer_role_code, signi
   }
 
   if (!finalAnswersheetId) {
-    const statusResult = await waitForSubmitCompletion(requestId);
+    const statusResult = await waitForSubmitCompletion(requestId, {
+      onProgress: (progress) => {
+        logger.RUN('[submitQuestionnaire] 队列处理中', {
+          requestId,
+          attempt: progress.attempt,
+          maxAttempts: progress.maxAttempts,
+          status: progress.status
+        });
+        if (typeof lifecycle?.onQueueProgress === 'function') {
+          lifecycle.onQueueProgress(progress);
+        }
+      },
+      onSuccess: (result) => {
+        logger.RUN('[submitQuestionnaire] 队列处理完成', {
+          requestId,
+          answersheetId: result?.answersheet_id ?? null
+        });
+        if (typeof lifecycle?.onQueueCompleted === 'function') {
+          lifecycle.onQueueCompleted({ requestId, statusResult: result });
+        }
+      }
+    });
     finalAnswersheetId = statusResult?.answersheet_id;
   }
 
@@ -195,10 +244,18 @@ export const submitQuestionnaire = async (questionnaire, writer_role_code, signi
     throw new Error('提交失败：未获取到答卷编号');
   }
 
+  logger.RUN('[submitQuestionnaire] 提交结束', {
+    requestId,
+    answersheetId: finalAnswersheetId,
+    mode: queued ? 'queued' : 'immediate'
+  });
+
   return {
     ...submitResult,
     id: String(finalAnswersheetId),
-    request_id: requestId
+    request_id: requestId,
+    queued,
+    submit_mode: queued ? 'queued' : 'immediate'
   };
 };
 

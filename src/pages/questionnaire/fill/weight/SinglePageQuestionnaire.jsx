@@ -20,6 +20,10 @@ import QsSelect from "../../../../components/question/select";
 import WriterRoleDialog from "./WriterRoleDialog";
 import { checkQuestion } from "./QuestionnaireForm";
 import { useThrottle } from "../../../../util/useUtil";
+import { getLogger } from "../../../../util/log";
+
+const PAGE_NAME = "single_page_questionnaire";
+const logger = getLogger(PAGE_NAME);
 
 export default props => {
   const { questionnaireCode, subSignid, writedCallback, canSubmit } = props;
@@ -270,13 +274,42 @@ export default props => {
 
     const submitData = clearData(questionSheet);
 
-    submitQuestionnaire(submitData, writerRoleCode, subSignid)
+    Taro.showLoading({
+      title: "提交中...",
+      mask: true
+    });
+
+    submitQuestionnaire(submitData, writerRoleCode, subSignid, {
+      onQueued: ({ requestId }) => {
+        logger.WARN('[SinglePageQuestionnaire] 提交已进入队列', {
+          requestId,
+          questionnaireCode: submitData.code
+        });
+        Taro.showLoading({
+          title: "排队处理中",
+          mask: true
+        });
+      },
+      onQueueCompleted: ({ requestId, statusResult }) => {
+        logger.RUN('[SinglePageQuestionnaire] 队列处理完成', {
+          requestId,
+          answersheetId: statusResult?.answersheet_id ?? null
+        });
+      }
+    })
       .then(async result => {
+        Taro.hideLoading();
+        logger.RUN('[SinglePageQuestionnaire] 提交完成', {
+          answersheetId: result.id,
+          submitMode: result.submit_mode,
+          queued: result.queued
+        });
         Taro.showToast({ title: "提交成功", icon: "success" });
         // 传递答卷 ID 和测评 ID（如果有）给回调函数
         await writedCallback(result.id, result.assessment_id);
       })
       .catch(err => {
+        Taro.hideLoading();
         Taro.showToast({ title: String(err?.errmsg ?? err?.message ?? '提交失败'), icon: "none" });
       });
   }, 1000);
