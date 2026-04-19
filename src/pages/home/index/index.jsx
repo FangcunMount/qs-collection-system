@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import Taro, { usePullDownRefresh } from "@tarojs/taro";
+import Taro, { usePullDownRefresh, useReady, useRouter } from "@tarojs/taro";
 import { View, Text, ScrollView } from "@tarojs/components";
 import { AtIcon } from "taro-ui";
 import "taro-ui/dist/style/components/icon.scss";
@@ -61,6 +61,7 @@ const buildCategoryItems = (availableCategories) => {
 };
 
 const HomeIndex = () => {
+  const router = useRouter();
   const [searchText, setSearchText] = useState("");
   const [recommendedScales, setRecommendedScales] = useState([]);
   const [recommendedScalesLoading, setRecommendedScalesLoading] = useState(true);
@@ -154,6 +155,21 @@ const HomeIndex = () => {
     }
   };
 
+  const handleDirectEntryRedirect = useCallback((params) => {
+    const scene = String(params?.scene || "").trim();
+    const token = String(params?.token || "").trim();
+    if (!scene && !token) {
+      return false;
+    }
+
+    const targetUrl = token
+      ? `/pages/questionnaire/fill/index?token=${encodeURIComponent(token)}`
+      : `/pages/questionnaire/fill/index?scene=${encodeURIComponent(scene)}`;
+
+    Taro.redirectTo({ url: targetUrl });
+    return true;
+  }, []);
+
 
   // 加载推荐量表列表（获取前10个，随机选择3个）
   const loadRecommendedScales = useCallback(async () => {
@@ -201,6 +217,10 @@ const HomeIndex = () => {
     loadRecommendedScales();
     loadScaleCategories();
   }, [loadRecommendedScales, loadScaleCategories]);
+
+  useReady(() => {
+    handleDirectEntryRedirect(router.params || {});
+  });
 
   useEffect(() => {
     const unsubscribeEntry = subscribeEntryContext((snapshot) => {
