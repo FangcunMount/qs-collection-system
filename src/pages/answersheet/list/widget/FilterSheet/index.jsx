@@ -18,6 +18,15 @@ const FilterSheet = ({
         <Text className="filter-sheet-section-title">时间范围</Text>
         <View className="filter-sheet-options">
           <View 
+            className={`filter-sheet-option ${timeRange === '' ? 'selected' : ''}`}
+            onClick={() => onTimeRangeChange && onTimeRangeChange('')}
+          >
+            <View className={`filter-sheet-radio ${timeRange === '' ? 'checked' : ''}`}>
+              {timeRange === '' && <View className="filter-sheet-radio-dot" />}
+            </View>
+            <Text className="filter-sheet-option-text">全部</Text>
+          </View>
+          <View 
             className={`filter-sheet-option ${timeRange === '7' ? 'selected' : ''}`}
             onClick={() => onTimeRangeChange && onTimeRangeChange('7')}
           >
@@ -85,4 +94,3 @@ const FilterSheet = ({
 };
 
 export default FilterSheet;
-
