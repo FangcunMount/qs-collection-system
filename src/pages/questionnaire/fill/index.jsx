@@ -25,7 +25,7 @@ import {
 import { getValidQuestionCount, getEstimatedTime } from "../../common/utils/questionUtils";
 
 import { PrivacyAuthorization } from "../../../components/privacyAuthorization/privacyAuthorization";
-import PlanSubscribeConfirm from "../../../components/planSubscribeConfirm";
+import { requestPlanSubscribe } from "../../../components/planSubscribeConfirm";
 
 const PAGE_NAME = "questionnaire_fill";
 const logger = getLogger(PAGE_NAME);
@@ -374,7 +374,7 @@ export default function Index() {
   /**
    * 开始填写问卷
    */
-  const handleStartFill = () => {
+  const handleStartFill = async () => {
     if (entryContext?.entry_status && INVALID_ENTRY_STATUSES.has(entryContext.entry_status)) {
       redirectToEntryError({
         title: "入口暂不可用",
@@ -394,6 +394,36 @@ export default function Index() {
     if (!testeeInfo) {
       Taro.showToast({ title: '档案信息加载中，请稍候', icon: 'none' });
       return;
+    }
+
+    try {
+      const subscribeResult = await requestPlanSubscribe({
+        taskId: planTaskId,
+        planName: entryContext?.plan_name,
+        entryTitle: entryContext?.entry_title || questionnaire?.title,
+        clinicianName: entryContext?.clinician_name,
+        entryContext
+      });
+
+      logger.RUN('[Fill] 开始测评前触发订阅提醒', subscribeResult);
+
+      if (subscribeResult.status === 'accepted') {
+        Taro.showToast({
+          title: '已订阅下一次测评开放提醒',
+          icon: 'success'
+        });
+      } else if (subscribeResult.status === 'ban') {
+        Taro.showToast({
+          title: '请在微信设置中开启测评提醒',
+          icon: 'none'
+        });
+      }
+    } catch (error) {
+      logger.WARN('[Fill] 开始测评前触发订阅提醒失败', error);
+      Taro.showToast({
+        title: String(error?.errMsg || error?.message || '订阅失败，请稍后重试'),
+        icon: 'none'
+      });
     }
 
     // 根据问卷类型和题目数量决定是否使用单页单题模式
@@ -606,13 +636,6 @@ export default function Index() {
                 </View>
               </View>
             )}
-
-            <PlanSubscribeConfirm
-              taskId={planTaskId}
-              planName={entryContext?.plan_name}
-              entryTitle={entryContext?.entry_title || questionnaire?.title}
-              clinicianName={entryContext?.clinician_name}
-            />
 
             {/* 量表简介 */}
             <View className="questionnaire-intro-section">

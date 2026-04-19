@@ -449,6 +449,8 @@ const Analysis = () => {
           planName={entryContext?.plan_name}
           entryTitle={entryContext?.entry_title || reportInfo.scale_name}
           clinicianName={entryContext?.clinician_name}
+          entryContext={entryContext}
+          variant="floating"
         />
 
         <View className="trend-summary-card">

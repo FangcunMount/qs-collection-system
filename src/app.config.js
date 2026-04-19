@@ -31,6 +31,7 @@ export default {
       pages: [
         'register/index',
         'profile/index',
+        'subscription/index',
       ],
       independent: false
     },

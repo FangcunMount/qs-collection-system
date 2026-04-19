@@ -279,6 +279,8 @@ const AnswerSheet = () => {
               planName={entryContext?.plan_name}
               entryTitle={entryContext?.entry_title || questionnaireTitle}
               clinicianName={entryContext?.clinician_name}
+              entryContext={entryContext}
+              variant="floating"
             />
             <NeedDialog
               flag={needCloseFlag}

@@ -171,6 +171,12 @@ const UserProfile = () => {
       {/* 操作区域 */}
       <View className="action-section">
         <View className="settings-card">
+          <View className="settings-item" onClick={() => Taro.navigateTo({
+            url: "/pages/user/subscription/index"
+          })}>
+            <Text className="settings-item__label">订阅消息管理</Text>
+            <AtIcon value="chevron-right" size="18" color="#BFBFBF" />
+          </View>
           <View className="settings-item" onClick={handleClearCache}>
             <Text className="settings-item__label">清除缓存</Text>
             <AtIcon value="chevron-right" size="18" color="#BFBFBF" />
