@@ -234,10 +234,12 @@ export function refreshSession() {
   return refreshPromise;
 }
 
-export async function bootstrapSession() {
+export async function bootstrapSession(options = {}) {
+  const { allowInteractiveLogin = false } = options;
   const accessToken = getAccessToken();
   const refreshToken = getRefreshToken();
   logSessionEvent('启动会话引导', {
+    allowInteractiveLogin,
     hasAccessToken: Boolean(accessToken),
     accessTokenLength: accessToken?.length ?? 0,
     hasRefreshToken: Boolean(refreshToken),
@@ -273,6 +275,12 @@ export async function bootstrapSession() {
 
   if (accessToken) {
     clearSession('session_expired', { navigateHome: true });
+    return { status: SESSION_STATUS.ANONYMOUS };
+  }
+
+  if (!allowInteractiveLogin) {
+    setSessionStatus(SESSION_STATUS.ANONYMOUS);
+    logSessionEvent('启动阶段跳过交互登录，允许匿名浏览');
     return { status: SESSION_STATUS.ANONYMOUS };
   }
 

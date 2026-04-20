@@ -13,7 +13,7 @@ import { registerChildComplete } from "../../services/registerService.ts";
 import { useSubmit } from "../../util/useUtil";
 import { setSelectedTesteeId } from "../../store/testeeStore.ts";
 import { registerUser } from "./model";
-import sessionManager from "../../services/auth/sessionManager";
+import { bootstrapSession } from "../../services/auth/sessionManager";
 import { getWxApi } from "../../util/wxApi";
 
 /**
@@ -160,7 +160,9 @@ const Register = ({ type, goUrl, submitClose }) => {
       
       // 尝试自动登录，然后跳转到首页
       try {
-        const session = await sessionManager.bootstrapSession();
+        const session = await bootstrapSession({
+          allowInteractiveLogin: true
+        });
         if (session.status === 'authenticated') {
           console.log('[Register] 自动登录成功，回到首页');
           Taro.reLaunch({ url: '/pages/home/index/index' });

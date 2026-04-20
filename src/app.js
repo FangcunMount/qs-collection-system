@@ -10,14 +10,16 @@ import { setGlobalData } from './util/globalData'
 import { initUserStore } from './store/userStore.ts'
 import { initTokenStore } from './store/tokenStore'
 import { initTesteeStore } from './store/testeeStore'
-import sessionManager from './services/auth/sessionManager'
+import { bootstrapSession } from './services/auth/sessionManager'
 
 class App extends Component {
   async componentDidMount() {
     // 初始化 Token Store（同步）
     initTokenStore();
 
-    const bootstrapResult = await sessionManager.bootstrapSession();
+    const bootstrapResult = await bootstrapSession({
+      allowInteractiveLogin: false
+    });
     if (bootstrapResult.status !== 'authenticated') {
       console.warn('[App] 会话未建立，跳过启动期 store 初始化:', bootstrapResult);
       return;
