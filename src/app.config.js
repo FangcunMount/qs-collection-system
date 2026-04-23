@@ -1,47 +1,33 @@
 export default {
   pages: [
-    'pages/home/index/index',
-    'pages/questionnaire/list/index',
-    'pages/questionnaire/fill/index',
-    'pages/system/error/errpage',
+    'pages/tab/home/index',
+    'pages/tab/scales/index',
+    'pages/assessment/fill/index',
+    'pages/assessment/records/index',
+    'pages/assessment/response/index',
+    'pages/assessment/report/index',
+    'pages/assessment/report-trend/index',
+    'pages/assessment/report-pending/index',
+    'pages/tab/me/index',
+    'pages/system/error/index',
   ],
   subPackages: [
     {
-      root: 'pages/analysis',
-      name: 'analysis',
-      pages: [
-        'index',
-        'trend/index',
-        'wait/index',
-      ],
-      independent: false
-    },
-    {
-      root: 'pages/answersheet',
-      name: 'answersheet',
-      pages: [
-        'list/index',
-        'detail/index',
-      ],
-      independent: false
-    },
-    {
-      root: 'pages/user',
-      name: 'user',
+      root: 'pages/account',
+      name: 'account',
       pages: [
         'register/index',
-        'profile/index',
         'subscription/index',
       ],
       independent: false
     },
     {
-      root: 'pages/testee',
-      name: 'testee',
+      root: 'pages/testees',
+      name: 'testees',
       pages: [
-        'register/index',
         'list/index',
-        'editor/index',
+        'create/index',
+        'edit/index',
       ],
       independent: false
     }
@@ -52,6 +38,6 @@ export default {
     navigationBarTitleText: 'WeChat',
     navigationBarTextStyle: 'black'
   },
-  entryPagePath: "pages/home/index/index",
+  entryPagePath: "pages/tab/home/index",
   "__usePrivacyCheck__": true
 }

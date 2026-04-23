@@ -4,7 +4,7 @@
 
 import { request } from '../servers';
 import config from '../../config';
-import { getLogger } from '../../util/log';
+import { getLogger } from '../../shared/lib/logger';
 
 const logger = getLogger('answersheet_api');
 

@@ -1,3 +1,5 @@
+const path = require('path')
+
 const config = {
   projectName: 'qstore',
   date: '2021-4-28',
@@ -17,6 +19,9 @@ const config = {
     ],
     options: {
     }
+  },
+  alias: {
+    '@': path.resolve(__dirname, '..', 'src')
   },
   framework: 'react',
   mini: {

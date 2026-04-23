@@ -1,11 +1,13 @@
 # 量表测试系统主题色规范
 
 ## 设计原则
+
 专业、清晰、友好的量表测试小程序设计，以专业蓝为主色调，营造健康、可信赖的量表测试工具氛围。
 
 ## 主色调
 
 ### 专业蓝 (Primary Blue)
+
 ```less
 @primary-color: #1890FF;          // 主色（按钮、选中状态）
 @primary-hover: #40A9FF;          // 悬浮状态
@@ -15,6 +17,7 @@
 ```
 
 **使用场景：**
+
 - 主要操作按钮（"开始测试"、"提交答案"等）
 - 底部导航选中状态
 - 链接文字
@@ -24,6 +27,7 @@
 ## 辅助色
 
 ### 健康绿 (Success Green)
+
 ```less
 @success-color: #52C41A;          // 成功状态
 @success-light: #F6FFED;          // 浅色背景
@@ -31,28 +35,33 @@
 ```
 
 **使用场景：**
+
 - 成功提示
 - 完成状态
 - 工具模块背景
 - 正向引导元素
 
 ### 警示橙 (Warning Orange)
+
 ```less
 @warning-color: #FA8C16;          // 警告状态
 @warning-light: #FFF7E6;          // 浅色背景
 ```
 
 **使用场景：**
+
 - 警告提示
 - 需要注意的信息
 
 ### 错误红 (Error Red)
+
 ```less
 @error-color: #F5222D;            // 错误状态
 @error-light: #FFF1F0;            // 浅色背景
 ```
 
 **使用场景：**
+
 - 错误提示
 - 删除操作
 - 禁止状态
@@ -60,32 +69,41 @@
 ## 渐变色
 
 ### 主渐变
+
 ```less
 @gradient-primary: linear-gradient(135deg, #1890FF 0%, #096DD9 100%);
 ```
+
 **使用场景：** 主按钮、页面头部、重要卡片
 
 ### 柔和渐变
+
 ```less
 @gradient-primary-soft: linear-gradient(135deg, #E6F7FF 0%, #BAE7FF 100%);
 ```
+
 **使用场景：** 横幅背景、装饰性元素
 
 ### 成功渐变
+
 ```less
 @gradient-success: linear-gradient(135deg, #52C41A 0%, #389E0D 100%);
 ```
+
 **使用场景：** 成功状态按钮、完成提示
 
 ### 头部渐变
+
 ```less
 @gradient-header: linear-gradient(180deg, #FFFFFF 0%, #F5F7FA 100%);
 ```
+
 **使用场景：** 页面头部区域
 
 ## 中性色
 
 ### 文字颜色
+
 ```less
 @text-primary: #262626;           // 主文字（深灰）
 @text-secondary: #595959;         // 次要文字（中灰）
@@ -94,12 +112,14 @@
 ```
 
 **使用场景：**
+
 - `@text-primary`: 标题、重要信息
 - `@text-secondary`: 正文、描述文字
 - `@text-tertiary`: 提示文字、占位符
 - `@text-disabled`: 禁用状态文字
 
 ### 背景颜色
+
 ```less
 @bg-page: #FAFAFA;                // 页面背景（极浅灰）
 @bg-card: #FFFFFF;                // 卡片背景（白色）
@@ -110,6 +130,7 @@
 ```
 
 **使用场景：**
+
 - `@bg-page`: 整体页面背景
 - `@bg-card`: 卡片、弹窗背景
 - `@bg-section`: 内容区域背景
@@ -118,6 +139,7 @@
 - `@bg-disabled`: 禁用状态背景
 
 ### 边框颜色
+
 ```less
 @border-base: #F0F0F0;            // 基础边框
 @border-light: #E5E7EB;           // 浅色边框
@@ -125,6 +147,7 @@
 ```
 
 **使用场景：**
+
 - `@border-base`: 卡片边框、分割线
 - `@border-light`: 输入框边框
 - `@border-dark`: 强调边框
@@ -138,6 +161,7 @@
 ```
 
 **使用场景：**
+
 - `@shadow-sm`: 小卡片
 - `@shadow-md`: 悬浮卡片、下拉菜单
 - `@shadow-lg`: 弹窗、模态框
@@ -152,6 +176,7 @@
 ```
 
 **使用场景：**
+
 - `@radius-sm`: 输入框、小按钮
 - `@radius-base`: 卡片、分类项
 - `@radius-lg`: 大卡片、工具项
@@ -168,6 +193,7 @@
 ```
 
 **使用场景：**
+
 - `@spacing-xs`: 图标与文字间距
 - `@spacing-sm`: 列表项间距
 - `@spacing-md`: 卡片间距、内边距
@@ -177,12 +203,15 @@
 ## 使用方法
 
 ### 1. 导入主题文件
+
 在需要使用主题变量的 .less 文件开头添加：
+
 ```less
 @import "../../styles/theme.less";  // 根据文件层级调整路径
 ```
 
 ### 2. 使用变量
+
 ```less
 .my-component {
   background: @bg-card;
@@ -210,12 +239,14 @@
 ## 已应用页面
 
 ### ✅ 已统一
-- [x] 首页 (`src/pages/home/index/index.less`)
-- [x] 底部菜单 (`src/components/bottomMenu/index.less`)
-- [x] 单页单题模式 (`src/pages/questionnaire/fill/weight/singlePageModel.less`)
-- [x] 问卷列表（部分）(`src/pages/questionnaire/list/index.less`)
+
+- [x] 首页 (`src/modules/tab/pages/HomeTabPage.less`)
+- [x] 底部菜单 (`src/shared/ui/BottomMenu/index.less`)
+- [x] 单页单题模式 (`src/modules/questionnaire/components/SinglePageQuestionnaire.less`)
+- [x] 量表目录（部分）(`src/modules/catalog/pages/ScaleCatalogPage.less`)
 
 ### 待统一
+
 - [ ] 问卷填写页其他部分
 - [ ] 答题卡详情页
 - [ ] 测试解读页

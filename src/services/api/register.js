@@ -3,7 +3,6 @@
  * 
  * 迁移说明：
  * - postUserRegister() 使用 IAM authn API: /authn/accounts/wechat/register
- * - postChildRegister() 使用 IAM identity API: /identity/children/register
  * - 推荐使用新的 registerService.ts 进行统一注册
  */
 
@@ -23,22 +22,6 @@ export const postUserRegister = (userInfo) => {
   });
 };
 
-/**
- * 儿童注册（建档）
- * 使用 IAM identity API
- * @deprecated 推荐使用 registerService.registerChildComplete() 进行完整注册
- */
-export const postChildRegister = (childInfo) => {
-  return request('/identity/children/register', childInfo, { 
-    host: config.iamHost,
-    method: 'POST',
-    isNeedLoading: true,
-    needToken: true
-  });
-};
-
-
 export default {
-  postUserRegister,
-  postChildRegister,
+  postUserRegister
 };

@@ -1,0 +1,985 @@
+@import "../../../styles/theme.less";
+
+// 颜色变量
+@primary-blue: #3B82F6;
+@orange-main: #F97316;
+@orange-light: #FFF7ED;
+@orange-border: #FFEDD5;
+@red-main: #EF4444;
+@green-main: #22C55E;
+@gray-bg: #F5F5F5;
+@gray-light: #F3F4F6;
+@gray-border: #E5E7EB;
+@text-dark: #1F2937;
+@text-gray: #6B7280;
+@text-light: #9CA3AF;
+
+// 页面整体容器
+.analysis-report-page {
+  min-height: 100vh;
+  background: @gray-bg;
+  padding-bottom: 120rpx;
+}
+
+// 报告概览卡片
+.report-overview-card {
+  background: #FFFFFF;
+  padding: 40rpx;
+  margin-bottom: 48rpx;
+
+  .report-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32rpx;
+    gap: 16rpx;
+
+    .report-title {
+      font-size: 34rpx;
+      font-weight: 700;
+      color: @text-dark;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .report-testee {
+      font-size: 28rpx;
+      color: @text-gray;
+      font-weight: 500;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    .report-date {
+      font-size: 28rpx;
+      color: @primary-blue;
+      margin-left: 16rpx;
+      font-weight: 400;
+    }
+  }
+
+  .report-context {
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+    margin-bottom: 24rpx;
+
+    &__text {
+      font-size: 24rpx;
+      color: @text-gray;
+      line-height: 1.6;
+    }
+  }
+
+  // 总分展示区
+  .score-display-area {
+    border-radius: 24rpx;
+    padding: 32rpx 32rpx;
+    text-align: center;
+    border: none !important;
+    position: relative;
+    overflow: hidden;
+
+    .score-number {
+      font-weight: 700;
+      margin-bottom: 16rpx;
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 6rpx;
+
+      .score-main {
+        font-size: 96rpx;
+        line-height: 1;
+        letter-spacing: -4rpx;
+        font-weight: 800;
+      }
+
+      .score-unit {
+        font-size: 36rpx;
+        margin-left: 6rpx;
+        font-weight: 400;
+      }
+    }
+
+    .risk-level-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 14rpx 32rpx;
+      border-radius: 999rpx;
+      font-size: 26rpx;
+      font-weight: 500;
+      box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.08);
+      margin-bottom: 24rpx;
+      max-width: 90%;
+      
+      .risk-level-text {
+        display: block;
+        line-height: 1.5;
+        text-align: center;
+        word-break: break-all;
+      }
+    }
+
+    // 建议区域
+    .suggestion-section {
+      margin-top: 20rpx;
+      text-align: left;
+
+      .suggestion-content-text {
+        font-size: 26rpx;
+        color: @text-gray;
+        line-height: 1.8;
+        display: block;
+      }
+    }
+  }
+}
+
+.trend-summary-card {
+  background: #FFFFFF;
+  border-radius: 24rpx;
+  padding: 32rpx 40rpx;
+  margin: 0 40rpx 40rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+  border: 2rpx solid @gray-border;
+
+  .trend-summary-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20rpx;
+    margin-bottom: 24rpx;
+  }
+
+  .trend-summary-title {
+    display: block;
+    font-size: 32rpx;
+    font-weight: 700;
+    color: @text-dark;
+  }
+
+  .trend-summary-subtitle {
+    display: block;
+    margin-top: 8rpx;
+    font-size: 24rpx;
+    color: @text-gray;
+  }
+
+  .trend-summary-link {
+    padding: 14rpx 22rpx;
+    border-radius: 999rpx;
+    background: #EFF6FF;
+
+    &__text {
+      display: block;
+      font-size: 24rpx;
+      color: #2563EB;
+      font-weight: 600;
+    }
+  }
+
+  .trend-summary-content {
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+  }
+
+  .trend-summary-metrics {
+    display: flex;
+    flex-direction: column;
+    gap: 20rpx;
+  }
+
+  .trend-metric-card {
+    background: #F8FAFC;
+    border-radius: 20rpx;
+    padding: 24rpx;
+
+    &__label {
+      display: block;
+      font-size: 24rpx;
+      color: @text-gray;
+      margin-bottom: 12rpx;
+    }
+
+    &__value {
+      display: block;
+      font-size: 30rpx;
+      color: @text-dark;
+      font-weight: 700;
+      margin-bottom: 10rpx;
+    }
+
+    &__detail {
+      display: block;
+      font-size: 24rpx;
+      color: #64748B;
+    }
+
+    &__risk-row {
+      display: flex;
+      align-items: center;
+      gap: 10rpx;
+      margin-bottom: 12rpx;
+      flex-wrap: wrap;
+    }
+
+    &__arrow {
+      font-size: 24rpx;
+      color: #64748B;
+    }
+  }
+
+  .trend-factor-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+  }
+
+  .trend-factor-card {
+    border-radius: 18rpx;
+    background: #FFF7ED;
+    padding: 22rpx 24rpx;
+
+    &__title {
+      display: block;
+      font-size: 28rpx;
+      color: @text-dark;
+      font-weight: 600;
+      margin-bottom: 10rpx;
+    }
+
+    &__meta {
+      display: flex;
+      align-items: center;
+      gap: 12rpx;
+      flex-wrap: wrap;
+      margin-bottom: 8rpx;
+    }
+
+    &__delta,
+    &__detail {
+      font-size: 24rpx;
+      color: #64748B;
+    }
+  }
+
+  .trend-chart-panel {
+    border-top: 2rpx solid #EEF2F7;
+    padding-top: 24rpx;
+
+    &__title {
+      display: block;
+      font-size: 28rpx;
+      color: @text-dark;
+      font-weight: 600;
+      margin-bottom: 12rpx;
+    }
+  }
+
+  .trend-line-chart-wrapper {
+    width: 100%;
+  }
+
+  .trend-line-chart-wrapper ec-canvas,
+  .trend-line-chart-wrapper canvas {
+    width: 100% !important;
+    height: 100% !important;
+    display: block;
+  }
+
+  .trend-summary-empty {
+    background: #F8FAFC;
+    border-radius: 18rpx;
+    padding: 28rpx;
+
+    &__title {
+      display: block;
+      font-size: 28rpx;
+      color: @text-dark;
+      font-weight: 700;
+      margin-bottom: 10rpx;
+    }
+
+    &__text {
+      display: block;
+      font-size: 24rpx;
+      color: @text-gray;
+      line-height: 1.8;
+    }
+  }
+}
+
+// 因子结论卡片
+.conclusion-card {
+  background: #FFFFFF;
+  border-radius: 24rpx;
+  padding: 32rpx 40rpx;
+  margin: 0 40rpx 32rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+  border: 2rpx solid @gray-border;
+
+  .conclusion-header {
+    margin-bottom: 20rpx;
+
+    .conclusion-title {
+      font-size: 32rpx;
+      font-weight: 700;
+      color: @text-dark;
+    }
+  }
+
+  .conclusion-content {
+    font-size: 28rpx;
+    color: @text-gray;
+    line-height: 1.8;
+    display: block;
+  }
+}
+
+// 建议卡片
+.suggestion-card {
+  background: #FFFFFF;
+  border-radius: 24rpx;
+  padding: 32rpx 40rpx;
+  margin: 0 40rpx 48rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+  border: 2rpx solid @gray-border;
+
+  .suggestion-header {
+    margin-bottom: 20rpx;
+
+    .suggestion-title {
+      font-size: 32rpx;
+      font-weight: 700;
+      color: @text-dark;
+    }
+  }
+
+  .suggestion-content-text {
+    font-size: 28rpx;
+    color: @text-gray;
+    line-height: 1.8;
+    display: block;
+  }
+}
+
+// 标签页控制器
+.tab-controller {
+  position: sticky;
+  top: 0;
+  background: @gray-bg;
+  padding: 0 40rpx 32rpx;
+  z-index: 10;
+
+  .tab-buttons {
+    display: flex;
+    background: @gray-light;
+    padding: 16rpx;
+    border-radius: 50rpx;
+    border: 2rpx solid @gray-border;
+
+    .tab-button {
+      flex: 1;
+      padding: 20rpx 0;
+      text-align: center;
+      border-radius: 50rpx;
+      transition: all 0.25s ease;
+
+      .tab-button-text {
+        font-size: 28rpx;
+        font-weight: 500;
+        color: @text-gray;
+      }
+
+      &.active {
+        background: #FFFFFF;
+        box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.08);
+
+        .tab-button-text {
+          color: @primary-blue;
+          font-weight: 600;
+        }
+      }
+    }
+  }
+}
+
+// 内容区
+.tab-content-area {
+  padding: 0 40rpx 48rpx;
+}
+
+// 因子分析内容
+.factor-analysis-content {
+  display: flex;
+  flex-direction: column;
+  gap: 32rpx;
+
+  // 图表卡片
+  .factor-chart-card {
+    background: #FFFFFF;
+    border-radius: 24rpx;
+    padding: 40rpx;
+    box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+    border: 2rpx solid @gray-border;
+    overflow: visible;  // 改为visible，确保标签不被裁剪，但图表仍固定在卡片内
+    position: relative;  // 确保定位上下文
+    display: block;
+    z-index: 1;
+
+    .chart-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20rpx;
+      margin-bottom: 24rpx;
+    }
+
+    .card-title {
+      display: block;
+      font-size: 32rpx;
+      font-weight: 600;
+      color: @text-dark;
+      text-align: center;
+      position: relative;  // 确保标题正常定位
+      z-index: 2;
+    }
+
+    .chart-toggle {
+      display: flex;
+      gap: 16rpx;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .chart-toggle-button {
+      padding: 10rpx 24rpx;
+      border-radius: 999rpx;
+      border: 2rpx solid @gray-border;
+      background: #F8FAFC;
+      color: @text-gray;
+      font-size: 24rpx;
+      line-height: 1;
+    }
+
+    .chart-toggle-button.active {
+      background: #E6F4FF;
+      border-color: #BAE7FF;
+      color: #1890FF;
+      font-weight: 600;
+    }
+
+    .radar-chart-container {
+      width: 100%;
+      padding: 24rpx 32rpx 40rpx;  // 增加内边距，给图表更多空间
+      box-sizing: border-box;
+      position: relative;  // 确保容器是定位上下文
+      z-index: 1;
+
+      .radar-chart-wrapper {
+        height: 600rpx;  // 增加高度，让图表更宽松
+        width: 100%;
+        max-width: 650rpx;  // 增加最大宽度
+        min-width: 320rpx;
+        position: relative;  // 相对定位，确保在容器内
+        overflow: visible;  // 改为visible，确保标签不被裁剪
+        margin: 0 auto;
+      }
+    }
+
+    .bar-chart-container {
+      width: 100%;
+      padding: 8rpx 8rpx 24rpx;
+      box-sizing: border-box;
+    }
+
+    .scatter-chart-container {
+      width: 100%;
+      padding: 8rpx 8rpx 24rpx;
+      box-sizing: border-box;
+    }
+  }
+
+  // 因子卡片列表
+  .factor-cards-list {
+    display: flex;
+    flex-direction: column;
+    gap: 32rpx;
+  }
+}
+
+.radar-chart-wrapper ec-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  position: relative !important;  // 强制相对定位，确保在容器内
+  z-index: 0;
+}
+
+// 确保 canvas 元素本身也是相对定位
+.radar-chart-wrapper canvas {
+  position: relative !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.bar-chart-wrapper ec-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.bar-chart-wrapper canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.scatter-chart-wrapper ec-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.scatter-chart-wrapper canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+// 因子卡片
+.factor-card {
+  background: #FFFFFF;
+  border-radius: 24rpx;
+  padding: 36rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+  border: 2rpx solid @gray-border;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  margin-bottom: 32rpx;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 6rpx;
+    background: @primary-blue;
+    opacity: 0.25;
+  }
+
+  &.risk-high::before {
+    background: @red-main;
+  }
+
+  &.risk-medium::before {
+    background: @orange-main;
+  }
+
+  &.risk-low::before {
+    background: @green-main;
+  }
+
+  &.risk-normal::before {
+    background: @primary-blue;
+  }
+
+  .factor-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24rpx;
+    gap: 20rpx;
+
+    .factor-card-title {
+      flex: 1;
+      font-size: 34rpx;
+      font-weight: 700;
+      color: @text-dark;
+    }
+
+    .factor-risk-badge {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10rpx 20rpx;
+      border-radius: 8rpx;
+      font-size: 22rpx;
+      font-weight: 500;
+      flex-shrink: 0;
+      border: none !important;
+
+      .risk-label {
+        display: block;
+        color: #FFFFFF;
+      }
+
+      // 实色背景样式
+      &.risk-high {
+        background: @red-main !important;
+        color: #FFFFFF !important;
+        
+        .risk-label {
+          color: #FFFFFF;
+        }
+      }
+
+      &.risk-medium {
+        background: @orange-main !important;
+        color: #FFFFFF !important;
+        
+        .risk-label {
+          color: #FFFFFF;
+        }
+      }
+
+      &.risk-low {
+        background: @green-main !important;
+        color: #FFFFFF !important;
+        
+        .risk-label {
+          color: #FFFFFF;
+        }
+      }
+
+      &.risk-normal {
+        background: @primary-blue !important;
+        color: #FFFFFF !important;
+        
+        .risk-label {
+          color: #FFFFFF;
+        }
+      }
+    }
+  }
+
+  .factor-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 20rpx;
+
+    // 进度条形式的得分展示
+    .factor-score-progress-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 16rpx;
+
+      .score-progress-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        .score-label {
+          font-size: 28rpx;
+          color: @text-gray;
+          font-weight: 500;
+        }
+
+        .score-value-text {
+          font-size: 32rpx;
+          font-weight: 700;
+          color: @text-dark;
+
+          .score-max-text {
+            font-size: 26rpx;
+            font-weight: 400;
+            color: @text-gray;
+          }
+        }
+      }
+
+      .score-progress-container {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 16rpx;
+
+        .score-progress-track {
+          flex: 1;
+          height: 32rpx;
+          background: #F3F4F6;
+          border-radius: 16rpx;
+          overflow: hidden;
+          position: relative;
+
+          .score-progress-bar {
+            height: 100%;
+            border-radius: 16rpx;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 12rpx;
+            min-width: 32rpx;
+
+            .score-progress-text {
+              font-size: 20rpx;
+              font-weight: 600;
+              white-space: nowrap;
+            }
+          }
+
+          .score-progress-bar-empty {
+            height: 100%;
+            width: 0;
+          }
+        }
+
+        .score-progress-text-outside {
+          font-size: 24rpx;
+          font-weight: 600;
+          white-space: nowrap;
+          min-width: 60rpx;
+          text-align: right;
+        }
+      }
+    }
+
+    .factor-section {
+      margin-top: 16rpx;
+    }
+
+    .factor-section-title {
+      font-size: 24rpx;
+      font-weight: 600;
+      color: @text-dark;
+      margin-bottom: 8rpx;
+      display: block;
+    }
+
+    .factor-content {
+      font-size: 26rpx;
+      color: @text-gray;
+      line-height: 1.8;
+      background: @gray-light;
+      padding: 24rpx;
+      border-radius: 16rpx;
+      display: block;
+      margin-top: 0;
+    }
+
+    .factor-suggestion {
+      font-size: 26rpx;
+      color: @text-gray;
+      line-height: 1.8;
+      background: #FFF7ED;
+      padding: 24rpx;
+      border-radius: 16rpx;
+      display: block;
+    }
+  }
+}
+
+// 详细建议内容
+.pro-advice-content {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 48rpx;
+}
+
+// 操作按钮
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+  margin-top: 80rpx;
+  padding: 0 20rpx;
+
+  .primary-button {
+    width: 100%;
+    height: 100rpx;
+    background: @primary-blue;
+    color: #FFFFFF;
+    border-radius: 999rpx;
+    font-size: 32rpx;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8rpx 24rpx rgba(59, 130, 246, 0.35);
+    border: none;
+    transition: all 0.2s ease;
+    line-height: 1;
+
+    &::after {
+      border: none;
+    }
+
+    &:active {
+      background: #2563EB;
+      transform: scale(0.98);
+    }
+  }
+}
+
+// 空状态
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 40rpx;
+  background: #FFFFFF;
+  border-radius: 24rpx;
+  border: 2rpx dashed @gray-border;
+  margin-top: 32rpx;
+
+  .empty-icon {
+    font-size: 96rpx;
+    margin-bottom: 24rpx;
+    opacity: 0.6;
+  }
+
+  .empty-text {
+    font-size: 28rpx;
+    color: @text-light;
+    text-align: center;
+  }
+}
+
+// 兼容旧样式（如果需要）
+.tScore-analysis-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+
+  .body {
+    width: 100%;
+    height: 100%;
+
+    .analysis-tab {
+      width: 100%;
+      height: 100%;
+      padding: 32rpx 32rpx 160rpx 32rpx;
+      overflow-y: scroll;
+      display: none;
+
+      .tab-title {
+        font-size: 36rpx;
+        color: #333;
+        font-weight: bold;
+        text-align: left;
+      }
+
+      // 测评得分 tab
+      .tScore-info-tab {
+
+        .tScore-chart {
+          width: 100%;
+          margin-top: 64rpx;
+        }
+
+        .tScore-table {
+          width: 100%;
+          margin: 64rpx 0;
+          font-size: 28rpx;
+          line-height: 88rpx;
+          border-radius: 12rpx;
+          overflow: hidden;
+          box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
+
+          .bg-header {
+            display: flex;
+            justify-content: center;
+            color: @bg-card;
+            background: @gradient-primary;
+            text-align: center;
+            font-size: 28rpx;
+            font-weight: bold;
+            line-height: 88rpx;
+          }
+
+          .tr {
+            display: flex;
+            justify-content: center;
+            color: @text-primary;
+            text-align: center;
+            font-size: 28rpx;
+            line-height: 88rpx;
+            border-bottom: 1rpx solid @border-base;
+          }
+
+          .score-warning {
+            background: @error-light;
+            color: @error-color;
+            font-weight: bold;
+            position: relative;
+
+            .td:first-child::before {
+              content: '⚠️ ';
+              margin-right: 8rpx;
+            }
+          }
+
+          .tr:nth-child(even) {
+            background-color: @bg-hover;
+          }
+        }
+      }
+
+      // 测评解读 tab
+      .tScore-interpretation-tab {
+        padding-bottom: 64rpx;
+
+        .tScore-interpretation-section-title {
+          font-size: 32rpx;
+          color: #333;
+          font-weight: bold;
+          line-height: 48rpx;
+          margin-top: 32rpx;
+        }
+
+        .tScore-interpretation-section-content {
+          margin-top: 32rpx;
+          color: #333;
+          font-size: 28rpx;
+          line-height: 48rpx;
+
+          .tScore-interpretation-section-p {
+            margin-left: 32rpx;
+            margin-top: 16rpx;
+          }
+        }
+      }
+
+      // 测评简介 tab
+      .tScore-introduction-tab {
+        padding-bottom: 64rpx;
+
+        .tScore-introduction-section-title {
+          font-size: 32rpx;
+          color: #333;
+          font-weight: bold;
+          line-height: 48rpx;
+          margin-top: 32rpx;
+        }
+
+        .tScore-introduction-section-content {
+          margin-top: 32rpx;
+          color: #333;
+          font-size: 28rpx;
+          line-height: 48rpx;
+
+          .tScore-introduction-section-p {
+            margin-top: 16rpx;
+          }
+        }
+      }
+    }
+
+    .analysis-tab.at-tabs-pane--active {
+      display: block;
+    }
+  }
+
+  .footer {
+    position: absolute;
+    bottom: 0rpx;
+    width: 100vw;
+    padding-bottom: 30rpx;
+    background-color: #fff;
+  }
+}

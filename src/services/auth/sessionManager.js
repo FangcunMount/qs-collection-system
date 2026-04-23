@@ -1,8 +1,14 @@
-import config from '../../config';
-import { getWxApi } from '../../util/wxApi';
-import { authorizationHandler } from '../../util/authorization';
-import { getAccessToken, getRefreshToken, isTokenExpired, setToken, clearToken } from '../../store/tokenStore';
-import * as iamAuthn from '../api/iamAuthnApi';
+import config from '@/config.js';
+import { getWxApi } from '@/shared/platform/weapp/wxApi';
+import {
+  getAccessToken,
+  getRefreshToken,
+  isTokenExpired,
+  setToken,
+  clearToken,
+} from '@/shared/stores/session';
+import { authorizationHandler } from './authorization';
+import * as iamAuthn from '@/services/api/auth';
 
 export const SESSION_STATUS = {
   ANONYMOUS: 'anonymous',

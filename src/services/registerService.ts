@@ -3,10 +3,9 @@
  * 整合 IAM 儿童注册和 Collection 受试者创建
  */
 
-import { registerChild } from './api/iamIdentityApi';
-import { createTestee } from './api/testeeApi';
-import { addTestee } from '../store/testeeStore';
-import { getUserInfo } from '../store/userStore';
+import { registerTesteeProfile, createTestee, searchTesteeProfiles } from '@/services/api/testees';
+import { addTestee } from '@/shared/stores/testees';
+import { getAccountInfo } from '@/shared/stores/account';
 
 /**
  * 儿童注册数据类型
@@ -84,7 +83,7 @@ export async function registerChildComplete(childData: ChildRegisterData): Promi
     }
     
     console.log('[RegisterService] IAM 请求 payload:', iamPayload);
-    const iamResponse = await registerChild(iamPayload);
+    const iamResponse = await registerTesteeProfile(iamPayload);
     
     console.log('[RegisterService] IAM 注册成功（原始）:', iamResponse);
     
@@ -108,7 +107,7 @@ export async function registerChildComplete(childData: ChildRegisterData): Promi
     
     try {
       // 从 userStore 获取当前用户的 IAM ID
-      const userInfo = getUserInfo();
+      const userInfo = getAccountInfo();
       // 保持字符串格式，避免大数精度丢失
       const iamUserId = String(userInfo?.id || '');
       
@@ -189,8 +188,7 @@ export async function checkChildExists(name: string, dob: string): Promise<boole
   console.log('[RegisterService] 检查儿童是否存在:', { name, dob });
   
   try {
-    const { searchChildren } = await import('./api/iamIdentityApi');
-    const response = await searchChildren(name, dob, 0, 10);
+    const response = await searchTesteeProfiles(name, dob, 0, 10);
     
     const children = response?.items || [];
     const exists = children.length > 0;

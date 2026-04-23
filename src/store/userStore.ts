@@ -1,4 +1,4 @@
-import { getMe } from '../services/api/iamIdentityApi';
+import { getAccountProfile } from '@/services/api/account';
 
 /**
  * 用户信息接口
@@ -170,7 +170,7 @@ const put = ({ type, payload }: { type: string; payload?: any }): void => {
 const effects: Record<string, Effect> = {
   async getUserInfo(_: any, helpers: EffectHelpers = { call, put }): Promise<UserInfo | null> {
     // 使用新的 IAM Identity API
-    const response = await helpers.call(getMe);
+    const response = await helpers.call(getAccountProfile);
     if (!response) {
       return null;
     }
@@ -206,7 +206,7 @@ const effects: Record<string, Effect> = {
   },
   async fetchCurrent(_: any, helpers: EffectHelpers = { call, put }): Promise<any> {
     // 使用新的 IAM Identity API
-    const response = await helpers.call(getMe);
+    const response = await helpers.call(getAccountProfile);
     if (response) {
       helpers.put({ type: 'saveCurrentUser', payload: response });
     }
@@ -331,4 +331,3 @@ const UserModel = {
 };
 
 export default UserModel;
-

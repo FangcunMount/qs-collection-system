@@ -1,4 +1,5 @@
 import Taro from '@tarojs/taro';
+import { getMyTesteeProfiles, getMyTestees } from '@/services/api/testees';
 
 /**
  * 受试者基本信息
@@ -452,8 +453,7 @@ export async function loadTesteesFromIAM(): Promise<Testee[]> {
   console.log('[TesteeStore] 从 IAM 加载受试者列表');
   
   try {
-    const { getMyChildren } = await import('../services/api/iamIdentityApi');
-    const response = await getMyChildren();
+    const response = await getMyTesteeProfiles();
     console.log('[TesteeStore] IAM 响应:', response);
     
     // 转换 IAM identity children 格式到 testee 格式（兼容驼峰和下划线格式）
@@ -497,7 +497,6 @@ export async function loadTesteesFromCollection(): Promise<Testee[]> {
   console.log('[TesteeStore] 从 Collection 加载受试者列表');
   
   try {
-    const { getMyTestees } = await import('../services/api/testeeApi');
     const response = await getMyTestees();
     console.log('[TesteeStore] Collection 响应:', response);
     

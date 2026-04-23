@@ -1,6 +1,6 @@
 import { request } from '../servers';
 import config from '../../config';
-import { isSessionExpiredCode, isUnregisteredCode } from '../../util/authorization';
+import { isSessionExpiredCode, isUnregisteredCode } from '../auth/authorization';
 
 function maskIdentifier(value) {
   if (!value) return '';

@@ -1,10 +1,10 @@
 import Taro from '@tarojs/taro';
 
-import { errorHandler, isSessionExpiredCode } from '../util/authorization';
-import { getAccessToken } from '../store/tokenStore';
+import config from '@/config.js';
+import { getUrl } from '@/shared/lib/url';
+import { getAccessToken } from '@/shared/stores/session';
+import { errorHandler, isSessionExpiredCode } from './auth/authorization';
 import sessionManager from './auth/sessionManager';
-import { getUrl } from '../util';
-import config from '../config';
 
 function summarizeRequestAuth(requestParams, options = {}) {
   return {

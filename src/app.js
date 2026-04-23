@@ -5,17 +5,17 @@ import './styles/taro-ui.scss'               // taro-ui 按需样式
 import './styles/taro-ui-fc.less'            // taro-ui-fc 按需样式
 import './app.less'                           // 项目自定义全局样式
 
-import { checkUpdateVersion } from './util/checkEnvironment'
-import { setGlobalData } from './util/globalData'
-import { initUserStore } from './store/userStore.ts'
-import { initTokenStore } from './store/tokenStore'
-import { initTesteeStore } from './store/testeeStore'
-import { bootstrapSession } from './services/auth/sessionManager'
+import { initAccountStore } from '@/shared/stores/account'
+import { initSessionStore } from '@/shared/stores/session'
+import { initTesteeStore } from '@/shared/stores/testees'
+import { setGlobalData } from '@/shared/platform/weapp/globalData'
+import { checkUpdateVersion } from '@/shared/platform/weapp/updateVersion'
+import { bootstrapSession } from '@/services/auth/sessionManager'
 
 class App extends Component {
   async componentDidMount() {
     // 初始化 Token Store（同步）
-    initTokenStore();
+    initSessionStore();
 
     const bootstrapResult = await bootstrapSession({
       allowInteractiveLogin: false
@@ -28,7 +28,7 @@ class App extends Component {
     // 初始化用户与受试者 store（异步，并行执行）
     try {
       const [userResult, testeeResult] = await Promise.allSettled([
-        initUserStore(),
+        initAccountStore(),
         initTesteeStore()
       ]);
       

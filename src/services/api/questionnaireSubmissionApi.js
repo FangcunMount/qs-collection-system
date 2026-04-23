@@ -1,8 +1,9 @@
-import { boolToOneZero } from '../../util';
+import { boolToOneZero } from '../../shared/lib/coercion';
+import { getAssessmentEntryContext } from '@/shared/stores/assessmentEntry';
+import { getSelectedTesteeId } from '@/shared/stores/testees';
 import { request } from '../servers';
-import { getEntryContext, getSelectedTesteeId } from '../../store';
 import { submitAnswersheet, waitForSubmitCompletion } from './answersheetApi';
-import { getLogger } from '../../util/log';
+import { getLogger } from '../../shared/lib/logger';
 
 const logger = getLogger('questionnaire_submission_api');
 
@@ -171,7 +172,7 @@ export const submitQuestionnaire = async (questionnaire, writer_role_code, signi
     title: questionnaire.name || questionnaire.title
   };
 
-  const entryContext = getEntryContext();
+  const entryContext = getAssessmentEntryContext();
   if (entryContext?.task_id) {
     requestData.task_id = entryContext.task_id;
   }
