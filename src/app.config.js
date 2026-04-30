@@ -2,16 +2,23 @@ export default {
   pages: [
     'pages/tab/home/index',
     'pages/tab/scales/index',
-    'pages/assessment/fill/index',
-    'pages/assessment/records/index',
-    'pages/assessment/response/index',
-    'pages/assessment/report/index',
-    'pages/assessment/report-trend/index',
-    'pages/assessment/report-pending/index',
     'pages/tab/me/index',
     'pages/system/error/index',
   ],
   subPackages: [
+    {
+      root: 'pages/assessment',
+      name: 'assessment',
+      pages: [
+        'fill/index',
+        'records/index',
+        'response/index',
+        'report/index',
+        'report-trend/index',
+        'report-pending/index',
+      ],
+      independent: false
+    },
     {
       root: 'pages/account',
       name: 'account',

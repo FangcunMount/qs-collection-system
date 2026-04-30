@@ -10,18 +10,18 @@ import { buildAssessmentScanTargetUrl, isScanCancelError } from "@/shared/lib/en
 import { formatSimpleDate } from "@/shared/lib/dateFormatters";
 import { getAssessmentEntryContext, subscribeAssessmentEntryContext } from "@/shared/stores/assessmentEntry";
 import { findTesteeById, getSelectedTesteeId, subscribeTesteeStore } from "@/shared/stores/testees";
+import sleepIcon from "@/assets/home/category-sleep.png";
+import moodIcon from "@/assets/home/category-mood.png";
+import pressureIcon from "@/assets/home/category-pressure.png";
+import attentionIcon from "@/assets/home/category-attention.png";
+import childIcon from "@/assets/home/category-child.png";
+import sensoryIcon from "@/assets/home/category-sensory.png";
 import HomeHeader from "../components/home/HomeHeader";
 import HomeBanner from "../components/home/HomeBanner";
 import HomeStatusPanel from "../components/home/HomeStatusPanel";
 import CategoryGrid from "../components/home/CategoryGrid";
 import FeaturedScaleList from "../components/home/FeaturedScaleList";
 import RecentAssessmentCard from "../components/home/RecentAssessmentCard";
-import sleepIcon from "@/assets/icon/icon_moon.png";
-import moodIcon from "@/assets/icon/icon_small.png";
-import pressureIcon from "@/assets/icon/icon_thundercloud.png";
-import attentionIcon from "@/assets/icon/icon_attention.png";
-import childIcon from "@/assets/icon/icon_child.png";
-import sensoryIcon from "@/assets/icon/icon_feel.png";
 import "./HomeTabPage.less";
 
 const HOME_CATEGORIES = [
@@ -49,7 +49,7 @@ const HOME_CATEGORIES = [
   {
     key: "attention",
     value: "efn",
-    title: "注意力与执行功能",
+    title: "执行功能",
     subtitle: "分心、拖延、专注困难",
     icon: attentionIcon,
   },

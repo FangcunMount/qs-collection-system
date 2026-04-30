@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef } from "react";
 import { View } from "@tarojs/components";
-import * as echarts from "../ec-canvas/echarts";
+import * as echarts from "@/pages/assessment/components/ec-canvas/echarts";
 
 const TrendLineChart = ({
   chartId = "trend-line",
