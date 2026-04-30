@@ -422,28 +422,28 @@ const AnalysisWait = () => {
               <View className="error-icon">
                 <Text>⚠</Text>
               </View>
-	              <View className="error-buttons">
-	                <View
-	                  className="error-button"
-	                  onClick={() => {
-	                    const params = Taro.getCurrentInstance().router.params;
-	                    const answersheetId = params.a;
-	                    const taskId = params.task_id;
-	                    if (answersheetId) {
-	                      Taro.redirectTo({
-	                        url: routes.assessmentReport({
-	                          a: answersheetId,
-	                          task_id: taskId || undefined,
-	                        })
-	                      });
-	                    } else {
-	                      Taro.navigateBack();
-	                    }
-	                  }}
-	                >
+              <View className="error-buttons">
+                <View
+                  className="error-button"
+                  onClick={() => {
+                    const params = Taro.getCurrentInstance().router.params;
+                    const answersheetId = params.a;
+                    const taskId = params.task_id;
+                    if (answersheetId) {
+                      Taro.redirectTo({
+                        url: routes.assessmentReport({
+                          a: answersheetId,
+                          task_id: taskId || undefined,
+                        })
+                      });
+                    } else {
+                      Taro.navigateBack();
+                    }
+                  }}
+                >
                   <Text className="error-button-text">查看报告</Text>
                 </View>
-                <View 
+                <View
                   className="error-button secondary"
                   onClick={() => {
                     Taro.navigateBack();

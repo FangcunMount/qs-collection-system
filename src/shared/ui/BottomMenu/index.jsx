@@ -8,7 +8,7 @@ import "./index.less";
 
 const bottomMenu = [
   { label: "首页", icon: "home", url: ROUTES.tabHome },
-  { label: "量表", icon: "search", url: ROUTES.tabScales },
+  { label: "发现", icon: "search", url: ROUTES.tabScales },
   { label: "扫码测评", icon: "camera", action: "scan" },
   { label: "记录", icon: "clock", url: ROUTES.assessmentRecords },
   { label: "我的", icon: "user", url: ROUTES.tabMe }

@@ -173,7 +173,7 @@ const QuestionsheetList = () => {
         </View>
       </View>
 
-      <BottomMenu activeKey="量表" />
+      <BottomMenu activeKey="发现" />
     </>
   );
 };

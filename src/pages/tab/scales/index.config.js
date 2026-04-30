@@ -1,5 +1,5 @@
 export default {
-  navigationBarTitleText: '量表测试',
+  navigationBarTitleText: '发现',
   enablePullDownRefresh: true,
   backgroundTextStyle: 'dark'
 }

@@ -1,5 +1,8 @@
 # Frontend Structure Redesign
 
+> Route migration report:
+> `docs/FRONTEND_ROUTE_MIGRATION_REPORT.md`
+
 ## Goal
 
 重新梳理 `qs-collection-system` 的前端目录结构、页面路径和命名规则，解决当前项目中这几个长期问题：
