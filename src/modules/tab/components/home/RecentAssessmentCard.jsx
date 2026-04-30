@@ -28,14 +28,17 @@ const RecentAssessmentCard = ({
         </View>
       ) : assessment ? (
         <View className="home-recent-card">
-          <View className="home-recent-card__icon">
-            <AtIcon value="clock" size="20" color="#2F80ED" />
-          </View>
-          <View className="home-recent-card__main">
-            <Text className="home-recent-card__title">{assessment.title}</Text>
-            <Text className="home-recent-card__date">
-              上次完成：{assessment.completedAt || "时间待同步"}
-            </Text>
+          <View className="home-recent-card__body">
+            <View className="home-recent-card__icon">
+              <AtIcon value="clock" size="19" color="#2F80ED" />
+            </View>
+            <View className="home-recent-card__main">
+              <Text className="home-recent-card__label">最近完成</Text>
+              <Text className="home-recent-card__title">{assessment.title}</Text>
+              <Text className="home-recent-card__date">
+                上次完成：{assessment.completedAt || "时间待同步"}
+              </Text>
+            </View>
           </View>
           <View className="home-recent-card__actions">
             <View

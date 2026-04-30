@@ -12,6 +12,7 @@ import { getAssessmentEntryContext, subscribeAssessmentEntryContext } from "@/sh
 import { findTesteeById, getSelectedTesteeId, subscribeTesteeStore } from "@/shared/stores/testees";
 import HomeHeader from "../components/home/HomeHeader";
 import HomeBanner from "../components/home/HomeBanner";
+import HomeStatusPanel from "../components/home/HomeStatusPanel";
 import CategoryGrid from "../components/home/CategoryGrid";
 import FeaturedScaleList from "../components/home/FeaturedScaleList";
 import RecentAssessmentCard from "../components/home/RecentAssessmentCard";
@@ -490,9 +491,7 @@ const HomeIndex = () => {
   return (
     <View className="home-page">
       <HomeHeader
-        currentTestee={currentTestee}
         navStyle={navStyle}
-        onManageTestee={handleManageTestee}
       />
 
       <ScrollView scrollY className="home-content" enhanced showScrollbar={false}>
@@ -505,28 +504,15 @@ const HomeIndex = () => {
           </Text>
         </View>
 
-        {(entryContext?.entry_title || entryContext?.clinician_name) && (
-          <View className="home-entry-card" onClick={handleContinueEntry}>
-            <View className="home-entry-card__main">
-              <Text className="home-entry-card__label">最近入口</Text>
-              {entryContext?.entry_title && (
-                <Text className="home-entry-card__title">{entryContext.entry_title}</Text>
-              )}
-              {(entryContext?.clinician_name || entryContext?.clinician_title) && (
-                <Text className="home-entry-card__meta">
-                  {entryContext?.clinician_name || "专业人员"}
-                  {entryContext?.clinician_title ? ` · ${entryContext.clinician_title}` : ""}
-                </Text>
-              )}
-            </View>
-            <View className="home-entry-card__actions">
-              <Text className="home-entry-card__action" onClick={handleRescanEntry}>重新扫码</Text>
-              <Text className="home-entry-card__action home-entry-card__action--primary">继续填写</Text>
-            </View>
-          </View>
-        )}
-
         <HomeBanner onStart={handleExploreScales} />
+
+        <HomeStatusPanel
+          currentTestee={currentTestee}
+          entryContext={entryContext}
+          onManageTestee={handleManageTestee}
+          onContinueTask={handleContinueEntry}
+          onScanTask={handleRescanEntry}
+        />
 
         <CategoryGrid
           categories={HOME_CATEGORIES}
