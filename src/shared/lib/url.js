@@ -7,7 +7,15 @@ export const getUrl = (url, host) => {
     baseUrl = `${host}${url}`;
   } else if (url.startsWith("/common")) {
     baseUrl = `https://api.${config.domain}${url.replace(new RegExp("/common"), "")}`;
-  } else if (url.startsWith("/user") || url.startsWith("/auth")) {
+  } else if (
+    url.startsWith("/user") ||
+    url.startsWith("/auth") ||
+    url.startsWith("/identity") ||
+    url.startsWith("/authz") ||
+    url.startsWith("/suggest") ||
+    url.startsWith("/idp") ||
+    url.startsWith("/.well-known")
+  ) {
     baseUrl = `${config.iamHost}${url}`;
   } else {
     baseUrl = `${config.collectionHost}${url}`;

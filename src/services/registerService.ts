@@ -1,6 +1,6 @@
 /**
  * 注册服务
- * 整合 IAM 儿童注册和 Collection 受试者创建
+ * 整合 IAM 档案创建和 Collection 受试者创建
  */
 
 import { registerTesteeProfile, createTestee, searchTesteeProfiles } from '@/services/api/testees';
@@ -31,11 +31,11 @@ export interface ChildRegisterData {
  * 注册结果
  */
 export interface RegisterResult {
-  /** IAM 儿童信息 */
+  /** IAM 档案信息 */
   child: any;
   /** Collection 受试者信息 */
   testee: any;
-  /** 儿童ID（来自IAM） */
+  /** 档案ID（来自IAM，兼容旧字段名） */
   childId: string;
   /** 受试者ID（来自Collection） */
   testeeId: string;
@@ -45,7 +45,7 @@ export interface RegisterResult {
  * 完整的儿童注册流程
  * 
  * 步骤：
- * 1. 在 IAM 中注册儿童（建档）
+ * 1. 在 IAM 中创建档案（建档）
  * 2. 在 Collection 中创建受试者
  * 3. 更新本地 testeeStore
  * 
@@ -57,15 +57,15 @@ export async function registerChildComplete(childData: ChildRegisterData): Promi
   console.log('[RegisterService] 开始注册儿童:', childData.name);
   
   try {
-    // Step 1: 在 IAM 注册儿童（建档）
-    console.log('[RegisterService] Step 1: 在 IAM 注册儿童');
+    // Step 1: 在 IAM 创建档案
+    console.log('[RegisterService] Step 1: 在 IAM 创建档案');
     
     // 构建请求数据 - 后端期望 camelCase 格式
     const iamPayload: any = {
       legalName: childData.name,
       dob: childData.birthday,
       gender: childData.sex,
-      relation: 'parent'  // 注册接口必填字段
+      relation: 'parent'
     };
     
     // 添加可选字段
@@ -87,17 +87,16 @@ export async function registerChildComplete(childData: ChildRegisterData): Promi
     
     console.log('[RegisterService] IAM 注册成功（原始）:', iamResponse);
     
-    // 从响应中提取儿童信息
-    const iamChild = iamResponse.child || iamResponse;
+    const iamProfile = iamResponse.profile || iamResponse.child || iamResponse;
     // ⚠️ 关键：立即转为字符串，防止 JavaScript 大数精度丢失
-    const childId = String(iamChild.id || iamChild.childId);
+    const childId = String(iamProfile.id || iamProfile.profileId || iamProfile.childId);
     
     if (!childId || childId === 'undefined') {
-      console.error('[RegisterService] IAM 响应中未找到 childId:', iamResponse);
-      throw new Error('IAM 注册失败：未返回儿童ID');
+      console.error('[RegisterService] IAM 响应中未找到 profileId:', iamResponse);
+      throw new Error('IAM 建档失败：未返回档案ID');
     }
     
-    console.log('[RegisterService] 提取的 childId（字符串）:', childId, '原始值:', iamChild.id);
+    console.log('[RegisterService] 提取的 profileId（字符串）:', childId, '原始值:', iamProfile.id);
     
     // Step 2: 在 Collection 创建受试者
     console.log('[RegisterService] Step 2: 在 Collection 创建受试者');
@@ -114,9 +113,9 @@ export async function registerChildComplete(childData: ChildRegisterData): Promi
       const collectionPayload = {
         iam_user_id: iamUserId,
         iam_child_id: String(childId),
-        name: iamChild.legalName || iamChild.legal_name,
-        gender: iamChild.gender,
-        birthday: iamChild.dob,
+        name: iamProfile.legalName || iamProfile.legal_name,
+        gender: iamProfile.gender,
+        birthday: iamProfile.dob,
         tags: [],
         source: 'online_form',
         is_key_focus: false
@@ -142,18 +141,18 @@ export async function registerChildComplete(childData: ChildRegisterData): Promi
     try {
       addTestee({
         id: testeeId,
-        legalName: iamChild.legalName || iamChild.legal_name,
-        name: iamChild.legalName || iamChild.legal_name,
-        dob: iamChild.dob,
-        birthday: iamChild.dob,
-        gender: iamChild.gender,
-        sex: iamChild.gender,
-        idType: iamChild.idType || iamChild.id_type,
-        idNo: iamChild.idNo || iamChild.id_no,
-        heightCm: iamChild.heightCm || iamChild.height_cm,
-        weightKg: iamChild.weightKg || iamChild.weight_kg,
-        createdAt: iamChild.createdAt || iamChild.created_at,
-        updatedAt: iamChild.updatedAt || iamChild.updated_at
+        legalName: iamProfile.legalName || iamProfile.legal_name,
+        name: iamProfile.legalName || iamProfile.legal_name,
+        dob: iamProfile.dob,
+        birthday: iamProfile.dob,
+        gender: iamProfile.gender,
+        sex: iamProfile.gender,
+        idType: iamProfile.idType || iamProfile.id_type,
+        idNo: iamProfile.idNo || iamProfile.id_no,
+        heightCm: iamProfile.heightCm || iamProfile.height_cm,
+        weightKg: iamProfile.weightKg || iamProfile.weight_kg,
+        createdAt: iamProfile.createdAt || iamProfile.created_at,
+        updatedAt: iamProfile.updatedAt || iamProfile.updated_at
       });
       console.log('[RegisterService] 本地 store 更新成功');
     } catch (storeError) {
@@ -162,7 +161,7 @@ export async function registerChildComplete(childData: ChildRegisterData): Promi
     }
     
     const result: RegisterResult = {
-      child: iamChild,
+      child: iamProfile,
       testee: testee,
       childId: childId,
       testeeId: testeeId

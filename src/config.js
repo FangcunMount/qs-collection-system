@@ -10,10 +10,10 @@ const configMap = {
     taskOpenedTemplateId: '1toOOzloRRiCXS2c2XkMinIzWjyt5Bq7R-Bqdxd8il0',
     // 开发环境：使用内网IP代替localhost，或勾选"不校验合法域名"
     // 将下面的 192.168.x.x 替换为您的实际内网IP
-    iamHost: 'https://iam.fangcunmount.cn/api/v1',  // 请替换为实际IP
+    iamHost: 'https://iam.fangcunmount.cn/api/v2',
     collectionHost: 'https://collect.fangcunmount.cn/api/v1',
     qsHost: 'https://qs.fangcunmount.cn/api/v1'
-    // iamHost: 'http://localhost:18081/api/v1',  // 请替换为实际IP
+    // iamHost: 'http://localhost:18081/api/v2',
     // collectionHost: 'http://localhost:18081/api/v1/api/v1'
   },
   // 体验版
@@ -21,7 +21,7 @@ const configMap = {
     appId: 'wx72ade250b619a649',
     domain: 'fangcunmount.cn',
     taskOpenedTemplateId: '1toOOzloRRiCXS2c2XkMinIzWjyt5Bq7R-Bqdxd8il0',
-    iamHost: 'https://iam.fangcunmount.cn/api/v1',
+    iamHost: 'https://iam.fangcunmount.cn/api/v2',
     collectionHost: 'https://collect.fangcunmount.cn/api/v1',
     qsHost: 'https://qs.fangcunmount.cn/api/v1'
   },
@@ -30,7 +30,7 @@ const configMap = {
     appId: 'wx72ade250b619a649',
     domain: 'fangcunmount.cn',
     taskOpenedTemplateId: '1toOOzloRRiCXS2c2XkMinIzWjyt5Bq7R-Bqdxd8il0',
-    iamHost: 'https://iam.fangcunmount.cn/api/v1',
+    iamHost: 'https://iam.fangcunmount.cn/api/v2',
     collectionHost: 'https://collect.fangcunmount.cn/api/v1',
     qsHost: 'https://qs.fangcunmount.cn/api/v1'
   }
@@ -51,7 +51,7 @@ const config = configMap[envVersion];
 export default {
   ...config,
   // 优先使用环境中显式配置的 iamHost / collectionHost
-  iamHost: config.iamHost || ('https://iam.' + config.domain + '/api/v1'),
+  iamHost: config.iamHost || ('https://iam.' + config.domain + '/api/v2'),
   collectionHost: config.collectionHost || ('https://collection.' + config.domain + '/api/v1'),
   qsHost: config.qsHost || ('https://qs.' + config.domain + '/api/v1'),
   // 兼容旧代码的 host 字段，优先使用 collectionHost

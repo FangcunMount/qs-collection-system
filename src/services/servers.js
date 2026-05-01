@@ -132,16 +132,18 @@ const QPS_BACKOFF_BASE_MS = 800;
 function extractResponseMeta(res) {
   const statusCode = res.statusCode ?? 0;
   const data = res.data || {};
-  const code = String(data?.code ?? data?.errno ?? statusCode ?? '');
+  const isObjectPayload = data !== null && typeof data === 'object' && !Array.isArray(data);
+  const hasBusinessCode = isObjectPayload && (data.code !== undefined || data.errno !== undefined);
+  const code = hasBusinessCode ? String(data?.code ?? data?.errno ?? '') : '';
   const message = String(data?.message ?? data?.errmsg ?? '');
-  const payload = data?.data !== undefined ? data.data : data;
+  const payload = hasBusinessCode && data?.data !== undefined ? data.data : data;
 
-  return { statusCode, data, code, message, payload };
+  return { statusCode, data, code, message, payload, hasBusinessCode };
 }
 
 function createRequestError(meta, extra = {}) {
   return {
-    code: meta.code,
+    code: meta.code || String(meta.statusCode || ''),
     message: meta.message,
     data: meta.payload,
     statusCode: meta.statusCode,
@@ -220,11 +222,17 @@ function baseRequest(params, context) {
           return;
         }
 
-        if (context.shouldHandleAuth && isSessionExpiredCode(meta.code)) {
+        if (meta.statusCode >= 200 && meta.statusCode < 300 && !meta.hasBusinessCode) {
+          resolve(meta.payload);
+          return;
+        }
+
+        const authCode = meta.code || String(meta.statusCode || '');
+        if (context.shouldHandleAuth && isSessionExpiredCode(authCode)) {
           console.warn('[BaseRequest] 收到会话失效响应，尝试强制刷新 token', {
             url: params.url,
             statusCode: meta.statusCode,
-            code: meta.code,
+            code: authCode,
             message: meta.message,
             authRetryCount: context.authRetryCount
           });
@@ -256,13 +264,21 @@ function baseRequest(params, context) {
           return;
         }
 
-        const authVerifyResult = errorHandler.handleAuthError(meta.code);
+        const authVerifyResult = errorHandler.handleAuthError(authCode);
         if (!authVerifyResult) {
           reject(createRequestError(meta));
           return;
         }
 
-        if (meta.code && meta.code !== '0') {
+        if (meta.hasBusinessCode && meta.code && meta.code !== '0') {
+          if (!params.suppressErrorToast) {
+            Taro.showToast({ title: meta.message || '请求失败', icon: 'none' });
+          }
+          reject(createRequestError(meta));
+          return;
+        }
+
+        if (meta.statusCode < 200 || meta.statusCode >= 300) {
           if (!params.suppressErrorToast) {
             Taro.showToast({ title: meta.message || '请求失败', icon: 'none' });
           }

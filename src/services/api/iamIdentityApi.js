@@ -2,8 +2,8 @@ import { request } from '../servers';
 import config from '../../config';
 
 /**
- * IAM 身份管理 API (identity.v1)
- * 负责用户信息、儿童档案、监护关系管理
+ * IAM 身份管理 API (identity.v2)
+ * 负责用户信息、档案、档案关系管理
  */
 
 /**
@@ -39,13 +39,13 @@ export const updateMe = (userData) => {
 };
 
 /**
- * 获取当前用户的儿童档案列表
+ * 获取当前用户的档案列表
  * @param {number} offset - 偏移量
  * @param {number} limit - 每页数量
  * @returns {Promise<{items: Array, total: number, offset: number, limit: number}>}
  */
-export const getMyChildren = (offset = 0, limit = 20) => {
-  return request('/identity/me/children', {}, {
+export const getMyProfiles = (offset = 0, limit = 20) => {
+  return request('/identity/me/profiles', {}, {
     host: config.iamHost,
     params: { offset, limit },
     needToken: true
@@ -53,22 +53,12 @@ export const getMyChildren = (offset = 0, limit = 20) => {
 };
 
 /**
- * 注册孩子（建档 + 授当前用户为监护人）
- * @param {object} childData - 儿童数据
- * @param {string} childData.legalName - 法定姓名（必填，camelCase）
- * @param {string} childData.dob - 出生日期 (YYYY-MM-DD)（必填）
- * @param {number} childData.gender - 性别 (1=男, 2=女)（必填）
- * @param {string} childData.relation - 关系类型（必填，用于注册接口）
- * @param {string} childData.idType - 证件类型（可选）
- * @param {string} childData.idNo - 证件号码（可选）
- * @param {number} childData.heightCm - 身高（可选，int 类型）
- * @param {string} childData.weightKg - 体重（可选，string 类型）
- * @returns {Promise<{child: object, guardianship: object}>} 
- * @description 响应格式已更新为嵌套格式: {code, message, data: {child, guardianship}}
- * 但 request() 会自动提取 data.data，返回 {child, guardianship}
+ * 创建档案（建档 + 授当前用户档案关系）
+ * @param {object} profileData - 档案数据
+ * @returns {Promise<{profile: object, profileLink: object}>}
  */
-export const registerChild = (childData) => {
-  return request('/identity/children/register', childData, {
+export const createProfile = (profileData) => {
+  return request('/identity/profiles', profileData, {
     host: config.iamHost,
     method: 'POST',
     needToken: true,
@@ -79,19 +69,19 @@ export const registerChild = (childData) => {
 };
 
 /**
- * 搜索儿童
+ * 搜索档案
  * @param {string} name - 姓名
  * @param {string} dob - 出生日期 (YYYY-MM-DD)
  * @param {number} offset - 偏移量
  * @param {number} limit - 每页数量
  * @returns {Promise<{items: Array, total: number}>}
  */
-export const searchChildren = (name, dob, offset = 0, limit = 20) => {
+export const searchProfiles = (name, dob, offset = 0, limit = 20) => {
   const params = { offset, limit };
   if (name) params.name = name;
   if (dob) params.dob = dob;
   
-  return request('/identity/children/search', {}, {
+  return request('/identity/profiles/search', {}, {
     host: config.iamHost,
     params,
     needToken: true
@@ -99,25 +89,25 @@ export const searchChildren = (name, dob, offset = 0, limit = 20) => {
 };
 
 /**
- * 获取儿童详情
- * @param {string} childId - 儿童ID
+ * 获取档案详情
+ * @param {string} profileId - 档案ID
  * @returns {Promise<object>}
  */
-export const getChild = (childId) => {
-  return request(`/identity/children/${String(childId)}`, {}, {
+export const getProfile = (profileId) => {
+  return request(`/identity/profiles/${String(profileId)}`, {}, {
     host: config.iamHost,
     needToken: true
   });
 };
 
 /**
- * 更新儿童信息
- * @param {string} childId - 儿童ID
- * @param {object} childData - 儿童数据
+ * 更新档案信息
+ * @param {string} profileId - 档案ID
+ * @param {object} profileData - 档案数据
  * @returns {Promise<object>}
  */
-export const updateChild = (childId, childData) => {
-  return request(`/identity/children/${String(childId)}`, childData, {
+export const updateProfile = (profileId, profileData) => {
+  return request(`/identity/profiles/${String(profileId)}`, profileData, {
     host: config.iamHost,
     method: 'PATCH',
     needToken: true
@@ -125,44 +115,32 @@ export const updateChild = (childId, childData) => {
 };
 
 /**
- * 删除儿童档案
- * @param {string} childId - 儿童ID
- * @returns {Promise<{message: string}>}
- */
-export const deleteChild = (childId) => {
-  return request(`/identity/children/${String(childId)}`, {}, {
-    host: config.iamHost,
-    method: 'DELETE',
-    needToken: true
-  });
-};
-
-/**
- * 获取儿童的监护人列表
- * @param {string} childId - 儿童ID
- * @param {number} offset - 偏移量
- * @param {number} limit - 每页数量
+ * 查询档案关系
+ * @param {object} query - 查询条件
  * @returns {Promise<{items: Array, total: number}>}
  */
-export const getChildGuardians = (childId, offset = 0, limit = 20) => {
-  return request(`/identity/children/${String(childId)}/guardians`, {}, {
+export const listProfileLinks = ({ userId, profileId, active, offset = 0, limit = 20 } = {}) => {
+  const params = { offset, limit };
+  if (userId) params.user_id = String(userId);
+  if (profileId) params.profile_id = String(profileId);
+  if (active !== undefined) params.active = active;
+
+  return request('/identity/profile-links', {}, {
     host: config.iamHost,
-    params: { offset, limit },
+    params,
     needToken: true
   });
 };
 
 /**
- * 添加监护人
- * @param {string} childId - 儿童ID
- * @param {string} userId - 用户ID
- * @param {string} relation - 关系类型
+ * 授予档案关系
+ * @param {object} data - 关系数据
  * @returns {Promise<object>}
  */
-export const addGuardian = (childId, userId, relation = 'parent') => {
-  return request(`/identity/guardianships`, {
-    child_id: childId,
-    user_id: userId,
+export const createProfileLink = ({ profileId, userId, relation = 'parent' }) => {
+  return request('/identity/profile-links', {
+    profileId: String(profileId),
+    userId: userId ? String(userId) : undefined,
     relation
   }, {
     host: config.iamHost,
@@ -175,21 +153,74 @@ export const addGuardian = (childId, userId, relation = 'parent') => {
 };
 
 /**
- * 移除监护关系
- * @param {string} guardianshipId - 监护关系ID
+ * 撤销档案关系
+ * @param {string} profileLinkId - 档案关系ID
  * @returns {Promise<{message: string}>}
  */
-export const removeGuardian = (guardianshipId) => {
-  return request(`/identity/guardianships/${guardianshipId}`, {}, {
+export const revokeProfileLink = (profileLinkId) => {
+  return request(`/identity/profile-links/${String(profileLinkId)}/revoke`, {}, {
     host: config.iamHost,
-    method: 'DELETE',
+    method: 'POST',
     needToken: true
   });
+};
+
+/**
+ * 兼容旧调用名：删除当前用户与档案的关系，不删除档案本身。
+ * @param {string} profileId - 档案ID
+ * @returns {Promise<{message: string}>}
+ */
+export const deleteChild = async (profileId) => {
+  const links = await listProfileLinks({ profileId, active: true, offset: 0, limit: 20 });
+  const link = (links?.items || []).find(item => String(item.profileId || item.profile_id) === String(profileId));
+  if (!link?.id) {
+    throw new Error('未找到可撤销的档案关系');
+  }
+  return revokeProfileLink(link.id);
+};
+
+export const getMyChildren = getMyProfiles;
+export const registerChild = createProfile;
+export const searchChildren = searchProfiles;
+export const getChild = getProfile;
+export const updateChild = updateProfile;
+
+/**
+ * 兼容旧调用名：获取档案关系列表。
+ */
+export const getChildGuardians = (profileId, offset = 0, limit = 20) => {
+  return listProfileLinks({ profileId, offset, limit });
+};
+
+/**
+ * 兼容旧调用名：添加档案关系。
+ */
+export const addGuardian = (profileId, userId, relation = 'parent') => {
+  return createProfileLink({
+    profileId,
+    userId,
+    relation
+  });
+};
+
+/**
+ * 兼容旧调用名：撤销档案关系。
+ */
+export const removeGuardian = (profileLinkId) => {
+  return revokeProfileLink(profileLinkId);
 };
 
 export default {
   getMe,
   updateMe,
+  getMyProfiles,
+  createProfile,
+  searchProfiles,
+  getProfile,
+  updateProfile,
+  listProfileLinks,
+  createProfileLink,
+  revokeProfileLink,
   getMyChildren,
   registerChild,
   searchChildren,

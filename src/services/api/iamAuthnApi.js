@@ -68,6 +68,27 @@ function normalizeAuthError(error, fallbackReason = 'network_error') {
   return { ok: false, reason: fallbackReason, code, message, raw: error };
 }
 
+function buildWechatMiniProgramSignupPayload(code, appId, profile = {}) {
+  const nickname = profile.nickname || profile.nickName || profile.name || '';
+  const avatar = profile.avatar || profile.avatarUrl || '';
+  const name = profile.name || profile.legalName || nickname || '微信用户';
+
+  return {
+    name,
+    phone: profile.phone,
+    email: profile.email,
+    appId: appId || profile.appId || profile.app_id || config.appId,
+    jsCode: code || profile.jsCode || profile.code,
+    nickname: nickname || undefined,
+    avatar: avatar || undefined,
+    meta: profile.meta || {
+      ...profile,
+      nickname,
+      avatar
+    }
+  };
+}
+
 /**
  * 用户登录（微信小程序）
  * @param {string} code - 微信登录凭证
@@ -87,13 +108,11 @@ export const login = async (code, appId) => {
 
   try {
     const payload = await request('/authn/login', {
-      // IAM authn 合同中小程序登录仍复用通用 wechat 方法值。
-      method: 'wechat',
-      credentials: {
+      auth_method: 'wechat',
+      method_payload: {
         app_id: resolvedAppId,
         code
-      },
-      audience: 'mobile'
+      }
     }, {
       host: config.iamHost,
       method: 'POST',
@@ -195,7 +214,7 @@ export const logout = async (accessToken, refreshTokenValue) => {
  */
 export const verifyToken = (token) => {
   return request('/authn/verify', {
-    token
+    access_token: token
   }, {
     host: config.iamHost,
     method: 'POST',
@@ -211,11 +230,7 @@ export const verifyToken = (token) => {
  * @returns {Promise<{account_id: string, user_id: string}>}
  */
 export const registerWechatAccount = (code, appId, profile = {}) => {
-  return request('/authn/accounts/wechat/register', {
-    app_id: appId || config.appId,
-    code,
-    profile
-  }, {
+  return request('/authn/signups/wechat-miniprogram', buildWechatMiniProgramSignupPayload(code, appId, profile), {
     host: config.iamHost,
     method: 'POST',
     needToken: false
