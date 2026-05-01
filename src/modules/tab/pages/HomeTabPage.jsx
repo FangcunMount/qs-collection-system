@@ -4,7 +4,7 @@ import { View, Text, ScrollView } from "@tarojs/components";
 
 import BottomMenu from "@/shared/ui/BottomMenu";
 import { routes } from "@/shared/config/routes";
-import { getScales } from "@/services/api/scales";
+import { getHotScales } from "@/services/api/scales";
 import { getAssessments } from "@/services/api/assessments";
 import { buildAssessmentScanTargetUrl, isScanCancelError } from "@/shared/lib/entryScan";
 import { formatSimpleDate } from "@/shared/lib/dateFormatters";
@@ -89,44 +89,6 @@ const REPORTER_LABEL_MAP = {
   clinical: "专业评估",
 };
 
-const FEATURED_TARGETS = [
-  {
-    key: "promis_sleep_disturbance_short_form",
-    match: (scale) => {
-      const text = getScaleSearchText(scale);
-      return text.includes("promis") && (text.includes("睡眠") || text.includes("sleep"));
-    },
-  },
-  {
-    key: "isi",
-    match: (scale) => {
-      const text = getScaleSearchText(scale);
-      return text.includes("isi") || text.includes("失眠严重");
-    },
-  },
-  {
-    key: "tssl",
-    match: (scale) => {
-      const text = getScaleSearchText(scale);
-      return text.includes("tssl") || text.includes("抽动");
-    },
-  },
-];
-
-const getScaleSearchText = (scale) => {
-  return [
-    scale?.code,
-    scale?.id,
-    scale?.title,
-    scale?.name,
-    scale?.description,
-    scale?.category,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-};
-
 const normalizeArray = (value) => {
   if (Array.isArray(value)) return value;
   if (value === undefined || value === null || value === "") return [];
@@ -203,6 +165,11 @@ const normalizeEstimatedMinutes = (item, questionCount) => {
 const normalizeScale = (item) => {
   const code = normalizeLabel(item?.code || item?.id || item?.questionnaire_code);
   const questionCount = normalizeQuestionCount(item);
+  const rank = Number(item?.rank || 0);
+  const submissionCount = Number(item?.submission_count ?? item?.submissionCount ?? 0);
+  const heatScore = Number(item?.heat_score ?? item?.heatScore ?? submissionCount);
+  const windowDays = Number(item?.window_days ?? item?.windowDays ?? 0);
+
   return {
     id: code,
     code,
@@ -214,35 +181,12 @@ const normalizeScale = (item) => {
     tags: deriveTags(item),
     questionCount,
     estimatedMinutes: normalizeEstimatedMinutes(item, questionCount),
+    rank: Number.isFinite(rank) && rank > 0 ? rank : 0,
+    submissionCount: Number.isFinite(submissionCount) && submissionCount > 0 ? submissionCount : 0,
+    heatScore: Number.isFinite(heatScore) && heatScore > 0 ? heatScore : 0,
+    windowDays: Number.isFinite(windowDays) && windowDays > 0 ? windowDays : 0,
     raw: item,
   };
-};
-
-const pickFeaturedScales = (scales) => {
-  const selected = [];
-  const selectedCodes = new Set();
-
-  FEATURED_TARGETS.forEach((target) => {
-    const match = scales.find((scale) => {
-      const code = normalizeLabel(scale?.code || scale?.id);
-      return code && !selectedCodes.has(code) && target.match(scale);
-    });
-    if (match) {
-      const code = normalizeLabel(match.code || match.id);
-      selected.push(match);
-      selectedCodes.add(code);
-    }
-  });
-
-  scales.forEach((scale) => {
-    if (selected.length >= 3) return;
-    const code = normalizeLabel(scale?.code || scale?.id);
-    if (!code || selectedCodes.has(code)) return;
-    selected.push(scale);
-    selectedCodes.add(code);
-  });
-
-  return selected.slice(0, 3).map(normalizeScale);
 };
 
 const normalizeRecentAssessment = (item) => {
@@ -292,8 +236,8 @@ const resolveNavMetrics = () => {
 
 const HomeIndex = () => {
   const router = useRouter();
-  const [featuredScales, setFeaturedScales] = useState([]);
-  const [featuredLoading, setFeaturedLoading] = useState(true);
+  const [hotScales, setHotScales] = useState([]);
+  const [hotScalesLoading, setHotScalesLoading] = useState(true);
   const [recentAssessment, setRecentAssessment] = useState(null);
   const [recentLoading, setRecentLoading] = useState(false);
   const [navMetrics, setNavMetrics] = useState(() => resolveNavMetrics());
@@ -305,18 +249,22 @@ const HomeIndex = () => {
     paddingRight: `${navMetrics.capsuleAvoidWidth}px`,
   }), [navMetrics]);
 
-  const loadFeaturedScales = useCallback(async () => {
+  const loadHotScales = useCallback(async () => {
     try {
-      setFeaturedLoading(true);
-      const result = await getScales({ page: 1, pageSize: 50 });
+      setHotScalesLoading(true);
+      const result = await getHotScales({ limit: 5, windowDays: 30 });
       const payload = result.data || result;
       const scales = payload.scales || [];
-      setFeaturedScales(pickFeaturedScales(scales));
+      const windowDays = Number(payload.window_days ?? payload.windowDays ?? 0);
+      setHotScales(scales.map((scale) => normalizeScale({
+        ...scale,
+        window_days: scale.window_days ?? windowDays,
+      })));
     } catch (error) {
-      console.error("加载首页精选量表失败:", error);
-      setFeaturedScales([]);
+      console.error("加载首页热度排行失败:", error);
+      setHotScales([]);
     } finally {
-      setFeaturedLoading(false);
+      setHotScalesLoading(false);
     }
   }, []);
 
@@ -452,10 +400,10 @@ const HomeIndex = () => {
 
   const refreshHomeData = useCallback(async () => {
     await Promise.all([
-      loadFeaturedScales(),
+      loadHotScales(),
       loadRecentAssessment(currentTestee?.id),
     ]);
-  }, [currentTestee?.id, loadFeaturedScales, loadRecentAssessment]);
+  }, [currentTestee?.id, loadHotScales, loadRecentAssessment]);
 
   usePullDownRefresh(async () => {
     await refreshHomeData();
@@ -464,8 +412,8 @@ const HomeIndex = () => {
 
   useEffect(() => {
     setNavMetrics(resolveNavMetrics());
-    loadFeaturedScales();
-  }, [loadFeaturedScales]);
+    loadHotScales();
+  }, [loadHotScales]);
 
   useEffect(() => {
     loadRecentAssessment(currentTestee?.id);
@@ -521,8 +469,8 @@ const HomeIndex = () => {
         />
 
         <FeaturedScaleList
-          scales={featuredScales}
-          loading={featuredLoading}
+          scales={hotScales}
+          loading={hotScalesLoading}
           onViewMore={handleExploreScales}
           onStartScale={handleStartScale}
         />

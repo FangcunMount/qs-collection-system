@@ -5,6 +5,13 @@ import LoadingState from "@/shared/ui/LoadingState";
 
 const renderMetaText = (scale) => {
   const pieces = [];
+  if (scale.rank) {
+    pieces.push(`第 ${scale.rank} 名`);
+  }
+  if (scale.submissionCount) {
+    const windowText = scale.windowDays ? `近 ${scale.windowDays} 天` : "近期";
+    pieces.push(`${windowText} ${scale.submissionCount} 次填写`);
+  }
   if (scale.questionCount) {
     pieces.push(`${scale.questionCount} 题`);
   }
@@ -23,7 +30,7 @@ const FeaturedScaleList = ({
   return (
     <View className="home-section home-featured-section">
       <View className="home-section__header">
-        <Text className="home-section__title">专业精选</Text>
+        <Text className="home-section__title">热度排行</Text>
         <View className="home-section__more" onClick={onViewMore}>
           <Text className="home-section__more-text">更多</Text>
           <AtIcon value="chevron-right" size="14" color="#98A2B3" />
@@ -72,7 +79,7 @@ const FeaturedScaleList = ({
         </View>
       ) : (
         <View className="home-empty-card">
-          <Text className="home-empty-card__title">暂未获取到精选量表</Text>
+          <Text className="home-empty-card__title">暂未获取到热度排行</Text>
           <Text className="home-empty-card__desc">可前往发现页浏览全部量表</Text>
         </View>
       )}

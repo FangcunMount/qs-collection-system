@@ -59,6 +59,26 @@ export const getScales = ({
 };
 
 /**
+ * 获取热门量表排行
+ * @param {object} options
+ * @returns {Promise<{scales: Array, total: number, limit: number, window_days: number}>}
+ */
+export const getHotScales = ({
+  limit = 5,
+  windowDays = 30
+} = {}) => {
+  const queryString = buildQueryString({
+    limit,
+    window_days: windowDays
+  });
+
+  return request(queryString ? `/scales/hot?${queryString}` : '/scales/hot', {}, {
+    host: config.collectionHost,
+    needToken: false
+  });
+};
+
+/**
  * 获取量表分类列表
  * @returns {Promise<{categories: Array, stages: Array, applicable_ages: Array, reporters: Array, tags: Array}>}
  */
@@ -83,6 +103,7 @@ export const getScale = (code) => {
 
 export default {
   getScales,
+  getHotScales,
   getScaleCategories,
   getScale
 };
