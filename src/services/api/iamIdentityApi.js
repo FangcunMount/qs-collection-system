@@ -116,14 +116,39 @@ export const updateProfile = (profileId, profileData) => {
 
 /**
  * 查询档案关系
- * @param {object} query - 查询条件
+ * @param {object} query - 查询条件。推荐使用 includeRevoked；active 仅保留为旧入参兼容。
  * @returns {Promise<{items: Array, total: number}>}
  */
-export const listProfileLinks = ({ userId, profileId, active, offset = 0, limit = 20 } = {}) => {
+function normalizeBoolean(value) {
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true') return true;
+    if (normalized === 'false') return false;
+  }
+  return Boolean(value);
+}
+
+function resolveIncludeRevoked({ includeRevoked, include_revoked, active } = {}) {
+  if (includeRevoked !== undefined) return normalizeBoolean(includeRevoked);
+  if (include_revoked !== undefined) return normalizeBoolean(include_revoked);
+  if (active !== undefined) return !normalizeBoolean(active);
+  return undefined;
+}
+
+export const listProfileLinks = ({
+  userId,
+  profileId,
+  includeRevoked,
+  include_revoked,
+  active,
+  offset = 0,
+  limit = 20
+} = {}) => {
   const params = { offset, limit };
   if (userId) params.user_id = String(userId);
   if (profileId) params.profile_id = String(profileId);
-  if (active !== undefined) params.active = active;
+  const resolvedIncludeRevoked = resolveIncludeRevoked({ includeRevoked, include_revoked, active });
+  if (resolvedIncludeRevoked !== undefined) params.include_revoked = resolvedIncludeRevoked;
 
   return request('/identity/profile-links', {}, {
     host: config.iamHost,
@@ -171,7 +196,7 @@ export const revokeProfileLink = (profileLinkId) => {
  * @returns {Promise<{message: string}>}
  */
 export const deleteChild = async (profileId) => {
-  const links = await listProfileLinks({ profileId, active: true, offset: 0, limit: 20 });
+  const links = await listProfileLinks({ profileId, includeRevoked: false, offset: 0, limit: 20 });
   const link = (links?.items || []).find(item => String(item.profileId || item.profile_id) === String(profileId));
   if (!link?.id) {
     throw new Error('未找到可撤销的档案关系');
