@@ -8,13 +8,13 @@ import config from '../../config';
 
 /**
  * 检查受试者是否存在
- * @param {string|number} iamChildId - IAM儿童ID
+ * @param {string|number} iamProfileId - IAM Profile ID
  * @returns {Promise<{exists: boolean, testee_id?: number}>}
  */
-export const checkTesteeExists = (iamChildId) => {
+export const checkTesteeExists = (iamProfileId) => {
   return request('/testees/exists', {}, {
     host: config.collectionHost,
-    params: { iam_child_id: String(iamChildId) },
+    params: { iam_profile_id: String(iamProfileId) },
     needToken: true
   });
 };
@@ -36,11 +36,11 @@ export const getMyTestees = (offset = 0, limit = 20) => {
 /**
  * 创建受试者
  * @param {object} testeeData - 受试者数据
- * @param {string|number} testeeData.iam_user_id - IAM用户ID（可选，支持大数，建议用字符串）
- * @param {string|number} testeeData.iam_child_id - IAM儿童ID（必填，支持大数，建议用字符串）
  * @param {string} testeeData.name - 姓名（必填）
  * @param {number} testeeData.gender - 性别 (1=男, 2=女, 3=其他)（必填）
  * @param {string} testeeData.birthday - 出生日期 (YYYY-MM-DD)（可选）
+ * @param {string} testeeData.id_card_number - 身份证号（可选）
+ * @param {string} testeeData.relation - 与当前用户关系 self/parent/grandparent/other（可选）
  * @param {string[]} testeeData.tags - 标签列表（可选）
  * @param {string} testeeData.source - 来源（可选）
  * @param {boolean} testeeData.is_key_focus - 是否重点关注（可选）
@@ -81,7 +81,7 @@ export const getTesteeCareContext = (testeeId) => {
 /**
  * 更新受试者信息
  * @param {string|number} testeeId - 受试者ID
- * @param {object} testeeData - 受试者数据
+ * @param {object} testeeData - 受试者数据，支持 name/gender/birthday/tags/is_key_focus
  * @returns {Promise<object>}
  */
 export const updateTestee = (testeeId, testeeData) => {

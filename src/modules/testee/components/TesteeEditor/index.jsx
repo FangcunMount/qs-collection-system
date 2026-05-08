@@ -5,8 +5,8 @@ import Taro from "@tarojs/taro";
 import { AtButton } from "taro-ui";
 
 import "./index.less";
-import { findTesteeById, updateTestee } from "@/shared/stores/testees";
-import { updateTesteeProfile } from "@/services/api/testees";
+import { findTesteeById, updateTestee as updateTesteeStore } from "@/shared/stores/testees";
+import { updateTestee as updateTesteeApi } from "@/services/api/testees";
 
 const TesteeEditor = ({ testeeId, onSuccess, onCancel }) => {
   const [testee, setTestee] = useState(null);
@@ -14,9 +14,7 @@ const TesteeEditor = ({ testeeId, onSuccess, onCancel }) => {
   const [editableData, setEditableData] = useState({
     legalName: "",
     gender: null,
-    dob: "",
-    heightCm: null,
-    weightKg: ""
+    dob: ""
   });
 
   useEffect(() => {
@@ -36,9 +34,7 @@ const TesteeEditor = ({ testeeId, onSuccess, onCancel }) => {
     setEditableData({
       legalName: data.legalName || "",
       gender: data.gender ?? null,
-      dob: data.dob || "",
-      heightCm: data.heightCm ?? null,
-      weightKg: data.weightKg || ""
+      dob: data.dob || ""
     });
   }, [onCancel, testeeId]);
 
@@ -74,30 +70,26 @@ const TesteeEditor = ({ testeeId, onSuccess, onCancel }) => {
     setLoading(true);
     try {
       const payload = {
-        legalName: editableData.legalName,
+        name: editableData.legalName,
         gender: editableData.gender,
-        dob: editableData.dob
+        birthday: editableData.dob
       };
 
-      if (editableData.heightCm !== null && editableData.heightCm !== "") {
-        payload.heightCm = Number(editableData.heightCm);
-      }
-      if (editableData.weightKg) {
-        payload.weightKg = String(editableData.weightKg);
-      }
-
-      await updateTesteeProfile(testeeId, payload);
+      const response = await updateTesteeApi(testeeId, payload);
+      const updated = response?.data || response || {};
 
       const updatedTestee = {
         ...testee,
-        legalName: editableData.legalName,
-        gender: editableData.gender,
-        dob: editableData.dob,
-        heightCm: payload.heightCm ?? testee.heightCm,
-        weightKg: editableData.weightKg || testee.weightKg
+        id: String(updated.id || testeeId),
+        legalName: updated.name || editableData.legalName,
+        name: updated.name || editableData.legalName,
+        gender: updated.gender ?? editableData.gender,
+        dob: updated.birthday || editableData.dob,
+        birthday: updated.birthday || editableData.dob,
+        updatedAt: updated.updated_at || updated.updatedAt || testee.updatedAt
       };
 
-      updateTestee(testeeId, updatedTestee);
+      updateTesteeStore(testeeId, updatedTestee);
 
       Taro.showToast({
         title: "保存成功",
@@ -131,7 +123,9 @@ const TesteeEditor = ({ testeeId, onSuccess, onCancel }) => {
     const relationMap = {
       parent: "父母",
       guardian: "监护人",
-      self: "本人"
+      self: "本人",
+      grandparent: "祖父母",
+      other: "其他"
     };
     return relationMap[relation] || relation || "-";
   };
@@ -188,28 +182,6 @@ const TesteeEditor = ({ testeeId, onSuccess, onCancel }) => {
             <Picker mode="date" value={editableData.dob} onChange={(e) => handleChange("dob", e.detail.value)}>
               <View className="picker-value">{editableData.dob || "请选择出生日期"}</View>
             </Picker>
-          </View>
-
-          <View className="form-item">
-            <View className="form-label">身高（cm）</View>
-            <Input
-              type="number"
-              value={editableData.heightCm === null ? "" : String(editableData.heightCm)}
-              onInput={(e) => handleChange("heightCm", e.detail.value)}
-              className="input-field"
-              placeholder="请输入身高"
-            />
-          </View>
-
-          <View className="form-item">
-            <View className="form-label">体重（kg）</View>
-            <Input
-              type="digit"
-              value={editableData.weightKg}
-              onInput={(e) => handleChange("weightKg", e.detail.value)}
-              className="input-field"
-              placeholder="请输入体重"
-            />
           </View>
         </View>
 

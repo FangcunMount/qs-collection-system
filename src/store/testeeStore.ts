@@ -1,5 +1,5 @@
 import Taro from '@tarojs/taro';
-import { getMyTesteeProfiles, getMyTestees } from '@/services/api/testees';
+import { getMyTestees } from '@/services/api/testees';
 
 /**
  * 受试者基本信息
@@ -19,12 +19,8 @@ export interface Testee {
   idNo?: string;
   /** 脱敏后的证件号码 */
   idMasked?: string;
-  /** 关系 (parent/guardian/self) */
+  /** 关系 (self/parent/grandparent/other) */
   relation?: string;
-  /** 身高 (厘米) */
-  heightCm?: number | null;
-  /** 体重 (千克) */
-  weightKg?: string;
   /** 创建时间 */
   createdAt?: string;
   /** 更新时间 */
@@ -184,8 +180,6 @@ function normalizeTestee(testee: TesteeInput): Testee | null {
     idNo: testee.idNo,
     idMasked: testee.idMasked,
     relation: testee.relation,
-    heightCm: testee.heightCm,
-    weightKg: testee.weightKg,
     createdAt: testee.createdAt,
     updatedAt: testee.updatedAt
   };
@@ -447,50 +441,6 @@ export function subscribeTesteeStore(listener: Listener): () => void {
 }
 
 /**
- * 从 IAM 加载受试者列表
- */
-export async function loadTesteesFromIAM(): Promise<Testee[]> {
-  console.log('[TesteeStore] 从 IAM 加载受试者列表');
-  
-  try {
-    const response = await getMyTesteeProfiles();
-    console.log('[TesteeStore] IAM 响应:', response);
-    
-    // 转换 IAM identity children 格式到 testee 格式（兼容驼峰和下划线格式）
-    const items = response?.items || [];
-    console.log('[TesteeStore] IAM 原始数据:', items);
-    
-    const testees = items.map((item: any) => {
-      const testee = {
-        id: String(item.id),
-        legalName: item.legalName || item.legal_name || '',
-        gender: item.gender,
-        dob: item.dob || '',
-        idType: item.idType || item.id_type,
-        idNo: item.idNo || item.id_no,
-        idMasked: item.idMasked || item.id_masked,
-        relation: item.relation,
-        heightCm: item.heightCm || item.height_cm,
-        weightKg: item.weightKg || item.weight_kg,
-        createdAt: item.createdAt || item.created_at,
-        updatedAt: item.updatedAt || item.updated_at
-      };
-      console.log('[TesteeStore] 转换单个 IAM testee:', {
-        原始: { id: item.id, legalName: item.legalName, legal_name: item.legal_name },
-        结果: { id: testee.id, legalName: testee.legalName }
-      });
-      return testee;
-    });
-    
-    console.log('[TesteeStore] 从 IAM 加载了', testees.length, '个受试者, 转换后:', testees);
-    return testees;
-  } catch (error) {
-    console.error('[TesteeStore] 从 IAM 加载儿童失败:', error);
-    throw error;
-  }
-}
-
-/**
  * 从 Collection 加载受试者列表
  */
 export async function loadTesteesFromCollection(): Promise<Testee[]> {
@@ -514,8 +464,6 @@ export async function loadTesteesFromCollection(): Promise<Testee[]> {
         idNo: item.id_no,
         idMasked: item.id_masked,
         relation: item.relation,
-        heightCm: item.height_cm,
-        weightKg: item.weight_kg,
         createdAt: item.created_at,
         updatedAt: item.updated_at
       };
@@ -536,7 +484,7 @@ export async function loadTesteesFromCollection(): Promise<Testee[]> {
 
 /**
  * 初始化 TesteeStore
- * 优先从 IAM 加载儿童列表，如果失败则尝试旧接口
+ * 从 Collection 加载当前用户可访问的受试者列表
  */
 export async function initTesteeStore(force: boolean = false): Promise<TesteeStoreState> {
   // 如果已初始化且不强制刷新，直接返回
@@ -577,27 +525,9 @@ export async function initTesteeStore(force: boolean = false): Promise<TesteeSto
       }
     }
 
-    // 从服务器加载最新数据
-    let list: Testee[] = [];
-    
-    try {
-      // 优先使用新的 Collection API 加载受试者列表
-      console.log('[TesteeStore] 从 Collection 加载受试者列表');
-      list = await loadTesteesFromCollection();
-      console.log('[TesteeStore] Collection 加载成功，共', list.length, '个受试者');
-    } catch (collectionError) {
-      console.error('[TesteeStore] Collection 加载失败，尝试从 IAM 加载:', collectionError);
-      
-      try {
-        // 如果 Collection 失败，回退到 IAM API
-        console.log('[TesteeStore] 从 IAM 加载受试者列表');
-        list = await loadTesteesFromIAM();
-        console.log('[TesteeStore] IAM 加载成功，共', list.length, '个受试者');
-      } catch (iamError) {
-        console.error('[TesteeStore] IAM 也加载失败:', iamError);
-        throw iamError;
-      }
-    }
+    console.log('[TesteeStore] 从 Collection 加载受试者列表');
+    const list = await loadTesteesFromCollection();
+    console.log('[TesteeStore] Collection 加载成功，共', list.length, '个受试者');
     
     console.log('[TesteeStore] 解析后的列表长度:', list.length);
     setTesteeList(list);
@@ -673,8 +603,7 @@ const TesteeStore = {
   initTesteeStore,
   refreshTesteeList,
   
-  // IAM & Collection 集成
-  loadTesteesFromIAM,
+  // Collection 集成
   loadTesteesFromCollection
 };
 

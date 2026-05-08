@@ -111,8 +111,8 @@ const TesteeListPage = () => {
     Taro.navigateTo({ url: routes.testeeEdit({ testeeId: testee.id }) });
   };
 
-  const handleSelectCurrent = (childId) => {
-    setSelectedTesteeId(childId);
+  const handleSelectCurrent = (testeeId) => {
+    setSelectedTesteeId(testeeId);
     Taro.showToast({
       title: '已切换当前档案',
       icon: 'success'
@@ -154,7 +154,9 @@ const TesteeListPage = () => {
     const relationMap = {
       'parent': '父母',
       'guardian': '监护人',
-      'self': '本人'
+      'self': '本人',
+      'grandparent': '祖父母',
+      'other': '其他'
     };
     return relationMap[relation] || relation || '-';
   };
@@ -282,18 +284,6 @@ const TesteeListPage = () => {
                  testee.idType === 'passport' ? '护照' : 
                  testee.idType === 'birth_cert' ? '出生证明' : testee.idType}
               </Text>
-            </View>
-          )}
-          {testee.heightCm && (
-            <View className="info-row">
-              <Text className="info-label">身高</Text>
-              <Text className="info-value">{testee.heightCm} cm</Text>
-            </View>
-          )}
-          {testee.weightKg && (
-            <View className="info-row">
-              <Text className="info-label">体重</Text>
-              <Text className="info-value">{testee.weightKg} kg</Text>
             </View>
           )}
           {careContext?.clinician_name && (

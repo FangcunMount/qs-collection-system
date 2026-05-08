@@ -9,10 +9,10 @@ import FormActionFooter from "@/shared/ui/FormActionFooter";
 import NeedDialog from "@/shared/ui/NeedDialog";
 import { routes } from "@/shared/config/routes";
 import { useSubmit } from "@/shared/hooks/useSubmit";
-import { registerChildComplete } from "@/services/registerService.ts";
+import { registerTesteeComplete } from "@/services/registerService.ts";
 import { setSelectedTesteeId } from "@/shared/stores/testees";
 
-const createInitialChildInfo = () => ({
+const createInitialProfileInfo = () => ({
   legalName: "",
   gender: null,
   dob: "",
@@ -20,7 +20,7 @@ const createInitialChildInfo = () => ({
 });
 
 const TesteeRegisterForm = ({ goUrl, submitClose }) => {
-  const [childInfo, setChildInfo] = useState(createInitialChildInfo);
+  const [profileInfo, setProfileInfo] = useState(createInitialProfileInfo);
   const [needCloseFlag, setNeedCloseFlag] = useState(false);
   const isMountedRef = useRef(true);
 
@@ -30,23 +30,23 @@ const TesteeRegisterForm = ({ goUrl, submitClose }) => {
     };
   }, []);
 
-  const verifyChildInfo = () => {
-    if (!childInfo.legalName) {
+  const verifyProfileInfo = () => {
+    if (!profileInfo.legalName) {
       Taro.showToast({ title: "请填写档案的姓名", icon: "none" });
       return false;
     }
 
-    if (childInfo.gender === null) {
+    if (profileInfo.gender === null) {
       Taro.showToast({ title: "请选择档案的性别", icon: "none" });
       return false;
     }
 
-    if (!childInfo.dob) {
+    if (!profileInfo.dob) {
       Taro.showToast({ title: "请选择档案的出生日期", icon: "none" });
       return false;
     }
 
-    if (!childInfo.relation) {
+    if (!profileInfo.relation) {
       Taro.showToast({ title: "请选择关系", icon: "none" });
       return false;
     }
@@ -68,15 +68,19 @@ const TesteeRegisterForm = ({ goUrl, submitClose }) => {
     Taro.redirectTo({ url: routes.tabHome() });
   };
 
-  const registerChild = async () => {
+  const registerTestee = async () => {
     try {
-      const childPayload = {
-        name: childInfo.legalName,
-        birthday: childInfo.dob,
-        sex: childInfo.gender
+      const profilePayload = {
+        name: profileInfo.legalName,
+        birthday: profileInfo.dob,
+        gender: profileInfo.gender,
+        relation: profileInfo.relation,
+        source: "online_form",
+        tags: [],
+        isKeyFocus: false
       };
 
-      const { testeeId } = await registerChildComplete(childPayload);
+      const { testeeId } = await registerTesteeComplete(profilePayload);
 
       if (!isMountedRef.current) {
         return;
@@ -98,16 +102,16 @@ const TesteeRegisterForm = ({ goUrl, submitClose }) => {
   };
 
   const [, handleSubmit] = useSubmit({
-    beforeSubmit: verifyChildInfo,
-    submit: registerChild,
+    beforeSubmit: verifyProfileInfo,
+    submit: registerTestee,
     options: {
       needGobalLoading: true,
       gobalLoadingTips: "注册中..."
     }
   });
 
-  const handleChangeChildInfo = (key, value) => {
-    setChildInfo((prev) => ({
+  const handleChangeProfileInfo = (key, value) => {
+    setProfileInfo((prev) => ({
       ...prev,
       [key]: value
     }));
@@ -126,7 +130,7 @@ const TesteeRegisterForm = ({ goUrl, submitClose }) => {
       </View>
 
       <View className="register-card">
-        <TesteeRegisterFields childInfo={childInfo} onChange={handleChangeChildInfo} />
+        <TesteeRegisterFields profileInfo={profileInfo} onChange={handleChangeProfileInfo} />
       </View>
 
       <FormActionFooter submit={handleSubmit} buttonText="立即注册" />

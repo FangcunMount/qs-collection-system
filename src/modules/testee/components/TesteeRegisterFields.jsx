@@ -71,7 +71,7 @@ const sexIcon = {
 const relationOptions = [
   { value: "self", label: "本人" },
   { value: "parent", label: "父母" },
-  { value: "teacher", label: "老师" },
+  { value: "grandparent", label: "祖父母" },
   { value: "other", label: "其他" }
 ];
 
@@ -83,9 +83,9 @@ const defaultDate = () => {
   return `${year}-${month}-${day}`;
 };
 
-const TesteeRegisterFields = ({ childInfo, onChange }) => {
+const TesteeRegisterFields = ({ profileInfo, onChange }) => {
   const getCheckIcon = (gender) => {
-    if (gender !== childInfo.gender) return null;
+    if (gender !== profileInfo.gender) return null;
 
     return (
       <>
@@ -100,7 +100,7 @@ const TesteeRegisterFields = ({ childInfo, onChange }) => {
       <View style={InputWrapperCSS}>
         <View style={InputLabelCSS}>档案姓名</View>
         <Input
-          value={childInfo.legalName}
+          value={profileInfo.legalName}
           onInput={(e) => onChange("legalName", e.detail.value)}
           style={InputCSS}
           placeholder="请填写档案姓名"
@@ -126,9 +126,9 @@ const TesteeRegisterFields = ({ childInfo, onChange }) => {
 
       <View style={InputWrapperCSS}>
         <View style={InputLabelCSS}>出生日期</View>
-        <SiDatePicker onChange={(value) => onChange("dob", value)} value={childInfo.dob || defaultDate()}>
+        <SiDatePicker onChange={(value) => onChange("dob", value)} value={profileInfo.dob || defaultDate()}>
           <Input
-            value={childInfo.dob}
+            value={profileInfo.dob}
             disabled
             style={InputCSS}
             placeholder="请选择档案的出生日期"
@@ -142,7 +142,7 @@ const TesteeRegisterFields = ({ childInfo, onChange }) => {
           mode="selector"
           range={relationOptions}
           rangeKey="label"
-          value={relationOptions.findIndex((item) => item.value === childInfo.relation)}
+          value={relationOptions.findIndex((item) => item.value === profileInfo.relation)}
           onChange={(e) => {
             const selectedOption = relationOptions[e.detail.value];
             onChange("relation", selectedOption.value);
@@ -156,8 +156,8 @@ const TesteeRegisterFields = ({ childInfo, onChange }) => {
               alignItems: "center"
             }}
           >
-            <Text style={{ color: childInfo.relation ? "#333" : "#999" }}>
-              {relationOptions.find((item) => item.value === childInfo.relation)?.label || "请选择与您的关系"}
+            <Text style={{ color: profileInfo.relation ? "#333" : "#999" }}>
+              {relationOptions.find((item) => item.value === profileInfo.relation)?.label || "请选择与您的关系"}
             </Text>
             <Text style={{ color: "#999" }}>▼</Text>
           </View>

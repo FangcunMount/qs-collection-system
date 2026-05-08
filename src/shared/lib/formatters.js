@@ -10,7 +10,7 @@ export const formatRelation = (relation) => {
     parent: "父母",
     guardian: "监护人",
     self: "本人",
-    teacher: "老师",
+    grandparent: "祖父母",
     other: "其他",
   };
   return relationMap[relation] || relation || "";

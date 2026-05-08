@@ -4,10 +4,10 @@ import TesteeRegisterForm from "../components/TesteeRegisterForm";
 import { withQuery } from "@/shared/lib/query";
 import { getLogger } from "@/shared/lib/logger";
 
-const PAGE_NAME = "registerChild";
+const PAGE_NAME = "registerTestee";
 const logger = getLogger(PAGE_NAME);
 
-const RegisterChild = () => {
+const RegisterTestee = () => {
   const paramData = useRouter();
   let { submitClose, goUrl, goParams } = paramData.params;
   goParams = goParams ?? "{}";
@@ -28,4 +28,4 @@ const RegisterChild = () => {
   );
 };
 
-export default RegisterChild;
+export default RegisterTestee;

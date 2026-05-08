@@ -69,26 +69,6 @@ export const createProfile = (profileData) => {
 };
 
 /**
- * 搜索档案
- * @param {string} name - 姓名
- * @param {string} dob - 出生日期 (YYYY-MM-DD)
- * @param {number} offset - 偏移量
- * @param {number} limit - 每页数量
- * @returns {Promise<{items: Array, total: number}>}
- */
-export const searchProfiles = (name, dob, offset = 0, limit = 20) => {
-  const params = { offset, limit };
-  if (name) params.name = name;
-  if (dob) params.dob = dob;
-  
-  return request('/identity/profiles/search', {}, {
-    host: config.iamHost,
-    params,
-    needToken: true
-  });
-};
-
-/**
  * 获取档案详情
  * @param {string} profileId - 档案ID
  * @returns {Promise<object>}
@@ -190,69 +170,14 @@ export const revokeProfileLink = (profileLinkId) => {
   });
 };
 
-/**
- * 兼容旧调用名：删除当前用户与档案的关系，不删除档案本身。
- * @param {string} profileId - 档案ID
- * @returns {Promise<{message: string}>}
- */
-export const deleteChild = async (profileId) => {
-  const links = await listProfileLinks({ profileId, includeRevoked: false, offset: 0, limit: 20 });
-  const link = (links?.items || []).find(item => String(item.profileId || item.profile_id) === String(profileId));
-  if (!link?.id) {
-    throw new Error('未找到可撤销的档案关系');
-  }
-  return revokeProfileLink(link.id);
-};
-
-export const getMyChildren = getMyProfiles;
-export const registerChild = createProfile;
-export const searchChildren = searchProfiles;
-export const getChild = getProfile;
-export const updateChild = updateProfile;
-
-/**
- * 兼容旧调用名：获取档案关系列表。
- */
-export const getChildGuardians = (profileId, offset = 0, limit = 20) => {
-  return listProfileLinks({ profileId, offset, limit });
-};
-
-/**
- * 兼容旧调用名：添加档案关系。
- */
-export const addGuardian = (profileId, userId, relation = 'parent') => {
-  return createProfileLink({
-    profileId,
-    userId,
-    relation
-  });
-};
-
-/**
- * 兼容旧调用名：撤销档案关系。
- */
-export const removeGuardian = (profileLinkId) => {
-  return revokeProfileLink(profileLinkId);
-};
-
 export default {
   getMe,
   updateMe,
   getMyProfiles,
   createProfile,
-  searchProfiles,
   getProfile,
   updateProfile,
   listProfileLinks,
   createProfileLink,
-  revokeProfileLink,
-  getMyChildren,
-  registerChild,
-  searchChildren,
-  getChild,
-  updateChild,
-  deleteChild,
-  getChildGuardians,
-  addGuardian,
-  removeGuardian
+  revokeProfileLink
 };
