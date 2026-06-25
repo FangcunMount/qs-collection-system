@@ -2,7 +2,7 @@ import { boolToOneZero } from '../../shared/lib/coercion';
 import { getAssessmentEntryContext } from '@/shared/stores/assessmentEntry';
 import { getSelectedTesteeId } from '@/shared/stores/testees';
 import { request } from '../servers';
-import { submitAnswersheet, waitForSubmitCompletion } from './answersheetApi';
+import { submitAnswersheet, waitForSubmitCompletion, createIdempotencyKey } from './answersheetApi';
 import { getLogger } from '../../shared/lib/logger';
 
 const logger = getLogger('questionnaire_submission_api');
@@ -177,21 +177,25 @@ export const submitQuestionnaire = async (questionnaire, writer_role_code, signi
     requestData.task_id = entryContext.task_id;
   }
 
+  const idempotencyKey = createIdempotencyKey();
+  requestData.idempotency_key = idempotencyKey;
+
   logger.RUN('[submitQuestionnaire] 开始提交', {
     questionnaireCode: requestData.questionnaire_code,
     questionnaireVersion: requestData.questionnaire_version,
     testeeId: requestData.testee_id,
     answerCount: requestData.answers.length,
-    hasTaskId: Boolean(requestData.task_id)
+    hasTaskId: Boolean(requestData.task_id),
+    idempotencyKey
   });
 
-  const submitResult = await submitAnswersheet(requestData);
+  const submitResult = await submitAnswersheet(requestData, { idempotencyKey });
   const queued = Boolean(submitResult?.request_id) &&
     !submitResult?.answersheet_id &&
     typeof submitResult?.id === 'undefined';
 
-  const requestId = submitResult?.request_id || submitResult?.id;
-  if (!requestId) {
+  const requestId = submitResult?.request_id || (queued ? null : submitResult?.id);
+  if (!requestId && !submitResult?.answersheet_id && typeof submitResult?.id === 'undefined') {
     throw new Error('提交失败：未获取到 request_id');
   }
 
@@ -210,12 +214,9 @@ export const submitQuestionnaire = async (questionnaire, writer_role_code, signi
     });
   }
 
-  let finalAnswersheetId = submitResult?.answersheet_id ?? null;
-  if (!finalAnswersheetId && !submitResult?.request_id) {
-    finalAnswersheetId = submitResult?.id ?? null;
-  }
+  let finalAnswersheetId = submitResult?.answersheet_id ?? submitResult?.id ?? null;
 
-  if (!finalAnswersheetId) {
+  if (!finalAnswersheetId && submitResult?.request_id) {
     const statusResult = await waitForSubmitCompletion(requestId, {
       onProgress: (progress) => {
         logger.RUN('[submitQuestionnaire] 队列处理中', {
@@ -254,7 +255,8 @@ export const submitQuestionnaire = async (questionnaire, writer_role_code, signi
   return {
     ...submitResult,
     id: String(finalAnswersheetId),
-    request_id: requestId,
+    request_id: submitResult?.request_id || requestId,
+    idempotency_key: idempotencyKey,
     queued,
     submit_mode: queued ? 'queued' : 'immediate'
   };

@@ -5,7 +5,7 @@ import lottie from "lottie-miniprogram";
 
 import { PrivacyAuthorization } from "@/shared/ui/PrivacyAuthorization";
 import { routes } from "@/shared/config/routes";
-import { getAssessmentByAnswersheetId, waitAssessmentReport } from "@/services/api/assessments";
+import { getAssessmentByAnswersheetId, waitAssessmentReport, isReportWaitCompleted, isReportWaitFailed, isAssessmentPending } from "@/services/api/assessments";
 import { getAssessmentResponse } from "@/services/api/assessmentResponses";
 import { getLogger } from "@/shared/lib/logger";
 import { getSelectedTesteeId } from "@/shared/stores/testees";
@@ -15,14 +15,26 @@ import "./AssessmentReportPendingPage.less";
 const PAGE_NAME = "analysis_wait";
 const logger = getLogger(PAGE_NAME);
 
-// 最大轮询次数（防止无限轮询）
-const MAX_POLLING_COUNT = 20;
-// 每次轮询的超时时间（秒）
-const POLLING_TIMEOUT = 15;
+// 每次长轮询的超时时间（秒），服务端最多挂起 1-25 秒
+const POLLING_TIMEOUT = 20;
 // 等待 assessment 生成的最大轮询次数
 const MAX_ASSESSMENT_LOOKUP_COUNT = 30;
-const ASSESSMENT_LOOKUP_INTERVAL = 1000;
+const ASSESSMENT_LOOKUP_INTERVAL = 2000;
+const DEFAULT_POLL_INTERVAL_MS = 3000;
 const ASSESSMENT_NOT_READY_CODES = new Set(["404", "112001"]);
+
+const formatStageMessage = (stage, fallbackMessage) => {
+  const stageTextMap = {
+    queued: "排队中",
+    processing: "处理中",
+    scoring: "正在计分",
+    interpreting: "正在解读",
+    completed: "报告已生成",
+    failed: "报告生成失败"
+  };
+  const stageText = stageTextMap[String(stage || "").toLowerCase()];
+  return fallbackMessage || (stageText ? `${stageText}，请稍候...` : "正在解析测评报告，请稍候...");
+};
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -38,9 +50,9 @@ const shouldRetryAssessmentLookup = (error) => {
 
 const AnalysisWait = () => {
   const [status, setStatus] = useState("waiting"); // waiting | success | error
-  const [message, setMessage] = useState("正在解析测评报告，请稍候...");
+  const [message, setMessage] = useState("正在生成测评记录，请稍候...");
+  const [stage, setStage] = useState("");
   const [dots, setDots] = useState("");
-  const pollingCountRef = useRef(0);
   const assessmentLookupCountRef = useRef(0);
   const isPollingRef = useRef(false);
   const lottieInstanceRef = useRef(null);
@@ -225,10 +237,19 @@ const AnalysisWait = () => {
             break;
           }
 
-          logger.WARN("[AnalysisWait] assessment 查询成功但结果为空，继续等待", {
-            answersheetId,
-            attempt: assessmentLookupCountRef.current
-          });
+          if (isAssessmentPending(detail)) {
+            logger.RUN("[AnalysisWait] assessment 尚未创建，继续等待", {
+              answersheetId,
+              attempt: assessmentLookupCountRef.current,
+              updatedAt: detail?.updated_at ?? null
+            });
+          } else {
+            logger.WARN("[AnalysisWait] assessment 查询成功但结果为空，继续等待", {
+              answersheetId,
+              attempt: assessmentLookupCountRef.current,
+              status: detail?.status ?? 'unknown'
+            });
+          }
         } catch (error) {
           if (!shouldRetryAssessmentLookup(error)) {
             throw error;
@@ -262,7 +283,7 @@ const AnalysisWait = () => {
   };
 
   /**
-   * 开始轮询等待报告生成
+   * 长轮询等待报告生成
    */
   const startPolling = async (assessmentId, answersheetId, testeeId, taskId) => {
     if (isPollingRef.current) {
@@ -271,93 +292,100 @@ const AnalysisWait = () => {
     }
 
     isPollingRef.current = true;
-    pollingCountRef.current = 0;
-    setMessage("正在解析测评报告，请稍候...");
+    setStage("queued");
+    setMessage(formatStageMessage("queued"));
+
+    const redirectToReport = () => {
+      setStatus("success");
+      isPollingRef.current = false;
+
+      const elapsedTime = Date.now() - startTimeRef.current;
+      const remainingTime = Math.max(0, MIN_WAIT_TIME - elapsedTime);
+
+      logger.RUN("报告生成完成，准备跳转", {
+        answersheetId,
+        elapsedTime,
+        remainingTime
+      });
+
+      setTimeout(() => {
+        Taro.redirectTo({
+          url: routes.assessmentReport({
+            a: answersheetId,
+            task_id: taskId || undefined,
+          })
+        });
+      }, remainingTime);
+    };
 
     const poll = async () => {
+      if (!isPollingRef.current) {
+        return;
+      }
+
       try {
-        pollingCountRef.current += 1;
-        logger.RUN(`开始第 ${pollingCountRef.current} 次轮询`, { 
-          assessmentId, 
-          testeeId 
+        logger.RUN("[AnalysisWait] 开始 wait-report 长轮询", {
+          assessmentId,
+          testeeId,
+          timeout: POLLING_TIMEOUT
         });
 
         const result = await waitAssessmentReport(assessmentId, testeeId, POLLING_TIMEOUT);
-        const statusData = result.data || result;
+        const statusData = result?.data || result || {};
         const reportStatus = statusData.status;
+        const reportStage = statusData.stage;
 
-        logger.RUN("轮询结果", { 
-          status: reportStatus, 
-          pollingCount: pollingCountRef.current 
+        if (reportStage) {
+          setStage(reportStage);
+        }
+        setMessage(formatStageMessage(reportStage, statusData.message));
+
+        logger.RUN("[AnalysisWait] wait-report 响应", {
+          status: reportStatus,
+          stage: reportStage,
+          nextPollAfterMs: statusData.next_poll_after_ms ?? null
         });
 
-        if (reportStatus === "interpreted") {
-          // 解析完成，保持"解析中"文案
-          logger.RUN("报告解析完成，跳转到解析页面", { answersheetId });
-          setStatus("success");
-          // 停止轮询，但保持动画播放
-          isPollingRef.current = false;
-          
-          // 计算已经等待的时间
-          const elapsedTime = Date.now() - startTimeRef.current;
-          const remainingTime = Math.max(0, MIN_WAIT_TIME - elapsedTime);
-          
-          logger.RUN("等待时间计算", { 
-            elapsedTime, 
-            remainingTime, 
-            minWaitTime: MIN_WAIT_TIME 
-          });
-          
-          // 确保至少等待 2 秒
-          setTimeout(() => {
-            Taro.redirectTo({
-              url: routes.assessmentReport({
-                a: answersheetId,
-                task_id: taskId || undefined,
-              })
-            });
-          }, remainingTime);
-        } else if (reportStatus === "failed") {
-          // 解析失败
-          logger.ERROR("报告解析失败", { statusData });
-          setStatus("error");
-          setMessage("解析失败，请稍后重试");
-          isPollingRef.current = false;
-        } else if (pollingCountRef.current >= MAX_POLLING_COUNT) {
-          // 达到最大轮询次数
-          logger.WARN("达到最大轮询次数，停止轮询", { 
-            maxCount: MAX_POLLING_COUNT 
-          });
-          setStatus("error");
-          setMessage("解析时间过长，请稍后查看报告");
-          isPollingRef.current = false;
-        } else {
-          // 继续轮询
-          setTimeout(() => {
-            poll();
-          }, 1000); // 等待1秒后继续下一次轮询
+        if (isReportWaitCompleted(reportStatus)) {
+          redirectToReport();
+          return;
         }
+
+        if (isReportWaitFailed(reportStatus)) {
+          logger.ERROR("报告生成失败", { statusData });
+          setStatus("error");
+          setMessage(statusData.reason || statusData.message || "报告生成失败，请稍后重试");
+          isPollingRef.current = false;
+          return;
+        }
+
+        const nextDelay = Number(statusData.next_poll_after_ms) > 0
+          ? Number(statusData.next_poll_after_ms)
+          : DEFAULT_POLL_INTERVAL_MS;
+
+        setTimeout(() => {
+          poll();
+        }, nextDelay);
       } catch (error) {
-        logger.ERROR("轮询出错", error);
-        
-        // 如果是网络错误或超时，继续重试
-        if (pollingCountRef.current < MAX_POLLING_COUNT) {
-          logger.RUN("轮询出错，继续重试", { 
-            error: error.message,
-            pollingCount: pollingCountRef.current 
-          });
+        logger.ERROR("wait-report 轮询出错", error);
+
+        if (String(error?.statusCode) === "429" || error?.code === "429") {
+          const retryAfterMs = Number(error?.data?.retry_after_ms) > 0
+            ? Number(error.data.retry_after_ms)
+            : DEFAULT_POLL_INTERVAL_MS;
+          setMessage("请求过于频繁，稍后继续等待...");
           setTimeout(() => {
             poll();
-          }, 2000); // 出错后等待2秒再重试
-        } else {
-          setStatus("error");
-          setMessage("网络错误，请检查网络连接后重试");
-          isPollingRef.current = false;
+          }, retryAfterMs);
+          return;
         }
+
+        setStatus("error");
+        setMessage(error?.message || "网络错误，请检查网络连接后重试");
+        isPollingRef.current = false;
       }
     };
 
-    // 开始第一次轮询
     poll();
   };
 
@@ -411,7 +439,7 @@ const AnalysisWait = () => {
           {status === "waiting" && (
             <View className="tip-wrapper">
               <Text className="tip-text">
-                解析可能需要几分钟时间，请耐心等待
+                {stage ? `当前阶段：${stage}` : "解析可能需要几分钟时间，请耐心等待"}
               </Text>
             </View>
           )}

@@ -171,20 +171,40 @@ export const getFactorTrend = (testeeId, factorCode, limit = 10) => {
  * 长轮询等待报告生成
  * @param {string|number} id - 测评ID
  * @param {string|number} testeeId - 受试者ID
- * @param {number} timeout - 超时时间（秒），范围 5-60，默认 15
- * @returns {Promise<{status: string, risk_level?: string, total_score?: number, updated_at?: number}>}
+ * @param {number} timeout - 服务端挂起秒数，范围 1-25，默认 20
+ * @returns {Promise<AssessmentStatusResponse>}
  */
-export const waitAssessmentReport = (id, testeeId, timeout = 15) => {
-  const validTimeout = Math.max(5, Math.min(60, timeout));
+export const waitAssessmentReport = (id, testeeId, timeout = 20) => {
+  const validTimeout = Math.max(1, Math.min(25, timeout));
 
-  return request(`/assessments/${String(id)}/wait-report`, {
-    testee_id: String(testeeId),
-    timeout: validTimeout
-  }, {
+  return request(`/assessments/${String(id)}/wait-report`, {}, {
     host: config.collectionHost,
     method: 'GET',
-    needToken: true
+    needToken: true,
+    params: {
+      testee_id: String(testeeId),
+      timeout: validTimeout
+    }
   });
+};
+
+/** wait-report 终态：成功 */
+export const isReportWaitCompleted = (status) => {
+  const normalized = String(status || '').toLowerCase();
+  return normalized === 'completed' || normalized === 'interpreted';
+};
+
+/** wait-report 终态：失败 */
+export const isReportWaitFailed = (status) => {
+  return String(status || '').toLowerCase() === 'failed';
+};
+
+/** 通过答卷查测评：尚未创建时返回 pending，而非 404 */
+export const isAssessmentPending = (detail) => {
+  if (!detail || typeof detail !== 'object') {
+    return false;
+  }
+  return !detail.id && String(detail.status || '').toLowerCase() === 'pending';
 };
 
 export default {
@@ -196,5 +216,8 @@ export default {
   getAssessmentTrendSummary,
   getHighRiskFactors,
   getFactorTrend,
-  waitAssessmentReport
+  waitAssessmentReport,
+  isReportWaitCompleted,
+  isReportWaitFailed,
+  isAssessmentPending
 };

@@ -5,6 +5,9 @@
 import { request } from '../servers';
 import config from '../../config';
 import { getLogger } from '../../shared/lib/logger';
+import { createIdempotencyKey } from '../../shared/lib/requestId';
+
+export { createIdempotencyKey };
 
 const logger = getLogger('answersheet_api');
 
@@ -38,20 +41,31 @@ const normalizeSubmitResult = (result) => {
  * @param {string} data.title - 答卷标题（可选）
  * @returns {Promise<{id: string, message: string}>} ID 已转换为字符串
  */
-export const submitAnswersheet = (data) => {
+export const submitAnswersheet = (data, options = {}) => {
+  const payload = { ...data };
+  const idempotencyKey = payload.idempotency_key || options.idempotencyKey || createIdempotencyKey();
+
+  if (!payload.idempotency_key) {
+    payload.idempotency_key = idempotencyKey;
+  }
+
   logger.RUN('[submitAnswersheet] 发起提交', {
     host: config.collectionHost,
-    questionnaireCode: data?.questionnaire_code,
-    questionnaireVersion: data?.questionnaire_version,
-    testeeId: data?.testee_id,
-    answerCount: data?.answers?.length ?? 0,
-    hasTaskId: Boolean(data?.task_id)
+    questionnaireCode: payload?.questionnaire_code,
+    questionnaireVersion: payload?.questionnaire_version,
+    testeeId: payload?.testee_id,
+    answerCount: payload?.answers?.length ?? 0,
+    hasTaskId: Boolean(payload?.task_id),
+    idempotencyKey
   });
 
-  return request('/answersheets', data, {
+  return request('/answersheets', payload, {
     host: config.collectionHost,
     method: 'POST',
-    needToken: true
+    needToken: true,
+    header: {
+      'X-Request-ID': idempotencyKey
+    }
   }).then(result => {
     const normalized = normalizeSubmitResult(result);
 
@@ -134,11 +148,20 @@ export const waitForSubmitCompletion = async (requestId, options = {}) => {
       });
     }
 
-    if (statusResult && statusResult.answersheet_id) {
+    if (statusResult && (statusResult.answersheet_id || normalizedStatus === 'done')) {
+      if (!statusResult.answersheet_id) {
+        logger.WARN('[waitForSubmitCompletion] status=done 但缺少 answersheet_id', {
+          requestId,
+          attempt: currentAttempt
+        });
+        throw new Error('答卷提交处理异常，请稍后重试');
+      }
+
       logger.RUN('[waitForSubmitCompletion] 队列处理完成', {
         requestId,
         answersheetId: statusResult.answersheet_id,
-        attempt: currentAttempt
+        attempt: currentAttempt,
+        status: normalizedStatus
       });
       if (typeof onSuccess === 'function') {
         onSuccess(statusResult);
