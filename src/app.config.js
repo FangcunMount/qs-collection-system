@@ -16,6 +16,9 @@ export default {
         'report/index',
         'report-trend/index',
         'report-pending/index',
+        'personality/index',
+        'personality/model/index',
+        'ability/index',
       ],
       independent: false
     },

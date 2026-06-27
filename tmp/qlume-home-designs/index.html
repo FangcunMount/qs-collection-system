@@ -1,0 +1,1059 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Qlume Home Design Mockups</title>
+    <style>
+      :root {
+        --ink: #101828;
+        --muted: #667085;
+        --line: rgba(16, 24, 40, 0.08);
+        --shadow: 0 18px 45px rgba(22, 34, 58, 0.08);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: #eef2f6;
+        color: var(--ink);
+        font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      }
+
+      .board {
+        display: grid;
+        grid-template-columns: repeat(4, 375px);
+        gap: 28px;
+        width: max-content;
+        padding: 32px;
+      }
+
+      .phone {
+        position: relative;
+        width: 375px;
+        height: 812px;
+        overflow: hidden;
+        border-radius: 34px;
+        background: #ffffff;
+        box-shadow: 0 26px 80px rgba(16, 24, 40, 0.22);
+      }
+
+      .status {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 10;
+        height: 48px;
+        padding: 14px 22px 0;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        color: #0b1220;
+        font-size: 15px;
+        font-weight: 800;
+      }
+
+      .signal {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .bars {
+        display: grid;
+        grid-template-columns: repeat(4, 3px);
+        align-items: end;
+        gap: 2px;
+        height: 14px;
+      }
+
+      .bars i {
+        display: block;
+        width: 3px;
+        border-radius: 2px;
+        background: #0b1220;
+      }
+
+      .bars i:nth-child(1) { height: 5px; }
+      .bars i:nth-child(2) { height: 8px; }
+      .bars i:nth-child(3) { height: 11px; }
+      .bars i:nth-child(4) { height: 14px; }
+
+      .battery {
+        width: 24px;
+        height: 12px;
+        border: 2px solid #0b1220;
+        border-radius: 4px;
+        position: relative;
+      }
+
+      .battery::before {
+        content: "";
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 14px;
+        height: 4px;
+        border-radius: 2px;
+        background: #0b1220;
+      }
+
+      .battery::after {
+        content: "";
+        position: absolute;
+        right: -5px;
+        top: 3px;
+        width: 3px;
+        height: 5px;
+        border-radius: 0 2px 2px 0;
+        background: #0b1220;
+      }
+
+      .nav {
+        position: absolute;
+        z-index: 9;
+        left: 0;
+        right: 0;
+        top: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 92px 0 20px;
+        font-size: 18px;
+        font-weight: 900;
+        letter-spacing: 0;
+      }
+
+      .back {
+        position: absolute;
+        left: 20px;
+        width: 22px;
+        height: 22px;
+      }
+
+      .back::before {
+        content: "";
+        position: absolute;
+        left: 6px;
+        top: 3px;
+        width: 12px;
+        height: 12px;
+        border-left: 3px solid #111827;
+        border-bottom: 3px solid #111827;
+        transform: rotate(45deg);
+        border-radius: 2px;
+      }
+
+      .capsule {
+        position: absolute;
+        right: 14px;
+        top: 7px;
+        width: 78px;
+        height: 32px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.78);
+        border: 1px solid rgba(16, 24, 40, 0.08);
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+        color: #111827;
+        font-size: 18px;
+        box-shadow: 0 8px 18px rgba(16, 24, 40, 0.05);
+      }
+
+      .capsule span:last-child {
+        width: 16px;
+        height: 16px;
+        border: 3px solid #111827;
+        border-radius: 50%;
+      }
+
+      .screen {
+        position: absolute;
+        inset: 0;
+        padding: 104px 18px 90px;
+        overflow: hidden;
+      }
+
+      .bottom-tab {
+        position: absolute;
+        z-index: 12;
+        left: 16px;
+        right: 16px;
+        bottom: 18px;
+        height: 58px;
+        border-radius: 22px;
+        background: rgba(255, 255, 255, 0.92);
+        box-shadow: 0 16px 35px rgba(16, 24, 40, 0.12);
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        align-items: center;
+        border: 1px solid rgba(16, 24, 40, 0.07);
+      }
+
+      .tab-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        color: #98a2b3;
+        font-size: 10px;
+        font-weight: 700;
+      }
+
+      .tab-dot {
+        width: 20px;
+        height: 20px;
+        border-radius: 7px;
+        background: #e4e7ec;
+      }
+
+      .tab-item.active {
+        color: #101828;
+      }
+
+      .tab-item.active .tab-dot {
+        background: #101828;
+      }
+
+      .section-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: end;
+        margin: 18px 0 10px;
+      }
+
+      .section-title h3 {
+        margin: 0;
+        font-size: 18px;
+        line-height: 1.2;
+      }
+
+      .section-title span {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .qlume {
+        background: linear-gradient(180deg, #f7fbff 0%, #ffffff 46%, #f3f7fb 100%);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 18px;
+      }
+
+      .brand h1 {
+        margin: 0;
+        font-size: 28px;
+        line-height: 1;
+        letter-spacing: 0;
+      }
+
+      .brand p {
+        margin: 8px 0 0;
+        color: #667085;
+        font-size: 13px;
+        font-weight: 650;
+      }
+
+      .profile-pill {
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: #101828;
+        color: #ffffff;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .continue-card {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 12px;
+        align-items: center;
+        padding: 16px;
+        border-radius: 24px;
+        background: #ffffff;
+        border: 1px solid var(--line);
+        box-shadow: var(--shadow);
+      }
+
+      .continue-card small {
+        display: block;
+        color: #667085;
+        font-weight: 750;
+        margin-bottom: 7px;
+      }
+
+      .continue-card strong {
+        display: block;
+        font-size: 18px;
+        line-height: 1.25;
+      }
+
+      .continue-card p {
+        margin: 6px 0 0;
+        color: #667085;
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .round-btn {
+        display: grid;
+        place-items: center;
+        width: 54px;
+        height: 54px;
+        border-radius: 18px;
+        background: #101828;
+        color: #ffffff;
+        font-size: 24px;
+        font-weight: 900;
+      }
+
+      .entry-stack {
+        display: grid;
+        gap: 13px;
+      }
+
+      .entry-card {
+        min-height: 118px;
+        padding: 16px 18px;
+        border-radius: 26px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        border: 1px solid rgba(16, 24, 40, 0.08);
+      }
+
+      .entry-card h2 {
+        position: relative;
+        z-index: 2;
+        margin: 10px 0 7px;
+        font-size: 23px;
+        line-height: 1.1;
+      }
+
+      .entry-card p {
+        position: relative;
+        z-index: 2;
+        margin: 0;
+        max-width: 230px;
+        color: #475467;
+        font-size: 12px;
+        line-height: 1.42;
+        font-weight: 650;
+      }
+
+      .entry-top {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .entry-badge {
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.82);
+        font-size: 11px;
+        font-weight: 900;
+      }
+
+      .entry-link {
+        padding: 7px 11px;
+        border-radius: 999px;
+        background: #101828;
+        color: #ffffff;
+        font-size: 11px;
+        font-weight: 900;
+      }
+
+      .entry-art {
+        position: absolute;
+        right: 14px;
+        bottom: 10px;
+        width: 78px;
+        height: 78px;
+      }
+
+      .medical-entry {
+        background: linear-gradient(135deg, #ffffff 0%, #e9f4ff 100%);
+      }
+
+      .personality-entry {
+        background: linear-gradient(135deg, #fff8bf 0%, #dffaff 100%);
+      }
+
+      .ability-entry {
+        background: linear-gradient(135deg, #f5f0ff 0%, #e8fff4 100%);
+      }
+
+      .clipboard {
+        border-radius: 18px;
+        background: #2584ff;
+        transform: rotate(6deg);
+        box-shadow: inset 0 -10px 0 rgba(255, 255, 255, 0.18);
+      }
+
+      .clipboard::before,
+      .clipboard::after {
+        content: "";
+        position: absolute;
+        left: 20px;
+        right: 20px;
+        height: 8px;
+        border-radius: 999px;
+        background: #ffffff;
+      }
+
+      .clipboard::before { top: 26px; }
+      .clipboard::after { top: 44px; width: 34px; right: auto; }
+
+      .smile {
+        border-radius: 26px;
+        background: #ff8a63;
+        transform: rotate(-8deg);
+      }
+
+      .smile::before,
+      .smile::after {
+        content: "";
+        position: absolute;
+        top: 27px;
+        width: 16px;
+        height: 22px;
+        border-radius: 50%;
+        background: #ffffff;
+      }
+
+      .smile::before { left: 21px; }
+      .smile::after { right: 21px; }
+
+      .grid-art {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 7px;
+        padding: 10px;
+        transform: rotate(6deg);
+      }
+
+      .grid-art i {
+        border-radius: 10px;
+        background: #53d7a1;
+      }
+
+      .grid-art i:nth-child(2n) {
+        background: #8068ff;
+      }
+
+      .medical {
+        background: #f5f9ff;
+      }
+
+      .medical .screen {
+        padding-top: 104px;
+        background:
+          radial-gradient(circle at 84% 14%, rgba(46, 144, 250, 0.18) 0, rgba(46, 144, 250, 0) 120px),
+          linear-gradient(180deg, #f5f9ff 0%, #ffffff 58%);
+      }
+
+      .hero-panel {
+        padding: 20px;
+        border-radius: 28px;
+        background: #ffffff;
+        border: 1px solid var(--line);
+        box-shadow: var(--shadow);
+      }
+
+      .hero-panel h1 {
+        margin: 0;
+        font-size: 28px;
+        line-height: 1.12;
+      }
+
+      .hero-panel p {
+        margin: 10px 0 16px;
+        color: #667085;
+        font-size: 13px;
+        line-height: 1.5;
+        font-weight: 650;
+      }
+
+      .search {
+        height: 44px;
+        border-radius: 16px;
+        background: #f2f4f7;
+        display: flex;
+        align-items: center;
+        padding: 0 14px;
+        color: #98a2b3;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .category-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+      }
+
+      .category-tile {
+        min-height: 74px;
+        padding: 12px 10px;
+        border-radius: 20px;
+        background: #ffffff;
+        border: 1px solid var(--line);
+      }
+
+      .category-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 10px;
+        background: #e9f4ff;
+        margin-bottom: 9px;
+      }
+
+      .category-tile strong {
+        display: block;
+        font-size: 13px;
+      }
+
+      .category-tile span {
+        display: block;
+        margin-top: 4px;
+        color: #667085;
+        font-size: 10px;
+        font-weight: 700;
+      }
+
+      .scale-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+        padding: 12px 14px;
+        border-radius: 20px;
+        background: #ffffff;
+        border: 1px solid var(--line);
+        margin-bottom: 10px;
+      }
+
+      .scale-row strong {
+        display: block;
+        font-size: 15px;
+      }
+
+      .scale-row p {
+        margin: 6px 0 0;
+        color: #667085;
+        font-size: 11px;
+        line-height: 1.42;
+      }
+
+      .small-pill {
+        align-self: start;
+        padding: 6px 9px;
+        border-radius: 999px;
+        background: #eef4ff;
+        color: #175cd3;
+        font-size: 10px;
+        font-weight: 900;
+      }
+
+      .personality {
+        background: linear-gradient(180deg, #fff8b9 0%, #efffff 100%);
+      }
+
+      .personality .screen {
+        padding: 104px 18px 24px;
+        background:
+          radial-gradient(circle at 12% 21%, rgba(255, 188, 46, 0.32) 0, rgba(255, 188, 46, 0) 86px),
+          linear-gradient(180deg, #fff8b9 0%, #fffefa 40%, #e7fbff 100%);
+      }
+
+      .poster-title {
+        margin-top: 10px;
+        text-align: center;
+      }
+
+      .poster-title .eyes {
+        display: inline-flex;
+        gap: 4px;
+        transform: rotate(-7deg);
+        margin-right: 6px;
+      }
+
+      .eye {
+        width: 24px;
+        height: 32px;
+        border: 2px solid #101828;
+        border-radius: 50%;
+        background: #ffffff;
+      }
+
+      .poster-title h1 {
+        display: inline;
+        margin: 0;
+        font-size: 42px;
+        line-height: 1.04;
+        font-weight: 950;
+      }
+
+      .poster-title strong {
+        display: block;
+        margin-top: 2px;
+        font-size: 50px;
+        line-height: 1;
+        font-weight: 950;
+      }
+
+      .sticker {
+        display: inline-block;
+        margin-top: 8px;
+        padding: 6px 12px;
+        border-radius: 8px;
+        background: #43dbea;
+        font-size: 13px;
+        font-weight: 900;
+        transform: rotate(4deg);
+      }
+
+      .toy-scene {
+        position: relative;
+        height: 164px;
+        margin: 18px 0 8px;
+      }
+
+      .platform {
+        position: absolute;
+        left: 55px;
+        right: 44px;
+        bottom: 8px;
+        height: 66px;
+        border-radius: 50%;
+        background: repeating-linear-gradient(45deg, #0f2d5c 0 16px, #ffffff 16px 32px);
+        border: 8px solid #b8edff;
+      }
+
+      .laptop {
+        position: absolute;
+        left: 70px;
+        bottom: 58px;
+        width: 74px;
+        height: 52px;
+        border-radius: 9px;
+        background: #b5ff31;
+      }
+
+      .laptop::after {
+        content: "";
+        position: absolute;
+        inset: 12px;
+        border-radius: 6px;
+        background: #1d2a44;
+      }
+
+      .person {
+        position: absolute;
+        right: 88px;
+        bottom: 48px;
+        width: 82px;
+        height: 96px;
+        border-radius: 40px 40px 28px 28px;
+        background: #ff8d5a;
+      }
+
+      .heart {
+        position: absolute;
+        right: 88px;
+        bottom: 38px;
+        width: 46px;
+        height: 46px;
+        border-radius: 14px;
+        background: #ff4775;
+        transform: rotate(45deg);
+      }
+
+      .personality-card {
+        padding: 15px 16px;
+        border-radius: 24px;
+        margin-bottom: 12px;
+        border: 1px solid rgba(16, 24, 40, 0.08);
+      }
+
+      .personality-card.clean {
+        background: linear-gradient(135deg, #e3fbff 0%, #f4fff1 100%);
+      }
+
+      .personality-card.fun {
+        background: linear-gradient(135deg, #fff1d2 0%, #ffeaf2 100%);
+      }
+
+      .personality-card small {
+        display: block;
+        font-size: 11px;
+        font-weight: 900;
+        color: #475467;
+      }
+
+      .personality-card h2 {
+        margin: 8px 0 6px;
+        font-size: 22px;
+      }
+
+      .personality-card p {
+        margin: 0;
+        color: #667085;
+        font-size: 12px;
+        line-height: 1.45;
+        font-weight: 650;
+      }
+
+      .fixed-cta {
+        position: absolute;
+        z-index: 13;
+        left: 28px;
+        right: 28px;
+        bottom: 25px;
+        height: 58px;
+        border-radius: 22px;
+        background: #101828;
+        color: #ffffff;
+        display: grid;
+        place-items: center;
+        font-size: 18px;
+        font-weight: 900;
+      }
+
+      .ability {
+        background: #f8f7ff;
+      }
+
+      .ability .screen {
+        padding-top: 104px;
+        background:
+          radial-gradient(circle at 16% 12%, rgba(128, 104, 255, 0.16) 0, rgba(128, 104, 255, 0) 110px),
+          radial-gradient(circle at 82% 19%, rgba(83, 215, 161, 0.2) 0, rgba(83, 215, 161, 0) 120px),
+          linear-gradient(180deg, #f8f7ff 0%, #ffffff 58%);
+      }
+
+      .ability-hero {
+        padding: 20px;
+        border-radius: 30px;
+        background: linear-gradient(135deg, #ffffff 0%, #f0ecff 100%);
+        border: 1px solid rgba(16, 24, 40, 0.08);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        position: relative;
+      }
+
+      .ability-hero::after {
+        content: "";
+        position: absolute;
+        right: -18px;
+        bottom: -12px;
+        width: 120px;
+        height: 120px;
+        border-radius: 32px;
+        background: linear-gradient(135deg, #8068ff, #53d7a1);
+        opacity: 0.16;
+        transform: rotate(12deg);
+      }
+
+      .ability-hero h1 {
+        position: relative;
+        z-index: 2;
+        margin: 0;
+        font-size: 29px;
+        line-height: 1.13;
+      }
+
+      .ability-hero p {
+        position: relative;
+        z-index: 2;
+        margin: 10px 0 18px;
+        max-width: 240px;
+        color: #667085;
+        font-size: 13px;
+        line-height: 1.48;
+        font-weight: 650;
+      }
+
+      .outline-btn {
+        position: relative;
+        z-index: 2;
+        width: max-content;
+        padding: 10px 14px;
+        border-radius: 999px;
+        background: #101828;
+        color: #ffffff;
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .path-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+
+      .path-tile {
+        min-height: 112px;
+        padding: 14px;
+        border-radius: 22px;
+        background: #ffffff;
+        border: 1px solid var(--line);
+      }
+
+      .path-tile:nth-child(1) { background: #f4f1ff; }
+      .path-tile:nth-child(2) { background: #edfff6; }
+      .path-tile:nth-child(3) { background: #fff6e8; }
+      .path-tile:nth-child(4) { background: #edf7ff; }
+
+      .path-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 13px;
+        background: #101828;
+        margin-bottom: 10px;
+      }
+
+      .path-tile strong {
+        display: block;
+        font-size: 15px;
+        line-height: 1.2;
+      }
+
+      .path-tile span {
+        display: block;
+        margin-top: 7px;
+        color: #667085;
+        font-size: 11px;
+        line-height: 1.38;
+        font-weight: 700;
+      }
+
+      .module-row {
+        padding: 13px 15px;
+        border-radius: 21px;
+        background: #ffffff;
+        border: 1px solid var(--line);
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+      }
+
+      .module-row + .module-row {
+        margin-top: 10px;
+      }
+
+      .module-row strong {
+        display: block;
+        font-size: 15px;
+      }
+
+      .module-row p {
+        margin: 6px 0 0;
+        color: #667085;
+        font-size: 11px;
+        line-height: 1.4;
+        font-weight: 650;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="board">
+      <section class="phone qlume" data-shot="qlume-home">
+        <div class="status">
+          <span>09:41</span>
+          <div class="signal"><div class="bars"><i></i><i></i><i></i><i></i></div><span>5G</span><div class="battery"></div></div>
+        </div>
+        <div class="screen">
+          <div class="brand">
+            <div>
+              <h1>Qlume</h1>
+              <p>选择适合今天的测评方式</p>
+            </div>
+            <div class="profile-pill">杨小明</div>
+          </div>
+
+          <div class="continue-card">
+            <div>
+              <small>当前档案</small>
+              <strong>继续了解最近状态</strong>
+              <p>上次完成：睡眠质量评估 · 查看报告或重新测评</p>
+            </div>
+            <div class="round-btn">›</div>
+          </div>
+
+          <div class="section-title">
+            <h3>测评入口</h3>
+            <span>三类场景</span>
+          </div>
+
+          <div class="entry-stack">
+            <article class="entry-card medical-entry">
+              <div class="entry-top"><span class="entry-badge">严谨</span><span class="entry-link">进入</span></div>
+              <h2>医学量表</h2>
+              <p>睡眠、情绪、压力、儿童行为等医学与心理筛查。</p>
+              <div class="entry-art clipboard"></div>
+            </article>
+            <article class="entry-card personality-entry">
+              <div class="entry-top"><span class="entry-badge">轻松</span><span class="entry-link">探索</span></div>
+              <h2>人格探索</h2>
+              <p>16 人格探索、I 人 E 人与 SBTI 趣味小测试。</p>
+              <div class="entry-art smile"></div>
+            </article>
+            <article class="entry-card ability-entry">
+              <div class="entry-top"><span class="entry-badge">成长</span><span class="entry-link">预览</span></div>
+              <h2>行为能力</h2>
+              <p>为 Brief-2、执行功能、儿童行为能力评估预留。</p>
+              <div class="entry-art grid-art"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            </article>
+          </div>
+        </div>
+        <nav class="bottom-tab">
+          <div class="tab-item active"><span class="tab-dot"></span><span>首页</span></div>
+          <div class="tab-item"><span class="tab-dot"></span><span>量表</span></div>
+          <div class="tab-item"><span class="tab-dot"></span><span>报告</span></div>
+          <div class="tab-item"><span class="tab-dot"></span><span>我的</span></div>
+        </nav>
+      </section>
+
+      <section class="phone medical" data-shot="medical-home">
+        <div class="status">
+          <span>09:41</span>
+          <div class="signal"><div class="bars"><i></i><i></i><i></i><i></i></div><span>5G</span><div class="battery"></div></div>
+        </div>
+        <div class="nav"><span class="back"></span>医学量表<div class="capsule"><span>•••</span><span></span></div></div>
+        <div class="screen">
+          <div class="hero-panel">
+            <h1>专业筛查与<br />状态评估</h1>
+            <p>从睡眠、情绪、压力到儿童行为，按场景快速找到合适量表。</p>
+            <div class="search">搜索量表名称、关键词</div>
+          </div>
+
+          <div class="section-title">
+            <h3>常用分类</h3>
+            <span>全部</span>
+          </div>
+          <div class="category-grid">
+            <div class="category-tile"><div class="category-icon"></div><strong>睡眠</strong><span>质量与节律</span></div>
+            <div class="category-tile"><div class="category-icon"></div><strong>情绪</strong><span>焦虑低落</span></div>
+            <div class="category-tile"><div class="category-icon"></div><strong>压力</strong><span>负荷感受</span></div>
+            <div class="category-tile"><div class="category-icon"></div><strong>执行功能</strong><span>专注拖延</span></div>
+            <div class="category-tile"><div class="category-icon"></div><strong>儿童行为</strong><span>行为表现</span></div>
+            <div class="category-tile"><div class="category-icon"></div><strong>感觉统合</strong><span>协调处理</span></div>
+          </div>
+
+          <div class="section-title">
+            <h3>热门量表</h3>
+            <span>更多</span>
+          </div>
+          <div class="scale-row">
+            <div><strong>睡眠质量评估</strong><p>了解近期睡眠质量、入睡困难与日间状态。</p></div>
+            <span class="small-pill">约 5 分钟</span>
+          </div>
+          <div class="scale-row">
+            <div><strong>儿童行为筛查</strong><p>由家长观察填写，辅助了解儿童行为表现。</p></div>
+            <span class="small-pill">家长评估</span>
+          </div>
+        </div>
+        <nav class="bottom-tab">
+          <div class="tab-item"><span class="tab-dot"></span><span>首页</span></div>
+          <div class="tab-item active"><span class="tab-dot"></span><span>量表</span></div>
+          <div class="tab-item"><span class="tab-dot"></span><span>报告</span></div>
+          <div class="tab-item"><span class="tab-dot"></span><span>我的</span></div>
+        </nav>
+      </section>
+
+      <section class="phone personality" data-shot="personality-home">
+        <div class="status">
+          <span>09:41</span>
+          <div class="signal"><div class="bars"><i></i><i></i><i></i><i></i></div><span>5G</span><div class="battery"></div></div>
+        </div>
+        <div class="nav"><span class="back"></span>人格探索<div class="capsule"><span>•••</span><span></span></div></div>
+        <div class="screen">
+          <div class="poster-title">
+            <span class="eyes"><span class="eye"></span><span class="eye"></span></span>
+            <h1>测测你的</h1>
+            <strong>人格类型</strong>
+            <span class="sticker">PERSONALITY TEST</span>
+          </div>
+          <div class="toy-scene">
+            <div class="platform"></div>
+            <div class="laptop"></div>
+            <div class="person"></div>
+            <div class="heart"></div>
+          </div>
+
+          <article class="personality-card clean">
+            <small>正式探索 · 16 类型</small>
+            <h2>测测你是 I 人还是 E 人</h2>
+            <p>用单页单题的方式完成自我探索，生成清晰的人格类型说明卡。</p>
+          </article>
+          <article class="personality-card fun">
+            <small>恶搞娱乐 · SBTI</small>
+            <h2>今日趣味人格小测试</h2>
+            <p>轻松玩一下，不代表真实人格或心理状态，适合分享与互动。</p>
+          </article>
+        </div>
+        <div class="fixed-cta">选择测评路线</div>
+      </section>
+
+      <section class="phone ability" data-shot="ability-home">
+        <div class="status">
+          <span>09:41</span>
+          <div class="signal"><div class="bars"><i></i><i></i><i></i><i></i></div><span>5G</span><div class="battery"></div></div>
+        </div>
+        <div class="nav"><span class="back"></span>行为能力<div class="capsule"><span>•••</span><span></span></div></div>
+        <div class="screen">
+          <div class="ability-hero">
+            <h1>看见行为背后的<br />能力线索</h1>
+            <p>面向儿童、青少年与家庭场景，聚焦执行功能、行为表现与成长支持。</p>
+            <div class="outline-btn">查看可用测评</div>
+          </div>
+
+          <div class="section-title">
+            <h3>能力方向</h3>
+            <span>持续扩展</span>
+          </div>
+          <div class="path-grid">
+            <div class="path-tile"><div class="path-icon"></div><strong>执行功能</strong><span>计划、抑制、转换、工作记忆</span></div>
+            <div class="path-tile"><div class="path-icon"></div><strong>行为调节</strong><span>冲动控制、情绪调节、规则感</span></div>
+            <div class="path-tile"><div class="path-icon"></div><strong>学习表现</strong><span>任务启动、坚持度、完成质量</span></div>
+            <div class="path-tile"><div class="path-icon"></div><strong>家庭观察</strong><span>多角色填写与对比反馈</span></div>
+          </div>
+
+          <div class="section-title">
+            <h3>专项测评</h3>
+            <span>预留</span>
+          </div>
+          <div class="module-row">
+            <div><strong>Brief-2 执行功能评估</strong><p>家长/教师视角，观察儿童日常执行功能表现。</p></div>
+            <span class="small-pill">规划中</span>
+          </div>
+          <div class="module-row">
+            <div><strong>儿童行为能力包</strong><p>按年龄与场景组合评估，后续开放。</p></div>
+            <span class="small-pill">即将开放</span>
+          </div>
+        </div>
+        <nav class="bottom-tab">
+          <div class="tab-item"><span class="tab-dot"></span><span>首页</span></div>
+          <div class="tab-item active"><span class="tab-dot"></span><span>能力</span></div>
+          <div class="tab-item"><span class="tab-dot"></span><span>报告</span></div>
+          <div class="tab-item"><span class="tab-dot"></span><span>我的</span></div>
+        </nav>
+      </section>
+    </main>
+  </body>
+</html>

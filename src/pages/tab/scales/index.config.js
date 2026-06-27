@@ -1,5 +1,8 @@
 export default {
-  navigationBarTitleText: '发现',
+  navigationStyle: 'custom',
+  navigationBarTitleText: '医学量表',
   enablePullDownRefresh: true,
-  backgroundTextStyle: 'dark'
+  backgroundTextStyle: 'dark',
+  navigationBarBackgroundColor: '#F8FAFF',
+  navigationBarTextStyle: 'black'
 }

@@ -139,6 +139,8 @@ export function checkQuestion(question) {
 export default function QuestionnaireForm({
   canSubmit,
   questionnaireCode,
+  initialQuestionnaire,
+  submitContract,
   subSignid,
   writedCallback
 }) {
@@ -147,11 +149,36 @@ export default function QuestionnaireForm({
   const [writerRoleCode, setWriterRoleCode] = useState(null);
   const [scrollTop, setScrollTop] = useState(-1);
 
+  const applyQuestionnaire = (result) => {
+    logger.RUN('[QuestionnaireForm] 问卷数据加载成功:', {
+      code: result?.code,
+      title: result?.title,
+      questionsCount: result?.questions?.length,
+      hasQuestions: !!result?.questions
+    });
+
+    setQuestionSheet(result);
+
+    if (result.writer_roles && result.writer_roles.length > 0) {
+      setWriterRoles(
+        result.writer_roles.map(v => ({
+          label: v.name,
+          value: v.code
+        }))
+      );
+    }
+  };
+
   useEffect(() => {
+    if (initialQuestionnaire) {
+      applyQuestionnaire(initialQuestionnaire);
+      return;
+    }
+
     if (questionnaireCode) {
       initQuestionnaire(questionnaireCode);
     }
-  }, [questionnaireCode]);
+  }, [questionnaireCode, initialQuestionnaire]);
 
   /**
    * @description 初始化问卷
@@ -164,26 +191,7 @@ export default function QuestionnaireForm({
     setWriterRoleCode(null);
 
     getQuestionnaire(id).then(result => {
-      logger.RUN('[QuestionnaireForm] 问卷数据加载成功:', {
-        code: result?.code,
-        title: result?.title,
-        questionsCount: result?.questions?.length,
-        hasQuestions: !!result?.questions
-      });
-      
-      // 新 API 返回的数据结构
-      setQuestionSheet(result);
-
-      // 如果需要填写人，则初始化填写人（目前新API暂不支持）
-      if (result.writer_roles && result.writer_roles.length > 0) {
-        setWriterRoles(
-          result.writer_roles.map(v => ({
-            label: v.name,
-            value: v.code
-          }))
-        );
-      }
-
+      applyQuestionnaire(result);
       Taro.hideLoading();
     }).catch(error => {
       console.error('加载问卷失败:', error);
@@ -402,8 +410,8 @@ export default function QuestionnaireForm({
     return {
       name: qs.name || qs.title,
       title: qs.title,
-      code: qs.code,
-      version: qs.version || '1.0',
+      code: submitContract?.questionnaire_code || qs.code,
+      version: submitContract?.questionnaire_version || qs.version || '1.0',
       answers: tmpQuestions
     };
   };

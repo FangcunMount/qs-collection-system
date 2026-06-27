@@ -5,6 +5,8 @@ import { AtActivityIndicator } from "taro-ui";
 
 import { getAssessmentReport } from "@/services/api/assessmentReports";
 import { getAssessmentByAnswersheetId, getAssessmentTrendSummary } from "@/services/api/assessments";
+import { getPersonalityAssessmentReport } from "@/services/api/personalityAssessments";
+import { isPersonalityAssessmentKind } from "@/shared/lib/assessmentKind";
 import { getLogger } from "@/shared/lib/logger";
 import { getAssessmentEntryContext } from "@/shared/stores/assessmentEntry";
 import { findTesteeById, getSelectedTesteeId } from "@/shared/stores/testees";
@@ -18,6 +20,7 @@ import RadarChart from "../components/report/RadarChart";
 import FactorBarChart from "../components/report/FactorBarChart";
 import FactorScatterChart from "../components/report/FactorScatterChart";
 import TrendLineChart from "../components/report/TrendLineChart";
+import PersonalityReportHero from "../components/report/PersonalityReportHero";
 import "./AssessmentReportPage.less";
 
 const PAGE_NAME = "analysis";
@@ -53,6 +56,8 @@ const Analysis = () => {
     testee_name: '',
     testee_id: ''
   });
+  const [modelExtra, setModelExtra] = useState(null);
+  const [isPersonalityReport, setIsPersonalityReport] = useState(false);
 
   const [isReady, setIsReady] = useState(false);
   const [activeTab, setActiveTab] = useState('factor-analysis'); // 'factor-analysis' or 'pro-advice'
@@ -60,6 +65,7 @@ const Analysis = () => {
   const [entryContext] = useState(() => getAssessmentEntryContext());
   const routeParams = Taro.getCurrentInstance().router.params || {};
   const planTaskId = routeParams.task_id || '';
+  const assessmentKind = routeParams.kind || '';
 
   /**
    * 处理报告数据
@@ -96,14 +102,17 @@ const Analysis = () => {
     }
     
     setReportInfo({
-      scale_name: reportData.scale_name || '',
-      scale_code: reportData.scale_code || '',
+      scale_name: reportData.scale_name || reportData.model_name || reportData.model?.title || '',
+      scale_code: reportData.scale_code || reportData.model_code || reportData.model?.code || '',
       risk_level: reportData.risk_level || '',
       suggestions: suggestions,
       created_at: reportData.created_at || '',
       testee_name: testeeName,
       testee_id: testeeId
     });
+
+    setModelExtra(reportData.model_extra || reportData.modelExtra || null);
+    setIsPersonalityReport(Boolean(reportData.model_extra || reportData.modelExtra || isPersonalityAssessmentKind(assessmentKind)));
     
     // 映射总分数据
     if (reportData.conclusion) {
@@ -138,9 +147,21 @@ const Analysis = () => {
       total: { content: reportData.conclusion, score: reportData.total_score }, 
       factors: mappedFactors 
     });
-  }, []);
+  }, [assessmentKind]);
+
+  const fetchAssessmentReport = useCallback((assessmentId, testeeId) => {
+    if (isPersonalityAssessmentKind(assessmentKind)) {
+      return getPersonalityAssessmentReport(assessmentId, testeeId);
+    }
+    return getAssessmentReport(assessmentId, testeeId);
+  }, [assessmentKind]);
 
   const loadTrendSummary = useCallback(async (assessmentId, testeeId) => {
+    if (isPersonalityAssessmentKind(assessmentKind)) {
+      setTrendSummary(null);
+      return;
+    }
+
     if (!assessmentId || !testeeId) {
       setTrendSummary(null);
       return;
@@ -157,7 +178,7 @@ const Analysis = () => {
     } finally {
       setTrendLoading(false);
     }
-  }, []);
+  }, [assessmentKind]);
 
   /**
    * 根据测评ID和受试者ID获取分析报告
@@ -185,7 +206,7 @@ const Analysis = () => {
       testee_id: String(testeeId),
     });
 
-    getAssessmentReport(assessmentId, testeeId)
+    fetchAssessmentReport(assessmentId, testeeId)
       .then(result => {
         logger.RUN('[Analysis] 获取测评报告成功:', { assessmentId });
         handleReportData(result);
@@ -209,7 +230,7 @@ const Analysis = () => {
           }
         }
       });
-  }, [handleReportData, loadTrendSummary]);
+  }, [fetchAssessmentReport, handleReportData, loadTrendSummary]);
 
   /**
    * 根据答卷ID获取分析报告
@@ -241,7 +262,7 @@ const Analysis = () => {
         testee_id: String(testeeId),
       });
 
-      const reportResult = await getAssessmentReport(assessmentId, testeeId);
+      const reportResult = await fetchAssessmentReport(assessmentId, testeeId);
       logger.RUN('[Analysis] 通过答卷ID获取报告成功');
       
       handleReportData(reportResult);
@@ -264,7 +285,7 @@ const Analysis = () => {
         }
       }
     }
-  }, [handleReportData, loadTrendSummary]);
+  }, [fetchAssessmentReport, handleReportData, loadTrendSummary]);
 
   useEffect(() => {
     const params = Taro.getCurrentInstance().router.params;
@@ -411,10 +432,18 @@ const Analysis = () => {
       <PrivacyAuthorization />
       
       <View className="analysis-report-page">
+        {isPersonalityReport && (
+          <PersonalityReportHero
+            modelExtra={modelExtra || {}}
+            conclusion={total?.content || ''}
+            modelTitle={reportInfo.scale_name}
+          />
+        )}
+
         {/* 报告概览卡片 */}
         <View className="report-overview-card">
           <View className="report-header">
-            <Text className="report-title">{reportInfo.scale_name || '量表测评报告'}</Text>
+            <Text className="report-title">{reportInfo.scale_name || (isPersonalityReport ? '人格测评报告' : '量表测评报告')}</Text>
             {reportInfo.testee_name && (
               <Text className="report-testee">{reportInfo.testee_name}</Text>
             )}
@@ -429,46 +458,46 @@ const Analysis = () => {
             </View>
           )}
 
-          {/* 总分展示区 */}
-          <View
-            className="score-display-area"
-            style={{
-              background: overallRiskConfig.scoreBadgeBg ? overallRiskConfig.scoreBadgeBg : undefined
-            }}
-          >
+          {!isPersonalityReport && (
             <View
-              className="score-number"
+              className="score-display-area"
               style={{
-                color: overallRiskConfig.scoreBadgeColor || undefined
+                background: overallRiskConfig.scoreBadgeBg ? overallRiskConfig.scoreBadgeBg : undefined
               }}
             >
-              <Text className="score-main">{total?.score || 0}</Text>
-              <Text className="score-unit">分</Text>
-            </View>
-            <View
-              className="risk-level-badge"
-              style={{
-                backgroundColor: '#FFFFFF',
-                color: overallRiskConfig.scoreBadgeColor || '#F97316'
-              }}
-            >
-              <Text className="risk-level-text">
-                {overallRiskConfig.label}
-                {total?.content && `:${total.content}`}
-              </Text>
-            </View>
-
-            {/* 建议展示区 */}
-            {(Array.isArray(reportInfo.suggestions) && reportInfo.suggestions.length > 0) && (
-              <View className="suggestion-section">
-                <Text className="suggestion-content-text">
-                  {typeof reportInfo.suggestions[0].content === 'string' 
-                    ? reportInfo.suggestions[0].content 
-                    : String(reportInfo.suggestions[0].content || '')}
+              <View
+                className="score-number"
+                style={{
+                  color: overallRiskConfig.scoreBadgeColor || undefined
+                }}
+              >
+                <Text className="score-main">{total?.score || 0}</Text>
+                <Text className="score-unit">分</Text>
+              </View>
+              <View
+                className="risk-level-badge"
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  color: overallRiskConfig.scoreBadgeColor || '#F97316'
+                }}
+              >
+                <Text className="risk-level-text">
+                  {overallRiskConfig.label}
+                  {total?.content && `:${total.content}`}
                 </Text>
               </View>
-            )}
-          </View>
+
+              {(Array.isArray(reportInfo.suggestions) && reportInfo.suggestions.length > 0) && (
+                <View className="suggestion-section">
+                  <Text className="suggestion-content-text">
+                    {typeof reportInfo.suggestions[0].content === 'string'
+                      ? reportInfo.suggestions[0].content
+                      : String(reportInfo.suggestions[0].content || '')}
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
         </View>
 
         <PlanSubscribeConfirm
@@ -480,6 +509,7 @@ const Analysis = () => {
           variant="floating"
         />
 
+        {!isPersonalityReport && (
         <View className="trend-summary-card">
           <View className="trend-summary-header">
             <View>
@@ -569,6 +599,7 @@ const Analysis = () => {
             </View>
           )}
         </View>
+        )}
 
         {/* 标签页控制器 */}
         <View className="tab-controller">
@@ -577,7 +608,7 @@ const Analysis = () => {
               className={`tab-button ${activeTab === 'factor-analysis' ? 'active' : ''}`}
               onClick={() => setActiveTab('factor-analysis')}
             >
-              <Text className="tab-button-text">因子分析</Text>
+              <Text className="tab-button-text">{isPersonalityReport ? '维度解读' : '因子分析'}</Text>
             </View>
             <View 
               className={`tab-button ${activeTab === 'pro-advice' ? 'active' : ''}`}

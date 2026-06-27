@@ -42,24 +42,24 @@ const Checkbox = props => {
           onChange={handleSelect}
         >
           {(option, i, isSelected) => {
-            if (option.allow_extend_text === "1" && isSelected) {
-              return (
-                <View>
-                  <View>{option.content}</View>
-                  <View onClick={e => e.stopPropagation()}>
-                    <SiInput
-                      style={{ flexGrow: 1 }}
-                      defaultValue={option.extend_content}
-                      placeholder={option.extend_placeholder}
-                      onChange={v => handleChangeExtend(i, v)}
-                      disabled={disabled ?? false}
-                    ></SiInput>
+            return (
+              <View className={`qs-choice-content ${isSelected ? "is-selected" : ""}`}>
+                {option.allow_extend_text === "1" && isSelected ? (
+                  <View>
+                    <View>{option.content}</View>
+                    <View onClick={e => e.stopPropagation()}>
+                      <SiInput
+                        style={{ flexGrow: 1 }}
+                        defaultValue={option.extend_content}
+                        placeholder={option.extend_placeholder}
+                        onChange={v => handleChangeExtend(i, v)}
+                        disabled={disabled ?? false}
+                      ></SiInput>
+                    </View>
                   </View>
-                </View>
-              );
-            } else {
-              return option.content;
-            }
+                ) : option.content}
+              </View>
+            );
           }}
         </SiCheckBox>
       </View>

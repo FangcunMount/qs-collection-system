@@ -13,7 +13,8 @@
     "build:weapp:prod": "NODE_ENV=production taro build --type weapp",
     "dev:weapp": "NODE_ENV=development taro build --type weapp --watch",
     "dev:weapp:prod": "NODE_ENV=production npm run build:weapp -- --watch",
-    "test:iam-contracts": "node scripts/check-iam-contracts.js"
+    "test:iam-contracts": "node scripts/check-iam-contracts.js",
+    "test:portal-contracts": "node scripts/check-portal-contracts.js"
   },
   "browserslist": [
     "last 3 versions",

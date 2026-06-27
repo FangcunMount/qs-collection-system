@@ -5,7 +5,10 @@ import lottie from "lottie-miniprogram";
 
 import { PrivacyAuthorization } from "@/shared/ui/PrivacyAuthorization";
 import { routes } from "@/shared/config/routes";
+import { ASSESSMENT_KIND } from "@/shared/lib/assessmentKind";
 import { getAssessmentByAnswersheetId, waitAssessmentReport, isReportWaitCompleted, isReportWaitFailed, isAssessmentPending } from "@/services/api/assessments";
+import { waitPersonalityAssessmentReport } from "@/services/api/personalityAssessments";
+import { isPersonalityAssessmentKind } from "@/shared/lib/assessmentKind";
 import { getAssessmentResponse } from "@/services/api/assessmentResponses";
 import { getLogger } from "@/shared/lib/logger";
 import { getSelectedTesteeId } from "@/shared/stores/testees";
@@ -72,8 +75,9 @@ const AnalysisWait = () => {
 
     const assessmentId = params.aid;
     const answersheetId = params.a;
-    const testeeIdFromUrl = params.t; // 从 URL 参数获取 testeeId
+    const testeeIdFromUrl = params.t;
     const taskId = params.task_id;
+    const assessmentKind = params.kind;
 
     if (!answersheetId) {
       logger.ERROR("缺少答卷ID参数");
@@ -82,7 +86,7 @@ const AnalysisWait = () => {
       return;
     }
 
-    startWaitFlow(assessmentId, answersheetId, testeeIdFromUrl, taskId);
+    startWaitFlow(assessmentId, answersheetId, testeeIdFromUrl, taskId, assessmentKind);
   }, []);
 
   // 点动画效果
@@ -285,12 +289,13 @@ const AnalysisWait = () => {
   /**
    * 长轮询等待报告生成
    */
-  const startPolling = async (assessmentId, answersheetId, testeeId, taskId) => {
+  const startPolling = async (assessmentId, answersheetId, testeeId, taskId, assessmentKind) => {
     if (isPollingRef.current) {
       logger.WARN("轮询已在进行中，跳过");
       return;
     }
 
+    const isPersonality = isPersonalityAssessmentKind(assessmentKind);
     isPollingRef.current = true;
     setStage("queued");
     setMessage(formatStageMessage("queued"));
@@ -305,13 +310,17 @@ const AnalysisWait = () => {
       logger.RUN("报告生成完成，准备跳转", {
         answersheetId,
         elapsedTime,
-        remainingTime
+        remainingTime,
+        assessmentKind
       });
 
       setTimeout(() => {
         Taro.redirectTo({
           url: routes.assessmentReport({
             a: answersheetId,
+            aid: assessmentId,
+            t: testeeId,
+            kind: isPersonality ? ASSESSMENT_KIND.PERSONALITY : undefined,
             task_id: taskId || undefined,
           })
         });
@@ -327,10 +336,13 @@ const AnalysisWait = () => {
         logger.RUN("[AnalysisWait] 开始 wait-report 长轮询", {
           assessmentId,
           testeeId,
-          timeout: POLLING_TIMEOUT
+          timeout: POLLING_TIMEOUT,
+          assessmentKind
         });
 
-        const result = await waitAssessmentReport(assessmentId, testeeId, POLLING_TIMEOUT);
+        const result = isPersonality
+          ? await waitPersonalityAssessmentReport(assessmentId, testeeId, POLLING_TIMEOUT)
+          : await waitAssessmentReport(assessmentId, testeeId, POLLING_TIMEOUT);
         const statusData = result?.data || result || {};
         const reportStatus = statusData.status;
         const reportStage = statusData.stage;
@@ -389,7 +401,7 @@ const AnalysisWait = () => {
     poll();
   };
 
-  const startWaitFlow = async (assessmentIdFromUrl, answersheetId, testeeIdFromUrl, taskId) => {
+  const startWaitFlow = async (assessmentIdFromUrl, answersheetId, testeeIdFromUrl, taskId, assessmentKind) => {
     try {
       const context = await resolveAssessmentContext(
         assessmentIdFromUrl,
@@ -400,10 +412,11 @@ const AnalysisWait = () => {
       logger.RUN("[AnalysisWait] 进入报告等待轮询", {
         answersheetId,
         assessmentId: context.assessmentId,
-        testeeId: context.testeeId
+        testeeId: context.testeeId,
+        assessmentKind
       });
 
-      startPolling(context.assessmentId, answersheetId, context.testeeId, taskId);
+      startPolling(context.assessmentId, answersheetId, context.testeeId, taskId, assessmentKind);
     } catch (error) {
       logger.ERROR("[AnalysisWait] 等待流程初始化失败", error);
       setStatus("error");
@@ -457,10 +470,14 @@ const AnalysisWait = () => {
                     const params = Taro.getCurrentInstance().router.params;
                     const answersheetId = params.a;
                     const taskId = params.task_id;
+                    const assessmentKind = params.kind;
                     if (answersheetId) {
                       Taro.redirectTo({
                         url: routes.assessmentReport({
                           a: answersheetId,
+                          aid: params.aid,
+                          t: params.t,
+                          kind: assessmentKind,
                           task_id: taskId || undefined,
                         })
                       });

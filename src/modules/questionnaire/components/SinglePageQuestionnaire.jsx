@@ -2,8 +2,6 @@ import React, { useState, useEffect } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro from "@tarojs/taro";
 
-import { AtButton } from "taro-ui";
-
 import { getQuestionnaire } from "@/services/api/questionnaires";
 import { submitQuestionnaire } from "@/services/api/assessmentSubmissions";
 import "./SinglePageQuestionnaire.less";
@@ -17,6 +15,8 @@ import QsDate from "./questions/date";
 import QsCheckbox from "./questions/checkbox";
 import QsScoreRadio from "./questions/scoreRadio";
 import QsSelect from "./questions/select";
+import QsImageRadio from "./questions/imageRadio";
+import QsImageCheckbox from "./questions/imageCheckBox";
 import WriterRoleDialog from "./WriterRoleDialog";
 import { checkQuestion } from "./QuestionnaireForm";
 import { useThrottle } from "@/shared/hooks/useThrottle";
@@ -26,7 +26,15 @@ const PAGE_NAME = "single_page_questionnaire";
 const logger = getLogger(PAGE_NAME);
 
 export default props => {
-  const { questionnaireCode, subSignid, writedCallback, canSubmit } = props;
+  const {
+    questionnaireCode,
+    initialQuestionnaire,
+    submitContract,
+    subSignid,
+    writedCallback,
+    canSubmit,
+    variant = "default"
+  } = props;
 
   const [questionSheet, setQuestionSheet] = useState(null);
   const [curQuestionIndex, setCurQuestionIndex] = useState(-1);
@@ -35,11 +43,33 @@ export default props => {
   const [writerRoleCode, setWriterRoleCode] = useState(null);
   const [needWriterRole, setNeedWriterRole] = useState(false);
 
+  const applyQuestionnaire = (result) => {
+    const questionnaire = result.questionnaire || result;
+    questionnaire.questions = questionnaire.questions.filter(q => q.type !== 'Section');
+    setQuestionSheet(questionnaire);
+    setCurQuestionIndex(0);
+
+    if (result.writer_roles && result.writer_roles.length > 0) {
+      setWriterRoles(
+        result.writer_roles.map(v => ({
+          label: v.name,
+          value: v.code
+        }))
+      );
+      setNeedWriterRole(true);
+    }
+  };
+
   useEffect(() => {
+    if (initialQuestionnaire) {
+      applyQuestionnaire(initialQuestionnaire);
+      return;
+    }
+
     if (questionnaireCode) {
       initQuestionnaire(questionnaireCode);
     }
-  }, [questionnaireCode]);
+  }, [questionnaireCode, initialQuestionnaire]);
 
   const initQuestionnaire = id => {
     Taro.showLoading();
@@ -48,24 +78,7 @@ export default props => {
     setWriterRoleCode(null);
 
     getQuestionnaire(id).then(result => {
-      // 新 API 返回的数据结构不同，需要适配
-      const questionnaire = result.questionnaire || result;
-      // 过滤掉 Section 类型的题目
-      questionnaire.questions = questionnaire.questions.filter(q => q.type !== 'Section');
-      setQuestionSheet(questionnaire);
-      setCurQuestionIndex(0);
-
-      if (result.writer_roles && result.writer_roles.length > 0) {
-        // 如果需要填写人，则初始化填写人
-        setWriterRoles(
-          result.writer_roles.map(v => ({
-            label: v.name,
-            value: v.code
-          }))
-        );
-        setNeedWriterRole(true);
-      }
-
+      applyQuestionnaire(result);
       Taro.hideLoading();
     }).catch(error => {
       console.error('加载问卷失败:', error);
@@ -214,6 +227,15 @@ export default props => {
             onChangeExtend={handleChangeRadioExtend}
           ></QsRadio>
         );
+      case "ImageRadio":
+        return (
+          <QsImageRadio
+            item={v}
+            index={i}
+            onChangeValue={handleChangeValue}
+            onChangeExtend={handleChangeRadioExtend}
+          ></QsImageRadio>
+        );
       case "CheckBox":
         return (
           <QsCheckbox
@@ -222,6 +244,15 @@ export default props => {
             onChangeValue={handleChangeValue}
             onChangeExtend={handleChangeRadioExtend}
           ></QsCheckbox>
+        );
+      case "ImageCheckBox":
+        return (
+          <QsImageCheckbox
+            item={v}
+            index={i}
+            onChangeValue={handleChangeValue}
+            onChangeExtend={handleChangeRadioExtend}
+          ></QsImageCheckbox>
         );
       case "Text":
         return <QsText item={v} index={i} onChangeValue={handleChangeValue} />;
@@ -266,8 +297,8 @@ export default props => {
       return {
         name: qs.name || qs.title,
         title: qs.title,
-        code: qs.code,
-        version: qs.version || "1.0",
+        code: submitContract?.questionnaire_code || qs.code,
+        version: submitContract?.questionnaire_version || qs.version || "1.0",
         answers: qs.questions.filter(v => getQuestionIsShow(v.show_controller))
       };
     };
@@ -324,6 +355,7 @@ export default props => {
       .length + 1;
     
     const totalQuestions = questionSheet.questions.length;
+    const isPersonality = variant === "personality";
 
     if (curQuestionIndex >= questionSheet?.questions.length) {
       return (
@@ -334,22 +366,19 @@ export default props => {
             <Text className='completion-subtitle'>感谢您认真填写</Text>
           </View>
           <View className='btn-group'>
-            <AtButton
-              customStyle={{ width: "200rpx" }}
-              size='small'
+            <View
+              className='single-nav-button single-nav-button--prev'
               onClick={handleToPrevQuestion}
             >
-              返回修改
-            </AtButton>
+              <Text>← 返回修改</Text>
+            </View>
             {canSubmit ? (
-              <AtButton
-                customStyle={{ width: "200rpx" }}
-                type='primary'
-                size='small'
+              <View
+                className='single-nav-button single-nav-button--submit'
                 onClick={handleSubmit}
               >
-                提交问卷
-              </AtButton>
+                <Text>提交问卷</Text>
+              </View>
             ) : null}
           </View>
         </View>
@@ -358,60 +387,65 @@ export default props => {
 
     return (
       <>
-        {/* 进度信息 */}
-        <View className='progress-info'>
-          <Text className='progress-number'>{questionNumber}/{totalQuestions}</Text>
-        </View>
-
-        {/* 进度条 */}
-        <View className='progress-bar-container'>
-          <View 
-            className='progress-bar' 
-            style={{width: `${(questionNumber / totalQuestions) * 100}%`}}
-          />
-        </View>
-
-        {/* 问题 */}
-        <View className='question'>{getQuestionComp(curQuestionIndex)}</View>
-        
-        {/* 按钮组 */}
-        <View className='btn-group'>
-          {curQuestionIndex > 0 ? (
-
-            <AtButton
-              customStyle={{ width: "200rpx" }}
-              size='small'
-              onClick={handleToPrevQuestion}
-            >
-              上一题
-            </AtButton>
+        <View className='question-card__panel'>
+          {isPersonality ? (
+            <View className='questionnaire-single-page__hero'>
+              <View className='questionnaire-single-page__cloud questionnaire-single-page__cloud--left'>
+                <View className='questionnaire-single-page__eyes'>
+                  <Text className='questionnaire-single-page__eye'></Text>
+                  <Text className='questionnaire-single-page__eye'></Text>
+                </View>
+              </View>
+              <View className='questionnaire-single-page__headline'>
+                <Text className='questionnaire-single-page__headline-main'>测测你的</Text>
+                <Text className='questionnaire-single-page__headline-tag'>人格类型</Text>
+              </View>
+              <View className='questionnaire-single-page__cloud questionnaire-single-page__cloud--right'>
+                <View className='questionnaire-single-page__eyes'>
+                  <Text className='questionnaire-single-page__eye'></Text>
+                  <Text className='questionnaire-single-page__eye'></Text>
+                </View>
+              </View>
+            </View>
           ) : null}
-          <AtButton
-            customStyle={{ width: "200rpx" }}
-            type='primary'
-            size='small'
+
+          <View className='question-card__body'>
+            <View className='progress-info'>
+              <Text className='progress-number'>{questionNumber}</Text>
+              <Text className='progress-total'>/{totalQuestions}</Text>
+            </View>
+
+            <View className='progress-bar-container'>
+              <View
+                className='progress-bar'
+                style={{ width: `${(questionNumber / totalQuestions) * 100}%` }}
+              />
+            </View>
+
+            <View className='question'>{getQuestionComp(curQuestionIndex)}</View>
+          </View>
+        </View>
+
+        <View className='btn-group'>
+          <View
+            className={`single-nav-button single-nav-button--prev ${curQuestionIndex > 0 ? "" : "is-disabled"}`}
+            onClick={curQuestionIndex > 0 ? handleToPrevQuestion : undefined}
+          >
+            <Text>← 上一题</Text>
+          </View>
+          <View
+            className='single-nav-button single-nav-button--next'
             onClick={handleToNextQuestion}
           >
-            下一题
-          </AtButton>
+            <Text>下一题 →</Text>
+          </View>
         </View>
       </>
     );
   };
 
   return (
-    <View className='questionnaire-single-page'>
-      {questionSheet ? (
-        <View
-          className='questionnaire-single-page__progress'
-          style={{
-            width: `${parseInt(
-              (curQuestionIndex / questionSheet.questions.length) * 100
-            )}%`
-          }}
-        ></View>
-      ) : null}
-
+    <View className={`questionnaire-single-page questionnaire-single-page--${variant}`}>
       <WriterRoleDialog
         flag={needWriterRole}
         closeDialog={() => setNeedWriterRole(false)}

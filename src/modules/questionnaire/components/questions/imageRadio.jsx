@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View } from "@tarojs/components";
+import { View, Image } from "@tarojs/components";
 import { SiInput, SiRadio } from "taro-ui-fc";
 
 import ShowContainer from "./widget/showContainer";

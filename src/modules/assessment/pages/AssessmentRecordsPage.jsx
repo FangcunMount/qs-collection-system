@@ -190,7 +190,7 @@ const AssessmentRecordCenterPage = () => {
         )}
       </View>
 
-      <BottomMenu activeKey="记录" />
+      <BottomMenu activeKey="报告" />
     </>
   );
 };

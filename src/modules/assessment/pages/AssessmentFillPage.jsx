@@ -24,6 +24,12 @@ import { getMiniProgramEntryParams } from "@/services/api/miniProgramEntries";
 import { resolveAssessmentEntry } from "@/services/api/assessmentEntries";
 import { getQuestionnaire } from "@/services/api/questionnaires";
 import { getTestee } from "@/services/api/testees";
+import { createPersonalityAssessmentSession } from "@/services/api/personalityAssessments";
+import {
+  prepareQuestionnaireFromSession,
+  buildSubmitContractFromSession,
+} from "../lib/personalityQuestionnaire";
+import { ASSESSMENT_KIND } from "@/shared/lib/assessmentKind";
 
 const PAGE_NAME = "questionnaire_fill";
 const logger = getLogger(PAGE_NAME);
@@ -149,6 +155,9 @@ const resolvePlanTaskId = (params, context) => {
 
 export default function Index() {
   const [questionnaireCode, setQuestionnaireCode] = useState(null);
+  const [modelCode, setModelCode] = useState(null);
+  const [isPersonalityFlow, setIsPersonalityFlow] = useState(false);
+  const [submitContract, setSubmitContract] = useState(null);
   const [subSignid, setSubSignid] = useState("");
   
   // 状态管理
@@ -164,6 +173,9 @@ export default function Index() {
 
   const paramData = useRouter().params;
   const planTaskId = resolvePlanTaskId(paramData, entryContext);
+  const shouldDirectStartPersonality = (nextModelCode) => {
+    return Boolean(nextModelCode && String(paramData.start || "") === "1");
+  };
 
   // 订阅 testee store 变化
   useEffect(() => {
@@ -187,9 +199,13 @@ export default function Index() {
       }
       const {
         q: nextQuestionnaireCode,
+        mc: nextModelCode,
         t: testeeid,
         signid
       } = result;
+
+      const personalityModelCode = nextModelCode || paramData.mc;
+      const resolvedQuestionnaireCode = personalityModelCode ? null : nextQuestionnaireCode;
 
       if ((paramData.scene || hasEntryContext(result)) && result?.entry_status && INVALID_ENTRY_STATUSES.has(result.entry_status)) {
         redirectToEntryError({
@@ -202,7 +218,7 @@ export default function Index() {
         return;
       }
 
-      if ((paramData.scene || hasEntryContext(result)) && !result?.q) {
+      if ((paramData.scene || hasEntryContext(result)) && !result?.q && !personalityModelCode) {
         redirectToEntryError({
           title: "入口内容不存在",
           text: "当前入口未找到可填写的问卷或量表",
@@ -216,9 +232,14 @@ export default function Index() {
       signid && setSubSignid(signid);
       result.sp && setIsSinglePage(result.sp === "1");
 
-      beforeEach({ questionnaireCode: nextQuestionnaireCode, testeeid, signid }, async () => {
-        setQuestionnaireCode(nextQuestionnaireCode);
-        await initPageData(nextQuestionnaireCode, testeeid, result);
+      if (personalityModelCode) {
+        setModelCode(personalityModelCode);
+        setIsPersonalityFlow(true);
+      }
+
+      beforeEach({ questionnaireCode: resolvedQuestionnaireCode, modelCode: personalityModelCode, testeeid, signid }, async () => {
+        setQuestionnaireCode(resolvedQuestionnaireCode);
+        await initPageData(resolvedQuestionnaireCode, personalityModelCode, testeeid, result);
       });
     }).catch((error) => {
       console.error('解析入口参数失败:', error);
@@ -240,14 +261,12 @@ export default function Index() {
    * 2. 根据 testee 数量决定是否自动选择
    * 3. 加载问卷数据
    */
-  const initPageData = async (nextQuestionnaireCode, explicitTesteeId, entryParams) => {
+  const initPageData = async (nextQuestionnaireCode, nextModelCode, explicitTesteeId, entryParams) => {
     try {
-      // 重新初始化 testee store
       await refreshTesteeList();
-      
-      let storedList = getStoredTesteeList();
-      
-      // 如果没有档案
+
+      const storedList = getStoredTesteeList();
+
       if (!storedList.length) {
         Taro.hideLoading();
         const params = {
@@ -259,25 +278,20 @@ export default function Index() {
         return;
       }
 
-      // 如果有明确的 testeeid，使用它
       if (explicitTesteeId) {
         setSelectedTesteeId(explicitTesteeId);
-        await loadQuestionnaire(nextQuestionnaireCode, explicitTesteeId, entryParams);
+        await loadAssessmentContent(nextQuestionnaireCode, nextModelCode, explicitTesteeId, entryParams);
         return;
       }
 
-      // 根据档案数量决定是否自动选择
       if (storedList.length === 1) {
-        // 只有一个档案，自动选择
         const singleTesteeId = storedList[0].id;
         setSelectedTesteeId(singleTesteeId);
-        await loadQuestionnaire(nextQuestionnaireCode, singleTesteeId, entryParams);
+        await loadAssessmentContent(nextQuestionnaireCode, nextModelCode, singleTesteeId, entryParams);
       } else {
-        // 多个档案，清空选中状态，让用户选择
         setSelectedTesteeId(null);
         setTesteeList(storedList);
-        // 加载问卷信息（不加载档案信息）
-        await loadQuestionnaireOnly(nextQuestionnaireCode, entryParams);
+        await loadAssessmentContentOnly(nextQuestionnaireCode, nextModelCode, entryParams);
       }
     } catch (error) {
       console.error('初始化页面数据失败:', error);
@@ -286,14 +300,34 @@ export default function Index() {
     }
   };
 
-  /**
-   * 只加载问卷信息（不加载档案信息）
-   */
-  const loadQuestionnaireOnly = async (nextQuestionnaireCode, entryParams) => {
+  const loadPersonalitySession = async (nextModelCode, testeeId) => {
+    const sessionResult = await createPersonalityAssessmentSession({
+      modelCode: nextModelCode,
+      testeeId
+    });
+    const session = sessionResult?.data || sessionResult || {};
+    const questionnaireData = prepareQuestionnaireFromSession(session);
+    const contract = buildSubmitContractFromSession(session);
+
+    if (!questionnaireData?.questions?.length) {
+      throw new Error('当前人格测评题版为空');
+    }
+
+    setSubmitContract(contract);
+    return questionnaireData;
+  };
+
+  const loadAssessmentContentOnly = async (nextQuestionnaireCode, nextModelCode, entryParams) => {
     try {
+      if (nextModelCode) {
+        setCurrentStep('ready');
+        Taro.hideLoading();
+        return;
+      }
+
       const questionnaireData = await getQuestionnaire(nextQuestionnaireCode);
       setQuestionnaire(questionnaireData);
-      setCurrentStep('ready'); // 进入准备步骤，等待用户选择档案
+      setCurrentStep('ready');
       Taro.hideLoading();
     } catch (error) {
       console.error('加载问卷失败:', error);
@@ -312,30 +346,36 @@ export default function Index() {
     }
   };
 
-  /**
-   * 加载问卷和档案信息
-   */
-  const loadQuestionnaire = async (nextQuestionnaireCode, testeeId, entryParams) => {
+  const loadAssessmentContent = async (nextQuestionnaireCode, nextModelCode, testeeId, entryParams) => {
     try {
-      // 并行加载问卷和档案信息
       const [questionnaireData, testeeData] = await Promise.all([
-        getQuestionnaire(nextQuestionnaireCode),
+        nextModelCode
+          ? loadPersonalitySession(nextModelCode, testeeId)
+          : getQuestionnaire(nextQuestionnaireCode),
         getTestee(testeeId)
       ]);
 
       setQuestionnaire(questionnaireData);
       setTesteeInfo(testeeData);
-      setCurrentStep('ready'); // 进入准备步骤
-      
+      if (shouldDirectStartPersonality(nextModelCode)) {
+        setIsSinglePage(true);
+        setCurrentStep('filling');
+      } else {
+        setCurrentStep('ready');
+      }
       Taro.hideLoading();
     } catch (error) {
       console.error('加载数据失败:', error);
       Taro.hideLoading();
-      if (hasEntryContext(entryParams)) {
+      if (hasEntryContext(entryParams) || nextModelCode) {
         redirectToEntryError({
-          title: "入口内容暂不可用",
-          text: "当前入口对应的量表或档案信息无法加载",
-          desc: "请稍后重试，或联系推荐人员确认入口状态。",
+          title: nextModelCode ? "人格测评暂不可用" : "入口内容暂不可用",
+          text: nextModelCode
+            ? (error?.message || "当前人格模型无法开始测评")
+            : "当前入口对应的量表或档案信息无法加载",
+          desc: nextModelCode
+            ? "模型可能未发布或题版不可用，请稍后重试。"
+            : "请稍后重试，或联系推荐人员确认入口状态。",
           buttonText: "返回首页",
           buttonUrl: routes.tabHome()
         });
@@ -350,15 +390,22 @@ export default function Index() {
    */
   const handleTesteeChange = async (testeeId) => {
     if (!testeeId) return;
-    
+
     setSelectedTesteeId(testeeId);
-    
-    // 加载选中的档案信息
+
     try {
       const testeeData = await getTestee(testeeId);
       setTesteeInfo(testeeData);
+
+      if (isPersonalityFlow && modelCode) {
+        Taro.showLoading({ mask: true });
+        const questionnaireData = await loadPersonalitySession(modelCode, testeeId);
+        setQuestionnaire(questionnaireData);
+        Taro.hideLoading();
+      }
     } catch (error) {
       console.error('加载档案信息失败:', error);
+      Taro.hideLoading();
       Taro.showToast({ title: '加载档案信息失败', icon: 'none' });
     }
   };
@@ -386,6 +433,19 @@ export default function Index() {
     if (!testeeInfo) {
       Taro.showToast({ title: '档案信息加载中，请稍候', icon: 'none' });
       return;
+    }
+
+    if (isPersonalityFlow && modelCode && !questionnaire?.questions?.length) {
+      try {
+        Taro.showLoading({ mask: true });
+        const questionnaireData = await loadPersonalitySession(modelCode, selectedTesteeId);
+        setQuestionnaire(questionnaireData);
+        Taro.hideLoading();
+      } catch (error) {
+        Taro.hideLoading();
+        Taro.showToast({ title: error?.message || '加载题版失败', icon: 'none' });
+        return;
+      }
     }
 
     try {
@@ -421,9 +481,10 @@ export default function Index() {
     // 根据问卷类型和题目数量决定是否使用单页单题模式
     const questionCount = questionnaire?.questions?.length || 0;
     const questionnaireType = questionnaire?.type;
-    
-    // 量表且题目数少于20时，使用单页单题模式
-    if (questionnaireType === 'MedicalScale' && questionCount < 20 && !isSinglePage) {
+
+    if (questionnaireType === 'PersonalityAssessment' || isPersonalityFlow) {
+      setIsSinglePage(true);
+    } else if (questionnaireType === 'MedicalScale' && questionCount < 20 && !isSinglePage) {
       setIsSinglePage(true);
     }
     
@@ -456,10 +517,24 @@ export default function Index() {
     });
 
     if (questionnaireType === 'Survey') {
-      // 调查问卷：跳转到答卷详情页面
       Taro.redirectTo({
         url: routes.assessmentResponse({
           a: answersheetid,
+          task_id: planTaskId || undefined,
+        })
+      });
+    } else if (questionnaireType === 'PersonalityAssessment' || isPersonalityFlow) {
+      logger.RUN('[Fill] 人格测评提交成功，跳转等待页', {
+        answersheetid,
+        assessmentId,
+        testeeId: selectedTesteeId
+      });
+      Taro.redirectTo({
+        url: routes.assessmentReportPending({
+          a: answersheetid,
+          aid: assessmentId || undefined,
+          t: selectedTesteeId || undefined,
+          kind: ASSESSMENT_KIND.PERSONALITY,
           task_id: planTaskId || undefined,
         })
       });
@@ -505,6 +580,14 @@ export default function Index() {
     value: item.id
   }));
 
+  const readyTitle = questionnaire?.title || (isPersonalityFlow ? '人格测评' : '');
+  const readyQuestionCount = questionnaire?.questions?.length
+    ? getValidQuestionCount(questionnaire.questions)
+    : (isPersonalityFlow ? '--' : 0);
+  const readyEstimatedTime = questionnaire?.questions?.length
+    ? getEstimatedTime(questionnaire)
+    : (isPersonalityFlow ? '--' : 0);
+  const introSectionTitle = isPersonalityFlow ? '测评简介' : '量表简介';
   const selectedTesteeIndex = testeeList.findIndex(item => item.id === selectedTesteeId);
   const entryStatusText = resolveEntryStatusText(entryContext?.entry_status);
   const startDisabled = !selectedTesteeId || Boolean(entryStatusText);
@@ -526,7 +609,7 @@ export default function Index() {
 
             {/* 问卷标题信息 */}
             <View className="questionnaire-header">
-              <Text className="questionnaire-title">{questionnaire?.title}</Text>
+              <Text className="questionnaire-title">{readyTitle}</Text>
               {questionnaire?.subtitle && (
                 <Text className="questionnaire-subtitle">{questionnaire.subtitle}</Text>
               )}
@@ -535,13 +618,13 @@ export default function Index() {
                 <View className="meta-item">
                   <Text className="meta-icon">📄</Text>
                   <Text className="meta-text">
-                    {getValidQuestionCount(questionnaire?.questions) || 0}道题
+                    {readyQuestionCount}道题
                   </Text>
                 </View>
                 <View className="meta-item">
                   <Text className="meta-icon">⏱</Text>
                   <Text className="meta-text">
-                    预计{getEstimatedTime(questionnaire)}分钟
+                    预计{readyEstimatedTime}分钟
                   </Text>
                 </View>
               </View>
@@ -640,10 +723,10 @@ export default function Index() {
 
             {/* 量表简介 */}
             <View className="questionnaire-intro-section">
-              <Text className="section-title">量表简介</Text>
+              <Text className="section-title">{introSectionTitle}</Text>
               <Text className="intro-content">
                 {questionnaire?.introduction || questionnaire?.description || 
-                `${questionnaire?.title || '本问卷'}是一个专业的心理测评工具，旨在帮助您了解自己在相关维度上的状况。通过完成问卷，您将获得详细的测评报告和专业的解读。`}
+                `${readyTitle || '本测评'}将帮助你了解相关人格特质。完成答题后，系统将生成专属解读报告。`}
               </Text>
             </View>
 
@@ -669,13 +752,18 @@ export default function Index() {
           {isSinglePage ? (
             <SinglePageQuestionnaire
               questionnaireCode={questionnaireCode}
+              initialQuestionnaire={questionnaire}
+              submitContract={submitContract}
               subSignid={subSignid}
               writedCallback={writedCallback}
               canSubmit={canSubmit}
+              variant={isPersonalityFlow ? "personality" : "default"}
             />
           ) : (
             <QuestionnaireForm
               questionnaireCode={questionnaireCode}
+              initialQuestionnaire={questionnaire}
+              submitContract={submitContract}
               subSignid={subSignid}
               writedCallback={writedCallback}
               canSubmit={canSubmit}

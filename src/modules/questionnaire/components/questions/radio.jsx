@@ -41,22 +41,22 @@ const Radio = props => {
           onChange={handleSelect}
         >
           {(option, i, isSelected) => {
-            if (option.allow_extend_text === "1" && isSelected) {
-              return (
-                <View>
-                  <View>{option.content}</View>
-                  <SiInput
-                    style={{ flexGrow: 1 }}
-                    defaultValue={option.extend_content}
-                    placeholder={option.extend_placeholder}
-                    onChange={v => changeExtend(i, v)}
-                    disabled={disabled ?? false}
-                  ></SiInput>
-                </View>
-              );
-            } else {
-              return option.content;
-            }
+            return (
+              <View className={`qs-choice-content ${isSelected ? "is-selected" : ""}`}>
+                {option.allow_extend_text === "1" && isSelected ? (
+                  <View>
+                    <View>{option.content}</View>
+                    <SiInput
+                      style={{ flexGrow: 1 }}
+                      defaultValue={option.extend_content}
+                      placeholder={option.extend_placeholder}
+                      onChange={v => changeExtend(i, v)}
+                      disabled={disabled ?? false}
+                    ></SiInput>
+                  </View>
+                ) : option.content}
+              </View>
+            );
           }}
         </SiRadio>
       </View>
