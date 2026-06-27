@@ -47,8 +47,8 @@ export const ASSESSMENT_PORTALS = Object.freeze([
     icon: 'analytics',
     actionText: '预览',
     image: behaviorImage,
-    labelColor: '#12B886',
-    accentColor: '#12B886',
+    labelColor: '#7A5AF8',
+    accentColor: '#7A5AF8',
     routeKey: PORTAL_ROUTE_KEYS.ABILITY,
   },
 ]);

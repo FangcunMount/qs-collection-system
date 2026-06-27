@@ -14,11 +14,13 @@ export default {
         'records/index',
         'response/index',
         'report/index',
+        'personality-report/index',
         'report-trend/index',
         'report-pending/index',
         'personality/index',
         'personality/model/index',
         'ability/index',
+        'scales/index',
       ],
       independent: false
     },

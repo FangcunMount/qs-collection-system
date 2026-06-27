@@ -132,11 +132,13 @@ const AbilityCatalogPage = () => {
                 key={direction.key}
                 className={`ability-direction-card ability-direction-card--${direction.tone}`}
               >
-                <Image
-                  className="ability-direction-card__image"
-                  src={DIRECTION_IMAGES[direction.key] || abilityImage}
-                  mode="aspectFit"
-                />
+                <View className="ability-direction-card__icon">
+                  <Image
+                    className="ability-direction-card__image"
+                    src={DIRECTION_IMAGES[direction.key] || abilityImage}
+                    mode="aspectFit"
+                  />
+                </View>
                 <View className="ability-direction-card__body">
                   <Text className="ability-direction-card__title">{direction.title}</Text>
                   <Text className="ability-direction-card__desc">
@@ -166,11 +168,13 @@ const AbilityCatalogPage = () => {
                   className={`ability-assessment-row ${isAbilityAssessmentAvailable(item) ? "" : "is-disabled"}`}
                   onClick={() => handleOpenAssessment(item)}
                 >
-                  <Image
-                    className="ability-assessment-row__image"
-                    src={ASSESSMENT_IMAGES[item.iconKey] || abilityImage}
-                    mode="aspectFit"
-                  />
+                  <View className="ability-assessment-row__icon">
+                    <Image
+                      className="ability-assessment-row__image"
+                      src={ASSESSMENT_IMAGES[item.iconKey] || abilityImage}
+                      mode="aspectFit"
+                    />
+                  </View>
                   <View className="ability-assessment-row__content">
                     <View className="ability-assessment-row__title-line">
                       <Text className="ability-assessment-row__title">{item.title}</Text>

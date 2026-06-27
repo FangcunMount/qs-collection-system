@@ -3,13 +3,12 @@ import Taro, { usePullDownRefresh } from "@tarojs/taro";
 import { View, Text, ScrollView, Image } from "@tarojs/components";
 import { AtIcon } from "taro-ui";
 import BottomMenu from "@/shared/ui/BottomMenu";
-import SearchBox from "@/shared/ui/SearchBox";
 import { routes } from "@/shared/config/routes";
 import { SCALE_COMMON_CATEGORIES } from "@/shared/config/scaleCatalogHome";
 import { buildAssessmentScanTargetUrl, isScanCancelError } from "@/shared/lib/entryScan";
-import { getScales, getHotScales } from "@/services/api/scales";
+import { getHotScales } from "@/services/api/scales";
 import { getLogger } from "@/shared/lib/logger";
-import medicalHeroImage from "@/assets/home/home-entry-medical-scale.png";
+import medicalHeroBanner from "@/assets/banner/banner_2.png";
 import medicalTrustImage from "@/assets/home/home-current-record-checklist.png";
 import categorySleepImage from "@/assets/home/category-sleep.png";
 import categoryMoodImage from "@/assets/home/category-mood.png";
@@ -22,7 +21,14 @@ import "./ScaleCatalogPage.less";
 const PAGE_NAME = "questionnaire_list";
 const logger = getLogger(PAGE_NAME);
 
-const CATEGORY_IMAGES = {
+const QUICK_ACTIONS = Object.freeze([
+  { key: "quick", title: "扫码评估", subtitle: "机构入口", icon: "add-circle", color: "#2F80ED" },
+  { key: "all", title: "全部量表", subtitle: "分类查找", icon: "search", color: "#7957F2" },
+  { key: "records", title: "评估记录", subtitle: "历史记录", icon: "list", color: "#24C28A" },
+  { key: "profile", title: "健康档案", subtitle: "综合管理", icon: "user", color: "#FF8A3A" },
+]);
+
+const CATEGORY_IMAGE_MAP = {
   sleep: categorySleepImage,
   mood: categoryMoodImage,
   pressure: categoryPressureImage,
@@ -31,12 +37,7 @@ const CATEGORY_IMAGES = {
   sensory: categorySensoryImage,
 };
 
-const QUICK_ACTIONS = Object.freeze([
-  { key: "quick", title: "快速评估", subtitle: "精选量表", icon: "add-circle", color: "#2F80ED" },
-  { key: "favorite", title: "我的收藏", subtitle: "常用量表", icon: "star", color: "#FF6B82" },
-  { key: "records", title: "评估记录", subtitle: "历史记录", icon: "list", color: "#24C28A" },
-  { key: "profile", title: "健康档案", subtitle: "综合管理", icon: "user", color: "#7957F2" },
-]);
+const FEATURED_CATEGORIES = SCALE_COMMON_CATEGORIES.slice(0, 4);
 
 const normalizeLabel = (value) => {
   if (!value) return "";
@@ -56,9 +57,6 @@ const normalizeScale = (item) => ({
   name: normalizeLabel(item.title || item.name || item.scale_name) || "医学量表",
   description: normalizeLabel(item.description) || "了解近期状态，辅助自我观察与沟通参考。",
   category: normalizeLabel(item.category),
-  stages: item.stages || [],
-  applicableAges: item.applicable_ages || [],
-  reporters: item.reporters || [],
   tags: normalizeTags(item.tags),
   question_count: Number(item.question_count || item.questionCount || 0),
   status: item.status,
@@ -70,8 +68,6 @@ const formatDuration = (scale) => {
   }
   return "约 5 分钟";
 };
-
-const resolveCategoryImage = (category) => CATEGORY_IMAGES[category.key] || categorySleepImage;
 
 const resolveScaleImage = (scale) => {
   const marker = [
@@ -103,52 +99,9 @@ const resolveHeaderMetrics = () => {
 };
 
 const ScaleCatalogPage = () => {
-  const [scaleList, setScaleList] = useState([]);
   const [hotScales, setHotScales] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [hotLoading, setHotLoading] = useState(true);
-  const [searchText, setSearchText] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [showScaleResults, setShowScaleResults] = useState(false);
   const [navMetrics, setNavMetrics] = useState(() => resolveHeaderMetrics());
-  const [pagination, setPagination] = useState({
-    page: 1,
-    page_size: 20,
-    total: 0,
-    total_pages: 0,
-  });
-  const [isParamsReady, setIsParamsReady] = useState(false);
-
-  const loadScaleList = useCallback(async (page = 1, append = false) => {
-    try {
-      setLoading(true);
-      const result = await getScales({
-        page,
-        pageSize: 20,
-        title: searchText,
-        category: selectedCategory,
-      });
-      const payload = result.data || result;
-      const scales = (payload.scales || []).map(normalizeScale);
-
-      setScaleList((prev) => (append ? [...prev, ...scales] : scales));
-      setPagination({
-        page: payload.page || page,
-        page_size: payload.page_size || 20,
-        total: payload.total || 0,
-        total_pages: payload.total_pages || 0,
-      });
-    } catch (error) {
-      console.error("加载量表列表失败:", error);
-      Taro.showToast({
-        title: "加载失败，请重试",
-        icon: "none",
-        duration: 2000,
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [searchText, selectedCategory]);
 
   const loadHotScales = useCallback(async () => {
     try {
@@ -165,10 +118,7 @@ const ScaleCatalogPage = () => {
   }, []);
 
   usePullDownRefresh(async () => {
-    await Promise.all([
-      loadHotScales(),
-      showScaleResults ? loadScaleList(1, false) : Promise.resolve(),
-    ]);
+    await loadHotScales();
     Taro.stopPullDownRefresh();
   });
 
@@ -177,31 +127,11 @@ const ScaleCatalogPage = () => {
   }, []);
 
   useEffect(() => {
-    const params = Taro.getCurrentInstance()?.router?.params || {};
-    if (params.keyword) {
-      setSearchText(params.keyword);
-      setShowScaleResults(true);
-    }
-    if (params.category) {
-      setSelectedCategory(params.category);
-      setShowScaleResults(true);
-    }
-    setIsParamsReady(true);
-  }, []);
-
-  useEffect(() => {
     loadHotScales();
   }, [loadHotScales]);
 
-  useEffect(() => {
-    if (isParamsReady && showScaleResults) {
-      loadScaleList(1, false);
-    }
-  }, [isParamsReady, showScaleResults, loadScaleList]);
-
-  const handleSearch = useCallback(() => {
-    setSelectedCategory(null);
-    setShowScaleResults(true);
+  const handleOpenScaleList = useCallback((params) => {
+    Taro.navigateTo({ url: routes.scaleList(params) });
   }, []);
 
   const handleScaleClick = useCallback((scale) => {
@@ -211,18 +141,6 @@ const ScaleCatalogPage = () => {
       return;
     }
     Taro.navigateTo({ url: routes.assessmentFill({ q: scale.code }) });
-  }, []);
-
-  const handleCategoryGridClick = useCallback((category) => {
-    setSelectedCategory(category.value);
-    setSearchText("");
-    setShowScaleResults(true);
-  }, []);
-
-  const handleViewAllCategories = useCallback(() => {
-    setSelectedCategory(null);
-    setSearchText("");
-    setShowScaleResults(true);
   }, []);
 
   const handleScanEntry = useCallback(async () => {
@@ -246,15 +164,13 @@ const ScaleCatalogPage = () => {
     }
   }, []);
 
-  const handleViewMoreHotScales = useCallback(() => {
-    setSelectedCategory(null);
-    setSearchText("");
-    setShowScaleResults(true);
-  }, []);
-
   const handleQuickAction = useCallback((key) => {
     if (key === "quick") {
       handleScanEntry();
+      return;
+    }
+    if (key === "all") {
+      handleOpenScaleList();
       return;
     }
     if (key === "records") {
@@ -265,16 +181,8 @@ const ScaleCatalogPage = () => {
       Taro.navigateTo({ url: routes.testeeList() });
       return;
     }
-    Taro.showToast({ title: "收藏功能即将开放", icon: "none" });
-  }, [handleScanEntry]);
-
-  const handleLoadMore = () => {
-    if (pagination.page >= pagination.total_pages) {
-      Taro.showToast({ title: "没有更多量表了", icon: "none" });
-      return;
-    }
-    loadScaleList(pagination.page + 1, true);
-  };
+    Taro.showToast({ title: "功能即将开放", icon: "none" });
+  }, [handleScanEntry, handleOpenScaleList]);
 
   return (
     <>
@@ -290,30 +198,8 @@ const ScaleCatalogPage = () => {
             </Text>
           </View>
 
-          <View className="scale-page__search">
-            <SearchBox
-              className="scale-search-box"
-              placeholder="搜索量表名称、关键词"
-              value={searchText}
-              onInput={(e) => setSearchText(e.detail.value)}
-              onConfirm={handleSearch}
-              iconColor="#8A96AA"
-              iconSize={18}
-            />
-          </View>
-
-          <View className="scale-hero">
-            <View className="scale-hero__content">
-              <Text className="scale-hero__title">专业筛查{"\n"}与状态评估</Text>
-              <Text className="scale-hero__desc">
-                从睡眠、情绪、压力到儿童行为，按场景快速找到合适量表
-              </Text>
-              <View className="scale-hero__button" onClick={handleViewMoreHotScales}>
-                <Text>开始评估</Text>
-                <AtIcon value="arrow-right" size="15" color="#FFFFFF" />
-              </View>
-            </View>
-            <Image className="scale-hero__image" src={medicalHeroImage} mode="aspectFit" />
+          <View className="scale-hero" onClick={() => handleOpenScaleList()}>
+            <Image className="scale-hero__banner" src={medicalHeroBanner} mode="aspectFill" />
           </View>
 
           <View className="scale-quick-panel">
@@ -323,7 +209,7 @@ const ScaleCatalogPage = () => {
                 className="scale-quick-item"
                 onClick={() => handleQuickAction(action.key)}
               >
-                <View className="scale-quick-item__icon" style={{ color: action.color }}>
+                <View className={`scale-quick-item__icon scale-quick-item__icon--${action.key}`}>
                   <AtIcon value={action.icon} size="24" color={action.color} />
                 </View>
                 <Text className="scale-quick-item__title">{action.title}</Text>
@@ -335,27 +221,29 @@ const ScaleCatalogPage = () => {
 
           <View className="scale-section">
             <View className="scale-section__header">
-              <Text className="scale-section__title">常用分类</Text>
-              <View className="scale-section__more" onClick={handleViewAllCategories}>
+              <Text className="scale-section__title">量表分类</Text>
+              <View className="scale-section__more" onClick={() => handleOpenScaleList()}>
                 <Text>全部分类</Text>
                 <AtIcon value="chevron-right" size="14" color="#8A96AA" />
               </View>
             </View>
-            <View className="scale-category-grid">
-              {SCALE_COMMON_CATEGORIES.map((category) => (
+            <View className="scale-cat-grid">
+              {FEATURED_CATEGORIES.map((category) => (
                 <View
                   key={category.key}
-                  className={`scale-category-card ${selectedCategory === category.value ? "is-active" : ""}`}
-                  onClick={() => handleCategoryGridClick(category)}
+                  className={`scale-cat-card scale-cat-card--${category.key}`}
+                  onClick={() => handleOpenScaleList({ category: category.value })}
                 >
-                  <Image
-                    className="scale-category-card__image"
-                    src={resolveCategoryImage(category)}
-                    mode="aspectFit"
-                  />
-                  <View className="scale-category-card__text">
-                    <Text className="scale-category-card__title">{category.title}</Text>
-                    <Text className="scale-category-card__subtitle">{category.subtitle}</Text>
+                  <View className="scale-cat-card__icon">
+                    <Image
+                      className="scale-cat-card__image"
+                      src={CATEGORY_IMAGE_MAP[category.key]}
+                      mode="aspectFit"
+                    />
+                  </View>
+                  <View className="scale-cat-card__text">
+                    <Text className="scale-cat-card__title">{category.title}</Text>
+                    <Text className="scale-cat-card__subtitle">{category.subtitle}</Text>
                   </View>
                 </View>
               ))}
@@ -365,7 +253,7 @@ const ScaleCatalogPage = () => {
           <View className="scale-section">
             <View className="scale-section__header">
               <Text className="scale-section__title">热门量表</Text>
-              <View className="scale-section__more" onClick={handleViewMoreHotScales}>
+              <View className="scale-section__more" onClick={() => handleOpenScaleList()}>
                 <Text>查看更多</Text>
                 <AtIcon value="chevron-right" size="14" color="#8A96AA" />
               </View>
@@ -382,7 +270,9 @@ const ScaleCatalogPage = () => {
                     className="scale-hot-row"
                     onClick={() => handleScaleClick(scale)}
                   >
-                    <Image className="scale-hot-row__image" src={resolveScaleImage(scale)} mode="aspectFit" />
+                    <View className="scale-hot-row__icon">
+                      <Image className="scale-hot-row__image" src={resolveScaleImage(scale)} mode="aspectFit" />
+                    </View>
                     <View className="scale-hot-row__content">
                       <View className="scale-hot-row__title-line">
                         <Text className="scale-hot-row__title">{scale.name}</Text>
@@ -397,55 +287,11 @@ const ScaleCatalogPage = () => {
                 ))
               ) : (
                 <View className="scale-placeholder">
-                  <Text>暂无热门量表，可通过搜索查看全部测评。</Text>
+                  <Text>暂无热门量表，可进入全部量表查看。</Text>
                 </View>
               )}
             </View>
           </View>
-
-          {showScaleResults && (
-            <View className="scale-section scale-result-section">
-              <View className="scale-section__header">
-                <Text className="scale-section__title">全部量表</Text>
-                <Text className="scale-result-section__count">
-                  {pagination.total ? `${pagination.total} 个结果` : "筛选结果"}
-                </Text>
-              </View>
-              <View className="scale-result-list">
-                {loading && scaleList.length === 0 ? (
-                  <View className="scale-placeholder">
-                    <Text>正在加载量表...</Text>
-                  </View>
-                ) : scaleList.length > 0 ? (
-                  <>
-                    {scaleList.map((scale) => (
-                      <View
-                        key={scale.code || scale.name}
-                        className="scale-result-row"
-                        onClick={() => handleScaleClick(scale)}
-                      >
-                        <Image className="scale-result-row__image" src={resolveScaleImage(scale)} mode="aspectFit" />
-                        <View className="scale-result-row__content">
-                          <Text className="scale-result-row__title">{scale.name}</Text>
-                          <Text className="scale-result-row__desc">{scale.description}</Text>
-                        </View>
-                        <Text className="scale-result-row__duration">{formatDuration(scale)}</Text>
-                      </View>
-                    ))}
-                    {pagination.page < pagination.total_pages && (
-                      <View className="scale-load-more" onClick={handleLoadMore}>
-                        <Text>加载更多</Text>
-                      </View>
-                    )}
-                  </>
-                ) : (
-                  <View className="scale-placeholder">
-                    <Text>暂无匹配量表，请换个关键词试试。</Text>
-                  </View>
-                )}
-              </View>
-            </View>
-          )}
 
           <View className="scale-trust-card">
             <View className="scale-trust-card__content">

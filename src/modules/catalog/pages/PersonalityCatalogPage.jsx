@@ -144,7 +144,9 @@ const PersonalityCatalogPage = () => {
               <Text className="personality-feature-card__meta">100w+ 已测</Text>
             </View>
           </View>
-          <Image className="personality-feature-card__image" src={typeBasicImage} mode="aspectFit" />
+          <View className="personality-feature-card__icon">
+            <Image className="personality-feature-card__image" src={typeBasicImage} mode="aspectFit" />
+          </View>
           <View className="personality-feature-card__arrow">
             <AtIcon value="chevron-right" size="20" color="#FFFFFF" />
           </View>
@@ -198,7 +200,9 @@ const PersonalityCatalogPage = () => {
                 >
                   <Text className="personality-type-card__code">{type.code}</Text>
                   <Text className="personality-type-card__name">{type.name}</Text>
-                  <Image className="personality-type-card__image" src={typeChatImage} mode="aspectFit" />
+                  <View className="personality-type-card__icon">
+                    <Image className="personality-type-card__image" src={typeChatImage} mode="aspectFit" />
+                  </View>
                   <Text className="personality-type-card__desc">{type.desc}</Text>
                   <Text className="personality-type-card__tag">{type.tag}</Text>
                 </View>
@@ -218,9 +222,13 @@ const PersonalityCatalogPage = () => {
           <View className="personality-service-grid">
             {INTERPRET_SERVICES.map((service) => (
               <View key={service.title} className="personality-service-card" onClick={handleComingSoon}>
-                <Image className="personality-service-card__image" src={service.image} mode="aspectFit" />
-                <Text className="personality-service-card__title">{service.title}</Text>
-                <Text className="personality-service-card__subtitle">{service.subtitle}</Text>
+                <View className="personality-service-card__icon">
+                  <Image className="personality-service-card__image" src={service.image} mode="aspectFit" />
+                </View>
+                <View className="personality-service-card__text">
+                  <Text className="personality-service-card__title">{service.title}</Text>
+                  <Text className="personality-service-card__subtitle">{service.subtitle}</Text>
+                </View>
               </View>
             ))}
           </View>

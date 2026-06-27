@@ -8,13 +8,16 @@ import { routes } from "@/shared/config/routes";
 import { ASSESSMENT_PORTALS } from "@/shared/config/assessmentPortals";
 import { getAssessments } from "@/services/api/assessments";
 import { getHotScales } from "@/services/api/scales";
-import { formatSimpleDate } from "@/shared/lib/dateFormatters";
+import { parseDateSafe } from "@/shared/lib/dateFormatters";
+import { getRiskConfig } from "@/shared/lib/statusFormatters";
 import { getAssessmentEntryContext, subscribeAssessmentEntryContext } from "@/shared/stores/assessmentEntry";
 import { findTesteeById, getSelectedTesteeId, subscribeTesteeStore } from "@/shared/stores/testees";
-import { getAccountStoreState, initAccountStore, subscribeAccountStore } from "@/shared/stores/account";
 import HomeHeader from "../components/home/HomeHeader";
-import HomeCurrentProfileCard from "../components/home/HomeCurrentProfileCard";
+import qlumeHeroBanner from "@/assets/banner/banner_3.png";
+import anxietyIcon from "@/assets/icon/icon-anxiety-screening.png";
 import sleepQualityIcon from "@/assets/icon/icon-sleep-quality.png";
+import attentionIcon from "@/assets/icon/icon-attention-screening.png";
+import emotionIcon from "@/assets/icon/icon-emotion-state.png";
 import "./HomeTabPage.less";
 
 const PORTAL_ROUTE_RESOLVERS = {
@@ -22,6 +25,8 @@ const PORTAL_ROUTE_RESOLVERS = {
   personalityCatalog: () => routes.personalityCatalog(),
   abilityCatalog: () => routes.abilityCatalog(),
 };
+
+const REPORT_ICONS = [anxietyIcon, sleepQualityIcon, attentionIcon];
 
 const normalizeLabel = (value) => {
   if (!value) return "";
@@ -49,14 +54,53 @@ const resolveRecentAssessmentTitle = (item) => {
   return rawTitle;
 };
 
-const normalizeRecentAssessment = (item) => {
+const formatDateTime = (value) => {
+  if (!value) return "时间待同步";
+  try {
+    const date = parseDateSafe(String(value));
+    if (Number.isNaN(date.getTime())) return String(value).slice(0, 16).replace("T", " ");
+    const pad = (num) => `${num}`.padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  } catch (error) {
+    return String(value).slice(0, 16).replace("T", " ");
+  }
+};
+
+const resolveRiskTone = (riskLevel) => {
+  const raw = String(riskLevel || "").toLowerCase();
+  if (raw.includes("high") || raw.includes("severe") || raw.includes("critical")) return "high";
+  if (raw.includes("medium") || raw.includes("mid") || raw.includes("moderate")) return "medium";
+  if (raw.includes("low") || raw.includes("mild")) return "low";
+  return "normal";
+};
+
+const resolveRiskLabel = (riskLevel) => {
+  const tone = resolveRiskTone(riskLevel);
+  if (tone === "high") return "偏高";
+  if (tone === "medium") return "中等偏高";
+  if (tone === "low") return "良好";
+  return "良好";
+};
+
+const normalizeRecentAssessment = (item, index = 0) => {
   if (!item) return null;
+  const riskLevel = item.risk_level || item.riskLevel || "";
+  const riskConfig = getRiskConfig(riskLevel || "normal");
+  const score = item.total_score ?? item.score ?? item.raw_score;
+  const numericScore = Number(score);
+  const categoryTag = normalizeLabel(item.stage_label || item.category_name || item.scale_category);
   return {
     id: normalizeLabel(item.id),
     answerSheetId: normalizeLabel(item.answer_sheet_id || item.answersheet_id || item.answerSheetId),
     title: resolveRecentAssessmentTitle(item),
-    completedAt: formatSimpleDate(item.submitted_at || item.completed_at || item.created_at || item.updated_at),
+    completedAt: formatDateTime(item.submitted_at || item.completed_at || item.created_at || item.updated_at),
     scaleCode: normalizeLabel(item.scale_code || item.questionnaire_code || item.code),
+    tag: categoryTag || (resolveRiskTone(riskLevel) === "normal" ? "健康状态" : riskConfig.label) || "健康状态",
+    score: score === undefined || score === null || score === "" || Number.isNaN(numericScore) ? "" : Math.round(numericScore),
+    riskLevel,
+    riskTone: resolveRiskTone(riskLevel),
+    riskLabel: resolveRiskLabel(riskLevel),
+    icon: REPORT_ICONS[index % REPORT_ICONS.length],
     status: item.status,
     raw: item,
   };
@@ -72,14 +116,6 @@ const normalizeHotScale = (item) => {
     duration: normalizeLabel(item.duration || item.estimated_duration || item.estimatedDuration),
     raw: item,
   };
-};
-
-const formatHotScaleDuration = (scale) => {
-  if (scale.duration) return scale.duration;
-  if (scale.questionCount > 0) {
-    return `约 ${Math.max(3, Math.ceil(scale.questionCount / 6))} 分钟`;
-  }
-  return "约 5 分钟";
 };
 
 const getInitialTestee = () => {
@@ -104,45 +140,39 @@ const resolveNavMetrics = () => {
 
 const HomeIndex = () => {
   const router = useRouter();
-  const [recentAssessment, setRecentAssessment] = useState(null);
+  const [recentAssessments, setRecentAssessments] = useState([]);
   const [recentLoading, setRecentLoading] = useState(false);
   const [hotScales, setHotScales] = useState([]);
   const [hotLoading, setHotLoading] = useState(false);
   const [navMetrics, setNavMetrics] = useState(() => resolveNavMetrics());
   const [entryContext, setEntryContext] = useState(() => getAssessmentEntryContext());
   const [currentTestee, setCurrentTestee] = useState(() => getInitialTestee());
-  const [accountState, setAccountState] = useState(() => getAccountStoreState());
 
-  const userName = accountState.userInfo?.name
-    || accountState.userInfo?.nickname
-    || getTesteeDisplayName(currentTestee);
-  const userAvatar = accountState.userInfo?.picture
-    || accountState.userInfo?.avatar
-    || accountState.userInfo?.avatarUrl
-    || accountState.userInfo?.headimgurl
-    || "";
   const hasEntryTask = Boolean(entryContext?.q || entryContext?.target_code);
+  const featuredScale = hotScales[0] || null;
 
   const navStyle = useMemo(() => ({
     paddingTop: `${navMetrics.statusBarHeight}px`,
   }), [navMetrics]);
 
-  const loadRecentAssessment = useCallback(async (testeeId) => {
+  const loadRecentAssessments = useCallback(async (testeeId) => {
     if (!testeeId) {
-      setRecentAssessment(null);
+      setRecentAssessments([]);
       setRecentLoading(false);
       return;
     }
 
     try {
       setRecentLoading(true);
-      const result = await getAssessments({ testeeId, page: 1, pageSize: 1 });
+      const result = await getAssessments({ testeeId, page: 1, pageSize: 3 });
       const payload = result.data || result;
-      const item = (payload.items || [])[0];
-      setRecentAssessment(normalizeRecentAssessment(item));
+      const list = (payload.items || [])
+        .map((item, index) => normalizeRecentAssessment(item, index))
+        .filter(Boolean);
+      setRecentAssessments(list);
     } catch (error) {
       console.error("加载最近测评失败:", error);
-      setRecentAssessment(null);
+      setRecentAssessments([]);
     } finally {
       setRecentLoading(false);
     }
@@ -180,12 +210,8 @@ const HomeIndex = () => {
     return true;
   }, []);
 
-  const handleManageTestee = useCallback(() => {
-    Taro.navigateTo({ url: routes.testeeList() });
-  }, []);
-
   const handleOpenPortal = useCallback((portal) => {
-    const target = PORTAL_ROUTE_RESOLVERS[portal.routeKey];
+    const target = PORTAL_ROUTE_RESOLVERS[portal?.routeKey];
     if (!target) {
       Taro.showToast({ title: "入口暂未开放", icon: "none" });
       return;
@@ -205,13 +231,9 @@ const HomeIndex = () => {
     Taro.navigateTo({ url: routes.assessmentRecords() });
   }, [currentTestee?.id]);
 
-  const handleContinueProfile = useCallback(() => {
-    if (recentAssessment) {
-      handleViewReport(recentAssessment);
-      return;
-    }
+  const handleStartExplore = useCallback(() => {
     Taro.navigateTo({ url: routes.tabScales() });
-  }, [handleViewReport, recentAssessment]);
+  }, []);
 
   const handleContinueEntry = useCallback(() => {
     const nextCode = entryContext?.q || entryContext?.target_code;
@@ -250,12 +272,48 @@ const HomeIndex = () => {
     Taro.navigateTo({ url: routes.assessmentFill(params) });
   }, [currentTestee?.id]);
 
+  const handleDailyRecord = useCallback(() => {
+    if (featuredScale) {
+      handleStartHotScale(featuredScale);
+      return;
+    }
+    Taro.showToast({ title: "心情记录功能即将开放", icon: "none" });
+  }, [featuredScale, handleStartHotScale]);
+
+  const portalEntries = useMemo(() => {
+    const portalMap = ASSESSMENT_PORTALS.reduce((acc, portal) => {
+      acc[portal.key] = portal;
+      return acc;
+    }, {});
+
+    return [
+      {
+        key: "personality",
+        title: "人格探索",
+        desc: "16 人格 · 性格特质",
+        icon: "star",
+        image: portalMap.personality?.image,
+        tone: "personality",
+        onClick: () => handleOpenPortal(portalMap.personality),
+      },
+      {
+        key: "ability",
+        title: "行为能力",
+        desc: "执行功能 · 行为潜能",
+        icon: "analytics",
+        image: portalMap.ability?.image,
+        tone: "ability",
+        onClick: () => handleOpenPortal(portalMap.ability),
+      },
+    ];
+  }, [handleOpenPortal]);
+
   const refreshHomeData = useCallback(async () => {
     await Promise.all([
-      loadRecentAssessment(currentTestee?.id),
+      loadRecentAssessments(currentTestee?.id),
       loadHotScales(),
     ]);
-  }, [currentTestee?.id, loadHotScales, loadRecentAssessment]);
+  }, [currentTestee?.id, loadHotScales, loadRecentAssessments]);
 
   usePullDownRefresh(async () => {
     await refreshHomeData();
@@ -267,9 +325,9 @@ const HomeIndex = () => {
   }, []);
 
   useEffect(() => {
-    loadRecentAssessment(currentTestee?.id);
+    loadRecentAssessments(currentTestee?.id);
     loadHotScales();
-  }, [currentTestee?.id, loadHotScales, loadRecentAssessment]);
+  }, [currentTestee?.id, loadHotScales, loadRecentAssessments]);
 
   useReady(() => {
     handleDirectEntryRedirect(router.params || {});
@@ -282,40 +340,26 @@ const HomeIndex = () => {
     const unsubscribeTestee = subscribeTesteeStore(({ selectedTesteeId }) => {
       setCurrentTestee(selectedTesteeId ? findTesteeById(selectedTesteeId) : null);
     });
-    const unsubscribeAccount = subscribeAccountStore((snapshot) => {
-      setAccountState(snapshot);
-    });
-
-    const initState = getAccountStoreState();
-    if (!initState.isInitialized && !initState.isLoading) {
-      initAccountStore().catch((error) => {
-        console.error("[HomeTabPage] 初始化用户数据失败:", error);
-      });
-    }
 
     return () => {
       unsubscribeEntry();
       unsubscribeTestee();
-      unsubscribeAccount();
     };
   }, []);
 
   return (
     <View className="home-page">
-      <HomeHeader
-        navStyle={navStyle}
-        userName={userName}
-        userAvatar={userAvatar}
-        onUserClick={handleManageTestee}
-      />
+      <HomeHeader navStyle={navStyle} />
 
       <ScrollView scrollY className="home-content" enhanced showScrollbar={false}>
-        <HomeCurrentProfileCard
-          currentTestee={currentTestee}
-          recentAssessment={recentAssessment}
-          recentLoading={recentLoading}
-          onContinue={handleContinueProfile}
-        />
+        <View className="home-welcome">
+          <Text className="home-welcome__title">Hi，欢迎来到 Qlume</Text>
+          <Text className="home-welcome__subtitle">科学测评 · 专业解读 · 成长陪伴</Text>
+        </View>
+
+        <View className="home-hero" onClick={handleStartExplore}>
+          <Image className="home-hero__banner" src={qlumeHeroBanner} mode="aspectFill" />
+        </View>
 
         {hasEntryTask && (
           <View className="home-task-strip" onClick={handleContinueEntry}>
@@ -323,110 +367,108 @@ const HomeIndex = () => {
               <Text className="home-task-strip__title">继续机构测评任务</Text>
               <Text className="home-task-strip__meta">已识别到可继续的扫码入口</Text>
             </View>
-            <AtIcon value="chevron-right" size="16" color="#2F80ED" />
+            <AtIcon value="chevron-right" size="16" color="#3F5DFF" />
           </View>
         )}
 
-        <View className="home-action-row">
-          <View className="home-action-chip home-action-chip--records" onClick={handleViewRecords}>
-            <View className="home-action-chip__icon">
-              <AtIcon value="list" size="15" color="#2F80ED" />
+        <View className="home-portal">
+          {portalEntries.map((entry) => (
+            <View
+              key={entry.key}
+              className={`home-portal-card home-portal-card--${entry.tone}`}
+              onClick={entry.onClick}
+            >
+              <View className="home-portal-card__icon">
+                <AtIcon value={entry.icon} size="28" color="#FFFFFF" />
+              </View>
+              <View className="home-portal-card__body">
+                <Text className="home-portal-card__title">{entry.title}</Text>
+                <Text className="home-portal-card__desc">{entry.desc}</Text>
+              </View>
+              {entry.image && (
+                <Image
+                  className="home-portal-card__art"
+                  src={entry.image}
+                  mode="aspectFit"
+                />
+              )}
             </View>
-            <View className="home-action-chip__text">
-              <Text className="home-action-chip__title">报告中心</Text>
-              <Text className="home-action-chip__subtitle">查看历史结果</Text>
-            </View>
-          </View>
-          <View className="home-action-chip home-action-chip--profile" onClick={handleManageTestee}>
-            <View className="home-action-chip__icon">
-              <AtIcon value="user" size="15" color="#12B886" />
-            </View>
-            <View className="home-action-chip__text">
-              <Text className="home-action-chip__title">档案管理</Text>
-              <Text className="home-action-chip__subtitle">切换受试人</Text>
-            </View>
-          </View>
+          ))}
         </View>
 
-        <View className="home-section home-channel-section">
+        <View className="home-panel home-reports-panel">
           <View className="home-section__header">
-            <View className="home-section__title-wrap">
-              <Text className="home-section__title">选择测评方向</Text>
-              <Text className="home-section__subtitle">从严谨筛查、轻松探索到成长观察</Text>
+            <Text className="home-section__title">最近测评报告</Text>
+            <View className="home-section__more" onClick={handleViewRecords}>
+              <Text>查看全部</Text>
+              <AtIcon value="chevron-right" size="14" color="#7B849A" />
             </View>
           </View>
-          <View className="home-channel-grid">
-            {ASSESSMENT_PORTALS.map((portal, index) => (
-              <View
-                key={portal.key}
-                className={`home-channel-card home-channel-card--${portal.tone} ${index === 0 ? "home-channel-card--primary" : ""}`}
-                onClick={() => handleOpenPortal(portal)}
-              >
-                <View className="home-channel-card__body">
-                  <View className="home-channel-card__topline">
-                    <View className="home-channel-card__icon">
-                      <AtIcon value={portal.icon || "star"} size="15" color={portal.accentColor} />
-                    </View>
-                    <Text
-                      className="home-channel-card__label"
-                      style={{ color: portal.labelColor }}
-                    >
-                      {portal.badge}
-                    </Text>
-                  </View>
-                  <Text className="home-channel-card__title">{portal.title}</Text>
-                  <Text className="home-channel-card__headline">{portal.headline || portal.title}</Text>
-                  <Text className="home-channel-card__subtitle">{portal.subtitle}</Text>
-                  <View className="home-channel-card__action">
-                    <Text className="home-channel-card__action-text">{portal.actionText}</Text>
-                    <AtIcon value="chevron-right" size="18" color={portal.accentColor} />
-                  </View>
-                </View>
-                <Image className="home-channel-card__image" src={portal.image} mode="aspectFit" />
-              </View>
-            ))}
-          </View>
-        </View>
 
-        <View className="home-section home-hot-section">
-          <View className="home-section__header">
-            <View className="home-section__title-wrap">
-              <Text className="home-section__title">推荐开始</Text>
-              <Text className="home-section__subtitle">近期使用较多的专业量表</Text>
-            </View>
-            <View className="home-section__more" onClick={handleViewMoreHotScales}>
-              <Text>查看更多</Text>
-              <AtIcon value="chevron-right" size="14" color="#8A96AA" />
-            </View>
-          </View>
-          <View className="home-hot-list">
-            {hotLoading ? (
-              <View className="home-hot-placeholder">
-                <Text>正在加载热门量表...</Text>
+          <View className="home-report-list">
+            {recentLoading ? (
+              <View className="home-empty-row">
+                <Text>正在同步最近报告...</Text>
               </View>
-            ) : hotScales.length > 0 ? (
-              hotScales.map((scale) => (
+            ) : recentAssessments.length > 0 ? (
+              recentAssessments.map((assessment, index) => (
                 <View
-                  key={scale.code || scale.title}
-                  className="home-hot-row"
-                  onClick={() => handleStartHotScale(scale)}
+                  key={assessment.answerSheetId || assessment.id || assessment.title}
+                  className={`home-report-row home-report-row--${assessment.riskTone}`}
+                  onClick={() => handleViewReport(assessment)}
                 >
-                  <Image className="home-hot-row__icon" src={sleepQualityIcon} mode="aspectFit" />
-                  <View className="home-hot-row__content">
-                    <Text className="home-hot-row__title">{scale.title}</Text>
-                    <Text className="home-hot-row__desc">{scale.description}</Text>
+                  <View className={`home-report-row__icon home-report-row__icon--${index % REPORT_ICONS.length}`}>
+                    <Image className="home-report-row__image" src={assessment.icon} mode="aspectFit" />
                   </View>
-                  <View className="home-hot-row__duration">
-                    <Text>{formatHotScaleDuration(scale)}</Text>
+                  <View className="home-report-row__main">
+                    <View className="home-report-row__title-line">
+                      <Text className="home-report-row__title">{assessment.title}</Text>
+                      <Text className="home-report-row__tag">{assessment.tag}</Text>
+                    </View>
+                    <Text className="home-report-row__time">完成时间：{assessment.completedAt}</Text>
                   </View>
-                  <AtIcon value="chevron-right" size="18" color="#9AA6B8" />
+                  <View className="home-report-row__result">
+                    {assessment.score !== "" && (
+                      <View className="home-report-row__score">
+                        <Text className="home-report-row__score-num">{assessment.score}</Text>
+                        <Text className="home-report-row__score-unit">分</Text>
+                      </View>
+                    )}
+                    <Text className="home-report-row__risk">{assessment.riskLabel}</Text>
+                  </View>
+                  <AtIcon value="chevron-right" size="18" color="#B4BED0" />
                 </View>
               ))
             ) : (
-              <View className="home-hot-placeholder">
-                <Text>暂无热门推荐，可前往量表页查看全部测评。</Text>
+              <View className="home-empty-row" onClick={handleStartExplore}>
+                <Text>暂无测评报告，先开始一次科学测评。</Text>
               </View>
             )}
+          </View>
+        </View>
+
+        <View className="home-panel home-daily-panel">
+          <View className="home-section__header">
+            <Text className="home-section__title">今日推荐</Text>
+            <View className="home-section__more" onClick={handleViewMoreHotScales}>
+              <Text>查看更多</Text>
+              <AtIcon value="chevron-right" size="14" color="#7B849A" />
+            </View>
+          </View>
+
+          <View className="home-daily-card" onClick={handleDailyRecord}>
+            <Image className="home-daily-card__icon" src={emotionIcon} mode="aspectFit" />
+            <View className="home-daily-card__body">
+              <Text className="home-daily-card__title">
+                {featuredScale?.title || "每日心情打卡"}
+              </Text>
+              <Text className="home-daily-card__desc">
+                {hotLoading ? "正在获取今日推荐..." : (featuredScale?.description || "记录心情，关注心理健康")}
+              </Text>
+            </View>
+            <View className="home-daily-card__button">
+              <Text>{featuredScale ? "开始" : "去记录"}</Text>
+            </View>
           </View>
         </View>
 
@@ -437,10 +479,5 @@ const HomeIndex = () => {
     </View>
   );
 };
-
-function getTesteeDisplayName(testee) {
-  if (!testee) return "我自己";
-  return testee.legalName || testee.name || "我自己";
-}
 
 export default HomeIndex;

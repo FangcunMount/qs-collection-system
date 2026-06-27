@@ -5,7 +5,6 @@ import { AtActivityIndicator } from "taro-ui";
 
 import { getAssessmentReport } from "@/services/api/assessmentReports";
 import { getAssessmentByAnswersheetId, getAssessmentTrendSummary } from "@/services/api/assessments";
-import { getPersonalityAssessmentReport } from "@/services/api/personalityAssessments";
 import { isPersonalityAssessmentKind } from "@/shared/lib/assessmentKind";
 import { getLogger } from "@/shared/lib/logger";
 import { getAssessmentEntryContext } from "@/shared/stores/assessmentEntry";
@@ -20,7 +19,6 @@ import RadarChart from "../components/report/RadarChart";
 import FactorBarChart from "../components/report/FactorBarChart";
 import FactorScatterChart from "../components/report/FactorScatterChart";
 import TrendLineChart from "../components/report/TrendLineChart";
-import PersonalityReportHero from "../components/report/PersonalityReportHero";
 import "./AssessmentReportPage.less";
 
 const PAGE_NAME = "analysis";
@@ -56,9 +54,6 @@ const Analysis = () => {
     testee_name: '',
     testee_id: ''
   });
-  const [modelExtra, setModelExtra] = useState(null);
-  const [isPersonalityReport, setIsPersonalityReport] = useState(false);
-
   const [isReady, setIsReady] = useState(false);
   const [activeTab, setActiveTab] = useState('factor-analysis'); // 'factor-analysis' or 'pro-advice'
   const [chartType, setChartType] = useState('radar'); // 'radar' | 'bar' | 'scatter'
@@ -74,6 +69,20 @@ const Analysis = () => {
     logger.RUN('[Analysis] 原始报告数据:', result);
     
     const reportData = result.data || result;
+
+    // 人格报告分发到独立报告页（兼容无 kind 的历史入口）
+    if (reportData.model_extra || reportData.modelExtra) {
+      const params = Taro.getCurrentInstance().router.params || {};
+      Taro.redirectTo({
+        url: routes.personalityReport({
+          a: params.a,
+          aid: params.aid || params.rid,
+          t: params.t,
+          task_id: params.task_id,
+        }),
+      });
+      return;
+    }
     
     // 保存报告基本信息
     // 确保 suggestions 是数组，并且每个 suggestion 的 content 是字符串
@@ -111,9 +120,6 @@ const Analysis = () => {
       testee_id: testeeId
     });
 
-    setModelExtra(reportData.model_extra || reportData.modelExtra || null);
-    setIsPersonalityReport(Boolean(reportData.model_extra || reportData.modelExtra || isPersonalityAssessmentKind(assessmentKind)));
-    
     // 映射总分数据
     if (reportData.conclusion) {
       setTotal({
@@ -147,21 +153,13 @@ const Analysis = () => {
       total: { content: reportData.conclusion, score: reportData.total_score }, 
       factors: mappedFactors 
     });
-  }, [assessmentKind]);
+  }, []);
 
   const fetchAssessmentReport = useCallback((assessmentId, testeeId) => {
-    if (isPersonalityAssessmentKind(assessmentKind)) {
-      return getPersonalityAssessmentReport(assessmentId, testeeId);
-    }
     return getAssessmentReport(assessmentId, testeeId);
-  }, [assessmentKind]);
+  }, []);
 
   const loadTrendSummary = useCallback(async (assessmentId, testeeId) => {
-    if (isPersonalityAssessmentKind(assessmentKind)) {
-      setTrendSummary(null);
-      return;
-    }
-
     if (!assessmentId || !testeeId) {
       setTrendSummary(null);
       return;
@@ -178,7 +176,7 @@ const Analysis = () => {
     } finally {
       setTrendLoading(false);
     }
-  }, [assessmentKind]);
+  }, []);
 
   /**
    * 根据测评ID和受试者ID获取分析报告
@@ -291,13 +289,25 @@ const Analysis = () => {
     const params = Taro.getCurrentInstance().router.params;
     logger.RUN("did effect <RUN> | params: ", { answersheetid: params.a, assessmentid: params.aid, reportid: params.rid });
 
+    if (isPersonalityAssessmentKind(assessmentKind)) {
+      Taro.redirectTo({
+        url: routes.personalityReport({
+          a: params.a,
+          aid: params.aid || params.rid,
+          t: params.t,
+          task_id: params.task_id,
+        }),
+      });
+      return;
+    }
+
     if (params.aid || params.rid) {
       const aid = params.aid || params.rid;
       initAnalysisByAssessmentId(aid, params.t);
     } else {
       initAnalysisByAnswersheetId(params.a);
     }
-  }, [initAnalysisByAssessmentId, initAnalysisByAnswersheetId]);
+  }, [assessmentKind, initAnalysisByAssessmentId, initAnalysisByAnswersheetId]);
 
 
   // 因子卡片组件
@@ -432,18 +442,10 @@ const Analysis = () => {
       <PrivacyAuthorization />
       
       <View className="analysis-report-page">
-        {isPersonalityReport && (
-          <PersonalityReportHero
-            modelExtra={modelExtra || {}}
-            conclusion={total?.content || ''}
-            modelTitle={reportInfo.scale_name}
-          />
-        )}
-
         {/* 报告概览卡片 */}
         <View className="report-overview-card">
           <View className="report-header">
-            <Text className="report-title">{reportInfo.scale_name || (isPersonalityReport ? '人格测评报告' : '量表测评报告')}</Text>
+            <Text className="report-title">{reportInfo.scale_name || '量表测评报告'}</Text>
             {reportInfo.testee_name && (
               <Text className="report-testee">{reportInfo.testee_name}</Text>
             )}
@@ -458,7 +460,6 @@ const Analysis = () => {
             </View>
           )}
 
-          {!isPersonalityReport && (
             <View
               className="score-display-area"
               style={{
@@ -497,7 +498,6 @@ const Analysis = () => {
                 </View>
               )}
             </View>
-          )}
         </View>
 
         <PlanSubscribeConfirm
@@ -509,7 +509,6 @@ const Analysis = () => {
           variant="floating"
         />
 
-        {!isPersonalityReport && (
         <View className="trend-summary-card">
           <View className="trend-summary-header">
             <View>
@@ -599,7 +598,6 @@ const Analysis = () => {
             </View>
           )}
         </View>
-        )}
 
         {/* 标签页控制器 */}
         <View className="tab-controller">
@@ -608,7 +606,7 @@ const Analysis = () => {
               className={`tab-button ${activeTab === 'factor-analysis' ? 'active' : ''}`}
               onClick={() => setActiveTab('factor-analysis')}
             >
-              <Text className="tab-button-text">{isPersonalityReport ? '维度解读' : '因子分析'}</Text>
+              <Text className="tab-button-text">因子分析</Text>
             </View>
             <View 
               className={`tab-button ${activeTab === 'pro-advice' ? 'active' : ''}`}

@@ -61,7 +61,7 @@ assertContains(assessmentPortals, /home-entry-behavior\.png/, 'ability portal mu
 
 assertContains(homeProfileCard, /home-current-record-checklist\.png/, 'home current record card must reference checklist image');
 assertContains(homeTabPage, /getHotScales/, 'home page must load hot scales');
-assertContains(homeTabPage, /home-channel-card__image/, 'home page must render image-backed portal cards');
+assertContains(homeTabPage, /home-portal-card__art/, 'home page must render image-backed portal cards');
 assertNotContains(homeTabPage, /HomeStatusPanel/, 'home page must not import old HomeStatusPanel');
 assertNotContains(homeTabStyle, /home-category-|home-scale-card-|home-recent-card-|home-status-panel|home-status-card/, 'home styles must not keep removed home modules');
 

@@ -1,9 +1,11 @@
-@personality-navy: #071735;
+@import "../../../styles/qlume-home-layout.less";
+
+@personality-navy: @qlume-ink;
 @personality-muted: #6B7892;
-@personality-orange: #FF8A00;
+@personality-orange: @qlume-personality-primary;
 @personality-green: #10B981;
-@personality-purple: #7656D9;
-@personality-x: 38rpx;
+@personality-purple: @qlume-primary-violet;
+@personality-x: @qlume-page-x;
 
 .personality-home {
   width: 100%;
@@ -11,7 +13,7 @@
   color: @personality-navy;
   background:
     radial-gradient(circle at 50% 0, rgba(255, 231, 93, 0.48) 0, rgba(255, 231, 93, 0) 360rpx),
-    linear-gradient(180deg, #FFF8C9 0%, #FFFDF2 470rpx, #FFFFFF 72%, #F8FBFF 100%);
+    linear-gradient(180deg, @qlume-personality-soft 0%, #FFFDF2 470rpx, #FFFFFF 72%, #F8FBFF 100%);
   box-sizing: border-box;
 }
 
@@ -25,7 +27,7 @@
   padding-left: @personality-x;
   padding-right: @personality-x;
   display: grid;
-  grid-template-columns: 80rpx 1fr 80rpx;
+  grid-template-columns: 74rpx 1fr 74rpx;
   align-items: center;
   box-sizing: content-box;
 }
@@ -40,21 +42,21 @@
 
 .personality-nav__title {
   color: @personality-navy;
-  font-size: 32rpx;
+  font-size: 34rpx;
   line-height: 1;
   font-weight: 900;
   text-align: center;
 }
 
 .personality-nav__spacer {
-  width: 80rpx;
+  width: 74rpx;
   height: 1rpx;
 }
 
 .personality-hero {
   position: relative;
-  min-height: 334rpx;
-  padding: 52rpx @personality-x 34rpx;
+  min-height: 360rpx;
+  padding: 44rpx @personality-x 30rpx;
   overflow: hidden;
   box-sizing: border-box;
 }
@@ -62,7 +64,7 @@
 .personality-hero__content {
   position: relative;
   z-index: 2;
-  max-width: 448rpx;
+  max-width: 560rpx;
 }
 
 .personality-hero__eyes {
@@ -83,31 +85,32 @@
 
 .personality-hero__title {
   display: block;
+  max-width: 490rpx;
   color: @personality-navy;
-  font-size: 44rpx;
-  line-height: 1.22;
+  font-size: 56rpx;
+  line-height: 1.1;
   font-weight: 900;
   letter-spacing: 0;
-  white-space: nowrap;
 }
 
 .personality-hero__subtitle {
   display: block;
+  max-width: 460rpx;
   margin-top: 20rpx;
   color: #6C7792;
-  font-size: 24rpx;
+  font-size: @qlume-fs-body;
   line-height: 1.52;
   font-weight: 700;
 }
 
 .personality-hero__label {
   display: inline-flex;
-  margin-top: 32rpx;
-  padding: 13rpx 20rpx;
-  border-radius: 10rpx;
+  margin-top: 28rpx;
+  padding: 14rpx 22rpx;
+  border-radius: 12rpx;
   color: @personality-navy;
   background: linear-gradient(90deg, #85ECE9 0%, #91F0DF 100%);
-  font-size: 20rpx;
+  font-size: @qlume-fs-tag;
   line-height: 1;
   font-weight: 900;
   letter-spacing: 1rpx;
@@ -116,12 +119,13 @@
 .personality-hero__image {
   position: absolute;
   z-index: 1;
-  right: -6rpx;
-  top: -76rpx;
-  width: 318rpx;
-  min-width: 318rpx;
-  height: 477rpx;
-  min-height: 477rpx;
+  right: -38rpx;
+  top: 34rpx;
+  width: 236rpx;
+  min-width: 236rpx;
+  height: 354rpx;
+  min-height: 354rpx;
+  opacity: 0.96;
 }
 
 .personality-hero__spark {
@@ -140,34 +144,34 @@
 }
 
 .personality-hero__spark--two {
-  right: 78rpx;
-  top: 76rpx;
-  width: 34rpx;
-  height: 34rpx;
+  right: 92rpx;
+  top: 84rpx;
+  width: 32rpx;
+  height: 32rpx;
   background: #68D683;
   border-radius: 10rpx;
   transform: rotate(45deg);
 }
 
 .personality-hero__spark--three {
-  right: 20rpx;
-  top: 188rpx;
-  width: 30rpx;
-  height: 30rpx;
+  right: 28rpx;
+  top: 196rpx;
+  width: 28rpx;
+  height: 28rpx;
   background: #6D93FF;
 }
 
 .personality-feature-card {
   position: relative;
-  min-height: 316rpx;
-  margin: 20rpx @personality-x 26rpx;
-  padding: 40rpx 300rpx 36rpx 34rpx;
-  border-radius: 32rpx;
+  min-height: 268rpx;
+  margin: 0 @personality-x 24rpx;
+  padding: 34rpx 136rpx 34rpx 34rpx;
+  border-radius: @qlume-card-radius;
   background:
-    radial-gradient(circle at 78% 30%, rgba(255, 255, 255, 0.86) 0, rgba(255, 255, 255, 0) 122rpx),
-    linear-gradient(135deg, #FFF9E8 0%, #FFF1CD 100%);
-  border: 1rpx solid rgba(248, 197, 86, 0.74);
-  box-shadow: 0 16rpx 42rpx rgba(131, 95, 34, 0.08);
+    radial-gradient(circle at 88% 26%, rgba(255, 255, 255, 0.86) 0, rgba(255, 255, 255, 0) 116rpx),
+    linear-gradient(135deg, #EFFFFB 0%, #E9FFF2 100%);
+  border: 1rpx solid rgba(181, 234, 212, 0.88);
+  box-shadow: @qlume-card-shadow;
   overflow: hidden;
   box-sizing: border-box;
 }
@@ -179,37 +183,37 @@
 
 .personality-feature-card__kicker {
   display: block;
-  color: #7B5A16;
-  font-size: 24rpx;
+  color: #257062;
+  font-size: @qlume-fs-tag;
   line-height: 1.3;
   font-weight: 900;
 }
 
 .personality-feature-card__title {
   display: block;
-  margin-top: 26rpx;
+  margin-top: 16rpx;
   color: @personality-navy;
-  font-size: 40rpx;
+  font-size: 38rpx;
   line-height: 1.24;
   font-weight: 900;
-  white-space: nowrap;
 }
 
 .personality-feature-card__desc {
   display: block;
-  max-width: 328rpx;
-  margin-top: 20rpx;
+  max-width: 450rpx;
+  margin-top: 16rpx;
   color: #5E6A84;
-  font-size: 23rpx;
-  line-height: 1.58;
+  font-size: @qlume-fs-desc;
+  line-height: 1.54;
   font-weight: 650;
+  .qlume-two-line-text();
 }
 
 .personality-feature-card__meta-row {
-  margin-top: 32rpx;
-  width: 360rpx;
-  height: 48rpx;
-  padding: 0 14rpx;
+  margin-top: 24rpx;
+  max-width: 440rpx;
+  min-height: 52rpx;
+  padding: 0 18rpx;
   border-radius: 999rpx;
   background: rgba(255, 255, 255, 0.76);
   display: flex;
@@ -220,32 +224,46 @@
 }
 
 .personality-feature-card__meta {
-  color: #7B5A16;
-  font-size: 20rpx;
+  color: #257062;
+  font-size: @qlume-fs-tag;
   line-height: 1;
   font-weight: 800;
   white-space: nowrap;
 }
 
-.personality-feature-card__image {
+.personality-feature-card__icon {
   position: absolute;
   z-index: 1;
-  right: 78rpx;
-  top: 58rpx;
-  width: 218rpx;
-  min-width: 218rpx;
-  height: 218rpx;
-  min-height: 218rpx;
+  right: 30rpx;
+  top: 56rpx;
+  width: 112rpx;
+  min-width: 112rpx;
+  height: 112rpx;
+  min-height: 112rpx;
+  border-radius: 34rpx;
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: inset 0 0 0 1rpx rgba(255, 255, 255, 0.68);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.personality-feature-card__image {
+  width: 132rpx;
+  min-width: 132rpx;
+  height: 132rpx;
+  min-height: 132rpx;
+  display: block;
 }
 
 .personality-feature-card__arrow {
   position: absolute;
   z-index: 3;
-  right: 28rpx;
-  top: 50%;
-  width: 58rpx;
-  height: 58rpx;
-  margin-top: -29rpx;
+  right: 30rpx;
+  bottom: 30rpx;
+  width: 56rpx;
+  height: 56rpx;
   border-radius: 50%;
   background: @personality-navy;
   display: flex;
@@ -255,24 +273,24 @@
 }
 
 .personality-mini-grid {
-  margin: 0 @personality-x 48rpx;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20rpx;
+  margin: 0 @personality-x @qlume-section-gap;
+  display: flex;
+  flex-direction: column;
+  gap: 22rpx;
 }
 
 .personality-mini-card {
   position: relative;
-  min-height: 296rpx;
-  padding: 30rpx 26rpx 28rpx;
-  border-radius: 30rpx;
+  min-height: 236rpx;
+  padding: 30rpx 130rpx 30rpx 32rpx;
+  border-radius: @qlume-card-radius;
   overflow: hidden;
   box-sizing: border-box;
 }
 
 .personality-mini-card--fun {
-  background: linear-gradient(135deg, #F0FFF8 0%, #E2F9F0 100%);
-  border: 1rpx solid #BDECD8;
+  background: linear-gradient(135deg, #FFF2E5 0%, #FFE9E0 100%);
+  border: 1rpx solid @qlume-personality-line;
 }
 
 .personality-mini-card--deep {
@@ -284,8 +302,8 @@
   position: relative;
   z-index: 2;
   display: block;
-  color: @personality-green;
-  font-size: 22rpx;
+  color: @personality-orange;
+  font-size: @qlume-fs-tag;
   line-height: 1.35;
   font-weight: 900;
 }
@@ -298,9 +316,9 @@
   position: relative;
   z-index: 2;
   display: block;
-  margin-top: 24rpx;
+  margin-top: 18rpx;
   color: @personality-navy;
-  font-size: 31rpx;
+  font-size: 34rpx;
   line-height: 1.3;
   font-weight: 900;
 }
@@ -309,28 +327,29 @@
   position: relative;
   z-index: 2;
   display: block;
-  max-width: 216rpx;
-  margin-top: 16rpx;
+  max-width: 440rpx;
+  margin-top: 14rpx;
   color: #687792;
-  font-size: 22rpx;
-  line-height: 1.55;
+  font-size: @qlume-fs-desc;
+  line-height: 1.5;
   font-weight: 650;
+  .qlume-two-line-text();
 }
 
 .personality-mini-card__button {
-  position: absolute;
+  position: relative;
   z-index: 3;
-  left: 26rpx;
-  bottom: 28rpx;
-  height: 54rpx;
-  padding: 0 20rpx;
+  min-width: 168rpx;
+  height: 60rpx;
+  margin-top: 22rpx;
+  padding: 0 24rpx;
   border-radius: 999rpx;
   background: rgba(255, 255, 255, 0.74);
-  color: @personality-green;
-  display: flex;
+  color: @personality-orange;
+  display: inline-flex;
   align-items: center;
   gap: 8rpx;
-  font-size: 21rpx;
+  font-size: @qlume-fs-tag;
   line-height: 1;
   font-weight: 900;
   box-shadow: 0 8rpx 18rpx rgba(10, 120, 88, 0.08);
@@ -344,56 +363,41 @@
 .personality-mini-card__image {
   position: absolute;
   z-index: 1;
-  right: 0;
-  bottom: 8rpx;
-  width: 156rpx;
-  min-width: 156rpx;
-  height: 156rpx;
-  min-height: 156rpx;
+  right: 22rpx;
+  bottom: 24rpx;
+  width: 126rpx;
+  min-width: 126rpx;
+  height: 126rpx;
+  min-height: 126rpx;
 }
 
 .personality-mini-card__number {
   position: absolute;
   z-index: 1;
   right: 34rpx;
-  bottom: 46rpx;
+  bottom: 36rpx;
   color: #8567E8;
-  font-size: 138rpx;
+  font-size: 126rpx;
   line-height: 0.9;
   font-weight: 900;
   text-shadow: 0 12rpx 24rpx rgba(118, 86, 217, 0.2);
 }
 
 .personality-section {
-  margin: 0 @personality-x 52rpx;
+  margin: 0 @personality-x @qlume-section-gap;
 }
 
 .personality-section__header {
-  min-height: 52rpx;
-  margin-bottom: 26rpx;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 22rpx;
+  .qlume-section-header();
 }
 
 .personality-section__title {
-  display: block;
+  .qlume-section-title();
   color: @personality-navy;
-  font-size: 32rpx;
-  line-height: 1.26;
-  font-weight: 900;
 }
 
 .personality-section__more {
-  flex-shrink: 0;
-  color: #7E8BA2;
-  display: flex;
-  align-items: center;
-  gap: 5rpx;
-  font-size: 23rpx;
-  line-height: 1;
-  font-weight: 700;
+  .qlume-section-more();
 }
 
 .personality-type-scroll {
@@ -403,19 +407,19 @@
 
 .personality-type-track {
   display: inline-flex;
-  gap: 20rpx;
+  gap: 22rpx;
   padding-right: @personality-x;
 }
 
 .personality-type-card {
   position: relative;
-  width: 190rpx;
-  min-height: 292rpx;
-  padding: 22rpx 18rpx 20rpx;
-  border-radius: 26rpx;
+  width: 232rpx;
+  min-height: 308rpx;
+  padding: 26rpx 22rpx 24rpx;
+  border-radius: 28rpx;
   background: rgba(255, 255, 255, 0.94);
   border: 1rpx solid #E5EAF4;
-  box-shadow: 0 10rpx 28rpx rgba(20, 48, 88, 0.04);
+  box-shadow: @qlume-soft-shadow;
   display: inline-flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -445,46 +449,62 @@
 .personality-type-card__code {
   display: block;
   color: @personality-navy;
-  font-size: 25rpx;
+  font-size: @qlume-fs-card-title-sm;
   line-height: 1.18;
   font-weight: 900;
 }
 
 .personality-type-card__name {
   display: block;
-  margin-top: 9rpx;
+  margin-top: 10rpx;
   color: #26354F;
-  font-size: 20rpx;
+  font-size: @qlume-fs-tag;
   line-height: 1.28;
   font-weight: 750;
 }
 
-.personality-type-card__image {
+.personality-type-card__icon {
   align-self: center;
-  width: 102rpx;
-  min-width: 102rpx;
-  height: 102rpx;
-  min-height: 102rpx;
-  margin-top: 12rpx;
+  width: 96rpx;
+  min-width: 96rpx;
+  height: 96rpx;
+  min-height: 96rpx;
+  margin-top: 14rpx;
+  border-radius: 28rpx;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: inset 0 0 0 1rpx rgba(255, 255, 255, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.personality-type-card__image {
+  width: 114rpx;
+  min-width: 114rpx;
+  height: 114rpx;
+  min-height: 114rpx;
+  display: block;
 }
 
 .personality-type-card__desc {
   display: block;
   margin-top: 14rpx;
   color: #64728A;
-  font-size: 20rpx;
+  font-size: 21rpx;
   line-height: 1.46;
   font-weight: 600;
+  .qlume-two-line-text();
 }
 
 .personality-type-card__tag {
   display: block;
   margin-top: auto;
-  padding: 11rpx 10rpx;
+  padding: 12rpx 12rpx;
   border-radius: 16rpx;
   color: #6D63A8;
   background: rgba(255, 255, 255, 0.72);
-  font-size: 19rpx;
+  font-size: 20rpx;
   line-height: 1.18;
   font-weight: 750;
   text-align: center;
@@ -492,7 +512,7 @@
 
 .personality-dots {
   height: 28rpx;
-  margin-top: 16rpx;
+  margin-top: 20rpx;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -507,73 +527,95 @@
 }
 
 .personality-dot--active {
-  background: #7B61FF;
+  background: @personality-purple;
 }
 
 .personality-service-section {
-  margin-bottom: 34rpx;
+  margin-bottom: @qlume-section-gap;
 }
 
 .personality-service-section > .personality-section__title {
-  margin-bottom: 26rpx;
+  margin-bottom: 28rpx;
 }
 
 .personality-service-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 18rpx;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22rpx;
 }
 
 .personality-service-card {
-  min-height: 178rpx;
-  padding: 20rpx 14rpx 18rpx;
-  border-radius: 24rpx;
+  min-height: 152rpx;
+  padding: 24rpx;
+  border-radius: 28rpx;
   background: rgba(255, 255, 255, 0.96);
   border: 1rpx solid #E6ECF5;
   box-shadow: 0 10rpx 26rpx rgba(20, 48, 88, 0.035);
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
+  gap: 16rpx;
   box-sizing: border-box;
 }
 
+.personality-service-card__icon {
+  width: 72rpx;
+  min-width: 72rpx;
+  height: 72rpx;
+  min-height: 72rpx;
+  border-radius: 22rpx;
+  background: linear-gradient(135deg, #F6F2FF 0%, #FFFFFF 100%);
+  box-shadow: inset 0 0 0 1rpx rgba(229, 235, 247, 0.84);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
 .personality-service-card__image {
-  width: 60rpx;
-  min-width: 60rpx;
-  height: 60rpx;
-  min-height: 60rpx;
-  margin-bottom: 16rpx;
+  width: 82rpx;
+  min-width: 82rpx;
+  height: 82rpx;
+  min-height: 82rpx;
+  display: block;
+}
+
+.personality-service-card__text {
+  min-width: 0;
+  flex: 1;
 }
 
 .personality-service-card__title {
   display: block;
   color: @personality-navy;
-  font-size: 21rpx;
-  line-height: 1.3;
+  font-size: @qlume-fs-card-title-sm;
+  line-height: 1.26;
   font-weight: 900;
+  .qlume-two-line-text();
 }
 
 .personality-service-card__subtitle {
   display: block;
   margin-top: 8rpx;
   color: #6B7892;
-  font-size: 18rpx;
-  line-height: 1.4;
+  font-size: @qlume-fs-tag;
+  line-height: 1.34;
   font-weight: 600;
+  .qlume-two-line-text();
 }
 
 .personality-home__note {
-  margin: 0 @personality-x 32rpx;
-  padding: 24rpx 28rpx;
+  margin: 0 @personality-x @qlume-section-gap;
+  padding: 28rpx 32rpx;
   border-radius: 24rpx;
   background: rgba(255, 255, 255, 0.72);
   color: #8994A6;
-  font-size: 21rpx;
+  font-size: @qlume-fs-tag;
   line-height: 1.65;
   text-align: center;
   box-sizing: border-box;
 }
 
 .personality-home__bottom-spacer {
-  height: calc(74rpx + env(safe-area-inset-bottom));
+  height: calc(96rpx + env(safe-area-inset-bottom));
 }

@@ -314,9 +314,10 @@ const AnalysisWait = () => {
         assessmentKind
       });
 
+      const reportRoute = isPersonality ? routes.personalityReport : routes.assessmentReport;
       setTimeout(() => {
         Taro.redirectTo({
-          url: routes.assessmentReport({
+          url: reportRoute({
             a: answersheetId,
             aid: assessmentId,
             t: testeeId,
@@ -471,9 +472,12 @@ const AnalysisWait = () => {
                     const answersheetId = params.a;
                     const taskId = params.task_id;
                     const assessmentKind = params.kind;
+                    const reportRoute = isPersonalityAssessmentKind(assessmentKind)
+                      ? routes.personalityReport
+                      : routes.assessmentReport;
                     if (answersheetId) {
                       Taro.redirectTo({
-                        url: routes.assessmentReport({
+                        url: reportRoute({
                           a: answersheetId,
                           aid: params.aid,
                           t: params.t,
