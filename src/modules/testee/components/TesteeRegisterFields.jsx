@@ -2,8 +2,8 @@ import React from "react";
 import { View, Input, Text, Image, Picker } from "@tarojs/components";
 import { SiDatePicker } from "taro-ui-fc";
 
-import boyPng from "@/assets/images/boy.png";
-import girlPng from "@/assets/images/girl.png";
+import boyPng from "@/pages/testees/assets/images/boy.png";
+import girlPng from "@/pages/testees/assets/images/girl.png";
 
 const InputLabelCSS = {
   margin: "0 0 16rpx 0",

@@ -1,8 +1,8 @@
 import React from "react";
 import { View, Text, Image } from "@tarojs/components";
 import { formatRelation } from "@/shared/lib/formatters";
-import boyPng from "@/assets/images/boy.png";
-import girlPng from "@/assets/images/girl.png";
+import boyPng from "@/pages/assessment/assets/images/boy.png";
+import girlPng from "@/pages/assessment/assets/images/girl.png";
 import "./index.less";
 
 /**

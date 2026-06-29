@@ -36,8 +36,17 @@ const homeProfileCard = read('src/modules/tab/components/home/HomeCurrentProfile
 const personalityCatalog = read('src/modules/catalog/pages/PersonalityCatalogPage.jsx');
 const personalityModels = read('src/shared/config/personalityModels.js');
 
-assertContains(appConfig, /'ability\/index'/, 'assessment subpackage must register ability/index');
-assertContains(routes, /abilityCatalog:\s*["']\/pages\/assessment\/ability\/index["']/, 'ROUTES must define abilityCatalog');
+assertContains(appConfig, /root:\s*['"]pages\/catalog-medical['"]/, 'app config must register catalog-medical subpackage');
+assertContains(appConfig, /root:\s*['"]pages\/catalog-personality['"]/, 'app config must register catalog-personality subpackage');
+assertContains(appConfig, /root:\s*['"]pages\/catalog-ability['"]/, 'app config must register catalog-ability subpackage');
+assertNotContains(appConfig, /pages\/tab\/scales/, 'main package must not register tab/scales');
+assertNotContains(appConfig, /personality\/index/, 'assessment subpackage must not register personality catalog page');
+assertNotContains(appConfig, /ability\/index/, 'assessment subpackage must not register ability catalog page');
+
+assertContains(routes, /tabScales:\s*["']\/pages\/catalog-medical\/index["']/, 'ROUTES must define tabScales as catalog-medical index');
+assertContains(routes, /scaleList:\s*["']\/pages\/catalog-medical\/list\/index["']/, 'ROUTES must define scaleList as catalog-medical list');
+assertContains(routes, /personalityCatalog:\s*["']\/pages\/catalog-personality\/index["']/, 'ROUTES must define personalityCatalog');
+assertContains(routes, /abilityCatalog:\s*["']\/pages\/catalog-ability\/index["']/, 'ROUTES must define abilityCatalog');
 assertContains(routes, /abilityCatalog:\s*\(params\)/, 'routes helper must define abilityCatalog');
 
 assertContains(bottomMenu, /label:\s*["']首页["']/, 'BottomMenu must include 首页');
@@ -57,7 +66,7 @@ assertContains(assessmentPortals, /personalityCatalog/, 'assessment portals must
 assertContains(assessmentPortals, /abilityCatalog/, 'assessment portals must include ability route');
 assertContains(assessmentPortals, /home-entry-medical-scale\.png/, 'medical portal must reference home entry image');
 assertContains(assessmentPortals, /home-entry-personality\.png/, 'personality portal must reference home entry image');
-assertContains(assessmentPortals, /home-entry-behavior\.png/, 'ability portal must reference home entry image');
+assertContains(assessmentPortals, /home-(entry|child)-behavior\.(png|webp)/, 'ability portal must reference home entry image');
 
 assertContains(homeProfileCard, /home-current-record-checklist\.png/, 'home current record card must reference checklist image');
 assertContains(homeTabPage, /getHotScales/, 'home page must load hot scales');

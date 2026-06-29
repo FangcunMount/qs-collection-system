@@ -5,6 +5,7 @@ import { AtIcon } from "taro-ui";
 import AssessmentRecordListContainer from "../components/records/AssessmentRecordListContainer";
 import BottomMenu from "@/shared/ui/BottomMenu";
 import { ROUTES, routes } from "@/shared/config/routes";
+import { ASSESSMENT_KIND } from "@/shared/lib/assessmentKind";
 import {
   findTesteeById,
   getSelectedTesteeId,
@@ -172,8 +173,10 @@ const AssessmentRecordCenterPage = () => {
 
             <AssessmentRecordListContainer 
               testee={selectedTestee}
+              assessmentKind={ASSESSMENT_KIND.MEDICAL}
               statusFilter={statusFilter}
               showFilterBar={true}
+              emptyText="暂无医学量表测评报告"
               showTesteeSheet={showTesteeSheet}
               showFilterSheet={showFilterSheet}
               testeeList={testeeList}

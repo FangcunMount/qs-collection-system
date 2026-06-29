@@ -57,7 +57,7 @@ const BottomMenu = ({ activeKey }) => {
           <AtIcon
             value={item.icon}
             size="24"
-            color={isActive ? "#FFFFFF" : "#8A96AA"}
+            color={isActive ? "#2F80ED" : "#8A96AA"}
             className="menu-item__icon"
           />
         </View>

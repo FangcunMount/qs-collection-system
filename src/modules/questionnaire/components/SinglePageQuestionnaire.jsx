@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text } from "@tarojs/components";
+import { View, Text, ScrollView } from "@tarojs/components";
 import Taro from "@tarojs/taro";
 
 import { getQuestionnaire } from "@/services/api/questionnaires";
@@ -217,10 +217,11 @@ export default props => {
 
     switch (v.type) {
       case "Section":
-        return <QsSection item={v} index={i}></QsSection>;
+        return <QsSection key={v.code} item={v} index={i}></QsSection>;
       case "Radio":
         return (
           <QsRadio
+            key={v.code}
             item={v}
             index={i}
             onChangeValue={handleChangeValue}
@@ -230,6 +231,7 @@ export default props => {
       case "ImageRadio":
         return (
           <QsImageRadio
+            key={v.code}
             item={v}
             index={i}
             onChangeValue={handleChangeValue}
@@ -239,6 +241,7 @@ export default props => {
       case "CheckBox":
         return (
           <QsCheckbox
+            key={v.code}
             item={v}
             index={i}
             onChangeValue={handleChangeValue}
@@ -248,6 +251,7 @@ export default props => {
       case "ImageCheckBox":
         return (
           <QsImageCheckbox
+            key={v.code}
             item={v}
             index={i}
             onChangeValue={handleChangeValue}
@@ -255,24 +259,24 @@ export default props => {
           ></QsImageCheckbox>
         );
       case "Text":
-        return <QsText item={v} index={i} onChangeValue={handleChangeValue} />;
+        return <QsText key={v.code} item={v} index={i} onChangeValue={handleChangeValue} />;
       case "Textarea":
         return (
-          <QsTextarea item={v} index={i} onChangeValue={handleChangeValue} />
+          <QsTextarea key={v.code} item={v} index={i} onChangeValue={handleChangeValue} />
         );
       case "Number":
         return (
-          <QsNumber item={v} index={i} onChangeValue={handleChangeValue} />
+          <QsNumber key={v.code} item={v} index={i} onChangeValue={handleChangeValue} />
         );
       case "Date":
-        return <QsDate item={v} index={i} onChangeValue={handleChangeValue} />;
+        return <QsDate key={v.code} item={v} index={i} onChangeValue={handleChangeValue} />;
       case "ScoreRadio":
         return (
-          <QsScoreRadio item={v} index={i} onChangeValue={handleChangeValue} />
+          <QsScoreRadio key={v.code} item={v} index={i} onChangeValue={handleChangeValue} />
         );
       case "Select":
         return (
-          <QsSelect item={v} index={i} onChangeValue={handleChangeValue} />
+          <QsSelect key={v.code} item={v} index={i} onChangeValue={handleChangeValue} />
         );
       default:
         return "";
@@ -422,7 +426,9 @@ export default props => {
               />
             </View>
 
-            <View className='question'>{getQuestionComp(curQuestionIndex)}</View>
+            <ScrollView scrollY className="question-scroll" enhanced showScrollbar={false}>
+              <View className='question'>{getQuestionComp(curQuestionIndex)}</View>
+            </ScrollView>
           </View>
         </View>
 

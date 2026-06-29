@@ -35,18 +35,16 @@
 }
 
 .menu-item__icon-wrap {
-  width: 100rpx;
-  height: 58rpx;
-  border-radius: 999rpx;
+  width: 48rpx;
+  height: 48rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
-  transition: background 0.22s ease, box-shadow 0.22s ease, transform 0.22s ease;
 }
 
 .menu-item__icon {
   display: block;
+  transition: color 0.22s ease;
 }
 
 .menu-item__label {
@@ -57,12 +55,6 @@
   font-weight: 700;
   white-space: nowrap;
   transition: color 0.22s ease, font-weight 0.22s ease;
-}
-
-.menu-item.active .menu-item__icon-wrap {
-  background: linear-gradient(135deg, #4B9BFF 0%, #2F80ED 100%);
-  box-shadow: 0 12rpx 24rpx rgba(47, 128, 237, 0.32);
-  transform: translateY(-4rpx);
 }
 
 .menu-item.active .menu-item__label {

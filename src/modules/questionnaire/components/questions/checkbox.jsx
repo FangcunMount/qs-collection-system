@@ -12,9 +12,13 @@ const Checkbox = props => {
   const [selectedValues, setSelectedValues] = useState([]);
 
   useEffect(() => {
-    const o = item.options.filter(o => o.is_select === "1");
-    if (o.length > 0) setSelectedValues(o.map(v => v.code));
-  }, []);
+    if (Array.isArray(item.value) && item.value.length > 0) {
+      setSelectedValues(item.value);
+      return;
+    }
+    const selected = item.options.filter((option) => option.is_select === "1");
+    setSelectedValues(selected.length > 0 ? selected.map((option) => option.code) : []);
+  }, [item.code, item.value, item.options]);
 
   const handleSelect = e => {
     onChangeValue(e, index);

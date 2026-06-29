@@ -4,37 +4,50 @@
   position: relative;
   box-sizing: border-box;
   width: 100%;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   background: linear-gradient(180deg, #f7fbff 0%, #ffffff 100%);
   color: #101010;
-  padding: 28rpx 30rpx calc(132rpx + env(safe-area-inset-bottom));
+  padding: 28rpx 30rpx calc(24rpx + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
 
   .question-card {
     flex: 1;
+    min-height: 0;
     display: flex;
     flex-direction: column;
   }
 
   .question-card__panel {
     flex: 1;
+    min-height: 0;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
   }
 
   .question-card__body {
     flex: 1;
+    min-height: 0;
     box-sizing: border-box;
-    padding: 46rpx 38rpx 42rpx;
+    padding: 46rpx 38rpx 24rpx;
     border-radius: 30rpx;
     background: #ffffff;
     box-shadow: 0 16rpx 42rpx rgba(31, 41, 55, 0.08);
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+  }
+
+  .question-scroll {
+    flex: 1;
+    min-height: 0;
+    height: 0;
   }
 
   .progress-info {
+    flex-shrink: 0;
     display: flex;
     align-items: flex-end;
     margin-bottom: 20rpx;
@@ -58,6 +71,7 @@
   }
 
   .progress-bar-container {
+    flex-shrink: 0;
     height: 12rpx;
     background: #f3f3f3;
     border-radius: 999rpx;
@@ -73,7 +87,8 @@
   }
 
   .question {
-    flex: 1;
+    box-sizing: border-box;
+    padding-bottom: 12rpx;
 
     .question-title {
       margin-bottom: 78rpx;
@@ -212,7 +227,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 24rpx;
-    padding: 42rpx 54rpx 0;
+    padding: 28rpx 54rpx 0;
   }
 
   .single-nav-button {
@@ -245,16 +260,16 @@
 
   .completion-container {
     flex: 1;
-    min-height: 72vh;
+    min-height: 0;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
     box-sizing: border-box;
     padding: 38rpx 0 0;
   }
 
   .completion-content {
     flex: 1;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -263,6 +278,7 @@
     border-radius: 30rpx;
     background: #ffffff;
     box-shadow: 0 16rpx 42rpx rgba(31, 41, 55, 0.08);
+    overflow-y: auto;
   }
 
   .completion-icon {
@@ -300,6 +316,7 @@
   padding-top: calc(18rpx + env(safe-area-inset-top));
 
   .questionnaire-single-page__hero {
+    flex-shrink: 0;
     position: relative;
     height: 210rpx;
     margin: 0 4rpx 18rpx;
@@ -413,12 +430,11 @@
   }
 
   .question-card__body {
-    min-height: 650rpx;
     border-radius: 34rpx;
     box-shadow: 0 22rpx 48rpx rgba(48, 128, 145, 0.1);
   }
 
   .btn-group {
-    padding-top: 60rpx;
+    padding-top: 32rpx;
   }
 }

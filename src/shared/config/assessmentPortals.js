@@ -1,6 +1,6 @@
 import medicalScaleImage from "@/assets/home/home-entry-medical-scale.png";
 import personalityImage from "@/assets/home/home-entry-personality.png";
-import behaviorImage from "@/assets/home/home-entry-behavior.png";
+import behaviorImage from "@/assets/home/home-child-behavior.webp";
 
 export const PORTAL_ROUTE_KEYS = Object.freeze({
   SCALES: 'tabScales',
@@ -42,7 +42,7 @@ export const ASSESSMENT_PORTALS = Object.freeze([
     badge: '成长',
     title: '行为能力',
     headline: '探索行为潜能',
-    subtitle: '执行功能、行为调节、学习表现等\n多维能力评估',
+    subtitle: '执行功能、感觉处理等\n行为能力观察与支持',
     tone: 'ability',
     icon: 'analytics',
     actionText: '预览',

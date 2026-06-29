@@ -12,8 +12,9 @@ const Select = props => {
   const [selectedIndex, setSelectedIndex] = useState(-1);
 
   useEffect(() => {
-    setSelectedIndex(item.options.findIndex(o => o.code === item.value) ?? -1);
-  }, []);
+    const matchedIndex = item.options.findIndex((option) => option.code === item.value);
+    setSelectedIndex(matchedIndex);
+  }, [item.code, item.value, item.options]);
 
   const handleSelect = option => {
     onChangeValue(option.code, index);

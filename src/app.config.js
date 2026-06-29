@@ -1,11 +1,36 @@
 export default {
   pages: [
     'pages/tab/home/index',
-    'pages/tab/scales/index',
     'pages/tab/me/index',
     'pages/system/error/index',
   ],
   subPackages: [
+    {
+      root: 'pages/catalog-medical',
+      name: 'catalog-medical',
+      pages: [
+        'index',
+        'list/index',
+      ],
+      independent: false,
+    },
+    {
+      root: 'pages/catalog-personality',
+      name: 'catalog-personality',
+      pages: [
+        'index',
+        'model/index',
+      ],
+      independent: false,
+    },
+    {
+      root: 'pages/catalog-ability',
+      name: 'catalog-ability',
+      pages: [
+        'index',
+      ],
+      independent: false,
+    },
     {
       root: 'pages/assessment',
       name: 'assessment',
@@ -17,12 +42,8 @@ export default {
         'personality-report/index',
         'report-trend/index',
         'report-pending/index',
-        'personality/index',
-        'personality/model/index',
-        'ability/index',
-        'scales/index',
       ],
-      independent: false
+      independent: false,
     },
     {
       root: 'pages/account',
@@ -31,7 +52,7 @@ export default {
         'register/index',
         'subscription/index',
       ],
-      independent: false
+      independent: false,
     },
     {
       root: 'pages/testees',
@@ -41,15 +62,15 @@ export default {
         'create/index',
         'edit/index',
       ],
-      independent: false
-    }
+      independent: false,
+    },
   ],
   window: {
     backgroundTextStyle: 'light',
     navigationBarBackgroundColor: '#fff',
     navigationBarTitleText: 'WeChat',
-    navigationBarTextStyle: 'black'
+    navigationBarTextStyle: 'black',
   },
-  entryPagePath: "pages/tab/home/index",
-  "__usePrivacyCheck__": true
-}
+  entryPagePath: 'pages/tab/home/index',
+  '__usePrivacyCheck__': true,
+};

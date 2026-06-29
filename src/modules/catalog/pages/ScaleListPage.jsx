@@ -7,12 +7,12 @@ import { routes } from "@/shared/config/routes";
 import { SCALE_COMMON_CATEGORIES } from "@/shared/config/scaleCatalogHome";
 import { getScales } from "@/services/api/scales";
 import { getLogger } from "@/shared/lib/logger";
-import categorySleepImage from "@/assets/home/category-sleep.png";
-import categoryMoodImage from "@/assets/home/category-mood.png";
-import categoryPressureImage from "@/assets/home/category-pressure.png";
-import categoryAttentionImage from "@/assets/home/category-attention.png";
-import categoryChildImage from "@/assets/home/category-child.png";
-import categorySensoryImage from "@/assets/home/category-sensory.png";
+import categorySleepImage from "@/pages/catalog-medical/assets/home/category-sleep.png";
+import categoryMoodImage from "@/pages/catalog-medical/assets/home/category-mood.png";
+import categoryPressureImage from "@/pages/catalog-medical/assets/home/category-pressure.png";
+import categoryAttentionImage from "@/pages/catalog-medical/assets/home/category-attention.png";
+import categoryChildImage from "@/pages/catalog-medical/assets/home/category-child.png";
+import categorySensoryImage from "@/pages/catalog-medical/assets/home/category-sensory.png";
 import "./ScaleListPage.less";
 
 const logger = getLogger("questionnaire_full_list");

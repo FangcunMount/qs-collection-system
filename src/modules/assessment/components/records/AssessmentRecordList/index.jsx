@@ -21,7 +21,11 @@ const AssessmentRecordList = ({
   pagination = { page: 1, page_size: 20, total: 0, total_pages: 0 },
   loading = false,
   onLoadMore,
-  onEmptyScan
+  onEmptyScan,
+  emptyText,
+  emptyButtonText = "重新扫码",
+  showEmptyButton = true,
+  showLoadMore = true
 }) => {
   const handleLoadMore = () => {
     if (pagination.page >= pagination.total_pages) {
@@ -47,7 +51,7 @@ const AssessmentRecordList = ({
             ))}
             
             {/* 加载更多 */}
-            {pagination.page < pagination.total_pages && (
+            {showLoadMore && pagination.page < pagination.total_pages && (
               <View className="load-more" onClick={handleLoadMore}>
                 <Text className="load-more-text">加载更多</Text>
               </View>
@@ -55,10 +59,10 @@ const AssessmentRecordList = ({
           </View>
         ) : (
           <EmptyState 
-            text={selectedScaleCode ? "该量表暂无测评记录" : "暂无测评记录"} 
+            text={emptyText || (selectedScaleCode ? "该量表暂无测评记录" : "暂无测评记录")} 
             icon="📋"
-            buttonText="重新扫码"
-            onButtonClick={onEmptyScan}
+            buttonText={showEmptyButton ? emptyButtonText : ""}
+            onButtonClick={showEmptyButton ? onEmptyScan : undefined}
           />
         )}
       </View>

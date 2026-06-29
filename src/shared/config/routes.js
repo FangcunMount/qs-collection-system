@@ -2,8 +2,8 @@ import { withQuery } from "../lib/query";
 
 export const ROUTES = Object.freeze({
   tabHome: "/pages/tab/home/index",
-  tabScales: "/pages/tab/scales/index",
-  scaleList: "/pages/assessment/scales/index",
+  tabScales: "/pages/catalog-medical/index",
+  scaleList: "/pages/catalog-medical/list/index",
   tabMe: "/pages/tab/me/index",
   assessmentFill: "/pages/assessment/fill/index",
   assessmentRecords: "/pages/assessment/records/index",
@@ -12,9 +12,9 @@ export const ROUTES = Object.freeze({
   personalityReport: "/pages/assessment/personality-report/index",
   assessmentReportTrend: "/pages/assessment/report-trend/index",
   assessmentReportPending: "/pages/assessment/report-pending/index",
-  personalityCatalog: "/pages/assessment/personality/index",
-  personalityModel: "/pages/assessment/personality/model/index",
-  abilityCatalog: "/pages/assessment/ability/index",
+  personalityCatalog: "/pages/catalog-personality/index",
+  personalityModel: "/pages/catalog-personality/model/index",
+  abilityCatalog: "/pages/catalog-ability/index",
   accountRegister: "/pages/account/register/index",
   accountSubscription: "/pages/account/subscription/index",
   testeeList: "/pages/testees/list/index",

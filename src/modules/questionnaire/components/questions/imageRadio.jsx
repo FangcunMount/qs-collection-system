@@ -12,9 +12,9 @@ const ImageRadio = props => {
   const [selected, setSelected] = useState("");
 
   useEffect(() => {
-    const o = item.options.find(o => o.code === item.value);
-    if (o) setSelected(o.code);
-  }, []);
+    const matched = item.options.find((option) => option.code === item.value);
+    setSelected(matched ? matched.code : "");
+  }, [item.code, item.value, item.options]);
 
   const handleSelect = e => {
     onChangeValue(e, index);

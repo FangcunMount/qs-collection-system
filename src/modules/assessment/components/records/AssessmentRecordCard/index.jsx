@@ -5,6 +5,12 @@ import StatusTag from "@/shared/ui/StatusTag";
 import RiskTag from "@/shared/ui/RiskTag";
 import { routes } from "@/shared/config/routes";
 import { formatWriteTime } from "@/shared/lib/dateFormatters";
+import {
+  ASSESSMENT_KIND,
+  isMedicalAssessmentKind,
+  isPersonalityAssessmentKind,
+  resolveAssessmentKind,
+} from "@/shared/lib/assessmentKind";
 import { getAssessmentStatus } from "@/shared/lib/statusFormatters";
 import "./index.less";
 
@@ -13,6 +19,8 @@ import "./index.less";
  */
 const AssessmentRecordCard = ({ record, testeeId = "" }) => {
   const status = getAssessmentStatus(record);
+  const assessmentKind = resolveAssessmentKind(record);
+  const showTrendAction = isMedicalAssessmentKind(assessmentKind);
 
   // 跳转到答卷详情页
   const jumpToAnswersheetDetail = () => {
@@ -31,8 +39,17 @@ const AssessmentRecordCard = ({ record, testeeId = "" }) => {
       Taro.showToast({ title: '答卷信息不存在', icon: 'none' });
       return;
     }
+    const reportRoute = isPersonalityAssessmentKind(assessmentKind)
+      ? routes.personalityReport
+      : routes.assessmentReport;
+
     Taro.navigateTo({
-      url: routes.assessmentReport({ a: record.answer_sheet_id })
+      url: reportRoute({
+        a: record.answer_sheet_id,
+        aid: record.id || undefined,
+        t: testeeId || undefined,
+        kind: assessmentKind === ASSESSMENT_KIND.MEDICAL ? undefined : assessmentKind,
+      })
     });
   };
 
@@ -111,9 +128,11 @@ const AssessmentRecordCard = ({ record, testeeId = "" }) => {
               <View className="btn btn-secondary" onClick={jumpToAnswersheetDetail}>
                 <Text className="btn-text">查看详情</Text>
               </View>
-              <View className="btn btn-light" onClick={jumpToTrendDetail}>
-                <Text className="btn-text">查看趋势</Text>
-              </View>
+              {showTrendAction && (
+                <View className="btn btn-light" onClick={jumpToTrendDetail}>
+                  <Text className="btn-text">查看趋势</Text>
+                </View>
+              )}
               <View 
                 className={status === 'abnormal' ? 'btn btn-primary' : 'btn btn-outline'}
                 onClick={jumpToAssessmentReport}

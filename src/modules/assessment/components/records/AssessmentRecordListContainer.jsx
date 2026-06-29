@@ -6,6 +6,7 @@ import AssessmentRecordList from "./AssessmentRecordList";
 import BottomSheet from "./BottomSheet";
 import { getAssessments } from "@/services/api/assessments";
 import { buildAssessmentScanTargetUrl, isScanCancelError } from "@/shared/lib/entryScan";
+import { normalizeAssessmentKind, resolveAssessmentKind } from "@/shared/lib/assessmentKind";
 import "../../pages/AssessmentRecordsPage.less";
 
 const formatDate = (value) => {
@@ -38,10 +39,16 @@ const resolveDateRange = (timeRange) => {
  */
 const AssessmentRecordListContainer = ({
   testee,
+  assessmentKind = "",
   statusFilter = "",
+  pageSize = 20,
   showFilterBar = true,
   showTesteeSheet = false,
   showFilterSheet = false,
+  emptyText,
+  emptyButtonText = "重新扫码",
+  showEmptyButton = true,
+  showLoadMore = true,
   testeeList = [],
   selectedTesteeId = '',
   onSelectTestee,
@@ -61,6 +68,44 @@ const AssessmentRecordListContainer = ({
   const [showScaleSheet, setShowScaleSheet] = useState(false);
   const [timeRange, setTimeRange] = useState('7');
   const [riskLevel, setRiskLevel] = useState('');
+  const normalizedAssessmentKind = useMemo(
+    () => normalizeAssessmentKind(assessmentKind),
+    [assessmentKind]
+  );
+
+  const mapAssessmentRecord = useCallback((item) => {
+    const recordKind = resolveAssessmentKind(item);
+
+    return {
+      id: item.id,
+      answer_sheet_id: item.answer_sheet_id,
+      title: item.scale_name || item.model_name || item.questionnaire_code || '未知量表',
+      description: item.scale_code || item.model_code || item.questionnaire_code || '',
+      createtime: item.submitted_at || item.created_at,
+      status: item.status,
+      score: item.total_score,
+      risk_level: item.risk_level || item.riskLevel || null,
+      questionnaire_code: item.questionnaire_code,
+      questionnaire_version: item.questionnaire_version,
+      questionnaire_type: item.questionnaire_type || item.questionnaireType,
+      scale_code: item.scale_code,
+      scale_name: item.scale_name,
+      model_code: item.model_code,
+      model_name: item.model_name,
+      interpreted_at: item.interpreted_at,
+      origin_type: item.origin_type,
+      assessment_kind: item.assessment_kind || item.assessmentKind || item.kind || recordKind,
+      kind: recordKind,
+      model_extra: item.model_extra || item.modelExtra,
+    };
+  }, []);
+
+  const shouldKeepRecord = useCallback((record) => {
+    if (!normalizedAssessmentKind) {
+      return true;
+    }
+    return resolveAssessmentKind(record) === normalizedAssessmentKind;
+  }, [normalizedAssessmentKind]);
 
   const fetchRecords = useCallback(async (page = 1, append = false) => {
     try {
@@ -72,43 +117,50 @@ const AssessmentRecordListContainer = ({
         return;
       }
 
-      const pageSize = 20;
       const { dateFrom, dateTo } = resolveDateRange(timeRange);
-      const result = await getAssessments({
-        testeeId: testee.id,
-        status: statusFilter,
-        scaleCode: selectedScaleCode,
-        riskLevel,
-        dateFrom,
-        dateTo,
-        page,
-        pageSize
-      });
+      const shouldFilterKind = Boolean(normalizedAssessmentKind);
+      const items = [];
+      let currentPage = page;
+      let consumedPage = page - 1;
+      let totalPages = 0;
+      let total = 0;
 
-      const data = result.data || result;
-      const items = (data.items || []).map(item => ({
-        id: item.id,
-        answer_sheet_id: item.answer_sheet_id,
-        title: item.scale_name || item.questionnaire_code || '未知量表',
-        description: item.scale_code || item.questionnaire_code || '',
-        createtime: item.submitted_at || item.created_at,
-        status: item.status,
-        score: item.total_score,
-        risk_level: item.risk_level || item.riskLevel || null,
-        questionnaire_code: item.questionnaire_code,
-        questionnaire_version: item.questionnaire_version,
-        scale_code: item.scale_code,
-        scale_name: item.scale_name,
-        interpreted_at: item.interpreted_at,
-        origin_type: item.origin_type,
-      }));
+      while (currentPage) {
+        const result = await getAssessments({
+          testeeId: testee.id,
+          status: statusFilter,
+          scaleCode: selectedScaleCode,
+          riskLevel,
+          dateFrom,
+          dateTo,
+          page: currentPage,
+          pageSize
+        });
+
+        const data = result.data || result;
+        consumedPage = Math.max(Number(data.page || currentPage), currentPage);
+        totalPages = Number(data.total_pages || 0);
+        total = Number(data.total || 0);
+
+        items.push(
+          ...(data.items || [])
+            .map(mapAssessmentRecord)
+            .filter(shouldKeepRecord)
+        );
+
+        if (!shouldFilterKind || items.length >= pageSize || consumedPage >= totalPages) {
+          break;
+        }
+
+        currentPage = consumedPage + 1;
+      }
 
       setRecords(prev => (append ? [...prev, ...items] : items));
       setPagination({
-        page: data.page || page,
-        page_size: data.page_size || pageSize,
-        total: data.total || 0,
-        total_pages: data.total_pages || 0
+        page: consumedPage,
+        page_size: pageSize,
+        total,
+        total_pages: totalPages
       });
     } catch (error) {
       console.error('获取测评记录失败：', error);
@@ -119,7 +171,17 @@ const AssessmentRecordListContainer = ({
     } finally {
       setLoading(false);
     }
-  }, [riskLevel, selectedScaleCode, statusFilter, testee, timeRange]);
+  }, [
+    mapAssessmentRecord,
+    normalizedAssessmentKind,
+    pageSize,
+    riskLevel,
+    selectedScaleCode,
+    shouldKeepRecord,
+    statusFilter,
+    testee,
+    timeRange
+  ]);
 
   useEffect(() => {
     if (!testee?.id) return;
@@ -253,6 +315,10 @@ const AssessmentRecordListContainer = ({
         loading={loading}
         onLoadMore={handleLoadMore}
         onEmptyScan={handleEmptyScan}
+        emptyText={emptyText}
+        emptyButtonText={emptyButtonText}
+        showEmptyButton={showEmptyButton}
+        showLoadMore={showLoadMore}
       />
       {renderSheets()}
     </>

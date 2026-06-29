@@ -3,34 +3,73 @@ import Taro from "@tarojs/taro";
 import { View, Text, ScrollView, Image } from "@tarojs/components";
 import { AtIcon } from "taro-ui";
 
-import BottomMenu from "@/shared/ui/BottomMenu";
 import { routes } from "@/shared/config/routes";
 import {
-  ABILITY_DIRECTIONS,
   ABILITY_SPECIALIZED_ASSESSMENTS,
   isAbilityAssessmentAvailable,
 } from "@/shared/config/abilityAssessments";
-import heroImage from "@/assets/home/home-entry-behavior.png";
-import executiveImage from "@/assets/icon/icon-executive-function.png";
-import regulationImage from "@/assets/icon/icon-behavior-regulation.png";
-import learningImage from "@/assets/icon/icon-learning-performance.png";
-import familyImage from "@/assets/icon/icon-family-observation.png";
-import abilityImage from "@/assets/icon/icon-behavior-ability.png";
+import AssessmentKindReportSection from "@/modules/assessment/components/records/AssessmentKindReportSection";
+import { ASSESSMENT_KIND } from "@/shared/lib/assessmentKind";
+import behaviorHeroImage from "@/pages/catalog-ability/assets/home/home-entry-behavior.webp";
+import executiveImage from "@/pages/catalog-ability/assets/icon/icon-executive-function.png";
+import abilityImage from "@/pages/catalog-ability/assets/icon/icon-behavior-ability.png";
+import workingMemoryImage from "@/pages/catalog-ability/assets/icon/icon-working-memory.png";
+import sensoryImage from "@/pages/catalog-ability/assets/home/category-sensory.png";
 import "./AbilityCatalogPage.less";
-
-const DIRECTION_IMAGES = {
-  executive: executiveImage,
-  regulation: regulationImage,
-  learning: learningImage,
-  family: familyImage,
-};
 
 const ASSESSMENT_IMAGES = {
   executive: executiveImage,
-  regulation: regulationImage,
-  learning: learningImage,
-  family: familyImage,
+  sensory: sensoryImage,
 };
+
+const HERO_TAGS = Object.freeze(["科学评估", "专业解读", "成长支持"]);
+
+const HERO_STATS = Object.freeze([
+  { value: "2", label: "核心测评" },
+  { value: "家庭", label: "日常观察" },
+  { value: "成长", label: "支持建议" },
+]);
+
+const OBSERVATION_ITEMS = Object.freeze([
+  {
+    title: "任务启动",
+    subtitle: "开始、计划与推进",
+    image: executiveImage,
+  },
+  {
+    title: "工作记忆",
+    subtitle: "理解并保持步骤",
+    image: workingMemoryImage,
+  },
+  {
+    title: "感觉敏感",
+    subtitle: "声音、触觉与光线",
+    image: sensoryImage,
+  },
+  {
+    title: "调节支持",
+    subtitle: "找到更匹配的方法",
+    image: abilityImage,
+  },
+]);
+
+const FLOW_STEPS = Object.freeze([
+  {
+    step: "01",
+    title: "选择测评",
+    desc: "先从执行功能或感觉处理两个方向开始观察。",
+  },
+  {
+    step: "02",
+    title: "完成填写",
+    desc: "结合家庭日常表现，按真实情况完成问卷。",
+  },
+  {
+    step: "03",
+    title: "查看线索",
+    desc: "把结果作为后续沟通和成长支持的参考。",
+  },
+]);
 
 const resolveHeaderMetrics = () => {
   try {
@@ -69,7 +108,7 @@ const AbilityCatalogPage = () => {
   const handleOpenAssessment = useCallback((item) => {
     if (!isAbilityAssessmentAvailable(item)) {
       Taro.showToast({
-        title: item.statusLabel || "即将开放",
+        title: "即将开放",
         icon: "none",
       });
       return;
@@ -81,11 +120,11 @@ const AbilityCatalogPage = () => {
   }, []);
 
   return (
-    <View className="ability-catalog">
+    <View className="ability-home">
       <ScrollView
         scrollY
         scrollIntoView={scrollTarget}
-        className="ability-catalog__scroll"
+        className="ability-home__scroll"
         enhanced
         showScrollbar={false}
       >
@@ -102,114 +141,137 @@ const AbilityCatalogPage = () => {
 
         <View className="ability-hero">
           <View className="ability-hero__content">
-            <Text className="ability-hero__title">看见行为背后的{"\n"}能力线索</Text>
-            <Text className="ability-hero__subtitle">
-              面向儿童、青少年与家庭场景，聚焦执行功能、行为表现与成长支持。
-            </Text>
+            <Text className="ability-hero__label">BEHAVIOR ABILITY</Text>
+            <Text className="ability-hero__title">看见行为背后的能力线索</Text>
+            <Text className="ability-hero__subtitle">关注儿童大脑发育与行为成长，帮助家庭找到更清晰的支持方向。</Text>
+            <View className="ability-hero__tag-row">
+              {HERO_TAGS.map((tag) => (
+                <Text key={tag} className="ability-hero__tag">{tag}</Text>
+              ))}
+            </View>
             <View className="ability-hero__action" onClick={handleViewAssessments}>
-              <Text>查看可用测评</Text>
-              <AtIcon value="chevron-right" size="14" color="#FFFFFF" />
+              <Text>查看测评</Text>
+              <AtIcon value="arrow-right" size="13" color="#FFFFFF" />
             </View>
           </View>
-          <Image className="ability-hero__image" src={heroImage} mode="aspectFit" />
-          <View className="ability-hero__orb ability-hero__orb--one" />
-          <View className="ability-hero__orb ability-hero__orb--two" />
-          <View className="ability-hero__orb ability-hero__orb--three" />
+          <View className="ability-hero__visual">
+            <Image className="ability-hero__brain" src={behaviorHeroImage} mode="aspectFit" />
+            <View className="ability-hero__chip ability-hero__chip--top">
+              <Image className="ability-hero__chip-image" src={workingMemoryImage} mode="aspectFit" />
+            </View>
+            <View className="ability-hero__chip ability-hero__chip--bottom">
+              <Image className="ability-hero__chip-image" src={sensoryImage} mode="aspectFit" />
+            </View>
+          </View>
         </View>
 
-        <View className="ability-panel">
+        <View className="ability-stat-strip">
+          {HERO_STATS.map((item) => (
+            <View key={item.label} className="ability-stat">
+              <Text className="ability-stat__value">{item.value}</Text>
+              <Text className="ability-stat__label">{item.label}</Text>
+            </View>
+          ))}
+        </View>
+
+        <View id="ability-specialized" className="ability-section ability-specialized">
           <View className="ability-section__header">
-            <Text className="ability-section__title">能力方向</Text>
-            <View className="ability-section__more">
-              <Text>持续扩展中</Text>
-              <AtIcon value="chevron-right" size="14" color="#8A96AA" />
+            <Text className="ability-section__title">核心测评</Text>
+            <View className="ability-section__more" onClick={handleViewAssessments}>
+              <Text>暂仅展示 2 项</Text>
             </View>
           </View>
 
-          <View className="ability-direction-grid">
-            {ABILITY_DIRECTIONS.map((direction) => (
+          <View className="ability-assessment-grid">
+            {ABILITY_SPECIALIZED_ASSESSMENTS.map((item, index) => (
               <View
-                key={direction.key}
-                className={`ability-direction-card ability-direction-card--${direction.tone}`}
+                key={item.key}
+                className={`ability-assessment-card ability-assessment-card--${item.iconKey} ${isAbilityAssessmentAvailable(item) ? "" : "is-disabled"}`}
+                onClick={() => handleOpenAssessment(item)}
               >
-                <View className="ability-direction-card__icon">
+                <View className="ability-assessment-card__rank">
+                  <Text>{String(index + 1).padStart(2, "0")}</Text>
+                </View>
+                <View className="ability-assessment-card__icon">
                   <Image
-                    className="ability-direction-card__image"
-                    src={DIRECTION_IMAGES[direction.key] || abilityImage}
+                    className="ability-assessment-card__image"
+                    src={ASSESSMENT_IMAGES[item.iconKey] || abilityImage}
                     mode="aspectFit"
                   />
                 </View>
-                <View className="ability-direction-card__body">
-                  <Text className="ability-direction-card__title">{direction.title}</Text>
-                  <Text className="ability-direction-card__desc">
-                    {direction.detail || direction.subtitle}
+                <View className="ability-assessment-card__content">
+                  <Text className="ability-assessment-card__kicker">
+                    {item.iconKey === "sensory" ? "感觉处理 · 家庭观察" : "执行功能 · 日常表现"}
                   </Text>
-                  <Text className="ability-direction-card__count">
-                    {direction.assessmentCount || 0} 个测评
-                  </Text>
+                  <View className="ability-assessment-card__title-line">
+                    <Text className="ability-assessment-card__title">{item.title}</Text>
+                    <Text className="ability-assessment-card__badge">{item.statusLabel}</Text>
+                  </View>
+                  <Text className="ability-assessment-card__desc">{item.description}</Text>
+                  <View className="ability-assessment-card__meta">
+                    <Text className="ability-assessment-card__duration">{item.duration || "约 10 分钟"}</Text>
+                    <Text className="ability-assessment-card__tested">{item.testedLabel || "持续扩展中"}</Text>
+                  </View>
+                </View>
+                <View className="ability-assessment-card__arrow">
+                  <AtIcon value="chevron-right" size="18" color="#FFFFFF" />
                 </View>
               </View>
             ))}
           </View>
+        </View>
 
-          <View id="ability-specialized" className="ability-specialized">
-            <View className="ability-section__header">
-              <Text className="ability-section__title">热门测评</Text>
-              <View className="ability-section__more" onClick={handleViewAssessments}>
-                <Text>更多测评</Text>
-                <AtIcon value="chevron-right" size="14" color="#8A96AA" />
-              </View>
+        <AssessmentKindReportSection
+          kind={ASSESSMENT_KIND.ABILITY}
+          title="行为能力报告"
+          subtitle="执行功能与感觉处理测评结果"
+          emptyText="暂无行为能力报告，完成测评后将在这里展示。"
+          tone="ability"
+        />
+
+        <View className="ability-section ability-observation">
+          <View className="ability-section__header">
+            <Text className="ability-section__title">观察重点</Text>
+            <View className="ability-section__more">
+              <Text>围绕 2 项测评</Text>
             </View>
-
-            <View className="ability-assessment-list">
-              {ABILITY_SPECIALIZED_ASSESSMENTS.map((item) => (
-                <View
-                  key={item.key}
-                  className={`ability-assessment-row ${isAbilityAssessmentAvailable(item) ? "" : "is-disabled"}`}
-                  onClick={() => handleOpenAssessment(item)}
-                >
-                  <View className="ability-assessment-row__icon">
-                    <Image
-                      className="ability-assessment-row__image"
-                      src={ASSESSMENT_IMAGES[item.iconKey] || abilityImage}
-                      mode="aspectFit"
-                    />
-                  </View>
-                  <View className="ability-assessment-row__content">
-                    <View className="ability-assessment-row__title-line">
-                      <Text className="ability-assessment-row__title">{item.title}</Text>
-                      <Text className="ability-assessment-row__badge">{item.statusLabel}</Text>
-                    </View>
-                    <Text className="ability-assessment-row__desc">{item.description}</Text>
-                  </View>
-                  <View className="ability-assessment-row__meta">
-                    <Text className="ability-assessment-row__duration">{item.duration || "约 10 分钟"}</Text>
-                    <Text className="ability-assessment-row__tested">{item.testedLabel || "持续扩展中"}</Text>
-                  </View>
-                  <AtIcon value="chevron-right" size="18" color="#9AA6B8" />
+          </View>
+          <View className="ability-observation-grid">
+            {OBSERVATION_ITEMS.map((item) => (
+              <View key={item.title} className="ability-observation-card">
+                <View className="ability-observation-card__icon">
+                  <Image className="ability-observation-card__image" src={item.image} mode="aspectFit" />
                 </View>
-              ))}
-            </View>
+                <View className="ability-observation-card__text">
+                  <Text className="ability-observation-card__title">{item.title}</Text>
+                  <Text className="ability-observation-card__subtitle">{item.subtitle}</Text>
+                </View>
+              </View>
+            ))}
           </View>
         </View>
 
-        <View className="ability-trust-card">
-          <View className="ability-trust-card__icon">
-            <AtIcon value="check" size="22" color="#FFFFFF" />
+        <View className="ability-section ability-flow">
+          <Text className="ability-section__title">评估流程</Text>
+          <View className="ability-flow__track">
+            {FLOW_STEPS.map((item) => (
+              <View key={item.step} className="ability-flow__step">
+                <Text className="ability-flow__index">{item.step}</Text>
+                <View className="ability-flow__body">
+                  <Text className="ability-flow__title">{item.title}</Text>
+                  <Text className="ability-flow__desc">{item.desc}</Text>
+                </View>
+              </View>
+            ))}
           </View>
-          <View className="ability-trust-card__content">
-            <Text className="ability-trust-card__title">科学评估 · 权威工具 · 隐私安全</Text>
-            <Text className="ability-trust-card__desc">
-              所有测评均来自权威来源，结果仅供参考
-            </Text>
-          </View>
-          <Image className="ability-trust-card__image" src={abilityImage} mode="aspectFit" />
         </View>
 
-        <View className="ability-catalog__bottom-spacer" />
+        <View className="ability-home__note">
+          <Text>行为能力测评用于儿童发展观察与家庭支持参考，不替代临床诊断；测评结果仅作为后续沟通和成长方案的线索。</Text>
+        </View>
+
+        <View className="ability-home__bottom-spacer" />
       </ScrollView>
-
-      <BottomMenu activeKey="首页" />
     </View>
   );
 };

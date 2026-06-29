@@ -1,8 +1,116 @@
+import { ABILITY_SPECIALIZED_ASSESSMENTS } from "@/shared/config/abilityAssessments";
+import { PERSONALITY_MODEL_CODES } from "@/shared/config/personalityModels";
+
 export const ASSESSMENT_KIND = Object.freeze({
   PERSONALITY: 'personality',
   MEDICAL: 'medical',
+  ABILITY: 'ability',
 });
 
+const PERSONALITY_CODES = new Set(
+  Object.values(PERSONALITY_MODEL_CODES).map((code) => String(code).toUpperCase())
+);
+
+const ABILITY_CODES = new Set(
+  ABILITY_SPECIALIZED_ASSESSMENTS
+    .map((item) => item.scaleCode)
+    .filter(Boolean)
+    .map((code) => String(code).toUpperCase())
+);
+
+const PERSONALITY_KIND_ALIASES = Object.freeze([
+  'personality',
+  'personality_assessment',
+  'personalityassessment',
+]);
+
+const ABILITY_KIND_ALIASES = Object.freeze([
+  'ability',
+  'ability_assessment',
+  'abilityassessment',
+  'behavior',
+  'behavior_ability',
+  'behaviorability',
+  'behavior_assessment',
+  'behaviorassessment',
+]);
+
+const MEDICAL_KIND_ALIASES = Object.freeze([
+  'medical',
+  'medical_scale',
+  'medicalscale',
+  'scale',
+]);
+
+export const normalizeAssessmentKind = (kind) => {
+  const value = String(kind || '').trim().toLowerCase();
+  if (!value) return '';
+
+  if (PERSONALITY_KIND_ALIASES.includes(value)) {
+    return ASSESSMENT_KIND.PERSONALITY;
+  }
+
+  if (ABILITY_KIND_ALIASES.includes(value)) {
+    return ASSESSMENT_KIND.ABILITY;
+  }
+
+  if (MEDICAL_KIND_ALIASES.includes(value)) {
+    return ASSESSMENT_KIND.MEDICAL;
+  }
+
+  return '';
+};
+
+export const resolveAssessmentKind = (assessment = {}) => {
+  const explicitKind = normalizeAssessmentKind(
+    assessment.assessment_kind ||
+      assessment.assessmentKind ||
+      assessment.kind ||
+      assessment.category ||
+      assessment.questionnaire_type ||
+      assessment.questionnaireType ||
+      assessment.type ||
+      assessment.origin_type ||
+      assessment.originType
+  );
+
+  if (explicitKind) {
+    return explicitKind;
+  }
+
+  if (assessment.model_extra || assessment.modelExtra) {
+    return ASSESSMENT_KIND.PERSONALITY;
+  }
+
+  const code = String(
+    assessment.model_code ||
+      assessment.modelCode ||
+      assessment.scale_code ||
+      assessment.scaleCode ||
+      assessment.questionnaire_code ||
+      assessment.questionnaireCode ||
+      ''
+  ).toUpperCase();
+
+  if (PERSONALITY_CODES.has(code)) {
+    return ASSESSMENT_KIND.PERSONALITY;
+  }
+
+  if (ABILITY_CODES.has(code)) {
+    return ASSESSMENT_KIND.ABILITY;
+  }
+
+  return ASSESSMENT_KIND.MEDICAL;
+};
+
 export const isPersonalityAssessmentKind = (kind) => {
-  return String(kind || '').toLowerCase() === ASSESSMENT_KIND.PERSONALITY;
+  return normalizeAssessmentKind(kind) === ASSESSMENT_KIND.PERSONALITY;
+};
+
+export const isAbilityAssessmentKind = (kind) => {
+  return normalizeAssessmentKind(kind) === ASSESSMENT_KIND.ABILITY;
+};
+
+export const isMedicalAssessmentKind = (kind) => {
+  return normalizeAssessmentKind(kind) === ASSESSMENT_KIND.MEDICAL;
 };

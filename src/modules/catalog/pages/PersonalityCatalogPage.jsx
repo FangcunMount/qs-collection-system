@@ -6,46 +6,16 @@ import { AtIcon } from "taro-ui";
 import { PrivacyAuthorization } from "@/shared/ui/PrivacyAuthorization";
 import { routes } from "@/shared/config/routes";
 import { PERSONALITY_CATALOG_ITEMS } from "@/shared/config/personalityModels";
+import AssessmentKindReportSection from "@/modules/assessment/components/records/AssessmentKindReportSection";
+import { ASSESSMENT_KIND } from "@/shared/lib/assessmentKind";
 import heroImage from "@/assets/home/home-entry-personality.png";
-import typeBasicImage from "@/assets/icon/icon-personality-basic.png";
-import typeChatImage from "@/assets/icon/icon-ie-test.png";
-import funTestImage from "@/assets/icon/icon-sbti.png";
-import reportImage from "@/assets/icon/icon-learning-performance.png";
-import starImage from "@/assets/icon/icon_small.png";
-import relationImage from "@/assets/icon/icon-emotional-regulation.png";
-import growthImage from "@/assets/icon/icon-behavior-ability.png";
+import typeBasicImage from "@/pages/catalog-personality/assets/icon/icon-personality-basic.png";
+import funTestImage from "@/pages/catalog-personality/assets/icon/icon-sbti.png";
+import reportImage from "@/pages/catalog-personality/assets/icon/icon-learning-performance.png";
+import starImage from "@/pages/catalog-personality/assets/icon/icon_small.png";
+import relationImage from "@/pages/catalog-personality/assets/icon/icon-emotional-regulation.png";
+import growthImage from "@/pages/catalog-personality/assets/icon/icon-behavior-ability.png";
 import "./PersonalityCatalogPage.less";
-
-const TYPE_LIBRARY = Object.freeze([
-  {
-    code: "INTJ",
-    name: "建筑师",
-    desc: "独立思考，擅长规划，追求完善与秩序。",
-    tag: "理性 · 战略型",
-    tone: "violet",
-  },
-  {
-    code: "ENFP",
-    name: "竞选者",
-    desc: "热情开朗，富有创意，追求可能性。",
-    tag: "灵感 · 社交型",
-    tone: "green",
-  },
-  {
-    code: "ISFJ",
-    name: "守卫者",
-    desc: "温和细心，乐于奉献，重视稳定与和谐。",
-    tag: "守护 · 细致型",
-    tone: "blue",
-  },
-  {
-    code: "ENTP",
-    name: "辩论家",
-    desc: "思维敏捷，喜欢挑战，追求创新与突破。",
-    tag: "创新 · 挑战型",
-    tone: "pink",
-  },
-]);
 
 const INTERPRET_SERVICES = Object.freeze([
   { title: "专业报告解读", subtitle: "深度剖析性格特征", image: reportImage },
@@ -95,10 +65,6 @@ const PersonalityCatalogPage = () => {
 
   const handleComingSoon = () => {
     Taro.showToast({ title: "该测评即将开放", icon: "none" });
-  };
-
-  const handleViewAllTypes = () => {
-    handleOpenModel(type16Item);
   };
 
   return (
@@ -182,40 +148,13 @@ const PersonalityCatalogPage = () => {
           </View>
         </View>
 
-        <View className="personality-section">
-          <View className="personality-section__header">
-            <Text className="personality-section__title">类型探索库</Text>
-            <View className="personality-section__more" onClick={handleViewAllTypes}>
-              <Text>查看全部</Text>
-              <AtIcon value="chevron-right" size="14" color="#8A96AA" />
-            </View>
-          </View>
-          <ScrollView scrollX className="personality-type-scroll" enhanced showScrollbar={false}>
-            <View className="personality-type-track">
-              {TYPE_LIBRARY.map((type) => (
-                <View
-                  key={type.code}
-                  className={`personality-type-card personality-type-card--${type.tone}`}
-                  onClick={handleViewAllTypes}
-                >
-                  <Text className="personality-type-card__code">{type.code}</Text>
-                  <Text className="personality-type-card__name">{type.name}</Text>
-                  <View className="personality-type-card__icon">
-                    <Image className="personality-type-card__image" src={typeChatImage} mode="aspectFit" />
-                  </View>
-                  <Text className="personality-type-card__desc">{type.desc}</Text>
-                  <Text className="personality-type-card__tag">{type.tag}</Text>
-                </View>
-              ))}
-            </View>
-          </ScrollView>
-          <View className="personality-dots">
-            <View className="personality-dot personality-dot--active" />
-            <View className="personality-dot" />
-            <View className="personality-dot" />
-            <View className="personality-dot" />
-          </View>
-        </View>
+        <AssessmentKindReportSection
+          kind={ASSESSMENT_KIND.PERSONALITY}
+          title="人格测评报告"
+          subtitle="最近完成的人格探索结果"
+          emptyText="暂无人格探索报告，完成测评后将在这里展示。"
+          tone="personality"
+        />
 
         <View className="personality-section personality-service-section">
           <Text className="personality-section__title">个性化解读服务</Text>
