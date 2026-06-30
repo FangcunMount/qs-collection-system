@@ -5,8 +5,14 @@ import FilterSheet from "./FilterSheet";
 import AssessmentRecordList from "./AssessmentRecordList";
 import BottomSheet from "./BottomSheet";
 import { getAssessments } from "@/services/api/assessments";
+import {
+  listPersonalityAssessments,
+  extractPersonalityAssessmentList,
+  normalizePersonalityAssessmentRecord,
+  isPersonalityAssessmentDoneStatus,
+} from "@/services/api/personality";
 import { buildAssessmentScanTargetUrl, isScanCancelError } from "@/shared/lib/entryScan";
-import { normalizeAssessmentKind, resolveAssessmentKind } from "@/shared/lib/assessmentKind";
+import { ASSESSMENT_KIND, normalizeAssessmentKind, resolveAssessmentKind } from "@/shared/lib/assessmentKind";
 import "../../pages/AssessmentRecordsPage.less";
 
 const formatDate = (value) => {
@@ -124,6 +130,35 @@ const AssessmentRecordListContainer = ({
       let consumedPage = page - 1;
       let totalPages = 0;
       let total = 0;
+
+      if (normalizedAssessmentKind === ASSESSMENT_KIND.PERSONALITY) {
+        const result = await listPersonalityAssessments({
+          testeeId: testee.id,
+          status: statusFilter && statusFilter !== "done" ? statusFilter : undefined,
+          page: currentPage,
+          pageSize,
+        });
+        const data = result.data || result;
+        consumedPage = Math.max(Number(data.page || currentPage), currentPage);
+        totalPages = Number(data.total_pages || data.totalPages || 0);
+        total = Number(data.total || 0);
+
+        const mappedItems = extractPersonalityAssessmentList(data)
+          .map(normalizePersonalityAssessmentRecord)
+          .filter((record) => {
+            if (statusFilter !== "done") return true;
+            return isPersonalityAssessmentDoneStatus(record.status);
+          });
+
+        setRecords((prev) => (append ? [...prev, ...mappedItems] : mappedItems));
+        setPagination({
+          page: consumedPage,
+          page_size: pageSize,
+          total,
+          total_pages: totalPages,
+        });
+        return;
+      }
 
       while (currentPage) {
         const result = await getAssessments({

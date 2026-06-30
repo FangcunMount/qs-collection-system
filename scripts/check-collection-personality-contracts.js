@@ -46,6 +46,8 @@ const sessionFixture = readJson('src/modules/assessment/__fixtures__/personality
 const reportFixture = readJson('src/modules/assessment/__fixtures__/personality-report.json');
 
 assertContains(personalityApi, /listPublishedPersonalityModels/, 'personality adapter must export listPublishedPersonalityModels');
+assertContains(personalityApi, /listPersonalityAssessments/, 'personality adapter must export listPersonalityAssessments');
+assertContains(mappers, /normalizePersonalityAssessmentRecord/, 'personality mapper must normalize assessment records');
 assertContains(personalityApi, /createPersonalitySession/, 'personality adapter must export createPersonalitySession');
 assertContains(personalityApi, /waitPersonalityReport/, 'personality adapter must export waitPersonalityReport');
 assertContains(personalityApi, /getPersonalityReport/, 'personality adapter must export getPersonalityReport');

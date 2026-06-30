@@ -280,3 +280,41 @@ export const normalizeWaitReportStatus = (raw = {}) => {
     raw: data,
   };
 };
+
+const PERSONALITY_DONE_STATUSES = new Set(['interpreted', 'completed', 'done']);
+
+export const extractPersonalityAssessmentList = (payload = {}) => {
+  if (Array.isArray(payload.items)) return payload.items;
+  if (Array.isArray(payload.assessments)) return payload.assessments;
+  if (Array.isArray(payload)) return payload;
+  return [];
+};
+
+export const isPersonalityAssessmentDoneStatus = (status) => {
+  return PERSONALITY_DONE_STATUSES.has(String(status || '').toLowerCase());
+};
+
+export const normalizePersonalityAssessmentRecord = (raw = {}) => {
+  const item = raw || {};
+  const model = item.model || {};
+
+  return {
+    id: toStringId(item.id),
+    answer_sheet_id: toStringId(item.answer_sheet_id || item.answersheet_id || item.answerSheetId),
+    title: item.model_name || model.title || item.model_code || model.code || '人格测评',
+    description: item.model_code || model.code || '',
+    createtime: item.submitted_at || item.created_at || item.interpreted_at || '',
+    status: item.status || '',
+    score: item.total_score ?? item.score ?? null,
+    risk_level: item.risk_level || item.riskLevel || null,
+    questionnaire_code: item.questionnaire_code || model.questionnaire_code || '',
+    questionnaire_version: item.questionnaire_version || model.questionnaire_version || '',
+    model_code: item.model_code || model.code || '',
+    model_name: item.model_name || model.title || '',
+    interpreted_at: item.interpreted_at || '',
+    assessment_kind: 'personality',
+    kind: 'personality',
+    model_extra: item.model_extra || item.modelExtra || null,
+    raw: item,
+  };
+};

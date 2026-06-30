@@ -9,6 +9,9 @@ export {
   normalizePersonalitySession,
   normalizeSubmitDone,
   normalizeWaitReportStatus,
+  extractPersonalityAssessmentList,
+  normalizePersonalityAssessmentRecord,
+  isPersonalityAssessmentDoneStatus,
 } from './mappers';
 
 export {

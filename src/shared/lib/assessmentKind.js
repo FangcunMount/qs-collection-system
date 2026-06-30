@@ -77,13 +77,25 @@ export const resolveAssessmentKind = (assessment = {}) => {
     return ASSESSMENT_KIND.PERSONALITY;
   }
 
+  const modelCode = String(
+    assessment.model_code || assessment.modelCode || ''
+  ).toUpperCase();
+  const scaleCode = String(
+    assessment.scale_code || assessment.scaleCode || ''
+  ).toUpperCase();
+
+  // 人格测评走 model_code，医学量表走 scale_code（后端契约区分）
+  if (modelCode && !scaleCode) {
+    if (ABILITY_CODES.has(modelCode)) {
+      return ASSESSMENT_KIND.ABILITY;
+    }
+    return ASSESSMENT_KIND.PERSONALITY;
+  }
+
   const code = String(
-    assessment.model_code ||
-      assessment.modelCode ||
-      assessment.scale_code ||
-      assessment.scaleCode ||
-      assessment.questionnaire_code ||
+    assessment.questionnaire_code ||
       assessment.questionnaireCode ||
+      scaleCode ||
       ''
   ).toUpperCase();
 
