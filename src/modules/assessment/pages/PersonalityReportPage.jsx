@@ -3,8 +3,9 @@ import { View, Text, Button } from "@tarojs/components";
 import Taro from "@tarojs/taro";
 import { AtActivityIndicator } from "taro-ui";
 
-import { getPersonalityAssessmentReport } from "@/services/api/personalityAssessments";
+import { getPersonalityReport } from "@/services/api/personality";
 import { getAssessmentByAnswersheetId } from "@/services/api/assessments";
+import { normalizePersonalityReport } from "@/modules/assessment/services/personalityReportMapper";
 import { getLogger } from "@/shared/lib/logger";
 import { getAssessmentEntryContext } from "@/shared/stores/assessmentEntry";
 import { findTesteeById, getSelectedTesteeId } from "@/shared/stores/testees";
@@ -18,9 +19,9 @@ import "./PersonalityReportPage.less";
 const PAGE_NAME = "personality-report";
 const logger = getLogger(PAGE_NAME);
 
-const resolveTesteeName = (reportData) => {
-  let testeeName = reportData.testee_name || "";
-  let testeeId = reportData.testee_id || "";
+const resolveTesteeName = (reportVM) => {
+  let testeeName = reportVM.testeeName || "";
+  let testeeId = reportVM.testeeId || "";
   if (!testeeName) {
     const selectedTesteeId = getSelectedTesteeId();
     if (selectedTesteeId) {
@@ -75,56 +76,18 @@ const PersonalityReport = () => {
 
   const [isReady, setIsReady] = useState(false);
   const [answersheetId, setAnswersheetId] = useState(routeParams.a || "");
-  const [modelExtra, setModelExtra] = useState(null);
-  const [conclusion, setConclusion] = useState("");
-  const [dimensions, setDimensions] = useState([]);
-  const [suggestions, setSuggestions] = useState([]);
-  const [reportInfo, setReportInfo] = useState({
-    model_title: "",
-    model_code: "",
-    created_at: "",
-    testee_name: "",
-    testee_id: "",
-  });
+  const [reportVM, setReportVM] = useState(null);
   const [entryContext] = useState(() => getAssessmentEntryContext());
 
-  const handleReportData = useCallback((result) => {
-    const reportData = result?.data || result || {};
-    logger.RUN("[PersonalityReport] 原始报告数据:", reportData);
-
-    const { testeeName, testeeId } = resolveTesteeName(reportData);
-
-    setReportInfo({
-      model_title: reportData.model_name || reportData.model?.title || reportData.scale_name || "",
-      model_code: reportData.model_code || reportData.model?.code || reportData.scale_code || "",
-      created_at: reportData.created_at || "",
-      testee_name: testeeName,
-      testee_id: testeeId,
+  const applyReportVM = useCallback((raw) => {
+    const vm = normalizePersonalityReport(raw);
+    const { testeeName, testeeId } = resolveTesteeName(vm);
+    logger.RUN("[PersonalityReport] ViewModel:", vm);
+    setReportVM({
+      ...vm,
+      testeeName: testeeName || vm.testeeName,
+      testeeId: testeeId || vm.testeeId,
     });
-
-    setModelExtra(reportData.model_extra || reportData.modelExtra || null);
-    setConclusion(reportData.conclusion || "");
-
-    const mappedDimensions = (reportData.dimensions || []).map((dimension) => ({
-      factor_code: dimension.factor_code,
-      title: dimension.factor_name,
-      description: dimension.description,
-      score: dimension.raw_score,
-      max_score: dimension.max_score,
-      risk_level: dimension.risk_level,
-      suggestion: dimension.suggestion || "",
-    }));
-    setDimensions(mappedDimensions);
-
-    const mappedSuggestions = Array.isArray(reportData.suggestions)
-      ? reportData.suggestions
-          .map((s) => ({
-            category: s.category || "",
-            content: typeof s.content === "string" ? s.content : String(s.content || ""),
-          }))
-          .filter((s) => s.content)
-      : [];
-    setSuggestions(mappedSuggestions);
   }, []);
 
   const loadByAssessmentId = useCallback(async (assessmentId, testeeId) => {
@@ -135,8 +98,8 @@ const PersonalityReport = () => {
     }
     try {
       Taro.showLoading({ title: "加载中..." });
-      const result = await getPersonalityAssessmentReport(assessmentId, testeeId);
-      handleReportData(result);
+      const result = await getPersonalityReport({ assessmentId, testeeId });
+      applyReportVM(result);
     } catch (error) {
       logger.ERROR("[PersonalityReport] 获取报告失败:", error);
       Taro.showToast({ title: "加载人格报告失败", icon: "none" });
@@ -144,7 +107,7 @@ const PersonalityReport = () => {
       try { Taro.hideLoading(); } catch (e) { /* noop */ }
       setIsReady(true);
     }
-  }, [handleReportData]);
+  }, [applyReportVM]);
 
   const loadByAnswersheetId = useCallback(async (sheetId) => {
     try {
@@ -156,8 +119,8 @@ const PersonalityReport = () => {
       if (!assessmentId || !testeeId) {
         throw new Error("缺少 assessment_id 或 testee_id");
       }
-      const result = await getPersonalityAssessmentReport(assessmentId, testeeId);
-      handleReportData(result);
+      const result = await getPersonalityReport({ assessmentId, testeeId });
+      applyReportVM(result);
     } catch (error) {
       logger.ERROR("[PersonalityReport] 通过答卷ID加载失败:", error);
       Taro.showToast({ title: error?.message || "加载人格报告失败", icon: "none" });
@@ -165,7 +128,7 @@ const PersonalityReport = () => {
       try { Taro.hideLoading(); } catch (e) { /* noop */ }
       setIsReady(true);
     }
-  }, [handleReportData]);
+  }, [applyReportVM]);
 
   useEffect(() => {
     const params = Taro.getCurrentInstance().router.params || {};
@@ -187,24 +150,28 @@ const PersonalityReport = () => {
     );
   }
 
+  const dimensions = reportVM?.dimensions || [];
+  const suggestions = reportVM?.suggestions || [];
+  const sections = reportVM?.sections || [];
+
   return (
     <>
       <PrivacyAuthorization />
 
       <View className="personality-report-page">
         <PersonalityReportHero
-          modelExtra={modelExtra || {}}
-          conclusion={conclusion}
-          modelTitle={reportInfo.model_title}
+          modelExtra={reportVM?.hero?.modelExtra || {}}
+          conclusion={reportVM?.hero?.conclusion || ""}
+          modelTitle={reportVM?.modelTitle || ""}
         />
 
-        {(reportInfo.testee_name || reportInfo.created_at) && (
+        {(reportVM?.testeeName || reportVM?.createdAt) && (
           <View className="pr-meta">
-            {reportInfo.testee_name ? (
-              <Text className="pr-meta__name">{reportInfo.testee_name}</Text>
+            {reportVM?.testeeName ? (
+              <Text className="pr-meta__name">{reportVM.testeeName}</Text>
             ) : null}
-            {reportInfo.created_at ? (
-              <Text className="pr-meta__time">生成时间 · {formatSimpleDate(reportInfo.created_at)}</Text>
+            {reportVM?.createdAt ? (
+              <Text className="pr-meta__time">生成时间 · {formatSimpleDate(reportVM.createdAt)}</Text>
             ) : null}
           </View>
         )}
@@ -212,7 +179,7 @@ const PersonalityReport = () => {
         <PlanSubscribeConfirm
           taskId={planTaskId}
           planName={entryContext?.plan_name}
-          entryTitle={entryContext?.entry_title || reportInfo.model_title}
+          entryTitle={entryContext?.entry_title || reportVM?.modelTitle}
           clinicianName={entryContext?.clinician_name}
           entryContext={entryContext}
           variant="floating"
@@ -239,6 +206,24 @@ const PersonalityReport = () => {
           </View>
         )}
 
+        {sections.length > 0 && dimensions.length === 0 && (
+          <View className="pr-section">
+            <View className="pr-section__header">
+              <Text className="pr-section__title">报告解读</Text>
+            </View>
+            <View className="pr-advice-list">
+              {sections.map((section, index) => (
+                <View className="pr-advice-card" key={section.key || index}>
+                  {section.title ? (
+                    <Text className="pr-advice-card__category">{section.title}</Text>
+                  ) : null}
+                  <View className="pr-advice-card__content">{section.content}</View>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
         {suggestions.length > 0 && (
           <View className="pr-section">
             <View className="pr-section__header">
@@ -257,7 +242,7 @@ const PersonalityReport = () => {
           </View>
         )}
 
-        {dimensions.length === 0 && suggestions.length === 0 && (
+        {!reportVM?.hasContent && (
           <View className="pr-empty">
             <Text className="pr-empty__text">暂无人格维度解读数据</Text>
           </View>

@@ -1,0 +1,37 @@
+{
+  "model": {
+    "code": "MBTI_OEJTS",
+    "title": "16 型人格测评",
+    "description": "从四组性格偏好出发，了解你的行为方式与沟通习惯。",
+    "questionnaire_code": "MBTI_OEJTS_V1",
+    "questionnaire_version": "2025.06.01"
+  },
+  "questionnaire": {
+    "code": "MBTI_OEJTS_V1",
+    "version": "2025.06.01",
+    "title": "16 型人格测评",
+    "questions": [
+      {
+        "code": "Q1",
+        "type": "Radio",
+        "title": "你更喜欢？",
+        "options": [
+          { "code": "A", "label": "独处充电" },
+          { "code": "B", "label": "社交充电" }
+        ]
+      }
+    ]
+  },
+  "submit_contract": {
+    "questionnaire_code": "MBTI_OEJTS_V1",
+    "questionnaire_version": "2025.06.01",
+    "testee_id": "10001",
+    "model_code": "MBTI_OEJTS",
+    "kind": "personality"
+  },
+  "endpoints": {
+    "submit": "/answersheets",
+    "wait_report": "/personality-assessments/{id}/wait-report",
+    "report": "/personality-assessments/{id}/report"
+  }
+}

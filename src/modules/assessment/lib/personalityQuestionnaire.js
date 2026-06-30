@@ -1,13 +1,25 @@
 /**
- * 将 personality-assessment-session 响应转为问卷填写组件可用结构
+ * 将 personality-assessment-session ViewModel 转为问卷填写组件可用结构
  */
-export const prepareQuestionnaireFromSession = (session) => {
-  const questionnaire = { ...(session?.questionnaire || {}) };
-  const contract = session?.submit_contract || {};
-  const model = session?.model || {};
+import {
+  normalizePersonalitySession,
+  normalizeQuestionnaire,
+  normalizeSubmitContract,
+} from '@/services/api/personality';
 
-  questionnaire.code = contract.questionnaire_code || questionnaire.code || model.questionnaire_code;
-  questionnaire.version = contract.questionnaire_version || questionnaire.version || model.questionnaire_version;
+export { normalizePersonalitySession, normalizeSubmitContract };
+
+export const prepareQuestionnaireFromSession = (sessionOrVm) => {
+  const sessionVM = sessionOrVm?.submitContract
+    ? sessionOrVm
+    : normalizePersonalitySession(sessionOrVm);
+
+  const questionnaire = normalizeQuestionnaire(sessionVM.questionnaire || {});
+  const contract = sessionVM.submitContract || {};
+  const model = sessionVM.model || {};
+
+  questionnaire.code = contract.questionnaire_code || questionnaire.code || model.questionnaireCode;
+  questionnaire.version = contract.questionnaire_version || questionnaire.version || model.questionnaireVersion;
   questionnaire.type = 'PersonalityAssessment';
   questionnaire.title = questionnaire.title || model.title || '';
   questionnaire.subtitle = questionnaire.subtitle || model.subtitle || '';
@@ -43,11 +55,9 @@ export const prepareQuestionnaireFromSession = (session) => {
   return questionnaire;
 };
 
-export const buildSubmitContractFromSession = (session) => {
-  const contract = session?.submit_contract || {};
-  return {
-    questionnaire_code: contract.questionnaire_code,
-    questionnaire_version: contract.questionnaire_version,
-    testee_id: contract.testee_id
-  };
+export const buildSubmitContractFromSession = (sessionOrVm) => {
+  const sessionVM = sessionOrVm?.submitContract
+    ? sessionOrVm
+    : normalizePersonalitySession(sessionOrVm);
+  return { ...sessionVM.submitContract };
 };

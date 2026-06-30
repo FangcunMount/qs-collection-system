@@ -1,16 +1,19 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Taro from "@tarojs/taro";
 import { View, Text, ScrollView, Image } from "@tarojs/components";
 import { AtIcon } from "taro-ui";
 
 import { PrivacyAuthorization } from "@/shared/ui/PrivacyAuthorization";
 import { routes } from "@/shared/config/routes";
-import { PERSONALITY_CATALOG_ITEMS } from "@/shared/config/personalityModels";
+import { loadGroupedPersonalityCatalog } from "@/modules/catalog/services/personalityCatalogService";
+import {
+  buildDeepExploreDisplayItems,
+  partitionPersonalityCatalog,
+} from "@/modules/catalog/lib/personalityCatalog";
 import AssessmentKindReportSection from "@/modules/assessment/components/records/AssessmentKindReportSection";
 import { ASSESSMENT_KIND } from "@/shared/lib/assessmentKind";
 import heroImage from "@/assets/home/home-entry-personality.png";
 import typeBasicImage from "@/pages/catalog-personality/assets/icon/icon-personality-basic.png";
-import funTestImage from "@/pages/catalog-personality/assets/icon/icon-sbti.png";
 import reportImage from "@/pages/catalog-personality/assets/icon/icon-learning-performance.png";
 import starImage from "@/pages/catalog-personality/assets/icon/icon_small.png";
 import relationImage from "@/pages/catalog-personality/assets/icon/icon-emotional-regulation.png";
@@ -36,17 +39,61 @@ const resolveHeaderMetrics = () => {
   }
 };
 
-const findCatalogItem = (key) => (
-  PERSONALITY_CATALOG_ITEMS.find((item) => item.key === key) || null
-);
-
 const PersonalityCatalogPage = () => {
   const [navMetrics, setNavMetrics] = useState(() => resolveHeaderMetrics());
-  const type16Item = useMemo(() => findCatalogItem("mbti"), []);
-  const funItem = useMemo(() => findCatalogItem("sbti"), []);
+  const [catalogItems, setCatalogItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+
+  const { featuredItem, secondaryItems, deepExploreItems } = useMemo(() => {
+    const partitioned = partitionPersonalityCatalog(catalogItems);
+    return {
+      featuredItem: partitioned.featuredItem,
+      secondaryItems: partitioned.secondaryItems,
+      deepExploreItems: buildDeepExploreDisplayItems(catalogItems),
+    };
+  }, [catalogItems]);
 
   useEffect(() => {
     setNavMetrics(resolveHeaderMetrics());
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadCatalog = async () => {
+      setLoading(true);
+      setLoadError("");
+
+      try {
+        const result = await loadGroupedPersonalityCatalog({
+          page: 1,
+          pageSize: 50,
+          category: "personality",
+        });
+
+        if (cancelled) return;
+
+        setCatalogItems(result.catalogItems || []);
+        if (!result.catalogItems?.length) {
+          setLoadError("暂无可用人格测评，请稍后再试");
+        }
+      } catch (error) {
+        if (cancelled) return;
+        console.warn("[PersonalityCatalogPage] 加载人格模型目录失败", error);
+        setCatalogItems([]);
+        setLoadError("人格测评目录加载失败，请检查网络后重试");
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadCatalog();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleBack = () => {
@@ -59,12 +106,12 @@ const PersonalityCatalogPage = () => {
   };
 
   const handleOpenModel = (item) => {
-    if (!item) return;
-    Taro.navigateTo({ url: routes.personalityModel({ model: item.key }) });
+    if (!item?.modelCode) return;
+    Taro.navigateTo({ url: routes.personalityModel({ model: item.key, model_code: item.modelCode }) });
   };
 
   const handleComingSoon = () => {
-    Taro.showToast({ title: "该测评即将开放", icon: "none" });
+    Taro.showToast({ title: "该服务即将开放", icon: "none" });
   };
 
   return (
@@ -80,6 +127,12 @@ const PersonalityCatalogPage = () => {
           <Text className="personality-nav__title">人格探索</Text>
           <View className="personality-nav__spacer" />
         </View>
+
+        {loadError ? (
+          <View className="personality-home__notice">
+            <Text>{loadError}</Text>
+          </View>
+        ) : null}
 
         <View className="personality-hero">
           <View className="personality-hero__content">
@@ -97,56 +150,92 @@ const PersonalityCatalogPage = () => {
           <View className="personality-hero__spark personality-hero__spark--three" />
         </View>
 
-        <View className="personality-feature-card" onClick={() => handleOpenModel(type16Item)}>
-          <View className="personality-feature-card__content">
-            <Text className="personality-feature-card__kicker">正式探索 · 16 类型</Text>
-            <Text className="personality-feature-card__title">16 型人格测评</Text>
-            <Text className="personality-feature-card__desc">
-              从四组性格偏好出发，了解你的行为方式与沟通习惯。
-            </Text>
-            <View className="personality-feature-card__meta-row">
-              <Text className="personality-feature-card__meta">约 {type16Item?.durationMin || 15} 分钟</Text>
-              <Text className="personality-feature-card__meta">{type16Item?.questionCount || 93} 道题</Text>
-              <Text className="personality-feature-card__meta">100w+ 已测</Text>
-            </View>
+        {loading ? (
+          <View className="personality-home__notice">
+            <Text>正在加载人格测评目录...</Text>
           </View>
-          <View className="personality-feature-card__icon">
-            <Image className="personality-feature-card__image" src={typeBasicImage} mode="aspectFit" />
-          </View>
-          <View className="personality-feature-card__arrow">
-            <AtIcon value="chevron-right" size="20" color="#FFFFFF" />
-          </View>
-        </View>
+        ) : null}
 
-        <View className="personality-mini-grid">
-          <View
-            className="personality-mini-card personality-mini-card--fun"
-            onClick={() => handleOpenModel(funItem)}
-          >
-            <Text className="personality-mini-card__kicker">趣味探索 · 快速了解</Text>
-            <Text className="personality-mini-card__title">今日趣味人格小测试</Text>
-            <Text className="personality-mini-card__desc">轻松有趣，快速了解你的趣味倾向。</Text>
-            <View className="personality-mini-card__button">
-              <Text>开始测试</Text>
-              <AtIcon value="arrow-right" size="13" color="#0CA66A" />
+        {!loading && featuredItem ? (
+          <View className="personality-feature-card" onClick={() => handleOpenModel(featuredItem)}>
+            <View className="personality-feature-card__content">
+              <Text className="personality-feature-card__kicker">
+                {featuredItem.hero?.kicker || featuredItem.badge || "人格探索"}
+              </Text>
+              <Text className="personality-feature-card__title">{featuredItem.title}</Text>
+              <Text className="personality-feature-card__desc">
+                {featuredItem.description || "从四组性格偏好出发，了解你的行为方式与沟通习惯。"}
+              </Text>
+              <View className="personality-feature-card__meta-row">
+                {featuredItem.variantHint ? (
+                  <Text className="personality-feature-card__meta">{featuredItem.variantHint}</Text>
+                ) : null}
+                {featuredItem.questionCount ? (
+                  <Text className="personality-feature-card__meta">{featuredItem.questionCount} 道题</Text>
+                ) : null}
+                {featuredItem.durationMin ? (
+                  <Text className="personality-feature-card__meta">约 {featuredItem.durationMin} 分钟起</Text>
+                ) : null}
+                <Text className="personality-feature-card__meta">已发布</Text>
+              </View>
             </View>
-            <Image className="personality-mini-card__image" src={funTestImage} mode="aspectFit" />
+            <View className="personality-feature-card__icon">
+              <Image className="personality-feature-card__image" src={typeBasicImage} mode="aspectFit" />
+            </View>
+            <View className="personality-feature-card__arrow">
+              <AtIcon value="chevron-right" size="20" color="#FFFFFF" />
+            </View>
           </View>
+        ) : null}
 
-          <View
-            className="personality-mini-card personality-mini-card--deep"
-            onClick={handleComingSoon}
-          >
-            <Text className="personality-mini-card__kicker">深度探索 · 多维解读</Text>
-            <Text className="personality-mini-card__title">九型人格测评</Text>
-            <Text className="personality-mini-card__desc">探索你的核心动机，发现内在成长方向。</Text>
-            <View className="personality-mini-card__button">
-              <Text>即将开放</Text>
-              <AtIcon value="arrow-right" size="13" color="#7656D9" />
-            </View>
-            <Text className="personality-mini-card__number">9</Text>
+        {!loading ? (
+          <View className="personality-mini-grid">
+            {secondaryItems.map((item) => (
+              <View
+                key={item.key}
+                className={`personality-mini-card personality-mini-card--${item.theme || "default"}`}
+                onClick={() => handleOpenModel(item)}
+              >
+                <Text className="personality-mini-card__kicker">
+                  {item.badge || "人格探索"}
+                </Text>
+                <Text className="personality-mini-card__title">{item.title}</Text>
+                <Text className="personality-mini-card__desc">{item.description}</Text>
+                <View className="personality-mini-card__button">
+                  <Text>{item.cta || "开始测试"}</Text>
+                  <AtIcon value="arrow-right" size="13" color="#7656D9" />
+                </View>
+              </View>
+            ))}
+
+            {deepExploreItems.length ? (
+              <View className="personality-mini-row">
+                {deepExploreItems.map((item) => (
+                  <View
+                    key={item.key}
+                    className={`personality-mini-card personality-mini-card--compact personality-mini-card--${item.theme}`}
+                    onClick={() => handleOpenModel(item)}
+                  >
+                    <Text className="personality-mini-card__kicker">{item.badge || "深度探索"}</Text>
+                    <Text className="personality-mini-card__title">{item.title}</Text>
+                    <Text className="personality-mini-card__desc">{item.description}</Text>
+                    <View className="personality-mini-card__button">
+                      <Text>{item.cta || "开始测试"}</Text>
+                      <AtIcon
+                        value="arrow-right"
+                        size="13"
+                        color={item.theme === "ocean" ? "#2B7DE9" : "#7656D9"}
+                      />
+                    </View>
+                    {item.cardBadge ? (
+                      <Text className="personality-mini-card__number">{item.cardBadge}</Text>
+                    ) : null}
+                  </View>
+                ))}
+              </View>
+            ) : null}
           </View>
-        </View>
+        ) : null}
 
         <AssessmentKindReportSection
           kind={ASSESSMENT_KIND.PERSONALITY}

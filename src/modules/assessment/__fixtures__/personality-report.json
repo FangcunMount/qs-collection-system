@@ -1,0 +1,43 @@
+{
+  "model_code": "MBTI_OEJTS",
+  "model_name": "16 型人格测评",
+  "testee_id": "10001",
+  "testee_name": "测试用户",
+  "created_at": "2025-06-30T10:00:00Z",
+  "conclusion": "你倾向于在独处中恢复能量，并关注具体事实与细节。",
+  "model_extra": {
+    "type_code": "ISTJ",
+    "nickname": "物流师",
+    "tagline": "务实可靠，注重秩序",
+    "rarity": "约 12%"
+  },
+  "outcome": {
+    "code": "ISTJ",
+    "title": "物流师",
+    "summary": "务实可靠，注重秩序",
+    "rarity_label": "约 12%"
+  },
+  "dimensions": [
+    {
+      "factor_code": "EI",
+      "factor_name": "能量来源",
+      "description": "你更偏向从独处中获得能量。",
+      "raw_score": 72,
+      "max_score": 100,
+      "suggestion": "给自己留出恢复精力的安静时间。"
+    }
+  ],
+  "suggestions": [
+    {
+      "category": "沟通",
+      "content": "表达需求时可以先说明事实，再补充感受。"
+    }
+  ],
+  "report_sections": [
+    {
+      "key": "overview",
+      "title": "整体画像",
+      "content": "你重视秩序、责任与稳定执行。"
+    }
+  ]
+}

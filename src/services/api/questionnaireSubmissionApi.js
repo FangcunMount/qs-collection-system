@@ -2,7 +2,9 @@ import { boolToOneZero } from '../../shared/lib/coercion';
 import { getAssessmentEntryContext } from '@/shared/stores/assessmentEntry';
 import { getSelectedTesteeId } from '@/shared/stores/testees';
 import { request } from '../servers';
-import { submitAnswersheet, waitForSubmitCompletion, createIdempotencyKey } from './answersheetApi';
+import { createIdempotencyKey } from './answersheetApi';
+import { serializeAnswerValue } from '@/modules/questionnaire/lib/answerSerializer';
+import { submitAssessmentAndResolveAnswersheet } from '@/modules/assessment/services/submitAssessmentFlow';
 import { getLogger } from '../../shared/lib/logger';
 
 const logger = getLogger('questionnaire_submission_api');
@@ -114,62 +116,29 @@ export const postQuestionnaireLegacy = (questionnaire, writer_role_code, signid)
  * @param {Object} lifecycle - 提交生命周期回调
  */
 // eslint-disable-next-line no-unused-vars
-export const submitQuestionnaire = async (questionnaire, writer_role_code, signid, lifecycle = {}) => {
+export const submitQuestionnaire = async (questionnaire, writer_role_code, signid, lifecycle = {}, options = {}) => {
   // 注意：writer_role_code 和 signid 参数保留是为了兼容旧调用方式，新 API 不使用这些参数
-  const selectedTesteeId = getSelectedTesteeId();
+  const submitContract = options.submitContract || {};
+  const selectedTesteeId = submitContract.testee_id || getSelectedTesteeId();
   if (!selectedTesteeId) {
     throw new Error('请先选择档案');
   }
 
-  // 转换答案格式：从旧格式转为新格式
   const answers = questionnaire.answers
-    .filter(v => v.type !== 'Section') // 过滤掉章节
-    .map(v => {
-      let value = '';
-      
-      // 根据题目类型转换答案值
-      switch (v.type) {
-        case 'Radio':
-        case 'ScoreRadio':
-        case 'ImageRadio':
-        case 'Select':
-          // 单选：直接使用选中的 code
-          value = v.value || '';
-          break;
-          
-        case 'CheckBox':
-        case 'ImageCheckBox':
-          // 多选：将数组转为 JSON 字符串
-          value = JSON.stringify(v.value || []);
-          break;
-          
-        case 'Text':
-        case 'Textarea':
-        case 'Number':
-        case 'Date':
-          // 文本类：直接使用值
-          value = String(v.value || '');
-          break;
-          
-        default:
-          value = String(v.value || '');
-      }
+    .filter(v => v.type !== 'Section')
+    .map(v => ({
+      question_code: v.code,
+      question_type: v.type,
+      value: serializeAnswerValue(v),
+      score: v.score ?? 0,
+    }));
 
-      return {
-        question_code: v.code,
-        question_type: v.type,
-        value: value,
-        score: v.score || 0
-      };
-    });
-
-  // 构建新 API 的请求数据
   const requestData = {
-    questionnaire_code: questionnaire.code,
-    questionnaire_version: questionnaire.version || '1.0',
-    testee_id: selectedTesteeId, // 保持原始格式，避免精度丢失
-    answers: answers,
-    title: questionnaire.name || questionnaire.title
+    questionnaire_code: submitContract.questionnaire_code || questionnaire.code,
+    questionnaire_version: submitContract.questionnaire_version || questionnaire.version || '1.0',
+    testee_id: selectedTesteeId,
+    answers,
+    title: questionnaire.name || questionnaire.title,
   };
 
   const entryContext = getAssessmentEntryContext();
@@ -189,20 +158,36 @@ export const submitQuestionnaire = async (questionnaire, writer_role_code, signi
     idempotencyKey
   });
 
-  const submitResult = await submitAnswersheet(requestData, { idempotencyKey });
-  const queued = Boolean(submitResult?.request_id) &&
-    !submitResult?.answersheet_id &&
-    typeof submitResult?.id === 'undefined';
+  let activeRequestId = '';
+  const submitResult = await submitAssessmentAndResolveAnswersheet(requestData, {
+    idempotencyKey,
+    onProgress: (progress) => {
+      activeRequestId = progress.requestId;
+      logger.RUN('[submitQuestionnaire] 队列处理中', {
+        requestId: progress.requestId,
+        attempt: progress.attempt,
+        maxAttempts: progress.maxAttempts,
+        status: progress.status,
+      });
+      if (typeof lifecycle?.onQueueProgress === 'function') {
+        lifecycle.onQueueProgress(progress);
+      }
+    },
+    onSuccess: (result) => {
+      if (typeof lifecycle?.onQueueCompleted === 'function') {
+        lifecycle.onQueueCompleted({ requestId: activeRequestId, statusResult: result });
+      }
+    },
+  });
 
-  const requestId = submitResult?.request_id || (queued ? null : submitResult?.id);
-  if (!requestId && !submitResult?.answersheet_id && typeof submitResult?.id === 'undefined') {
-    throw new Error('提交失败：未获取到 request_id');
-  }
+  const finalAnswersheetId = submitResult?.answersheet_id ?? submitResult?.id;
+  const queued = Boolean(submitResult?.queued);
+  const requestId = submitResult?.request_id;
 
   if (queued) {
     logger.WARN('[submitQuestionnaire] 提交已入队，等待异步处理', {
       requestId,
-      status: submitResult?.status ?? 'queued'
+      status: submitResult?.status ?? 'queued',
     });
     if (typeof lifecycle?.onQueued === 'function') {
       lifecycle.onQueued({ requestId, submitResult });
@@ -210,55 +195,23 @@ export const submitQuestionnaire = async (questionnaire, writer_role_code, signi
   } else {
     logger.RUN('[submitQuestionnaire] 提交已直接完成', {
       requestId,
-      answersheetId: submitResult?.answersheet_id ?? submitResult?.id ?? null
+      answersheetId: finalAnswersheetId ?? null,
     });
-  }
-
-  let finalAnswersheetId = submitResult?.answersheet_id ?? submitResult?.id ?? null;
-
-  if (!finalAnswersheetId && submitResult?.request_id) {
-    const statusResult = await waitForSubmitCompletion(requestId, {
-      onProgress: (progress) => {
-        logger.RUN('[submitQuestionnaire] 队列处理中', {
-          requestId,
-          attempt: progress.attempt,
-          maxAttempts: progress.maxAttempts,
-          status: progress.status
-        });
-        if (typeof lifecycle?.onQueueProgress === 'function') {
-          lifecycle.onQueueProgress(progress);
-        }
-      },
-      onSuccess: (result) => {
-        logger.RUN('[submitQuestionnaire] 队列处理完成', {
-          requestId,
-          answersheetId: result?.answersheet_id ?? null
-        });
-        if (typeof lifecycle?.onQueueCompleted === 'function') {
-          lifecycle.onQueueCompleted({ requestId, statusResult: result });
-        }
-      }
-    });
-    finalAnswersheetId = statusResult?.answersheet_id;
-  }
-
-  if (!finalAnswersheetId) {
-    throw new Error('提交失败：未获取到答卷编号');
   }
 
   logger.RUN('[submitQuestionnaire] 提交结束', {
     requestId,
     answersheetId: finalAnswersheetId,
-    mode: queued ? 'queued' : 'immediate'
+    mode: queued ? 'queued' : 'immediate',
   });
 
   return {
     ...submitResult,
     id: String(finalAnswersheetId),
-    request_id: submitResult?.request_id || requestId,
+    request_id: requestId,
     idempotency_key: idempotencyKey,
     queued,
-    submit_mode: queued ? 'queued' : 'immediate'
+    submit_mode: queued ? 'queued' : 'immediate',
   };
 };
 

@@ -24,11 +24,11 @@ import { getMiniProgramEntryParams } from "@/services/api/miniProgramEntries";
 import { resolveAssessmentEntry } from "@/services/api/assessmentEntries";
 import { getQuestionnaire } from "@/services/api/questionnaires";
 import { getTestee } from "@/services/api/testees";
-import { createPersonalityAssessmentSession } from "@/services/api/personalityAssessments";
+import { createPersonalitySession } from "@/services/api/personality";
 import {
   prepareQuestionnaireFromSession,
-  buildSubmitContractFromSession,
 } from "../lib/personalityQuestionnaire";
+import { normalizeAssessmentEntryParams } from "../lib/assessmentEntryParams";
 import { ASSESSMENT_KIND } from "@/shared/lib/assessmentKind";
 
 const PAGE_NAME = "questionnaire_fill";
@@ -158,6 +158,7 @@ export default function Index() {
   const [modelCode, setModelCode] = useState(null);
   const [isPersonalityFlow, setIsPersonalityFlow] = useState(false);
   const [submitContract, setSubmitContract] = useState(null);
+  const [personalitySession, setPersonalitySession] = useState(null);
   const [subSignid, setSubSignid] = useState("");
   
   // 状态管理
@@ -172,9 +173,10 @@ export default function Index() {
   const [isSinglePage, setIsSinglePage] = useState(false);
 
   const paramData = useRouter().params;
+  const entryParams = normalizeAssessmentEntryParams(paramData);
   const planTaskId = resolvePlanTaskId(paramData, entryContext);
   const shouldDirectStartPersonality = (nextModelCode) => {
-    return Boolean(nextModelCode && String(paramData.start || "") === "1");
+    return Boolean(nextModelCode && entryParams.startImmediately);
   };
 
   // 订阅 testee store 变化
@@ -199,13 +201,23 @@ export default function Index() {
       }
       const {
         q: nextQuestionnaireCode,
-        mc: nextModelCode,
+        mc: legacyModelCode,
         t: testeeid,
         signid
       } = result;
 
-      const personalityModelCode = nextModelCode || paramData.mc;
-      const resolvedQuestionnaireCode = personalityModelCode ? null : nextQuestionnaireCode;
+      const normalizedEntry = normalizeAssessmentEntryParams({
+        ...paramData,
+        ...result,
+        mc: legacyModelCode || paramData.mc || paramData.model_code,
+        model_code: result.model_code || paramData.model_code || legacyModelCode || paramData.mc,
+        t: testeeid || paramData.t || paramData.testee_id,
+        testee_id: result.testee_id || paramData.testee_id || testeeid || paramData.t,
+        q: nextQuestionnaireCode || paramData.q,
+      });
+
+      const personalityModelCode = normalizedEntry.modelCode;
+      const resolvedQuestionnaireCode = personalityModelCode ? null : (normalizedEntry.questionnaireCode || nextQuestionnaireCode);
 
       if ((paramData.scene || hasEntryContext(result)) && result?.entry_status && INVALID_ENTRY_STATUSES.has(result.entry_status)) {
         redirectToEntryError({
@@ -230,7 +242,7 @@ export default function Index() {
       }
 
       signid && setSubSignid(signid);
-      result.sp && setIsSinglePage(result.sp === "1");
+      result.sp && setIsSinglePage(result.sp === "1" || normalizedEntry.singlePage);
 
       if (personalityModelCode) {
         setModelCode(personalityModelCode);
@@ -301,19 +313,18 @@ export default function Index() {
   };
 
   const loadPersonalitySession = async (nextModelCode, testeeId) => {
-    const sessionResult = await createPersonalityAssessmentSession({
+    const sessionVM = await createPersonalitySession({
       modelCode: nextModelCode,
-      testeeId
+      testeeId,
     });
-    const session = sessionResult?.data || sessionResult || {};
-    const questionnaireData = prepareQuestionnaireFromSession(session);
-    const contract = buildSubmitContractFromSession(session);
+    const questionnaireData = prepareQuestionnaireFromSession(sessionVM);
 
     if (!questionnaireData?.questions?.length) {
       throw new Error('当前人格测评题版为空');
     }
 
-    setSubmitContract(contract);
+    setPersonalitySession(sessionVM);
+    setSubmitContract(sessionVM.submitContract);
     return questionnaireData;
   };
 

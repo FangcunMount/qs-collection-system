@@ -6,9 +6,8 @@ import lottie from "lottie-miniprogram";
 import { PrivacyAuthorization } from "@/shared/ui/PrivacyAuthorization";
 import { routes } from "@/shared/config/routes";
 import { ASSESSMENT_KIND } from "@/shared/lib/assessmentKind";
-import { getAssessmentByAnswersheetId, waitAssessmentReport, isReportWaitCompleted, isReportWaitFailed, isAssessmentPending } from "@/services/api/assessments";
-import { waitPersonalityAssessmentReport } from "@/services/api/personalityAssessments";
-import { isPersonalityAssessmentKind } from "@/shared/lib/assessmentKind";
+import { getAssessmentByAnswersheetId, isAssessmentPending } from "@/services/api/assessments";
+import { createReportWaitStrategy } from "@/modules/assessment/services/reportWaitStrategy";
 import { getAssessmentResponse } from "@/services/api/assessmentResponses";
 import { getLogger } from "@/shared/lib/logger";
 import { getSelectedTesteeId } from "@/shared/stores/testees";
@@ -26,17 +25,8 @@ const ASSESSMENT_LOOKUP_INTERVAL = 2000;
 const DEFAULT_POLL_INTERVAL_MS = 3000;
 const ASSESSMENT_NOT_READY_CODES = new Set(["404", "112001"]);
 
-const formatStageMessage = (stage, fallbackMessage) => {
-  const stageTextMap = {
-    queued: "排队中",
-    processing: "处理中",
-    scoring: "正在计分",
-    interpreting: "正在解读",
-    completed: "报告已生成",
-    failed: "报告生成失败"
-  };
-  const stageText = stageTextMap[String(stage || "").toLowerCase()];
-  return fallbackMessage || (stageText ? `${stageText}，请稍候...` : "正在解析测评报告，请稍候...");
+const formatStageMessage = (strategy, stage, fallbackMessage) => {
+  return strategy.formatStageMessage(stage, fallbackMessage);
 };
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -295,10 +285,10 @@ const AnalysisWait = () => {
       return;
     }
 
-    const isPersonality = isPersonalityAssessmentKind(assessmentKind);
+    const strategy = createReportWaitStrategy(assessmentKind);
     isPollingRef.current = true;
     setStage("queued");
-    setMessage(formatStageMessage("queued"));
+    setMessage(formatStageMessage(strategy, "queued"));
 
     const redirectToReport = () => {
       setStatus("success");
@@ -311,19 +301,18 @@ const AnalysisWait = () => {
         answersheetId,
         elapsedTime,
         remainingTime,
-        assessmentKind
+        assessmentKind: strategy.kind,
       });
 
-      const reportRoute = isPersonality ? routes.personalityReport : routes.assessmentReport;
       setTimeout(() => {
         Taro.redirectTo({
-          url: reportRoute({
+          url: strategy.reportRoute({
             a: answersheetId,
             aid: assessmentId,
             t: testeeId,
-            kind: isPersonality ? ASSESSMENT_KIND.PERSONALITY : undefined,
+            kind: strategy.kind === ASSESSMENT_KIND.PERSONALITY ? ASSESSMENT_KIND.PERSONALITY : undefined,
             task_id: taskId || undefined,
-          })
+          }),
         });
       }, remainingTime);
     };
@@ -338,33 +327,34 @@ const AnalysisWait = () => {
           assessmentId,
           testeeId,
           timeout: POLLING_TIMEOUT,
-          assessmentKind
+          assessmentKind: strategy.kind,
         });
 
-        const result = isPersonality
-          ? await waitPersonalityAssessmentReport(assessmentId, testeeId, POLLING_TIMEOUT)
-          : await waitAssessmentReport(assessmentId, testeeId, POLLING_TIMEOUT);
-        const statusData = result?.data || result || {};
+        const statusData = await strategy.waitReport({
+          assessmentId,
+          testeeId,
+          timeout: POLLING_TIMEOUT,
+        });
         const reportStatus = statusData.status;
         const reportStage = statusData.stage;
 
         if (reportStage) {
           setStage(reportStage);
         }
-        setMessage(formatStageMessage(reportStage, statusData.message));
+        setMessage(formatStageMessage(strategy, reportStage, statusData.message));
 
         logger.RUN("[AnalysisWait] wait-report 响应", {
           status: reportStatus,
           stage: reportStage,
-          nextPollAfterMs: statusData.next_poll_after_ms ?? null
+          nextPollAfterMs: statusData.nextPollAfterMs ?? null,
         });
 
-        if (isReportWaitCompleted(reportStatus)) {
+        if (strategy.isCompleted(reportStatus)) {
           redirectToReport();
           return;
         }
 
-        if (isReportWaitFailed(reportStatus)) {
+        if (strategy.isFailed(reportStatus)) {
           logger.ERROR("报告生成失败", { statusData });
           setStatus("error");
           setMessage(statusData.reason || statusData.message || "报告生成失败，请稍后重试");
@@ -372,8 +362,8 @@ const AnalysisWait = () => {
           return;
         }
 
-        const nextDelay = Number(statusData.next_poll_after_ms) > 0
-          ? Number(statusData.next_poll_after_ms)
+        const nextDelay = statusData.nextPollAfterMs > 0
+          ? statusData.nextPollAfterMs
           : DEFAULT_POLL_INTERVAL_MS;
 
         setTimeout(() => {

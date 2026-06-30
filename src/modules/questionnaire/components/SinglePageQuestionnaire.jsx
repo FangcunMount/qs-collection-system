@@ -331,7 +331,7 @@ export default props => {
           answersheetId: statusResult?.answersheet_id ?? null
         });
       }
-    })
+    }, { submitContract })
       .then(async result => {
         Taro.hideLoading();
         logger.RUN('[SinglePageQuestionnaire] 提交完成', {

@@ -34,7 +34,7 @@ const homeTabPage = read('src/modules/tab/pages/HomeTabPage.jsx');
 const homeTabStyle = read('src/modules/tab/pages/HomeTabPage.less');
 const homeProfileCard = read('src/modules/tab/components/home/HomeCurrentProfileCard.jsx');
 const personalityCatalog = read('src/modules/catalog/pages/PersonalityCatalogPage.jsx');
-const personalityModels = read('src/shared/config/personalityModels.js');
+const personalityCatalogService = read('src/modules/catalog/services/personalityCatalogService.js');
 
 assertContains(appConfig, /root:\s*['"]pages\/catalog-medical['"]/, 'app config must register catalog-medical subpackage');
 assertContains(appConfig, /root:\s*['"]pages\/catalog-personality['"]/, 'app config must register catalog-personality subpackage');
@@ -75,7 +75,10 @@ assertNotContains(homeTabPage, /HomeStatusPanel/, 'home page must not import old
 assertNotContains(homeTabStyle, /home-category-|home-scale-card-|home-recent-card-|home-status-panel|home-status-card/, 'home styles must not keep removed home modules');
 
 assertNotContains(personalityCatalog, /MBTI/, 'PersonalityCatalogPage must not expose MBTI to users');
-assertNotContains(personalityModels, /['"]MBTI['"]/, 'personalityModels user-facing strings must not include MBTI label');
+assertContains(personalityCatalog, /loadGroupedPersonalityCatalog/, 'PersonalityCatalogPage must load catalog from API service');
+assertNotContains(personalityCatalog, /PERSONALITY_CATALOG_ITEMS|personalityModels/, 'PersonalityCatalogPage must not use hardcoded personality catalog');
+assertContains(personalityCatalogService, /listPublishedPersonalityModels/, 'personality catalog service must use published models API');
+assertNotContains(personalityCatalogService, /PERSONALITY_CATALOG_ITEMS|personalityModels/, 'personality catalog service must not use hardcoded catalog');
 
 if (process.exitCode) {
   process.exit(process.exitCode);

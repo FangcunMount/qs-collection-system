@@ -1,15 +1,10 @@
 import { ABILITY_SPECIALIZED_ASSESSMENTS } from "@/shared/config/abilityAssessments";
-import { PERSONALITY_MODEL_CODES } from "@/shared/config/personalityModels";
 
 export const ASSESSMENT_KIND = Object.freeze({
   PERSONALITY: 'personality',
   MEDICAL: 'medical',
   ABILITY: 'ability',
 });
-
-const PERSONALITY_CODES = new Set(
-  Object.values(PERSONALITY_MODEL_CODES).map((code) => String(code).toUpperCase())
-);
 
 const ABILITY_CODES = new Set(
   ABILITY_SPECIALIZED_ASSESSMENTS
@@ -91,10 +86,6 @@ export const resolveAssessmentKind = (assessment = {}) => {
       assessment.questionnaireCode ||
       ''
   ).toUpperCase();
-
-  if (PERSONALITY_CODES.has(code)) {
-    return ASSESSMENT_KIND.PERSONALITY;
-  }
 
   if (ABILITY_CODES.has(code)) {
     return ASSESSMENT_KIND.ABILITY;

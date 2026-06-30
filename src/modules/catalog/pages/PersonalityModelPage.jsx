@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Taro, { useRouter } from "@tarojs/taro";
 import { View, Text, ScrollView, Picker } from "@tarojs/components";
+import { AtActivityIndicator } from "taro-ui";
 
 import { PrivacyAuthorization } from "@/shared/ui/PrivacyAuthorization";
 import { ROUTES, routes } from "@/shared/config/routes";
@@ -12,13 +13,14 @@ import {
   setSelectedTesteeId,
   subscribeTesteeStore,
 } from "@/shared/stores/testees";
+import { listPublishedPersonalityModels } from "@/services/api/personality";
+import { loadPersonalityModelDetail } from "@/modules/catalog/services/personalityCatalogService";
 import {
-  getPersonalityModelByKey,
-  PERSONALITY_CATALOG_ITEMS,
-} from "@/shared/config/personalityModels";
+  buildVariantsFromPublished,
+  getDefaultVariant,
+  resolveVariantByCode,
+} from "@/modules/catalog/lib/mbtiVariants";
 import "./PersonalityModelPage.less";
-
-const getDefaultModel = () => PERSONALITY_CATALOG_ITEMS[0];
 
 const formatGender = (gender) => {
   if (gender === 1 || gender === "1") return "男";
@@ -30,12 +32,29 @@ const formatTesteeName = (testee) => testee?.legalName || testee?.name || "未�
 
 const PersonalityModelPage = () => {
   const router = useRouter();
-  const model = useMemo(() => {
-    return getPersonalityModelByKey(router.params?.model) || getDefaultModel();
-  }, [router.params?.model]);
+  const routeModelCode = router.params?.model_code || router.params?.mc || "";
+  const routeFamilyCode = router.params?.model || router.params?.family_code || "";
+
+  const [model, setModel] = useState(null);
+  const [pageLoading, setPageLoading] = useState(true);
+  const [pageError, setPageError] = useState("");
   const [testees, setTestees] = useState(() => getTesteeList());
   const [selectedId, setSelectedId] = useState(() => getSelectedTesteeId());
-  const [loading, setLoading] = useState(false);
+  const [testeeLoading, setTesteeLoading] = useState(false);
+  const [variants, setVariants] = useState([]);
+  const [selectedVariantKey, setSelectedVariantKey] = useState("");
+
+  const activeFamilyCode = model?.familyCode || routeFamilyCode || "";
+  const hasVariantFamily = variants.length > 1;
+
+  const selectedVariant = useMemo(() => {
+    if (!hasVariantFamily) return null;
+    return variants.find((item) => item.key === selectedVariantKey) || getDefaultVariant(variants);
+  }, [hasVariantFamily, variants, selectedVariantKey]);
+
+  const activeQuestionCount = selectedVariant?.questionCount ?? model?.questionCount;
+  const activeDurationMin = selectedVariant?.durationMin ?? model?.durationMin;
+  const activeModelCode = selectedVariant?.modelCode ?? model?.modelCode ?? routeModelCode;
 
   const selectedTestee = selectedId ? findTesteeById(selectedId) : null;
   const selectedIndex = Math.max(0, testees.findIndex((item) => item.id === selectedId));
@@ -50,20 +69,106 @@ const PersonalityModelPage = () => {
       setSelectedId(selectedTesteeId);
     });
 
-    const load = async () => {
+    const loadTestees = async () => {
       try {
-        setLoading(true);
+        setTesteeLoading(true);
         await refreshTesteeList();
       } catch (error) {
         Taro.showToast({ title: "档案加载失败", icon: "none" });
       } finally {
-        setLoading(false);
+        setTesteeLoading(false);
       }
     };
 
-    load();
+    loadTestees();
     return unsubscribe;
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadFamilyVariants = async (familyCode, preferredModelCode) => {
+      const result = await listPublishedPersonalityModels({
+        page: 1,
+        pageSize: 50,
+        category: "personality",
+      });
+      if (cancelled) return null;
+
+      const familyModels = (result.items || []).filter(
+        (item) => String(item.familyCode || "").toLowerCase() === String(familyCode).toLowerCase()
+      );
+      const nextVariants = buildVariantsFromPublished(familyModels);
+      if (!nextVariants.length) {
+        throw new Error("未找到已发布的题版");
+      }
+
+      setVariants(nextVariants);
+      const matched = resolveVariantByCode(nextVariants, preferredModelCode);
+      const activeVariant = matched || getDefaultVariant(nextVariants);
+      setSelectedVariantKey(activeVariant.key);
+
+      const detail = await loadPersonalityModelDetail(activeVariant.modelCode);
+      if (cancelled) return null;
+
+      return {
+        ...detail,
+        key: String(familyCode).toLowerCase(),
+        familyCode,
+      };
+    };
+
+    const loadModel = async () => {
+      setPageLoading(true);
+      setPageError("");
+
+      try {
+        if (routeModelCode) {
+          const detail = await loadPersonalityModelDetail(routeModelCode);
+          if (cancelled) return;
+
+          if (detail.familyCode) {
+            const groupedModel = await loadFamilyVariants(detail.familyCode, routeModelCode);
+            if (groupedModel) {
+              setModel(groupedModel);
+              return;
+            }
+          }
+
+          setVariants([]);
+          setModel(detail);
+          return;
+        }
+
+        if (routeFamilyCode) {
+          const groupedModel = await loadFamilyVariants(routeFamilyCode, "");
+          if (cancelled) return;
+          if (!groupedModel) {
+            throw new Error("未找到已发布模型");
+          }
+          setModel(groupedModel);
+          return;
+        }
+
+        throw new Error("缺少 model_code 或 family 参数");
+      } catch (error) {
+        if (cancelled) return;
+        console.warn("[PersonalityModelPage] 加载模型失败", error);
+        setPageError(error?.message || "模型加载失败");
+        setModel(null);
+        setVariants([]);
+      } finally {
+        if (!cancelled) {
+          setPageLoading(false);
+        }
+      }
+    };
+
+    loadModel();
+    return () => {
+      cancelled = true;
+    };
+  }, [routeModelCode, routeFamilyCode]);
 
   const handleSelectTestee = (event) => {
     const next = testees[event.detail.value];
@@ -77,7 +182,10 @@ const PersonalityModelPage = () => {
       url: routes.testeeCreate({
         submitClose: "0",
         goUrl: ROUTES.personalityModel,
-        goParams: JSON.stringify({ model: model.key }),
+        goParams: JSON.stringify({
+          model: activeFamilyCode || model?.key,
+          model_code: activeModelCode,
+        }),
       }),
     });
   };
@@ -88,9 +196,17 @@ const PersonalityModelPage = () => {
       return;
     }
 
+    if (!activeModelCode) {
+      Taro.showToast({ title: "模型信息不完整", icon: "none" });
+      return;
+    }
+
     Taro.navigateTo({
       url: routes.assessmentFill({
-        mc: model.modelCode,
+        kind: "personality",
+        model_code: activeModelCode,
+        mc: activeModelCode,
+        testee_id: selectedId,
         t: selectedId,
         sp: "1",
         start: "1",
@@ -98,54 +214,126 @@ const PersonalityModelPage = () => {
     });
   };
 
-  return (
-    <View className={`personality-model-page personality-model-page--${model.theme}`}>
-      <ScrollView scrollY className="personality-model-page__scroll" enhanced showScrollbar={false}>
-        <View className="personality-model-hero">
-          <Text className="personality-model-hero__kicker">{model.hero.kicker}</Text>
-          <Text className="personality-model-hero__title">{model.hero.title}</Text>
-          <Text className="personality-model-hero__subtitle">{model.hero.subtitle}</Text>
-          <View className="personality-model-hero__sticker">
-            <Text>{model.hero.sticker}</Text>
+  if (pageLoading) {
+    return (
+      <>
+        <PrivacyAuthorization />
+        <AtActivityIndicator mode="center" content="加载模型信息..." />
+      </>
+    );
+  }
+
+  if (pageError || !model) {
+    return (
+      <>
+        <PrivacyAuthorization />
+        <View className="personality-model-page">
+          <View className="personality-model-empty">
+            <Text className="personality-model-empty__title">模型暂不可用</Text>
+            <Text className="personality-model-empty__desc">{pageError || "请返回重试"}</Text>
           </View>
         </View>
+      </>
+    );
+  }
+
+  const gains = Array.isArray(model.gains) ? model.gains : [];
+  const suitableFor = Array.isArray(model.suitableFor) ? model.suitableFor : [];
+
+  return (
+    <View className={`personality-model-page personality-model-page--${model.theme || "default"}`}>
+      <ScrollView scrollY className="personality-model-page__scroll" enhanced showScrollbar={false}>
+        <View className="personality-model-hero">
+          <Text className="personality-model-hero__kicker">{model.hero?.kicker || model.badge}</Text>
+          <Text className="personality-model-hero__title">{model.hero?.title || model.title}</Text>
+          <Text className="personality-model-hero__subtitle">{model.hero?.subtitle || model.subtitle}</Text>
+          {model.hero?.sticker ? (
+            <View className="personality-model-hero__sticker">
+              <Text>{model.hero.sticker}</Text>
+            </View>
+          ) : null}
+        </View>
+
+        {hasVariantFamily ? (
+          <View className="personality-model-panel">
+            <Text className="personality-model-panel__title">选择题版</Text>
+            <Text className="personality-model-panel__hint">可按时间与场景选择不同题量。</Text>
+            <View className="personality-variant-list">
+              {variants.map((variant) => {
+                const isActive = variant.key === selectedVariantKey;
+                return (
+                  <View
+                    key={variant.key}
+                    className={`personality-variant-card ${isActive ? "is-active" : ""}`}
+                    onClick={() => setSelectedVariantKey(variant.key)}
+                  >
+                    <View className="personality-variant-card__header">
+                      <Text className="personality-variant-card__label">{variant.label}</Text>
+                      {variant.recommended ? (
+                        <Text className="personality-variant-card__badge">推荐</Text>
+                      ) : null}
+                    </View>
+                    <Text className="personality-variant-card__subtitle">{variant.subtitle}</Text>
+                    <View className="personality-variant-card__meta">
+                      {variant.questionCount ? <Text>{variant.questionCount} 道题</Text> : null}
+                      {variant.durationMin ? <Text>约 {variant.durationMin} 分钟</Text> : null}
+                    </View>
+                    {variant.description ? (
+                      <Text className="personality-variant-card__desc">{variant.description}</Text>
+                    ) : null}
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        ) : null}
 
         <View className="personality-model-panel">
           <Text className="personality-model-panel__title">测评介绍</Text>
-          <Text className="personality-model-panel__body">{model.intro}</Text>
+          <Text className="personality-model-panel__body">
+            {selectedVariant?.description || model.intro || model.description}
+          </Text>
           <View className="personality-model-meta">
-            <Text className="personality-model-meta__item">{model.questionCount} 道题</Text>
-            <Text className="personality-model-meta__item">约 {model.durationMin} 分钟</Text>
+            {activeQuestionCount ? (
+              <Text className="personality-model-meta__item">{activeQuestionCount} 道题</Text>
+            ) : null}
+            {activeDurationMin ? (
+              <Text className="personality-model-meta__item">约 {activeDurationMin} 分钟</Text>
+            ) : null}
             <Text className="personality-model-meta__item">单页单题</Text>
           </View>
         </View>
 
-        <View className="personality-model-panel">
-          <Text className="personality-model-panel__title">你将获得</Text>
-          <View className="personality-model-list">
-            {model.gains.map((item) => (
-              <View key={item} className="personality-model-list__item">
-                <Text className="personality-model-list__mark">✓</Text>
-                <Text className="personality-model-list__text">{item}</Text>
-              </View>
-            ))}
+        {gains.length > 0 ? (
+          <View className="personality-model-panel">
+            <Text className="personality-model-panel__title">你将获得</Text>
+            <View className="personality-model-list">
+              {gains.map((item) => (
+                <View key={item} className="personality-model-list__item">
+                  <Text className="personality-model-list__mark">✓</Text>
+                  <Text className="personality-model-list__text">{item}</Text>
+                </View>
+              ))}
+            </View>
           </View>
-        </View>
+        ) : null}
 
-        <View className="personality-model-panel">
-          <Text className="personality-model-panel__title">适合谁测</Text>
-          <View className="personality-model-tags">
-            {model.suitableFor.map((item) => (
-              <Text key={item} className="personality-model-tag">{item}</Text>
-            ))}
+        {suitableFor.length > 0 ? (
+          <View className="personality-model-panel">
+            <Text className="personality-model-panel__title">适合谁测</Text>
+            <View className="personality-model-tags">
+              {suitableFor.map((item) => (
+                <Text key={item} className="personality-model-tag">{item}</Text>
+              ))}
+            </View>
           </View>
-        </View>
+        ) : null}
 
         <View className="personality-model-panel personality-model-testee">
           <View className="personality-model-testee__header">
             <Text className="personality-model-panel__title">选择档案</Text>
             <Text className="personality-model-testee__hint">
-              {loading ? "加载中" : `${testees.length} 个档案`}
+              {testeeLoading ? "加载中" : `${testees.length} 个档案`}
             </Text>
           </View>
 
@@ -166,7 +354,7 @@ const PersonalityModelPage = () => {
                 </View>
               </Picker>
 
-              {selectedTestee && (
+              {selectedTestee ? (
                 <View className="personality-model-testee-card">
                   <Text className="personality-model-testee-card__name">
                     {formatTesteeName(selectedTestee)}
@@ -176,7 +364,7 @@ const PersonalityModelPage = () => {
                     {selectedTestee.birthday ? ` · ${selectedTestee.birthday}` : ""}
                   </Text>
                 </View>
-              )}
+              ) : null}
             </>
           ) : (
             <View className="personality-model-empty">
@@ -202,7 +390,11 @@ const PersonalityModelPage = () => {
           className={`personality-model-footer__button ${!selectedId ? "is-disabled" : ""}`}
           onClick={handleStart}
         >
-          <Text>{model.cta}</Text>
+          <Text>
+            {selectedVariant
+              ? `开始${selectedVariant.label}`
+              : (model.cta || "开始测评")}
+          </Text>
         </View>
       </View>
 

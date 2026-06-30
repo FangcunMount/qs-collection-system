@@ -1,2 +1,9 @@
 export * from './personalityAssessmentApi';
-export { default } from './personalityAssessmentApi';
+export {
+  listPublishedPersonalityModels,
+  getPublishedPersonalityModel,
+  createPersonalitySession,
+  waitPersonalityReport,
+  getPersonalityReport,
+  normalizePersonalitySession,
+} from './personality';

@@ -8,6 +8,14 @@
   background: linear-gradient(180deg, #fff0bd 0%, #ffeef4 42%, #f8fbff 100%);
 }
 
+.personality-model-page--deep {
+  background: linear-gradient(180deg, #f7f0ff 0%, #f4ecff 42%, #f8fbff 100%);
+}
+
+.personality-model-page--ocean {
+  background: linear-gradient(180deg, #edf5ff 0%, #e8f2ff 42%, #f8fbff 100%);
+}
+
 .personality-model-page__scroll {
   height: 100vh;
 }
@@ -82,6 +90,80 @@
   color: #4b5563;
 }
 
+.personality-model-panel__hint {
+  display: block;
+  margin: -6rpx 0 22rpx;
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: #667085;
+}
+
+.personality-variant-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+}
+
+.personality-variant-card {
+  padding: 26rpx 28rpx;
+  border-radius: 24rpx;
+  background: #ffffff;
+  border: 2rpx solid #e5e7eb;
+  box-sizing: border-box;
+}
+
+.personality-variant-card.is-active {
+  border-color: #111111;
+  box-shadow: 0 10rpx 24rpx rgba(17, 17, 17, 0.08);
+}
+
+.personality-variant-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.personality-variant-card__label {
+  font-size: 30rpx;
+  font-weight: 900;
+  color: #111827;
+}
+
+.personality-variant-card__badge {
+  padding: 6rpx 14rpx;
+  border-radius: 999rpx;
+  background: #111111;
+  color: #ffffff;
+  font-size: 20rpx;
+  font-weight: 800;
+}
+
+.personality-variant-card__subtitle {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  color: #4b5563;
+}
+
+.personality-variant-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 16rpx;
+  font-size: 22rpx;
+  font-weight: 800;
+  color: #111111;
+}
+
+.personality-variant-card__desc {
+  display: block;
+  margin-top: 14rpx;
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: #667085;
+}
+
 .personality-model-meta {
   display: flex;
   flex-wrap: wrap;
@@ -126,6 +208,14 @@
 
 .personality-model-page--sbti .personality-model-list__mark {
   background: #ff6b8f;
+}
+
+.personality-model-page--deep .personality-model-list__mark {
+  background: #7656d9;
+}
+
+.personality-model-page--ocean .personality-model-list__mark {
+  background: #2b7de9;
 }
 
 .personality-model-list__text {

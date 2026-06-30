@@ -457,7 +457,8 @@ export default function QuestionnaireForm({
               answersheetId: statusResult?.answersheet_id ?? null
             });
           }
-        }
+        },
+        { submitContract }
       );
       logger.RUN('[QuestionnaireForm] 提交完成', {
         answersheetId: res.id,
