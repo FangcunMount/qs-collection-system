@@ -26,7 +26,11 @@ import { submitQuestionnaire } from "@/services/api/assessmentSubmissions";
 import { useSubmit } from "@/shared/hooks/useSubmit";
 import { isEmpty } from "@/shared/lib/type";
 import { getLogger } from "@/shared/lib/logger";
-import { filterNonSectionQuestions } from "../lib/questionUtils";
+import {
+  filterNonSectionQuestions,
+  hasAnyAnsweredQuestion,
+  SUBMIT_NO_ANSWER_MESSAGE,
+} from "../lib/questionUtils";
 
 const PAGE_NAME = "questionnaire_form";
 const logger = getLogger(PAGE_NAME);
@@ -420,6 +424,10 @@ export default function QuestionnaireForm({
     beforeSubmit: () => {
       if (writerRoles.length > 0 && !writerRoleCode) {
         Taro.showToast({ title: `请选择填写人`, icon: "none" });
+        return false;
+      }
+      if (!hasAnyAnsweredQuestion(questionSheet.questions, getQuestionIsShow)) {
+        Taro.showToast({ title: SUBMIT_NO_ANSWER_MESSAGE, icon: "none" });
         return false;
       }
       if (!verifyQuestions(questionSheet.questions)) {

@@ -4,6 +4,10 @@ import { getSelectedTesteeId } from '@/shared/stores/testees';
 import { request } from '../servers';
 import { createIdempotencyKey } from './answersheetApi';
 import { serializeAnswerValue } from '@/modules/questionnaire/lib/answerSerializer';
+import {
+  hasAnyAnsweredQuestion,
+  SUBMIT_NO_ANSWER_MESSAGE,
+} from '@/modules/questionnaire/lib/questionUtils';
 import { submitAssessmentAndResolveAnswersheet } from '@/modules/assessment/services/submitAssessmentFlow';
 import { getLogger } from '../../shared/lib/logger';
 
@@ -122,6 +126,10 @@ export const submitQuestionnaire = async (questionnaire, writer_role_code, signi
   const selectedTesteeId = submitContract.testee_id || getSelectedTesteeId();
   if (!selectedTesteeId) {
     throw new Error('请先选择档案');
+  }
+
+  if (!hasAnyAnsweredQuestion(questionnaire.answers)) {
+    throw new Error(SUBMIT_NO_ANSWER_MESSAGE);
   }
 
   const answers = questionnaire.answers

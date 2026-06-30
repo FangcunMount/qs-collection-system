@@ -2,12 +2,40 @@
  * 问卷题目相关工具函数
  */
 
+import { isEmpty } from '@/shared/lib/type';
+
+export const SUBMIT_NO_ANSWER_MESSAGE = '请至少完成一道题目后再提交';
+
 /**
  * 过滤掉 Section 类型的题目
  * @param {Array} questions - 题目列表
  * @param {Function} [showControllerCheck] - 可选的显示控制检查函数，用于过滤不可见的题目
  * @returns {Array} 过滤后的题目列表
  */
+/**
+ * 是否至少有一道可见题目已作答
+ * @param {Array} questions - 题目列表
+ * @param {Function} [showControllerCheck] - 可选的显示控制检查函数
+ * @returns {boolean}
+ */
+export function hasAnyAnsweredQuestion(questions, showControllerCheck = null) {
+  if (!questions || !Array.isArray(questions)) {
+    return false;
+  }
+
+  return questions.some(q => {
+    if (q.type === 'Section') {
+      return false;
+    }
+
+    if (showControllerCheck && !showControllerCheck(q.show_controller)) {
+      return false;
+    }
+
+    return !isEmpty(q.value);
+  });
+}
+
 export function filterNonSectionQuestions(questions, showControllerCheck = null) {
   if (!questions || !Array.isArray(questions)) {
     return [];

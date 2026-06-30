@@ -19,6 +19,10 @@ import QsImageRadio from "./questions/imageRadio";
 import QsImageCheckbox from "./questions/imageCheckBox";
 import WriterRoleDialog from "./WriterRoleDialog";
 import { checkQuestion } from "./QuestionnaireForm";
+import {
+  hasAnyAnsweredQuestion,
+  SUBMIT_NO_ANSWER_MESSAGE,
+} from "../lib/questionUtils";
 import { useThrottle } from "@/shared/hooks/useThrottle";
 import { getLogger } from "@/shared/lib/logger";
 
@@ -290,6 +294,14 @@ export default props => {
         icon: "none"
       });
       setNeedWriterRole(true);
+      return;
+    }
+
+    if (!hasAnyAnsweredQuestion(questionSheet.questions, getQuestionIsShow)) {
+      Taro.showToast({
+        title: SUBMIT_NO_ANSWER_MESSAGE,
+        icon: "none"
+      });
       return;
     }
 
