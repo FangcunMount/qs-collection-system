@@ -7,7 +7,12 @@ import BottomSheet from "./BottomSheet";
 import { getAssessments } from "@/services/api/assessments";
 import { loadPersonalityAssessmentRecords } from "@/modules/assessment/services/personalityAssessmentRecordService";
 import { buildAssessmentScanTargetUrl, isScanCancelError } from "@/shared/lib/entryScan";
-import { ASSESSMENT_KIND, normalizeAssessmentKind, resolveAssessmentKind } from "@/shared/lib/assessmentKind";
+import {
+  ASSESSMENT_KIND,
+  matchesAssessmentKindFilter,
+  normalizeAssessmentKind,
+  resolveAssessmentKind,
+} from "@/shared/lib/assessmentKind";
 import "../../pages/AssessmentRecordsPage.less";
 
 const formatDate = (value) => {
@@ -102,10 +107,7 @@ const AssessmentRecordListContainer = ({
   }, []);
 
   const shouldKeepRecord = useCallback((record) => {
-    if (!normalizedAssessmentKind) {
-      return true;
-    }
-    return resolveAssessmentKind(record) === normalizedAssessmentKind;
+    return matchesAssessmentKindFilter(record, normalizedAssessmentKind);
   }, [normalizedAssessmentKind]);
 
   const fetchRecords = useCallback(async (page = 1, append = false) => {
@@ -152,6 +154,7 @@ const AssessmentRecordListContainer = ({
           riskLevel,
           dateFrom,
           dateTo,
+          assessmentKind: normalizedAssessmentKind || undefined,
           page: currentPage,
           pageSize
         });

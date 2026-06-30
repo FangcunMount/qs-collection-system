@@ -117,3 +117,11 @@ export const isAbilityAssessmentKind = (kind) => {
 export const isMedicalAssessmentKind = (kind) => {
   return normalizeAssessmentKind(kind) === ASSESSMENT_KIND.MEDICAL;
 };
+
+export const matchesAssessmentKindFilter = (assessment = {}, kind = '') => {
+  const normalizedKind = normalizeAssessmentKind(kind);
+  if (!normalizedKind) {
+    return true;
+  }
+  return resolveAssessmentKind(assessment) === normalizedKind;
+};

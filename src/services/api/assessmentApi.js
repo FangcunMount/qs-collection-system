@@ -33,6 +33,7 @@ const buildQueryString = (params = {}) => {
  * @param {string} [options.riskLevel]
  * @param {string} [options.dateFrom]
  * @param {string} [options.dateTo]
+ * @param {string} [options.assessmentKind]
  * @param {number} [options.page]
  * @param {number} [options.pageSize]
  * @returns {Promise<{items: Array, total: number, page: number, page_size: number}>}
@@ -44,6 +45,7 @@ export const getAssessments = ({
   riskLevel,
   dateFrom,
   dateTo,
+  assessmentKind,
   page = 1,
   pageSize = 20
 } = {}) => {
@@ -54,6 +56,7 @@ export const getAssessments = ({
     risk_level: riskLevel,
     date_from: dateFrom,
     date_to: dateTo,
+    assessment_kind: assessmentKind,
     page,
     page_size: pageSize
   };

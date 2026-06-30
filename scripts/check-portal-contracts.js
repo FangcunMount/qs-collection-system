@@ -35,6 +35,7 @@ const homeTabStyle = read('src/modules/tab/pages/HomeTabPage.less');
 const homeProfileCard = read('src/modules/tab/components/home/HomeCurrentProfileCard.jsx');
 const personalityCatalog = read('src/modules/catalog/pages/PersonalityCatalogPage.jsx');
 const personalityCatalogService = read('src/modules/catalog/services/personalityCatalogService.js');
+const assessmentRecordsPage = read('src/modules/assessment/pages/AssessmentRecordsPage.jsx');
 
 assertContains(appConfig, /root:\s*['"]pages\/catalog-medical['"]/, 'app config must register catalog-medical subpackage');
 assertContains(appConfig, /root:\s*['"]pages\/catalog-personality['"]/, 'app config must register catalog-personality subpackage');
@@ -79,6 +80,7 @@ assertContains(personalityCatalog, /loadGroupedPersonalityCatalog/, 'Personality
 assertNotContains(personalityCatalog, /PERSONALITY_CATALOG_ITEMS|personalityModels/, 'PersonalityCatalogPage must not use hardcoded personality catalog');
 assertContains(personalityCatalogService, /listPublishedPersonalityModels/, 'personality catalog service must use published models API');
 assertNotContains(personalityCatalogService, /PERSONALITY_CATALOG_ITEMS|personalityModels/, 'personality catalog service must not use hardcoded catalog');
+assertContains(assessmentRecordsPage, /assessmentKind=\{ASSESSMENT_KIND\.MEDICAL\}/, 'AssessmentRecordsPage must query medical scale reports only');
 
 if (process.exitCode) {
   process.exit(process.exitCode);
