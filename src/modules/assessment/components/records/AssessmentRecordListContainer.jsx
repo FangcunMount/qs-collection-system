@@ -5,12 +5,7 @@ import FilterSheet from "./FilterSheet";
 import AssessmentRecordList from "./AssessmentRecordList";
 import BottomSheet from "./BottomSheet";
 import { getAssessments } from "@/services/api/assessments";
-import {
-  listPersonalityAssessments,
-  extractPersonalityAssessmentList,
-  normalizePersonalityAssessmentRecord,
-  isPersonalityAssessmentDoneStatus,
-} from "@/services/api/personality";
+import { loadPersonalityAssessmentRecords } from "@/modules/assessment/services/personalityAssessmentRecordService";
 import { buildAssessmentScanTargetUrl, isScanCancelError } from "@/shared/lib/entryScan";
 import { ASSESSMENT_KIND, normalizeAssessmentKind, resolveAssessmentKind } from "@/shared/lib/assessmentKind";
 import "../../pages/AssessmentRecordsPage.less";
@@ -132,30 +127,19 @@ const AssessmentRecordListContainer = ({
       let total = 0;
 
       if (normalizedAssessmentKind === ASSESSMENT_KIND.PERSONALITY) {
-        const result = await listPersonalityAssessments({
+        const personalityResult = await loadPersonalityAssessmentRecords({
           testeeId: testee.id,
-          status: statusFilter && statusFilter !== "done" ? statusFilter : undefined,
+          statusFilter,
           page: currentPage,
           pageSize,
         });
-        const data = result.data || result;
-        consumedPage = Math.max(Number(data.page || currentPage), currentPage);
-        totalPages = Number(data.total_pages || data.totalPages || 0);
-        total = Number(data.total || 0);
 
-        const mappedItems = extractPersonalityAssessmentList(data)
-          .map(normalizePersonalityAssessmentRecord)
-          .filter((record) => {
-            if (statusFilter !== "done") return true;
-            return isPersonalityAssessmentDoneStatus(record.status);
-          });
-
-        setRecords((prev) => (append ? [...prev, ...mappedItems] : mappedItems));
+        setRecords((prev) => (append ? [...prev, ...personalityResult.items] : personalityResult.items));
         setPagination({
-          page: consumedPage,
-          page_size: pageSize,
-          total,
-          total_pages: totalPages,
+          page: personalityResult.page,
+          page_size: personalityResult.pageSize,
+          total: personalityResult.total,
+          total_pages: personalityResult.totalPages,
         });
         return;
       }
