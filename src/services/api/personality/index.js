@@ -1,6 +1,7 @@
 export {
   unwrapResponse,
   toStringId,
+  extractPublishedModelList,
   normalizePersonalityModel,
   mapPublishedModelToCatalogItem,
   normalizeQuestionnaire,

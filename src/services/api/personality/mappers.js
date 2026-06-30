@@ -2,6 +2,11 @@
  * collection-server 人格测评 API 响应归一化
  */
 
+import {
+  applyAlgorithmPresentation,
+  estimateDurationMin,
+} from '@/modules/catalog/lib/personalityPresentation';
+
 export const unwrapResponse = (result) => {
   if (!result) return result;
   if (result.data !== undefined && result.data !== null) {
@@ -31,14 +36,98 @@ const normalizeStringList = (value) => {
   return value.map((item) => String(item || '').trim()).filter(Boolean);
 };
 
+const ALGORITHM_CATALOG_LAYOUT = Object.freeze({
+  mbti: 'featured',
+  bigfive: 'deep_explore_compact',
+  personality_typology: 'deep_explore_compact',
+  sbti: 'secondary',
+});
+
+const ALGORITHM_THEME = Object.freeze({
+  mbti: 'mbti',
+  bigfive: 'ocean',
+  personality_typology: 'deep',
+  sbti: 'fun',
+});
+
+const ALGORITHM_BADGE_LABEL = Object.freeze({
+  mbti: '16 型人格',
+  sbti: '趣味探索',
+  bigfive: '科学测评',
+  personality_typology: '深度探索',
+});
+
+const ALGORITHM_CARD_BADGE = Object.freeze({
+  personality_typology: '9',
+  bigfive: '5',
+});
+
+const resolveAlgorithmBadgeLabel = (algorithm) => {
+  const key = String(algorithm || '').toLowerCase();
+  return ALGORITHM_BADGE_LABEL[key] || '';
+};
+
+const resolveCardBadgeFromAlgorithm = (algorithm) => {
+  const key = String(algorithm || '').toLowerCase();
+  return ALGORITHM_CARD_BADGE[key] || '';
+};
+
+const buildDefaultCta = (title) => {
+  const trimmed = String(title || '').trim();
+  if (!trimmed) return '开始测评';
+  if (/测评|测试/.test(trimmed)) return `开始${trimmed}`;
+  return `开始${trimmed}测评`;
+};
+
+const ALGORITHM_SORT_ORDER = Object.freeze({
+  mbti: 0,
+  sbti: 10,
+  personality_typology: 20,
+  bigfive: 30,
+});
+
+const resolveCatalogLayoutFromAlgorithm = (algorithm) => {
+  const key = String(algorithm || '').toLowerCase();
+  return ALGORITHM_CATALOG_LAYOUT[key] || 'secondary';
+};
+
+const resolveThemeFromAlgorithm = (algorithm) => {
+  const key = String(algorithm || '').toLowerCase();
+  return ALGORITHM_THEME[key] || 'default';
+};
+
+const resolveSortOrderFromAlgorithm = (algorithm) => {
+  const key = String(algorithm || '').toLowerCase();
+  return ALGORITHM_SORT_ORDER[key] ?? 100;
+};
+
+export const extractPublishedModelList = (payload = {}) => {
+  if (Array.isArray(payload.models)) return payload.models;
+  if (Array.isArray(payload.items)) return payload.items;
+  if (Array.isArray(payload)) return payload;
+  return [];
+};
+
 export const normalizePersonalityModel = (raw = {}) => {
   const model = normalizeIdFields(raw, ['id', 'questionnaire_id']);
-  const familyCode = model.family_code || model.familyCode || model.model_family || '';
-  const catalogLayout = model.catalog_layout || model.catalogLayout || model.layout || model.display_slot || '';
+  const algorithm = model.algorithm || '';
+  const familyCode =
+    model.family_code ||
+    model.familyCode ||
+    model.model_family ||
+    algorithm ||
+    '';
+  const catalogLayout =
+    model.catalog_layout ||
+    model.catalogLayout ||
+    model.layout ||
+    model.display_slot ||
+    resolveCatalogLayoutFromAlgorithm(algorithm);
   const gains = normalizeStringList(model.gains || model.benefits);
   const suitableFor = normalizeStringList(model.suitable_for || model.suitableFor || model.audience);
   const tags = Array.isArray(model.tags) ? model.tags : [];
   const hero = model.hero && typeof model.hero === 'object' ? model.hero : null;
+  const sortOrder = model.sort_order ?? model.sortOrder ?? resolveSortOrderFromAlgorithm(algorithm);
 
   return {
     id: toStringId(model.id),
@@ -47,17 +136,26 @@ export const normalizePersonalityModel = (raw = {}) => {
     subtitle: model.subtitle || '',
     description: model.description || '',
     category: model.category || '',
+    algorithm,
+    version: model.version || '',
     familyCode,
     catalogLayout,
-    theme: model.theme || model.ui_theme || '',
+    theme: model.theme || model.ui_theme || resolveThemeFromAlgorithm(algorithm),
     cardBadge: model.card_badge || model.cardBadge || '',
-    sortOrder: model.sort_order ?? model.sortOrder ?? null,
-    isFeatured: Boolean(model.is_featured ?? model.isFeatured),
+    sortOrder,
+    isFeatured: Boolean(
+      model.is_featured ??
+        model.isFeatured ??
+        catalogLayout === 'featured'
+    ),
     recommended: Boolean(model.recommended ?? model.is_recommended ?? model.isRecommended),
     questionnaireCode: model.questionnaire_code || '',
     questionnaireVersion: model.questionnaire_version || '',
     questionCount: model.question_count ?? model.questionCount ?? null,
-    durationMin: model.duration_min ?? model.durationMin ?? null,
+    durationMin:
+      model.duration_min ??
+      model.durationMin ??
+      estimateDurationMin(model.question_count ?? model.questionCount, algorithm),
     tags,
     gains,
     suitableFor,
@@ -77,14 +175,18 @@ export const mapPublishedModelToCatalogItem = (raw = {}) => {
   const tags = model.tags || [];
   const hero = model.hero || {};
 
-  return {
+  const badgeLabel = resolveAlgorithmBadgeLabel(model.algorithm);
+
+  const mapped = {
     key: model.familyCode ? String(model.familyCode).toLowerCase() : String(code || '').toLowerCase(),
     modelCode: code,
+    algorithm: model.algorithm,
+    version: model.version,
     familyCode: model.familyCode,
     catalogLayout: model.catalogLayout,
     isFeatured: model.isFeatured,
     sortOrder: model.sortOrder,
-    badge: model.category || '人格探索',
+    badge: model.category || badgeLabel || '人格探索',
     title,
     shortTitle: title,
     headline: title,
@@ -94,20 +196,22 @@ export const mapPublishedModelToCatalogItem = (raw = {}) => {
     questionCount: model.questionCount,
     durationMin: model.durationMin,
     tags,
-    gains: model.gains.length ? model.gains : tags,
-    suitableFor: model.suitableFor.length ? model.suitableFor : tags,
-    disclaimer: model.disclaimer || '测评结果用于自我探索与沟通参考，不作为医学诊断依据。',
+    gains: model.gains.length ? model.gains : [],
+    suitableFor: model.suitableFor.length ? model.suitableFor : [],
+    disclaimer: model.disclaimer || '',
     hero: {
-      kicker: hero.kicker || model.category || 'PERSONALITY',
-      title: hero.title || title,
-      subtitle: hero.subtitle || model.subtitle || model.description || '',
-      sticker: hero.sticker || tags.slice(0, 3).join(' · '),
+      kicker: hero.kicker || '',
+      title: hero.title || '',
+      subtitle: hero.subtitle || model.subtitle || '',
+      sticker: hero.sticker || '',
     },
-    theme: model.theme || 'default',
-    cardBadge: model.cardBadge || '',
-    cta: model.cta || `开始${title}测评`,
+    theme: model.theme || resolveThemeFromAlgorithm(model.algorithm) || 'deep',
+    cardBadge: model.cardBadge || resolveCardBadgeFromAlgorithm(model.algorithm),
+    cta: model.cta || buildDefaultCta(title),
     raw: model.raw,
   };
+
+  return applyAlgorithmPresentation(mapped, model.algorithm);
 };
 
 export const normalizeQuestionnaire = (raw = {}) => {

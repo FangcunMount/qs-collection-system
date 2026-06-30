@@ -14,6 +14,7 @@ import AssessmentKindReportSection from "@/modules/assessment/components/records
 import { ASSESSMENT_KIND } from "@/shared/lib/assessmentKind";
 import heroImage from "@/assets/home/home-entry-personality.png";
 import typeBasicImage from "@/pages/catalog-personality/assets/icon/icon-personality-basic.png";
+import funTestImage from "@/pages/catalog-personality/assets/icon/icon-sbti.png";
 import reportImage from "@/pages/catalog-personality/assets/icon/icon-learning-performance.png";
 import starImage from "@/pages/catalog-personality/assets/icon/icon_small.png";
 import relationImage from "@/pages/catalog-personality/assets/icon/icon-emotional-regulation.png";
@@ -37,6 +38,12 @@ const resolveHeaderMetrics = () => {
     console.warn("[PersonalityCatalogPage] 获取状态栏高度失败:", error);
     return { statusBarHeight: 0 };
   }
+};
+
+const resolveMiniCardButtonColor = (theme) => {
+  if (theme === "fun") return "#0CA66A";
+  if (theme === "ocean") return "#2B7DE9";
+  return "#7656D9";
 };
 
 const PersonalityCatalogPage = () => {
@@ -164,7 +171,7 @@ const PersonalityCatalogPage = () => {
               </Text>
               <Text className="personality-feature-card__title">{featuredItem.title}</Text>
               <Text className="personality-feature-card__desc">
-                {featuredItem.description || "从四组性格偏好出发，了解你的行为方式与沟通习惯。"}
+                {featuredItem.description || featuredItem.subtitle || ""}
               </Text>
               <View className="personality-feature-card__meta-row">
                 {featuredItem.variantHint ? (
@@ -193,7 +200,7 @@ const PersonalityCatalogPage = () => {
             {secondaryItems.map((item) => (
               <View
                 key={item.key}
-                className={`personality-mini-card personality-mini-card--${item.theme || "default"}`}
+                className={`personality-mini-card personality-mini-card--${item.theme || "deep"}`}
                 onClick={() => handleOpenModel(item)}
               >
                 <Text className="personality-mini-card__kicker">
@@ -203,8 +210,11 @@ const PersonalityCatalogPage = () => {
                 <Text className="personality-mini-card__desc">{item.description}</Text>
                 <View className="personality-mini-card__button">
                   <Text>{item.cta || "开始测试"}</Text>
-                  <AtIcon value="arrow-right" size="13" color="#7656D9" />
+                  <AtIcon value="arrow-right" size="13" color={resolveMiniCardButtonColor(item.theme)} />
                 </View>
+                {item.theme === "fun" ? (
+                  <Image className="personality-mini-card__image" src={funTestImage} mode="aspectFit" />
+                ) : null}
               </View>
             ))}
 
@@ -224,12 +234,9 @@ const PersonalityCatalogPage = () => {
                       <AtIcon
                         value="arrow-right"
                         size="13"
-                        color={item.theme === "ocean" ? "#2B7DE9" : "#7656D9"}
+                        color={resolveMiniCardButtonColor(item.theme)}
                       />
                     </View>
-                    {item.cardBadge ? (
-                      <Text className="personality-mini-card__number">{item.cardBadge}</Text>
-                    ) : null}
                   </View>
                 ))}
               </View>

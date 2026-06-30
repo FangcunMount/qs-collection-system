@@ -1,10 +1,18 @@
 import { mapPublishedModelToCatalogItem } from '@/services/api/personality/mappers';
+import { applyAlgorithmPresentation } from '@/modules/catalog/lib/personalityPresentation';
+
+const resolveVariantActionLabel = (questionCount) => {
+  const count = Number(questionCount);
+  if (!Number.isFinite(count) || count <= 0) return '';
+  if (count <= 40) return '速测版';
+  if (count >= 60) return '标准版';
+  return `${count} 题版`;
+};
 
 const resolveVariantLabel = (rawModel = {}) => {
   const model = rawModel?.raw || rawModel || {};
   const title = model.title || rawModel.title || model.code || rawModel.code || '';
-  const questionCount = rawModel.questionCount ?? model.question_count ?? null;
-  const subtitle = model.subtitle || rawModel.subtitle || (questionCount ? `${questionCount} 道题` : '');
+  const subtitle = model.subtitle || rawModel.subtitle || '';
 
   return {
     label: title,
@@ -22,6 +30,7 @@ export const mapPublishedModelToVariant = (rawModel) => {
     key: `${code}-${questionCount || 'default'}`.toLowerCase(),
     modelCode: code,
     label: labels.label,
+    actionLabel: resolveVariantActionLabel(questionCount),
     subtitle: labels.subtitle,
     questionCount,
     durationMin: rawModel.durationMin ?? model.duration_min ?? null,
@@ -32,7 +41,7 @@ export const mapPublishedModelToVariant = (rawModel) => {
 };
 
 export const buildVariantsFromPublished = (publishedModels = []) => {
-  return publishedModels
+  const variants = publishedModels
     .map((item) => ({
       code: item.code || item.modelCode,
       questionCount: item.questionCount ?? item.question_count,
@@ -46,6 +55,12 @@ export const buildVariantsFromPublished = (publishedModels = []) => {
     .filter((item) => item.code)
     .map((item) => mapPublishedModelToVariant(item))
     .sort((a, b) => (b.questionCount || 0) - (a.questionCount || 0));
+
+  if (variants.length > 1 && !variants.some((item) => item.recommended)) {
+    variants[0].recommended = true;
+  }
+
+  return variants;
 };
 
 const pickPrimaryVariant = (variants = []) => {
@@ -83,18 +98,37 @@ export const groupCatalogItems = (items = []) => {
     const primaryModel =
       familyItems.find((item) => item.modelCode === primaryVariant?.modelCode) || familyItems[0];
 
-    grouped.push({
-      ...mapPublishedModelToCatalogItem(primaryModel.raw || primaryModel),
-      key: String(familyCode).toLowerCase(),
-      familyCode,
-      variants,
-      questionCount:
-        variants.map((item) => item.questionCount).filter(Boolean).join(' / ') ||
-        primaryVariant?.questionCount,
-      durationMin: primaryVariant?.durationMin ?? primaryModel.durationMin,
-      variantCount: variants.length,
-      variantHint: variants.length > 1 ? `${variants.length} 种题版可选` : '',
-    });
+    const catalogItem = mapPublishedModelToCatalogItem(primaryModel.raw || primaryModel);
+    const groupTitle =
+      variants.length > 1 && catalogItem.badge
+        ? (/测评|测试/.test(catalogItem.badge) ? catalogItem.badge : `${catalogItem.badge}测评`)
+        : catalogItem.title;
+
+    grouped.push(
+      applyAlgorithmPresentation(
+        {
+          ...catalogItem,
+          title: groupTitle,
+          key: String(familyCode).toLowerCase(),
+          familyCode,
+          catalogLayout: primaryModel.catalogLayout || familyItems[0]?.catalogLayout,
+          isFeatured: familyItems.some((item) => item.isFeatured) || familyItems[0]?.isFeatured,
+          theme: primaryModel.theme || familyItems[0]?.theme,
+          variants,
+          questionCount:
+            variants.map((item) => item.questionCount).filter(Boolean).join(' / ') ||
+            primaryVariant?.questionCount,
+          durationMin: primaryVariant?.durationMin ?? primaryModel.durationMin,
+          variantCount: variants.length,
+          variantHint: variants.length > 1 ? `${variants.length} 种题版可选` : '',
+          hero: {
+            ...catalogItem.hero,
+            title: catalogItem.hero?.title,
+          },
+        },
+        primaryModel.algorithm || familyCode
+      )
+    );
   });
 
   const merged = [...grouped, ...standalone];

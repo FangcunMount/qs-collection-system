@@ -14,12 +14,16 @@ import {
   subscribeTesteeStore,
 } from "@/shared/stores/testees";
 import { listPublishedPersonalityModels } from "@/services/api/personality";
-import { loadPersonalityModelDetail } from "@/modules/catalog/services/personalityCatalogService";
+import {
+  loadPersonalityModelDetail,
+  resolvePublishedModelCatalogItem,
+} from "@/modules/catalog/services/personalityCatalogService";
 import {
   buildVariantsFromPublished,
   getDefaultVariant,
   resolveVariantByCode,
 } from "@/modules/catalog/lib/mbtiVariants";
+import { applyAlgorithmPresentation } from "@/modules/catalog/lib/personalityPresentation";
 import "./PersonalityModelPage.less";
 
 const formatGender = (gender) => {
@@ -29,6 +33,42 @@ const formatGender = (gender) => {
 };
 
 const formatTesteeName = (testee) => testee?.legalName || testee?.name || "未命名档案";
+
+const resolvePageThemeClass = (theme) => {
+  const value = String(theme || "mbti").toLowerCase();
+  if (["mbti", "fun", "deep", "ocean", "sbti", "default"].includes(value)) {
+    return value === "sbti" ? "fun" : value;
+  }
+  return "mbti";
+};
+
+const resolveFooterCta = (model, selectedVariant) => {
+  if (!selectedVariant) {
+    return model?.cta || "开始测评";
+  }
+
+  const actionLabel = String(selectedVariant.actionLabel || "").trim();
+  const isMbtiFamily =
+    model?.algorithm === "mbti" ||
+    String(model?.familyCode || "").toLowerCase() === "mbti";
+
+  if (actionLabel && isMbtiFamily) {
+    return `开始 16 人格${actionLabel}`;
+  }
+
+  if (actionLabel) {
+    return `开始 ${actionLabel}`;
+  }
+
+  if (selectedVariant.questionCount) {
+    return `开始 ${selectedVariant.questionCount} 题版`;
+  }
+
+  const label = String(selectedVariant.label || "").trim();
+  if (!label) return model?.cta || "开始测评";
+  if (/测评|测试/.test(label)) return `开始${label}`;
+  return `开始${label}测评`;
+};
 
 const PersonalityModelPage = () => {
   const router = useRouter();
@@ -55,6 +95,10 @@ const PersonalityModelPage = () => {
   const activeQuestionCount = selectedVariant?.questionCount ?? model?.questionCount;
   const activeDurationMin = selectedVariant?.durationMin ?? model?.durationMin;
   const activeModelCode = selectedVariant?.modelCode ?? model?.modelCode ?? routeModelCode;
+  const footerCta = useMemo(
+    () => resolveFooterCta(model, selectedVariant),
+    [model, selectedVariant]
+  );
 
   const selectedTestee = selectedId ? findTesteeById(selectedId) : null;
   const selectedIndex = Math.max(0, testees.findIndex((item) => item.id === selectedId));
@@ -87,15 +131,19 @@ const PersonalityModelPage = () => {
   useEffect(() => {
     let cancelled = false;
 
-    const loadFamilyVariants = async (familyCode, preferredModelCode) => {
-      const result = await listPublishedPersonalityModels({
-        page: 1,
-        pageSize: 50,
-        category: "personality",
-      });
-      if (cancelled) return null;
+    const loadFamilyVariants = async (familyCode, preferredModelCode, publishedModels = []) => {
+      let models = publishedModels;
+      if (!models.length) {
+        const result = await listPublishedPersonalityModels({
+          page: 1,
+          pageSize: 50,
+          category: "personality",
+        });
+        if (cancelled) return null;
+        models = result.items || [];
+      }
 
-      const familyModels = (result.items || []).filter(
+      const familyModels = models.filter(
         (item) => String(item.familyCode || "").toLowerCase() === String(familyCode).toLowerCase()
       );
       const nextVariants = buildVariantsFromPublished(familyModels);
@@ -108,14 +156,19 @@ const PersonalityModelPage = () => {
       const activeVariant = matched || getDefaultVariant(nextVariants);
       setSelectedVariantKey(activeVariant.key);
 
-      const detail = await loadPersonalityModelDetail(activeVariant.modelCode);
+      const detail =
+        resolvePublishedModelCatalogItem(models, activeVariant.modelCode) ||
+        (await loadPersonalityModelDetail(activeVariant.modelCode, { publishedModels: models }));
       if (cancelled) return null;
 
-      return {
-        ...detail,
-        key: String(familyCode).toLowerCase(),
-        familyCode,
-      };
+      return applyAlgorithmPresentation(
+        {
+          ...detail,
+          key: String(familyCode).toLowerCase(),
+          familyCode,
+        },
+        familyCode
+      );
     };
 
     const loadModel = async () => {
@@ -123,12 +176,23 @@ const PersonalityModelPage = () => {
       setPageError("");
 
       try {
+        const listResult = await listPublishedPersonalityModels({
+          page: 1,
+          pageSize: 50,
+          category: "personality",
+        });
+        if (cancelled) return;
+
+        const publishedModels = listResult.items || [];
+
         if (routeModelCode) {
-          const detail = await loadPersonalityModelDetail(routeModelCode);
+          const detail =
+            resolvePublishedModelCatalogItem(publishedModels, routeModelCode) ||
+            (await loadPersonalityModelDetail(routeModelCode, { publishedModels }));
           if (cancelled) return;
 
           if (detail.familyCode) {
-            const groupedModel = await loadFamilyVariants(detail.familyCode, routeModelCode);
+            const groupedModel = await loadFamilyVariants(detail.familyCode, routeModelCode, publishedModels);
             if (groupedModel) {
               setModel(groupedModel);
               return;
@@ -141,7 +205,7 @@ const PersonalityModelPage = () => {
         }
 
         if (routeFamilyCode) {
-          const groupedModel = await loadFamilyVariants(routeFamilyCode, "");
+          const groupedModel = await loadFamilyVariants(routeFamilyCode, "", publishedModels);
           if (cancelled) return;
           if (!groupedModel) {
             throw new Error("未找到已发布模型");
@@ -239,14 +303,22 @@ const PersonalityModelPage = () => {
 
   const gains = Array.isArray(model.gains) ? model.gains : [];
   const suitableFor = Array.isArray(model.suitableFor) ? model.suitableFor : [];
+  const pageThemeClass = resolvePageThemeClass(model.theme);
+  const heroTitle = model.hero?.title || model.title;
+  const heroSubtitle = model.hero?.subtitle || model.subtitle || "";
+  const introText = model.intro || model.description || selectedVariant?.description || "";
 
   return (
-    <View className={`personality-model-page personality-model-page--${model.theme || "default"}`}>
+    <View className={`personality-model-page personality-model-page--${pageThemeClass}`}>
       <ScrollView scrollY className="personality-model-page__scroll" enhanced showScrollbar={false}>
         <View className="personality-model-hero">
-          <Text className="personality-model-hero__kicker">{model.hero?.kicker || model.badge}</Text>
-          <Text className="personality-model-hero__title">{model.hero?.title || model.title}</Text>
-          <Text className="personality-model-hero__subtitle">{model.hero?.subtitle || model.subtitle}</Text>
+          {model.hero?.kicker || model.badge ? (
+            <Text className="personality-model-hero__kicker">{model.hero?.kicker || model.badge}</Text>
+          ) : null}
+          <Text className="personality-model-hero__title">{heroTitle}</Text>
+          {heroSubtitle ? (
+            <Text className="personality-model-hero__subtitle">{heroSubtitle}</Text>
+          ) : null}
           {model.hero?.sticker ? (
             <View className="personality-model-hero__sticker">
               <Text>{model.hero.sticker}</Text>
@@ -278,9 +350,6 @@ const PersonalityModelPage = () => {
                       {variant.questionCount ? <Text>{variant.questionCount} 道题</Text> : null}
                       {variant.durationMin ? <Text>约 {variant.durationMin} 分钟</Text> : null}
                     </View>
-                    {variant.description ? (
-                      <Text className="personality-variant-card__desc">{variant.description}</Text>
-                    ) : null}
                   </View>
                 );
               })}
@@ -290,9 +359,7 @@ const PersonalityModelPage = () => {
 
         <View className="personality-model-panel">
           <Text className="personality-model-panel__title">测评介绍</Text>
-          <Text className="personality-model-panel__body">
-            {selectedVariant?.description || model.intro || model.description}
-          </Text>
+          <Text className="personality-model-panel__body">{introText}</Text>
           <View className="personality-model-meta">
             {activeQuestionCount ? (
               <Text className="personality-model-meta__item">{activeQuestionCount} 道题</Text>
@@ -390,11 +457,7 @@ const PersonalityModelPage = () => {
           className={`personality-model-footer__button ${!selectedId ? "is-disabled" : ""}`}
           onClick={handleStart}
         >
-          <Text>
-            {selectedVariant
-              ? `开始${selectedVariant.label}`
-              : (model.cta || "开始测评")}
-          </Text>
+          <Text>{footerCta}</Text>
         </View>
       </View>
 

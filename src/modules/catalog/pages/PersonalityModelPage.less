@@ -4,8 +4,14 @@
   color: #111827;
 }
 
-.personality-model-page--sbti {
+.personality-model-page--sbti,
+.personality-model-page--fun {
   background: linear-gradient(180deg, #fff0bd 0%, #ffeef4 42%, #f8fbff 100%);
+}
+
+.personality-model-page--mbti,
+.personality-model-page--default {
+  background: linear-gradient(180deg, #fff5ba 0%, #eafcff 48%, #f8fbff 100%);
 }
 
 .personality-model-page--deep {
@@ -114,6 +120,8 @@
 
 .personality-variant-card.is-active {
   border-color: #111111;
+  border-width: 3rpx;
+  background: linear-gradient(135deg, #f7fffb 0%, #ffffff 100%);
   box-shadow: 0 10rpx 24rpx rgba(17, 17, 17, 0.08);
 }
 
@@ -206,8 +214,14 @@
   flex-shrink: 0;
 }
 
-.personality-model-page--sbti .personality-model-list__mark {
+.personality-model-page--sbti .personality-model-list__mark,
+.personality-model-page--fun .personality-model-list__mark {
   background: #ff6b8f;
+}
+
+.personality-model-page--mbti .personality-model-list__mark,
+.personality-model-page--default .personality-model-list__mark {
+  background: #13c2c2;
 }
 
 .personality-model-page--deep .personality-model-list__mark {
@@ -241,7 +255,8 @@
   font-weight: 700;
 }
 
-.personality-model-page--sbti .personality-model-tag {
+.personality-model-page--sbti .personality-model-tag,
+.personality-model-page--fun .personality-model-tag {
   background: #fff1f5;
   color: #be345c;
 }

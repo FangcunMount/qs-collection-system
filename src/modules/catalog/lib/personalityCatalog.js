@@ -45,8 +45,8 @@ export const findCatalogItem = (catalogItems = [], { key, modelCode, familyCode 
     const matchedByCode = catalogItems.find((item) => item.modelCode === modelCode);
     if (matchedByCode) return matchedByCode;
 
-    const groupedItem = catalogItems.find((item) => Array.isArray(item.variants) && item.variants.length);
-    if (groupedItem?.variants) {
+    for (const groupedItem of catalogItems) {
+      if (!Array.isArray(groupedItem.variants) || !groupedItem.variants.length) continue;
       const variant = groupedItem.variants.find((item) => item.modelCode === modelCode);
       if (variant) {
         return { ...groupedItem, ...variant, key: groupedItem.key };

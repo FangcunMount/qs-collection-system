@@ -2,6 +2,7 @@ import { request } from '../../servers';
 import config from '../../../config';
 import {
   unwrapResponse,
+  extractPublishedModelList,
   normalizePersonalityModel,
   mapPublishedModelToCatalogItem,
 } from './mappers';
@@ -49,9 +50,7 @@ export async function listPublishedPersonalityModels({
   });
 
   const payload = unwrapResponse(result) || {};
-  const items = Array.isArray(payload.items)
-    ? payload.items
-    : (Array.isArray(payload) ? payload : []);
+  const items = extractPublishedModelList(payload);
 
   return {
     items: items.map((item) => normalizePersonalityModel(item)),
@@ -63,14 +62,14 @@ export async function listPublishedPersonalityModels({
 }
 
 /**
- * 获取单个已发布人格模型
+ * 获取单个已发布人格模型（需 JWT，不在公开白名单内）
  */
 export async function getPublishedPersonalityModel(modelCode) {
   const encodedCode = encodeURIComponent(modelCode);
   const result = await request(`/personality-models/${encodedCode}`, {}, {
     host: config.collectionHost,
     method: 'GET',
-    needToken: false,
+    needToken: true,
   });
 
   const model = normalizePersonalityModel(unwrapResponse(result) || {});
