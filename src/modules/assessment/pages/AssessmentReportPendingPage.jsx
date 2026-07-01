@@ -5,9 +5,10 @@ import lottie from "lottie-miniprogram";
 
 import { PrivacyAuthorization } from "@/shared/ui/PrivacyAuthorization";
 import { routes } from "@/shared/config/routes";
-import { ASSESSMENT_KIND } from "@/shared/lib/assessmentKind";
+import { ASSESSMENT_KIND, isPersonalityAssessmentKind } from "@/shared/lib/assessmentKind";
 import { getAssessmentByAnswersheetId, isAssessmentPending } from "@/services/api/assessments";
 import { createReportWaitStrategy } from "@/modules/assessment/services/reportWaitStrategy";
+import { waitForReportReady } from "@/modules/assessment/services/waitForReportReady";
 import { getAssessmentResponse } from "@/services/api/assessmentResponses";
 import { getLogger } from "@/shared/lib/logger";
 import { getSelectedTesteeId } from "@/shared/stores/testees";
@@ -17,12 +18,9 @@ import "./AssessmentReportPendingPage.less";
 const PAGE_NAME = "analysis_wait";
 const logger = getLogger(PAGE_NAME);
 
-// 每次长轮询的超时时间（秒），服务端最多挂起 1-25 秒
-const POLLING_TIMEOUT = 20;
 // 等待 assessment 生成的最大轮询次数
 const MAX_ASSESSMENT_LOOKUP_COUNT = 30;
 const ASSESSMENT_LOOKUP_INTERVAL = 2000;
-const DEFAULT_POLL_INTERVAL_MS = 3000;
 const ASSESSMENT_NOT_READY_CODES = new Set(["404", "112001"]);
 
 const formatStageMessage = (strategy, stage, fallbackMessage) => {
@@ -77,6 +75,10 @@ const AnalysisWait = () => {
     }
 
     startWaitFlow(assessmentId, answersheetId, testeeIdFromUrl, taskId, assessmentKind);
+
+    return () => {
+      isPollingRef.current = false;
+    };
   }, []);
 
   // 点动画效果
@@ -277,7 +279,7 @@ const AnalysisWait = () => {
   };
 
   /**
-   * 长轮询等待报告生成
+   * WebSocket 或 report-status 短轮询等待报告生成
    */
   const startPolling = async (assessmentId, answersheetId, testeeId, taskId, assessmentKind) => {
     if (isPollingRef.current) {
@@ -289,6 +291,14 @@ const AnalysisWait = () => {
     isPollingRef.current = true;
     setStage("queued");
     setMessage(formatStageMessage(strategy, "queued"));
+
+    const applyStatus = (statusData) => {
+      const reportStage = statusData.stage;
+      if (reportStage) {
+        setStage(reportStage);
+      }
+      setMessage(formatStageMessage(strategy, reportStage, statusData.message));
+    };
 
     const redirectToReport = () => {
       setStatus("success");
@@ -317,79 +327,55 @@ const AnalysisWait = () => {
       }, remainingTime);
     };
 
-    const poll = async () => {
-      if (!isPollingRef.current) {
+    try {
+      logger.RUN("[AnalysisWait] 开始报告等待（WS → report-status）", {
+        assessmentId,
+        testeeId,
+        assessmentKind: strategy.kind,
+      });
+
+      const result = await waitForReportReady({
+        strategy,
+        assessmentId,
+        testeeId,
+        onStatus: applyStatus,
+        shouldContinue: () => isPollingRef.current,
+        logger,
+      });
+
+      if (result.cancelled || !isPollingRef.current) {
         return;
       }
 
-      try {
-        logger.RUN("[AnalysisWait] 开始 wait-report 长轮询", {
-          assessmentId,
-          testeeId,
-          timeout: POLLING_TIMEOUT,
-          assessmentKind: strategy.kind,
-        });
+      const statusData = result.statusData || {};
+      logger.RUN("[AnalysisWait] 报告等待结束", {
+        source: result.source,
+        status: statusData.status,
+        stage: statusData.stage,
+      });
 
-        const statusData = await strategy.waitReport({
-          assessmentId,
-          testeeId,
-          timeout: POLLING_TIMEOUT,
-        });
-        const reportStatus = statusData.status;
-        const reportStage = statusData.stage;
-
-        if (reportStage) {
-          setStage(reportStage);
-        }
-        setMessage(formatStageMessage(strategy, reportStage, statusData.message));
-
-        logger.RUN("[AnalysisWait] wait-report 响应", {
-          status: reportStatus,
-          stage: reportStage,
-          nextPollAfterMs: statusData.nextPollAfterMs ?? null,
-        });
-
-        if (strategy.isCompleted(reportStatus)) {
-          redirectToReport();
-          return;
-        }
-
-        if (strategy.isFailed(reportStatus)) {
-          logger.ERROR("报告生成失败", { statusData });
-          setStatus("error");
-          setMessage(statusData.reason || statusData.message || "报告生成失败，请稍后重试");
-          isPollingRef.current = false;
-          return;
-        }
-
-        const nextDelay = statusData.nextPollAfterMs > 0
-          ? statusData.nextPollAfterMs
-          : DEFAULT_POLL_INTERVAL_MS;
-
-        setTimeout(() => {
-          poll();
-        }, nextDelay);
-      } catch (error) {
-        logger.ERROR("wait-report 轮询出错", error);
-
-        if (String(error?.statusCode) === "429" || error?.code === "429") {
-          const retryAfterMs = Number(error?.data?.retry_after_ms) > 0
-            ? Number(error.data.retry_after_ms)
-            : DEFAULT_POLL_INTERVAL_MS;
-          setMessage("请求过于频繁，稍后继续等待...");
-          setTimeout(() => {
-            poll();
-          }, retryAfterMs);
-          return;
-        }
-
-        setStatus("error");
-        setMessage(error?.message || "网络错误，请检查网络连接后重试");
-        isPollingRef.current = false;
+      if (strategy.isCompleted(statusData.status)) {
+        redirectToReport();
+        return;
       }
-    };
 
-    poll();
+      if (strategy.isFailed(statusData.status)) {
+        logger.ERROR("报告生成失败", { statusData });
+        setStatus("error");
+        setMessage(statusData.reason || statusData.message || "报告生成失败，请稍后重试");
+        isPollingRef.current = false;
+        return;
+      }
+
+      setStatus("error");
+      setMessage("报告生成状态异常，请稍后重试");
+      isPollingRef.current = false;
+    } catch (error) {
+      logger.ERROR("报告等待出错", error);
+      setStatus("error");
+      setMessage(error?.message || "网络错误，请检查网络连接后重试");
+      isPollingRef.current = false;
+    }
   };
 
   const startWaitFlow = async (assessmentIdFromUrl, answersheetId, testeeIdFromUrl, taskId, assessmentKind) => {

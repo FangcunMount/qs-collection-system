@@ -1,6 +1,6 @@
 import { request } from '../../servers';
 import config from '../../../config';
-import { unwrapResponse, toStringId, normalizeWaitReportStatus } from './mappers';
+import { unwrapResponse, toStringId, normalizeReportStatus } from './mappers';
 
 /**
  * 长轮询等待人格测评报告
@@ -22,7 +22,27 @@ export async function waitPersonalityReport({ assessmentId, testeeId, timeout = 
     }
   );
 
-  return normalizeWaitReportStatus(result);
+  return normalizeReportStatus(result);
+}
+
+/**
+ * 短轮询获取人格测评报告状态
+ */
+export async function getPersonalityReportStatus({ assessmentId, testeeId }) {
+  const result = await request(
+    `/personality-assessments/${toStringId(assessmentId)}/report-status`,
+    {},
+    {
+      host: config.collectionHost,
+      method: 'GET',
+      needToken: true,
+      params: {
+        testee_id: toStringId(testeeId),
+      },
+    }
+  );
+
+  return normalizeReportStatus(result);
 }
 
 /**

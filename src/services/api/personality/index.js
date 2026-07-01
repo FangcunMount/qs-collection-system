@@ -8,6 +8,7 @@ export {
   normalizeSubmitContract,
   normalizePersonalitySession,
   normalizeSubmitDone,
+  normalizeReportStatus,
   normalizeWaitReportStatus,
   extractPersonalityAssessmentList,
   normalizePersonalityAssessmentRecord,
@@ -29,5 +30,6 @@ export {
 
 export {
   waitPersonalityReport,
+  getPersonalityReportStatus,
   getPersonalityReport,
 } from './reportApi';

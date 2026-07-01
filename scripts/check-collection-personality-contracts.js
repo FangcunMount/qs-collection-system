@@ -61,11 +61,27 @@ assertContains(personalityApi, /normalizePersonalitySession/, 'personality adapt
 assertContains(sessionApi, /\/personality-assessment-sessions/, 'session API must call POST /personality-assessment-sessions');
 assertContains(modelApi, /\/personality-models/, 'model API must call GET /personality-models');
 assertContains(reportApi, /\/personality-assessments\//, 'report API must call personality assessment endpoints');
-assertContains(reportApi, /wait-report/, 'report API must call wait-report endpoint');
+assertContains(reportApi, /report-status/, 'report API must call report-status endpoint');
+assertContains(reportApi, /wait-report/, 'report API must call wait-report endpoint for legacy compatibility');
+assertContains(
+  read('src/modules/assessment/services/waitForReportReady.js'),
+  /pollReportStatus/,
+  'report wait flow must use report-status short polling'
+);
+assertContains(
+  read('src/modules/assessment/services/reportWaitStrategy.js'),
+  /pollReportStatus/,
+  'report wait strategy must expose pollReportStatus'
+);
 
 assertContains(answerSerializer, /USE_JSON_ANSWER_VALUE\s*=\s*true/, 'answer serializer must default to JSON answer values');
 assertContains(answerSerializer, /JSON\.stringify\(\{ option:/, 'radio answers must serialize to {"option":...}');
 
+assertContains(
+  read('src/services/api/assessmentApi.js'),
+  /getAssessmentReportStatus/,
+  'medical assessment API must expose report-status'
+);
 assertContains(reportWaitStrategy, /interpreted/, 'report wait strategy must treat interpreted as completed for personality');
 assertContains(reportWaitStrategy, /pending/, 'report wait strategy must include pending stage text');
 

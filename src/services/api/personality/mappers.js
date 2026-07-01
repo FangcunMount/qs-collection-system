@@ -268,8 +268,8 @@ export const normalizeSubmitDone = (result = {}) => {
   };
 };
 
-export const normalizeWaitReportStatus = (raw = {}) => {
-  const data = unwrapResponse(raw) || {};
+export const normalizeReportStatus = (raw = {}) => {
+  const data = unwrapResponse(raw) || raw || {};
   return {
     status: String(data.status || '').toLowerCase(),
     stage: String(data.stage || data.status || '').toLowerCase(),
@@ -280,6 +280,9 @@ export const normalizeWaitReportStatus = (raw = {}) => {
     raw: data,
   };
 };
+
+/** @deprecated 与 normalizeReportStatus 相同，保留兼容 */
+export const normalizeWaitReportStatus = normalizeReportStatus;
 
 const PERSONALITY_DONE_STATUSES = new Set(['interpreted', 'completed', 'done']);
 

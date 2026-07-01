@@ -177,10 +177,40 @@ export const getFactorTrend = (testeeId, factorCode, limit = 10) => {
  * @param {number} timeout - 服务端挂起秒数，范围 1-25，默认 20
  * @returns {Promise<AssessmentStatusResponse>}
  */
-export const waitAssessmentReport = (id, testeeId, timeout = 20) => {
+const normalizeReportStatusPayload = (raw = {}) => {
+  const data = raw?.data !== undefined ? raw.data : raw;
+  const payload = data && typeof data === 'object' ? data : {};
+  return {
+    status: String(payload.status || '').toLowerCase(),
+    stage: String(payload.stage || payload.status || '').toLowerCase(),
+    message: payload.message || '',
+    reason: payload.reason || '',
+    nextPollAfterMs: Number(payload.next_poll_after_ms) > 0 ? Number(payload.next_poll_after_ms) : 0,
+    retryAfterMs: Number(payload.retry_after_ms) > 0 ? Number(payload.retry_after_ms) : 0,
+    raw: payload,
+  };
+};
+
+/**
+ * 短轮询获取医学测评报告状态
+ */
+export const getAssessmentReportStatus = async (id, testeeId) => {
+  const result = await request(`/assessments/${String(id)}/report-status`, {}, {
+    host: config.collectionHost,
+    method: 'GET',
+    needToken: true,
+    params: {
+      testee_id: String(testeeId),
+    },
+  });
+
+  return normalizeReportStatusPayload(result);
+};
+
+export const waitAssessmentReport = async (id, testeeId, timeout = 20) => {
   const validTimeout = Math.max(1, Math.min(25, timeout));
 
-  return request(`/assessments/${String(id)}/wait-report`, {}, {
+  const result = await request(`/assessments/${String(id)}/wait-report`, {}, {
     host: config.collectionHost,
     method: 'GET',
     needToken: true,
@@ -189,6 +219,8 @@ export const waitAssessmentReport = (id, testeeId, timeout = 20) => {
       timeout: validTimeout
     }
   });
+
+  return normalizeReportStatusPayload(result);
 };
 
 /** wait-report 终态：成功 */
@@ -219,6 +251,7 @@ export default {
   getAssessmentTrendSummary,
   getHighRiskFactors,
   getFactorTrend,
+  getAssessmentReportStatus,
   waitAssessmentReport,
   isReportWaitCompleted,
   isReportWaitFailed,

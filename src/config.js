@@ -12,7 +12,9 @@ const configMap = {
     // 将下面的 192.168.x.x 替换为您的实际内网IP
     iamHost: 'https://iam.fangcunmount.cn/api/v2',
     collectionHost: 'https://collect.fangcunmount.cn/api/v1',
-    qsHost: 'https://qs.fangcunmount.cn/api/v1'
+    qsHost: 'https://qs.fangcunmount.cn/api/v1',
+    // 生产默认关闭；预发/开发可按需开启 WebSocket 报告推送
+    reportEventsEnabled: false,
     // iamHost: 'http://localhost:18081/api/v2',
     // collectionHost: 'http://localhost:18081/api/v1/api/v1'
   },
@@ -23,7 +25,8 @@ const configMap = {
     taskOpenedTemplateId: '1toOOzloRRiCXS2c2XkMinIzWjyt5Bq7R-Bqdxd8il0',
     iamHost: 'https://iam.fangcunmount.cn/api/v2',
     collectionHost: 'https://collect.fangcunmount.cn/api/v1',
-    qsHost: 'https://qs.fangcunmount.cn/api/v1'
+    qsHost: 'https://qs.fangcunmount.cn/api/v1',
+    reportEventsEnabled: false,
   },
   // 线上版
   release: {
@@ -32,7 +35,8 @@ const configMap = {
     taskOpenedTemplateId: '1toOOzloRRiCXS2c2XkMinIzWjyt5Bq7R-Bqdxd8il0',
     iamHost: 'https://iam.fangcunmount.cn/api/v2',
     collectionHost: 'https://collect.fangcunmount.cn/api/v1',
-    qsHost: 'https://qs.fangcunmount.cn/api/v1'
+    qsHost: 'https://qs.fangcunmount.cn/api/v1',
+    reportEventsEnabled: false,
   }
 };
 

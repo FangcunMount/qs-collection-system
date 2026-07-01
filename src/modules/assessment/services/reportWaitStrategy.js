@@ -1,7 +1,15 @@
 import { routes } from '@/shared/config/routes';
 import { ASSESSMENT_KIND, isPersonalityAssessmentKind } from '@/shared/lib/assessmentKind';
-import { waitAssessmentReport, isReportWaitCompleted, isReportWaitFailed } from '@/services/api/assessments';
-import { waitPersonalityReport } from '@/services/api/personality';
+import {
+  getAssessmentReportStatus,
+  waitAssessmentReport,
+  isReportWaitCompleted,
+  isReportWaitFailed,
+} from '@/services/api/assessments';
+import {
+  getPersonalityReportStatus,
+  waitPersonalityReport,
+} from '@/services/api/personality';
 
 const PERSONALITY_STAGE_TEXT = Object.freeze({
   pending: '正在排队',
@@ -37,6 +45,8 @@ export function createReportWaitStrategy(kind) {
   if (isPersonality) {
     return {
       kind: ASSESSMENT_KIND.PERSONALITY,
+      pollReportStatus: ({ assessmentId, testeeId }) =>
+        getPersonalityReportStatus({ assessmentId, testeeId }),
       waitReport: ({ assessmentId, testeeId, timeout }) =>
         waitPersonalityReport({ assessmentId, testeeId, timeout }),
       reportRoute: routes.personalityReport,
@@ -50,6 +60,8 @@ export function createReportWaitStrategy(kind) {
 
   return {
     kind: ASSESSMENT_KIND.MEDICAL,
+    pollReportStatus: ({ assessmentId, testeeId }) =>
+      getAssessmentReportStatus(assessmentId, testeeId),
     waitReport: ({ assessmentId, testeeId, timeout }) =>
       waitAssessmentReport(assessmentId, testeeId, timeout),
     reportRoute: routes.assessmentReport,
