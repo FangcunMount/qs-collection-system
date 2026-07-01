@@ -151,6 +151,11 @@
     align-items: flex-start;
     gap: 20rpx;
     margin-bottom: 24rpx;
+
+    > View:first-child {
+      flex: 1;
+      min-width: 0;
+    }
   }
 
   .trend-summary-title {
@@ -168,7 +173,8 @@
   }
 
   .trend-summary-link {
-    padding: 14rpx 22rpx;
+    flex-shrink: 0;
+    padding: 14rpx 24rpx;
     border-radius: 999rpx;
     background: #EFF6FF;
 
@@ -177,6 +183,8 @@
       font-size: 24rpx;
       color: #2563EB;
       font-weight: 600;
+      white-space: nowrap;
+      line-height: 1.2;
     }
   }
 

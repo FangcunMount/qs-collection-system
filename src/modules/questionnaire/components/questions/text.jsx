@@ -3,7 +3,7 @@ import { View } from "@tarojs/components";
 import { SiInput } from "taro-ui-fc";
 
 import ShowContainer from "./widget/showContainer";
-import { isQuestionRequired } from "../../lib/questionValidation";
+import { getQuestionPlaceholder, isQuestionRequired } from "../../lib/questionValidation";
 
 const QsText = props => {
   const { item, index, disabled } = props;
@@ -13,6 +13,7 @@ const QsText = props => {
     <ShowContainer
       title={item.title}
       tips={item.tips}
+      placeholder={item.placeholder}
       index={index}
       required={isQuestionRequired(item)}
     >
@@ -20,7 +21,7 @@ const QsText = props => {
         <SiInput
           style={{ flexGrow: 1 }}
           defaultValue={item.value}
-          placeholder={item.placeholder}
+          placeholder={getQuestionPlaceholder(item)}
           disabled={disabled}
           onChange={v => onChangeValue(v, index)}
         ></SiInput>

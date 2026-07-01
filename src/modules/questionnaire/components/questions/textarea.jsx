@@ -3,7 +3,7 @@ import { View } from "@tarojs/components";
 import { AtTextarea } from "taro-ui";
 
 import ShowContainer from "./widget/showContainer";
-import { isQuestionRequired } from "../../lib/questionValidation";
+import { getQuestionPlaceholder, isQuestionRequired } from "../../lib/questionValidation";
 
 const QsTextarea = props => {
   const { item, index, disabled } = props;
@@ -22,6 +22,7 @@ const QsTextarea = props => {
     <ShowContainer
       title={item.title}
       tips={item.tips}
+      placeholder={item.placeholder}
       index={index}
       required={isQuestionRequired(item)}
     >
@@ -31,7 +32,7 @@ const QsTextarea = props => {
           value={item.value}
           count={!disabled}
           maxLength={item.validate_rules?.max_words ?? 3000}
-          placeholder={item.placeholder}
+          placeholder={getQuestionPlaceholder(item)}
           onChange={handleChange}
           disabled={disabled}
         ></AtTextarea>

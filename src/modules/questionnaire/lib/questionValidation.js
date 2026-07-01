@@ -26,16 +26,43 @@ export const isQuestionRequired = (question) => {
 };
 
 /**
- * 获取题目的placeholder
+ * 解析题目标题：title 为空时回退到 placeholder
+ * @param {Object} question - 题目对象或包含 title/placeholder 的字段
+ * @returns {string}
+ */
+export const resolveQuestionTitle = (question = {}) => {
+  const title = String(question.title ?? '').trim();
+  if (title) return title;
+  return String(question.placeholder ?? '').trim();
+};
+
+/**
+ * 解析题目提示文案
+ * @param {Object} question - 题目对象或包含 tips 的字段
+ * @returns {string}
+ */
+export const resolveQuestionTips = (question = {}) => {
+  return String(question.tips ?? '').trim();
+};
+
+/**
+ * 获取输入类题目的 placeholder
  * @param {Object} question - 题目对象
  * @returns {string}
  */
 export const getQuestionPlaceholder = (question) => {
-  return question.placeholder || '请输入';
+  const title = String(question?.title ?? '').trim();
+  const placeholder = String(question?.placeholder ?? '').trim();
+  if (title) {
+    return placeholder || '请输入';
+  }
+  return '请输入';
 };
 
 export default {
   getValidationRule,
   isQuestionRequired,
+  resolveQuestionTitle,
+  resolveQuestionTips,
   getQuestionPlaceholder
 };

@@ -30,7 +30,7 @@ export const getQuestionnaireLegacy = (code) => {
             return v;
           }
 
-          v.title = `${currentQuestionIndex}. ${v.title}`;
+          v.title = `${currentQuestionIndex}. ${v.title || v.placeholder || ''}`;
           currentQuestionIndex++;
 
           switch (v.type) {

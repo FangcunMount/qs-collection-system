@@ -32,6 +32,7 @@ const ImageRadio = props => {
     <ShowContainer
       title={item.title}
       tips={item.tips}
+      placeholder={item.placeholder}
       index={index}
       required={isQuestionRequired(item)}
     >

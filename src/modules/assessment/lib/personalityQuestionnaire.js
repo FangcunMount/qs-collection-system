@@ -35,7 +35,8 @@ export const prepareQuestionnaireFromSession = (sessionOrVm) => {
     }
 
     if (!String(next.title || '').match(/^\d+\.\s/)) {
-      next.title = `${currentQuestionIndex}. ${next.title || ''}`;
+      const stem = String(next.title || next.placeholder || '').trim();
+      next.title = stem ? `${currentQuestionIndex}. ${stem}` : `${currentQuestionIndex}.`;
     }
     currentQuestionIndex += 1;
 
