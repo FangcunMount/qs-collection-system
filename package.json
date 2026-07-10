@@ -15,7 +15,9 @@
     "dev:weapp:prod": "NODE_ENV=production npm run build:weapp -- --watch",
     "test:iam-contracts": "node scripts/check-iam-contracts.js",
     "test:portal-contracts": "node scripts/check-portal-contracts.js",
-    "test:collection-personality-contracts": "node scripts/check-collection-personality-contracts.js"
+    "test:collection-personality-contracts": "node scripts/check-collection-personality-contracts.js",
+    "test:collection-contracts": "node scripts/check-collection-contracts.js",
+    "test:personality-seams": "node scripts/test-personality-seams.js"
   },
   "browserslist": [
     "last 3 versions",

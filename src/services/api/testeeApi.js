@@ -2,8 +2,7 @@ import { request } from '../servers';
 import config from '../../config';
 
 /**
- * Collection 受试者 API
- * 负责受试者（testee）的创建、查询、更新
+ * Collection 受试者 API（collectionHost，契约见 docs/collection.yaml）
  */
 
 /**
@@ -92,19 +91,6 @@ export const updateTestee = (testeeId, testeeData) => {
   });
 };
 
-/**
- * 删除受试者
- * @param {string|number} testeeId - 受试者ID
- * @returns {Promise<{message: string}>}
- */
-export const deleteTestee = (testeeId) => {
-  return request(`/testees/${String(testeeId)}`, {}, {
-    host: config.collectionHost,
-    method: 'DELETE',
-    needToken: true
-  });
-};
-
 export default {
   checkTesteeExists,
   getMyTestees,
@@ -112,5 +98,4 @@ export default {
   getTestee,
   getTesteeCareContext,
   updateTestee,
-  deleteTestee
 };

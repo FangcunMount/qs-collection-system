@@ -353,7 +353,7 @@ export default props => {
         });
         Taro.showToast({ title: "提交成功", icon: "success" });
         // 传递答卷 ID 和测评 ID（如果有）给回调函数
-        await writedCallback(result.id, result.assessment_id);
+        await writedCallback(result.id, result.assessment_id, result.request_id || result.idempotency_key);
       })
       .catch(err => {
         Taro.hideLoading();

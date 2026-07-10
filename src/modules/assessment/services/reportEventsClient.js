@@ -33,7 +33,8 @@ const isTerminalReportStatus = (status) => {
 };
 
 /**
- * 通过 WebSocket 订阅报告状态；不可恢复错误或未收到首包 status 时返回 shouldFallback=true。
+ * 通过 WebSocket 订阅报告状态（文档 12 §4）。
+ * 订阅帧要求 assessment_id、testee_id、kind 均已就绪。
  */
 export function watchReportViaWebSocket({
   assessmentId,
@@ -97,6 +98,11 @@ export function watchReportViaWebSocket({
         reason,
       });
     };
+
+    if (!assessmentId) {
+      handleRecoverableFailure('missing_assessment_id');
+      return;
+    }
 
     (async () => {
       let token = getAccessToken();

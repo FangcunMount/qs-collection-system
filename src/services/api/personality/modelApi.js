@@ -31,17 +31,13 @@ const buildQueryString = (params = {}) => {
 export async function listPublishedPersonalityModels({
   page = 1,
   pageSize = 20,
-  category,
-  keyword,
 } = {}) {
   const params = {
     page,
     page_size: pageSize,
-    category,
-    keyword,
   };
   const queryString = buildQueryString(params);
-  const url = queryString ? `/personality-models?${queryString}` : '/personality-models';
+  const url = queryString ? `/typology-models?${queryString}` : '/typology-models';
 
   const result = await request(url, {}, {
     host: config.collectionHost,
@@ -66,7 +62,7 @@ export async function listPublishedPersonalityModels({
  */
 export async function getPublishedPersonalityModel(modelCode) {
   const encodedCode = encodeURIComponent(modelCode);
-  const result = await request(`/personality-models/${encodedCode}`, {}, {
+  const result = await request(`/typology-models/${encodedCode}`, {}, {
     host: config.collectionHost,
     method: 'GET',
     needToken: true,
@@ -80,7 +76,7 @@ export async function getPublishedPersonalityModel(modelCode) {
  * 获取人格模型分类
  */
 export async function listPersonalityModelCategories() {
-  const result = await request('/personality-models/categories', {}, {
+  const result = await request('/typology-models/categories', {}, {
     host: config.collectionHost,
     method: 'GET',
     needToken: false,

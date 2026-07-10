@@ -9,7 +9,10 @@
       "questionnaire_code": "BIG5_IPIP_50",
       "questionnaire_version": "1.0.0",
       "status": "published",
-      "question_count": 50
+      "question_count": 50,
+      "kind": "typology",
+      "sub_kind": "typology",
+      "product_channel": "typology"
     },
     {
       "code": "ENNEAGRAM_45",
@@ -20,7 +23,10 @@
       "questionnaire_code": "ENNEAGRAM_45",
       "questionnaire_version": "1.0.0",
       "status": "published",
-      "question_count": 45
+      "question_count": 45,
+      "kind": "typology",
+      "sub_kind": "typology",
+      "product_channel": "typology"
     },
     {
       "code": "MBTI_FC_93",
@@ -31,7 +37,10 @@
       "questionnaire_code": "MBTI_FC_93",
       "questionnaire_version": "1.0.0",
       "status": "published",
-      "question_count": 93
+      "question_count": 93,
+      "kind": "typology",
+      "sub_kind": "typology",
+      "product_channel": "typology"
     },
     {
       "code": "MBTI_OEJTS",
@@ -42,7 +51,10 @@
       "questionnaire_code": "MBTI_OEJTS",
       "questionnaire_version": "2.0.1",
       "status": "published",
-      "question_count": 32
+      "question_count": 32,
+      "kind": "typology",
+      "sub_kind": "typology",
+      "product_channel": "typology"
     },
     {
       "code": "SBTI_FUN",
@@ -53,7 +65,10 @@
       "questionnaire_code": "SBTI_FUN",
       "questionnaire_version": "1.0.0",
       "status": "published",
-      "question_count": 31
+      "question_count": 31,
+      "kind": "typology",
+      "sub_kind": "typology",
+      "product_channel": "typology"
     }
   ],
   "total": 5,

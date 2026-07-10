@@ -9,7 +9,7 @@ export async function waitPersonalityReport({ assessmentId, testeeId, timeout = 
   const validTimeout = Math.max(1, Math.min(25, timeout));
 
   const result = await request(
-    `/personality-assessments/${toStringId(assessmentId)}/wait-report`,
+    `/typology-assessments/${toStringId(assessmentId)}/wait-report`,
     {},
     {
       host: config.collectionHost,
@@ -30,7 +30,7 @@ export async function waitPersonalityReport({ assessmentId, testeeId, timeout = 
  */
 export async function getPersonalityReportStatus({ assessmentId, testeeId }) {
   const result = await request(
-    `/personality-assessments/${toStringId(assessmentId)}/report-status`,
+    `/typology-assessments/${toStringId(assessmentId)}/report-status`,
     {},
     {
       host: config.collectionHost,
@@ -50,7 +50,7 @@ export async function getPersonalityReportStatus({ assessmentId, testeeId }) {
  */
 export async function getPersonalityReport({ assessmentId, testeeId }) {
   const result = await request(
-    `/personality-assessments/${toStringId(assessmentId)}/report`,
+    `/typology-assessments/${toStringId(assessmentId)}/report`,
     {},
     {
       host: config.collectionHost,

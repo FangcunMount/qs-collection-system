@@ -1,7 +1,8 @@
 /**
- * 将 personality-assessment-session ViewModel 转为问卷填写组件可用结构
+ * 将 typology-assessment-session ViewModel 转为问卷填写组件可用结构
  */
 import {
+  createPersonalitySession,
   normalizePersonalitySession,
   normalizeQuestionnaire,
   normalizeSubmitContract,
@@ -62,3 +63,21 @@ export const buildSubmitContractFromSession = (sessionOrVm) => {
     : normalizePersonalitySession(sessionOrVm);
   return { ...sessionVM.submitContract };
 };
+
+export async function loadPersonalitySessionForFill({ modelCode, testeeId }) {
+  const sessionVM = await createPersonalitySession({
+    modelCode,
+    testeeId,
+  });
+  const questionnaireData = prepareQuestionnaireFromSession(sessionVM);
+
+  if (!questionnaireData?.questions?.length) {
+    throw new Error('当前人格测评题版为空');
+  }
+
+  return {
+    sessionVM,
+    questionnaireData,
+    submitContract: sessionVM.submitContract,
+  };
+}

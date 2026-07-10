@@ -4,7 +4,7 @@ import TesteeSheet from "./TesteeSheet";
 import FilterSheet from "./FilterSheet";
 import AssessmentRecordList from "./AssessmentRecordList";
 import BottomSheet from "./BottomSheet";
-import { getAssessments } from "@/services/api/assessments";
+import { loadMedicalAssessmentRecords } from '@/modules/assessment/services/loadMedicalAssessmentRecords';
 import { loadPersonalityAssessmentRecords } from "@/modules/assessment/services/personalityAssessmentRecordService";
 import { buildAssessmentScanTargetUrl, isScanCancelError } from "@/shared/lib/entryScan";
 import {
@@ -70,6 +70,7 @@ const AssessmentRecordListContainer = ({
   });
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [medicalListUnavailable, setMedicalListUnavailable] = useState(false);
   const [selectedScaleCode, setSelectedScaleCode] = useState('');
   const [showScaleSheet, setShowScaleSheet] = useState(false);
   const [timeRange, setTimeRange] = useState('7');
@@ -128,7 +129,11 @@ const AssessmentRecordListContainer = ({
       let totalPages = 0;
       let total = 0;
 
-      if (normalizedAssessmentKind === ASSESSMENT_KIND.PERSONALITY) {
+      const useTypologyList = !normalizedAssessmentKind
+        || normalizedAssessmentKind === ASSESSMENT_KIND.PERSONALITY;
+
+      if (useTypologyList) {
+        setMedicalListUnavailable(false);
         const personalityResult = await loadPersonalityAssessmentRecords({
           testeeId: testee.id,
           statusFilter,
@@ -147,7 +152,7 @@ const AssessmentRecordListContainer = ({
       }
 
       while (currentPage) {
-        const result = await getAssessments({
+        const result = await loadMedicalAssessmentRecords({
           testeeId: testee.id,
           status: statusFilter,
           scaleCode: selectedScaleCode,
@@ -156,10 +161,22 @@ const AssessmentRecordListContainer = ({
           dateTo,
           assessmentKind: normalizedAssessmentKind || undefined,
           page: currentPage,
-          pageSize
+          pageSize,
         });
 
-        const data = result.data || result;
+        if (result.unavailable) {
+          setMedicalListUnavailable(true);
+          break;
+        }
+
+        setMedicalListUnavailable(false);
+
+        const data = {
+          items: result.items,
+          page: result.page,
+          total_pages: result.totalPages,
+          total: result.total,
+        };
         consumedPage = Math.max(Number(data.page || currentPage), currentPage);
         totalPages = Number(data.total_pages || 0);
         total = Number(data.total || 0);
@@ -320,6 +337,10 @@ const AssessmentRecordListContainer = ({
     </>
   );
 
+  const resolvedEmptyText = medicalListUnavailable
+    ? '医学量表记录列表接口暂未开放，完成测评后可直接查看报告'
+    : emptyText;
+
   return (
     <>
       <AssessmentRecordList
@@ -337,7 +358,7 @@ const AssessmentRecordListContainer = ({
         loading={loading}
         onLoadMore={handleLoadMore}
         onEmptyScan={handleEmptyScan}
-        emptyText={emptyText}
+        emptyText={resolvedEmptyText}
         emptyButtonText={emptyButtonText}
         showEmptyButton={showEmptyButton}
         showLoadMore={showLoadMore}

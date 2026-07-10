@@ -476,7 +476,7 @@ export default function QuestionnaireForm({
       if (res.id) {
         Taro.showToast({ title: "提交成功", icon: "success", mask: true });
         // 传递答卷 ID 和测评 ID（如果有）给回调函数
-        await writedCallback(res.id, res.assessment_id);
+        await writedCallback(res.id, res.assessment_id, res.request_id || res.idempotency_key);
       }
     },
     options: {

@@ -6,7 +6,7 @@ import {
 } from '@/services/api/personality';
 
 /**
- * 从 GET /personality-assessments 加载人格测评记录并映射为记录卡片格式
+ * 从 GET /typology-assessments 加载人格测评记录并映射为记录卡片格式
  */
 export async function loadPersonalityAssessmentRecords({
   testeeId,
@@ -26,24 +26,26 @@ export async function loadPersonalityAssessmentRecords({
 
   const result = await listPersonalityAssessments({
     testeeId,
-    status: statusFilter && statusFilter !== 'done' ? statusFilter : undefined,
-    page,
-    pageSize,
   });
 
   const data = result?.items || result?.assessments ? result : (result.data || result);
-  const items = extractPersonalityAssessmentList(data)
+  const filteredItems = extractPersonalityAssessmentList(data)
     .map(normalizePersonalityAssessmentRecord)
     .filter((record) => {
       if (statusFilter !== 'done') return true;
       return isPersonalityAssessmentDoneStatus(record.status);
     });
 
+  const total = filteredItems.length;
+  const totalPages = pageSize > 0 ? Math.ceil(total / pageSize) : 0;
+  const start = (page - 1) * pageSize;
+  const items = filteredItems.slice(start, start + pageSize);
+
   return {
     items,
-    page: Number(data.page || page),
-    pageSize: Number(data.page_size || data.pageSize || pageSize),
-    total: Number(data.total || 0),
-    totalPages: Number(data.total_pages || data.totalPages || 0),
+    page,
+    pageSize,
+    total,
+    totalPages,
   };
 }

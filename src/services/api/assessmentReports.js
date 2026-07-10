@@ -1,6 +1,5 @@
 export {
+  getMedicalAssessmentReport,
   getAssessmentReport,
-  getAssessmentReportByAnswersheetId,
   default,
-} from "./analysisApi";
-export { getAssessmentReportByAnswersheetId as getAssessmentReportByResponseId } from "./analysisApi";
+} from './assessmentApi';

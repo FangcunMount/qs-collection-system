@@ -1,51 +1,46 @@
-import { request } from '../servers'
-import config from '../../config';
+import { getAnswersheet } from './answersheetApi';
+import { pollAssessmentIdByAnswerSheet } from '@/modules/assessment/services/pollAssessmentIdByAnswerSheet';
+import { createMedicalAssessmentFetchItems } from '@/modules/assessment/services/medicalAssessmentIdResolver';
+import { getMedicalAssessmentReport } from './assessmentApi';
 
 /**
- * 获取测评报告（解读）
+ * 获取医学测评报告（解读）
  * @param {number} assessmentId - 测评ID
  * @param {string|number} testeeId - 受试者ID
- * @returns {Promise<object>}
- * 
- * @deprecated 旧接口 /readAnswerSheet/interpretationReport 已下线
- * 现在应该使用此函数替代，需要传入 assessmentId 和 testeeId
  */
 export const getAssessmentReport = (assessmentId, testeeId) => {
-  return request(`/assessments/${String(assessmentId)}/report`, {}, {
-    host: config.collectionHost,
-    params: { testee_id: String(testeeId) },
-    needToken: true,
-    isNeedLoading: true
-  });
-}
+  return getMedicalAssessmentReport(assessmentId, testeeId);
+};
 
 /**
- * 通过答卷ID获取测评报告（便捷方式）
- * 流程：
- * 1) GET /answersheets/{id}/assessment 获取测评详情，提取 assessment.id 与 testee_id
- * 2) GET /assessments/{id}/report?testee_id=... 获取报告
- * @param {string|number} answersheetId - 答卷ID
- * @returns {Promise<object>} AssessmentReportResponse
+ * @deprecated 请使用 waitMedicalAssessmentId + getMedicalAssessmentReport；保留兼容旧 import。
+ * 通过答卷ID获取医学测评报告
  */
-export const getAssessmentReportByAnswersheetId = async (answersheetId) => {
+export const getAssessmentReportByAnswersheetId = async (answersheetId, testeeId) => {
   const aid = String(answersheetId);
-  const detail = await request(`/answersheets/${aid}/assessment`, {}, {
-    host: config.collectionHost,
-    needToken: true,
-    isNeedLoading: true
-  });
+  let resolvedTesteeId = testeeId ? String(testeeId) : '';
 
-  const assessmentId = detail && detail.id ? String(detail.id) : '';
-  const testeeId = detail && detail.testee_id ? String(detail.testee_id) : '';
-
-  if (!assessmentId || !testeeId) {
-    throw new Error('[analysisApi] 通过答卷ID获取测评详情失败，缺少 assessmentId 或 testeeId');
+  if (!resolvedTesteeId) {
+    const sheet = await getAnswersheet(aid, { showLoading: false });
+    resolvedTesteeId = sheet?.testee_id ? String(sheet.testee_id) : '';
   }
 
-  return getAssessmentReport(assessmentId, testeeId);
-}
+  if (!resolvedTesteeId) {
+    throw new Error('[analysisApi] 通过答卷ID获取测评详情失败，缺少 testeeId');
+  }
+
+  const assessmentId = await pollAssessmentIdByAnswerSheet({
+    testeeId: resolvedTesteeId,
+    answerSheetId: aid,
+    maxAttempts: 1,
+    intervalMs: 0,
+    fetchItems: createMedicalAssessmentFetchItems(aid, resolvedTesteeId),
+  });
+
+  return getMedicalAssessmentReport(assessmentId, resolvedTesteeId);
+};
 
 export default {
   getAssessmentReport,
   getAssessmentReportByAnswersheetId,
-}
+};

@@ -4,7 +4,14 @@
     "title": "16 型人格测评",
     "description": "从四组性格偏好出发，了解你的行为方式与沟通习惯。",
     "questionnaire_code": "MBTI_OEJTS_V1",
-    "questionnaire_version": "2025.06.01"
+    "questionnaire_version": "2025.06.01",
+    "kind": "typology",
+    "sub_kind": "typology",
+    "product_channel": "typology",
+    "algorithm": "mbti",
+    "algorithm_family": "factor_classification",
+    "payload_format": "assessmentmodel.personality.typology.v1",
+    "decision_kind": "pole_composition"
   },
   "questionnaire": {
     "code": "MBTI_OEJTS_V1",
@@ -25,13 +32,12 @@
   "submit_contract": {
     "questionnaire_code": "MBTI_OEJTS_V1",
     "questionnaire_version": "2025.06.01",
-    "testee_id": "10001",
-    "model_code": "MBTI_OEJTS",
-    "kind": "personality"
+    "testee_id": "10001"
   },
   "endpoints": {
-    "submit": "/answersheets",
-    "wait_report": "/personality-assessments/{id}/wait-report",
-    "report": "/personality-assessments/{id}/report"
+    "submit_answer_sheet": "/api/v1/answersheets",
+    "typology_assessments_list": "/api/v1/typology-assessments?testee_id=10001",
+    "wait_report": "/api/v1/typology-assessments/{assessment_id}/wait-report?testee_id=10001",
+    "report": "/api/v1/typology-assessments/{assessment_id}/report?testee_id=10001"
   }
 }

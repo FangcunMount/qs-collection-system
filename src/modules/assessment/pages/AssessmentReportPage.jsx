@@ -3,8 +3,11 @@ import { View, Text, Button } from "@tarojs/components";
 import Taro from "@tarojs/taro";
 import { AtActivityIndicator } from "taro-ui";
 
-import { getAssessmentReport } from "@/services/api/assessmentReports";
-import { getAssessmentByAnswersheetId, getAssessmentTrendSummary } from "@/services/api/assessments";
+import { getAssessmentTrendSummary } from "@/services/api/assessments";
+import {
+  loadMedicalReportByAssessmentId,
+  loadMedicalReportByAnswerSheet,
+} from "@/modules/assessment/services/loadMedicalReport";
 import { isPersonalityAssessmentKind } from "@/shared/lib/assessmentKind";
 import { getLogger } from "@/shared/lib/logger";
 import { getAssessmentEntryContext } from "@/shared/stores/assessmentEntry";
@@ -155,8 +158,9 @@ const Analysis = () => {
     });
   }, []);
 
-  const fetchAssessmentReport = useCallback((assessmentId, testeeId) => {
-    return getAssessmentReport(assessmentId, testeeId);
+  const fetchAssessmentReport = useCallback(async (assessmentId, testeeId) => {
+    const { report } = await loadMedicalReportByAssessmentId({ assessmentId, testeeId });
+    return report;
   }, []);
 
   const loadTrendSummary = useCallback(async (assessmentId, testeeId) => {
@@ -233,9 +237,9 @@ const Analysis = () => {
   /**
    * 根据答卷ID获取分析报告
    */
-  const initAnalysisByAnswersheetId = useCallback(async (answersheetId) => {
+  const initAnalysisByAnswersheetId = useCallback(async (answersheetId, testeeIdFromUrl) => {
     setAnswersheetid(answersheetId);
-    
+
     let loadingShown = false;
     try {
       Taro.showLoading({ title: '加载中...' });
@@ -243,35 +247,29 @@ const Analysis = () => {
     } catch (e) {
       // 忽略 showLoading 错误
     }
-    
+
     try {
-      logger.RUN('[Analysis] 通过答卷ID获取报告:', { answersheetId });
-      const detailResult = await getAssessmentByAnswersheetId(answersheetId);
-      const detail = detailResult?.data || detailResult || {};
-      const assessmentId = detail.id || '';
-      const testeeId = detail.testee_id || '';
-
-      if (!assessmentId || !testeeId) {
-        throw new Error('缺少 assessment_id 或 testee_id');
-      }
-
-      setAssessmentContext({
-        assessment_id: String(assessmentId),
-        testee_id: String(testeeId),
+      logger.RUN('[Analysis] 通过答卷ID获取报告:', { answersheetId, testeeIdFromUrl });
+      const { report, assessmentId, testeeId } = await loadMedicalReportByAnswerSheet({
+        answersheetId,
+        testeeIdFromUrl,
+        logger,
       });
 
-      const reportResult = await fetchAssessmentReport(assessmentId, testeeId);
+      setAssessmentContext({
+        assessment_id: assessmentId,
+        testee_id: testeeId,
+      });
+
       logger.RUN('[Analysis] 通过答卷ID获取报告成功');
-      
-      handleReportData(reportResult);
+      handleReportData(report);
       await loadTrendSummary(assessmentId, testeeId);
       setIsReady(true);
-      
     } catch (err) {
       logger.ERROR('[Analysis] 加载失败:', err);
       Taro.showToast({
         title: err?.message || '加载分析报告失败',
-        icon: 'none'
+        icon: 'none',
       });
       setIsReady(true);
     } finally {
@@ -283,7 +281,7 @@ const Analysis = () => {
         }
       }
     }
-  }, [fetchAssessmentReport, handleReportData, loadTrendSummary]);
+  }, [handleReportData, loadTrendSummary]);
 
   useEffect(() => {
     const params = Taro.getCurrentInstance().router.params;
@@ -305,7 +303,7 @@ const Analysis = () => {
       const aid = params.aid || params.rid;
       initAnalysisByAssessmentId(aid, params.t);
     } else {
-      initAnalysisByAnswersheetId(params.a);
+      initAnalysisByAnswersheetId(params.a, params.t);
     }
   }, [assessmentKind, initAnalysisByAssessmentId, initAnalysisByAnswersheetId]);
 

@@ -6,7 +6,7 @@ import { AtIcon } from "taro-ui";
 import BottomMenu from "@/shared/ui/BottomMenu";
 import { routes } from "@/shared/config/routes";
 import { ASSESSMENT_PORTALS } from "@/shared/config/assessmentPortals";
-import { getAssessments } from "@/services/api/assessments";
+import { loadRecentAssessments as fetchRecentAssessments } from "@/modules/assessment/services/loadRecentAssessments";
 import { getHotScales } from "@/services/api/scales";
 import { parseDateSafe } from "@/shared/lib/dateFormatters";
 import { getRiskConfig } from "@/shared/lib/statusFormatters";
@@ -164,9 +164,7 @@ const HomeIndex = () => {
 
     try {
       setRecentLoading(true);
-      const result = await getAssessments({ testeeId, page: 1, pageSize: 3 });
-      const payload = result.data || result;
-      const list = (payload.items || [])
+      const list = (await fetchRecentAssessments(testeeId, { pageSize: 3 }))
         .map((item, index) => normalizeRecentAssessment(item, index))
         .filter(Boolean);
       setRecentAssessments(list);

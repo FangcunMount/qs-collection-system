@@ -17,20 +17,12 @@ const buildQueryString = (params = {}) => {
  */
 export async function listPersonalityAssessments({
   testeeId,
-  modelCode,
-  status,
-  page = 1,
-  pageSize = 20,
 } = {}) {
   const params = {
     testee_id: testeeId ? toStringId(testeeId) : '',
-    model_code: modelCode,
-    status,
-    page,
-    page_size: pageSize,
   };
   const queryString = buildQueryString(params);
-  const url = queryString ? `/personality-assessments?${queryString}` : '/personality-assessments';
+  const url = queryString ? `/typology-assessments?${queryString}` : '/typology-assessments';
 
   const result = await request(url, {}, {
     host: config.collectionHost,
@@ -45,7 +37,7 @@ export async function listPersonalityAssessments({
  * 获取人格测评详情
  */
 export async function getPersonalityAssessmentDetail(assessmentId, testeeId) {
-  const result = await request(`/personality-assessments/${toStringId(assessmentId)}`, {}, {
+  const result = await request(`/typology-assessments/${toStringId(assessmentId)}`, {}, {
     host: config.collectionHost,
     params: { testee_id: toStringId(testeeId) },
     needToken: true,

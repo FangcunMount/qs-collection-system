@@ -80,7 +80,8 @@ assertContains(personalityCatalog, /loadGroupedPersonalityCatalog/, 'Personality
 assertNotContains(personalityCatalog, /PERSONALITY_CATALOG_ITEMS|personalityModels/, 'PersonalityCatalogPage must not use hardcoded personality catalog');
 assertContains(personalityCatalogService, /listPublishedPersonalityModels/, 'personality catalog service must use published models API');
 assertNotContains(personalityCatalogService, /PERSONALITY_CATALOG_ITEMS|personalityModels/, 'personality catalog service must not use hardcoded catalog');
-assertContains(assessmentRecordsPage, /assessmentKind=\{ASSESSMENT_KIND\.MEDICAL\}/, 'AssessmentRecordsPage must query medical scale reports only');
+assertNotContains(assessmentRecordsPage, /assessmentKind=\{ASSESSMENT_KIND\.MEDICAL\}/, 'AssessmentRecordsPage must not query deprecated GET /assessments list');
+assertNotContains(assessmentRecordsPage, /ASSESSMENT_KIND\.MEDICAL/, 'report tab must load typology-assessments instead of medical list');
 
 if (process.exitCode) {
   process.exit(process.exitCode);

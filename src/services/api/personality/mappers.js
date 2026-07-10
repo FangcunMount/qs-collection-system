@@ -6,6 +6,7 @@ import {
   applyAlgorithmPresentation,
   estimateDurationMin,
 } from '@/modules/catalog/lib/personalityPresentation';
+import { isTypologyAssessmentModel } from '@/shared/lib/assessmentKind';
 
 export const unwrapResponse = (result) => {
   if (!result) return result;
@@ -164,6 +165,12 @@ export const normalizePersonalityModel = (raw = {}) => {
     hero,
     thumbnail: model.thumbnail || '',
     status: model.status || '',
+    kind: model.kind || '',
+    subKind: model.sub_kind || model.subKind || '',
+    productChannel: model.product_channel || model.productChannel || '',
+    algorithmFamily: model.algorithm_family || model.algorithmFamily || '',
+    payloadFormat: model.payload_format || model.payloadFormat || '',
+    decisionKind: model.decision_kind || model.decisionKind || '',
     raw: model,
   };
 };
@@ -236,8 +243,9 @@ export const normalizeSubmitContract = (contract = {}, model = {}) => ({
     model.questionnaireVersion ||
     '',
   testee_id: toStringId(contract.testee_id || contract.testeeId || ''),
+  // 以下字段仅用于前端路由/展示，不写入提交 body
   model_code: contract.model_code || contract.modelCode || model.code || '',
-  kind: contract.kind || contract.assessment_kind || 'personality',
+  kind: contract.kind || contract.assessment_kind || model.kind || 'typology',
 });
 
 export const normalizePersonalitySession = (raw) => {
@@ -300,6 +308,7 @@ export const isPersonalityAssessmentDoneStatus = (status) => {
 export const normalizePersonalityAssessmentRecord = (raw = {}) => {
   const item = raw || {};
   const model = item.model || {};
+  const isTypology = isTypologyAssessmentModel(model);
 
   return {
     id: toStringId(item.id),
@@ -315,8 +324,8 @@ export const normalizePersonalityAssessmentRecord = (raw = {}) => {
     model_code: item.model_code || model.code || '',
     model_name: item.model_name || model.title || '',
     interpreted_at: item.interpreted_at || '',
-    assessment_kind: 'personality',
-    kind: 'personality',
+    assessment_kind: isTypology ? 'personality' : (item.assessment_kind || 'personality'),
+    kind: isTypology ? 'personality' : (item.kind || 'personality'),
     model_extra: item.model_extra || item.modelExtra || null,
     raw: item,
   };

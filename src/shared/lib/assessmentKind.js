@@ -17,6 +17,7 @@ const PERSONALITY_KIND_ALIASES = Object.freeze([
   'personality',
   'personality_assessment',
   'personalityassessment',
+  'typology',
 ]);
 
 const ABILITY_KIND_ALIASES = Object.freeze([
@@ -124,4 +125,16 @@ export const matchesAssessmentKindFilter = (assessment = {}, kind = '') => {
     return true;
   }
   return resolveAssessmentKind(assessment) === normalizedKind;
+};
+
+/** 模型目录层：typology / personality 均视为人格测评 */
+export const isTypologyCatalogModel = (model = {}) => {
+  const k = String(model.kind ?? '').toLowerCase();
+  return k === 'typology' || k === 'personality';
+};
+
+/** 测评/报告层：当前服务端仍输出 personality，读兼容 typology */
+export const isTypologyAssessmentModel = (model = {}) => {
+  const k = String(model.kind ?? '').toLowerCase();
+  return k === 'personality' || k === 'typology';
 };

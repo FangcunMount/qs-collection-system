@@ -1,0 +1,2712 @@
+openapi: 3.1.0
+info:
+  description: Questionnaire collection/BFF layer
+  title: Collection Server
+  contact:
+    name: API Support
+    email: yshujie@163.com
+    url: https://github.com/FangcunMount/qs-server
+  version: '1.0'
+servers:
+- url: http://localhost:18083/api/v1
+  description: 本地开发
+- url: https://collect.fangcunmount.cn/api/v1
+  description: 生产环境
+tags:
+- name: 受试者
+  description: 受试者
+- name: 报告事件
+  description: 报告事件
+- name: 测评
+  description: 测评管理
+- name: 答卷
+  description: 答卷提交与查询
+- name: 类型学模型
+  description: 类型学模型
+- name: 类型学测评
+  description: 类型学测评
+- name: 系统
+  description: 系统健康检查
+- name: 量表
+  description: 量表
+- name: 问卷
+  description: 问卷查询
+paths:
+  /answersheets:
+    post:
+      tags:
+      - 答卷
+      summary: 提交答卷
+      description: 用户提交问卷答卷
+      operationId: 提交答卷
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/answersheet.SubmitAnswerSheetRequest'
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/core.Response'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/answersheet.SubmitAcceptedResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '429':
+          description: Too Many Requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+  /answersheets/submit-status:
+    get:
+      tags:
+      - 答卷
+      summary: 查询提交状态
+      description: 根据 request_id 查询提交处理状态。status=done 时返回 answersheet_id；异步测评落库后附带
+        assessment_id（人格/医学通用），未就绪可继续轮询。
+      operationId: 查询提交状态
+      parameters:
+      - type: string
+        description: 请求ID
+        name: request_id
+        in: query
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/core.Response'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/answersheet.SubmitStatusResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '429':
+          description: Too Many Requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+  /answersheets/{id}:
+    get:
+      tags:
+      - 答卷
+      summary: 获取答卷详情
+      description: 根据ID获取答卷详情
+      operationId: 获取答卷详情
+      parameters:
+      - type: integer
+        description: 答卷ID
+        name: id
+        in: path
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/core.Response'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/answersheet.AnswerSheetResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '429':
+          description: Too Many Requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+  /assessments/trend:
+    get:
+      tags:
+      - 测评
+      summary: 获取因子得分趋势
+      description: 获取指定因子的历史得分趋势
+      operationId: 获取因子得分趋势
+      parameters:
+      - type: integer
+        description: 受试者ID
+        name: testee_id
+        in: query
+        required: true
+      - type: string
+        description: 因子编码
+        name: factor_code
+        in: query
+        required: true
+      - type: integer
+        default: 10
+        description: 数据点数量
+        name: limit
+        in: query
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/core.Response'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/evaluation.TrendPointResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '429':
+          description: Too Many Requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+  /assessments/{id}/factors/high-risk:
+    get:
+      tags:
+      - 测评
+      summary: 获取高风险因子
+      description: 获取指定测评的高风险因子列表
+      operationId: 获取高风险因子
+      parameters:
+      - type: integer
+        description: 测评ID
+        name: id
+        in: path
+        required: true
+      - type: integer
+        description: 受试者ID
+        name: testee_id
+        in: query
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/core.Response'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/evaluation.FactorScoreResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '429':
+          description: Too Many Requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+  /assessments/{id}/report-status:
+    get:
+      tags:
+      - 测评
+      summary: 查询报告生成状态
+      description: 立即返回当前报告状态；非终态时通过 next_poll_after_ms 指引客户端退避重试
+      operationId: 查询报告生成状态
+      parameters:
+      - type: integer
+        description: 测评ID
+        name: id
+        in: path
+        required: true
+      - type: integer
+        description: 受试者ID
+        name: testee_id
+        in: query
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/core.Response'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/evaluation.AssessmentStatusResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '429':
+          description: Too Many Requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+  /assessments/{id}/scores:
+    get:
+      tags:
+      - 测评
+      summary: 获取测评得分详情
+      description: 获取测评的因子得分详情。响应中的每个因子得分包含 max_score（最大分，可选）字段
+      operationId: 获取测评得分详情
+      parameters:
+      - type: integer
+        description: 测评ID
+        name: id
+        in: path
+        required: true
+      - type: integer
+        description: 受试者ID
+        name: testee_id
+        in: query
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/core.Response'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/evaluation.FactorScoreResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '429':
+          description: Too Many Requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+  /assessments/{id}/trend-summary:
+    get:
+      tags:
+      - 测评
+      summary: 获取测评趋势摘要
+      description: 获取指定测评所属同量表、同版本的历史趋势摘要
+      operationId: 获取测评趋势摘要
+      parameters:
+      - type: integer
+        description: 测评ID
+        name: id
+        in: path
+        required: true
+      - type: integer
+        description: 受试者ID
+        name: testee_id
+        in: query
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/core.Response'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/evaluation.AssessmentTrendSummaryResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '429':
+          description: Too Many Requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+  /assessments/{id}/wait-report:
+    get:
+      tags:
+      - 测评
+      summary: 长轮询等待报告生成
+      description: 等待测评报告生成，支持长轮询机制。如果报告已生成则立即返回，否则等待最多 timeout 秒
+      operationId: 长轮询等待报告生成
+      parameters:
+      - type: integer
+        description: 测评ID
+        name: id
+        in: path
+        required: true
+      - type: integer
+        description: 受试者ID
+        name: testee_id
+        in: query
+        required: true
+      - maximum: 25
+        minimum: 1
+        type: integer
+        default: 20
+        description: 超时时间（秒）
+        name: timeout
+        in: query
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/core.Response'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/evaluation.AssessmentStatusResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '429':
+          description: Too Many Requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+  /public/info:
+    get:
+      tags:
+      - 系统
+      summary: 服务信息
+      description: 获取服务基本信息
+      operationId: 服务信息
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.Response'
+  /questionnaires:
+    get:
+      tags:
+      - 问卷
+      summary: 获取问卷列表
+      description: 分页获取问卷列表
+      operationId: 获取问卷列表
+      parameters:
+      - type: integer
+        default: 1
+        description: 页码
+        name: page
+        in: query
+      - type: integer
+        default: 20
+        description: 每页数量
+        name: page_size
+        in: query
+      - type: string
+        description: 状态过滤（draft/published/archived）
+        name: status
+        in: query
+      - type: string
+        description: 标题过滤
+        name: title
+        in: query
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/core.Response'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/github_com_FangcunMount_qs-server_internal_collection-server_application_questionnaire.ListQuestionnairesResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+  /questionnaires/{code}:
+    get:
+      tags:
+      - 问卷
+      summary: 获取问卷详情
+      description: 根据问卷编码获取问卷详情，问题包含校验规则。人格测评请优先使用 session 返回的 questionnaire_code
+        + questionnaire_version，通过 version 查询精确题版。
+      operationId: 获取问卷详情
+      parameters:
+      - type: string
+        description: 问卷编码
+        name: code
+        in: path
+        required: true
+      - type: string
+        description: 问卷版本（人格测评推荐传入模型绑定版本）
+        name: version
+        in: query
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/core.Response'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/questionnaire.QuestionnaireResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+  /report-events:
+    get:
+      tags:
+      - 报告事件
+      summary: 报告状态 WebSocket 推送
+      description: 升级 WebSocket 后发送 subscribe 帧等待测评终态。每条连接仅允许一次 subscribe。人格线 kind=personality；量表线
+        kind=medical。需 report_events.enabled=true。
+      operationId: 报告状态WebSocket推送
+      parameters:
+      - type: string
+        description: Bearer 用户令牌
+        name: Authorization
+        in: header
+        required: true
+      responses:
+        '101':
+          description: Switching Protocols
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ws.ReportEventsStatusFrame'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '404':
+          description: report_events 未开启
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+  /scales:
+    get:
+      tags:
+      - 量表
+      summary: 获取量表列表
+      description: '分页获取量表列表（摘要信息，不包含因子详情），支持按主类、阶段、使用年龄、填报人、标签等条件过滤。
+
+        查询参数说明：
+
+        - category: 主类过滤，可选值：adhd/tic/sensory/executive/mental/neurodev/chronic/qol
+
+        - stages: 阶段过滤（数组），可选值：deep_assessment/follow_up/outcome
+
+        - applicable_ages: 使用年龄过滤（数组），可选值：infant/preschool/school_child/adolescent/adult
+
+        - reporters: 填报人过滤（数组），可选值：parent/teacher/self/clinical
+
+        - tags: 标签过滤（数组），动态标签值
+
+        响应中包含分类字段：category、stages（数组）、applicable_ages（数组）、reporters（数组）、tags（数组）、question_count（题目数量，不包含
+        Section 题型）'
+      operationId: 获取量表列表
+      parameters:
+      - type: integer
+        default: 1
+        description: 页码
+        name: page
+        in: query
+      - type: integer
+        default: 20
+        description: 每页数量
+        name: page_size
+        in: query
+      - type: string
+        description: 状态过滤（draft/published/archived）
+        name: status
+        in: query
+      - type: string
+        description: 标题过滤
+        name: title
+        in: query
+      - type: string
+        description: 主类过滤
+        name: category
+        in: query
+      - type: array
+        items:
+          type: string
+        collectionFormat: csv
+        description: 阶段过滤（数组）
+        name: stages
+        in: query
+      - type: array
+        items:
+          type: string
+        collectionFormat: csv
+        description: 使用年龄过滤（数组）
+        name: applicable_ages
+        in: query
+      - type: array
+        items:
+          type: string
+        collectionFormat: csv
+        description: 填报人过滤（数组）
+        name: reporters
+        in: query
+      - type: array
+        items:
+          type: string
+        collectionFormat: csv
+        description: 标签过滤（数组）
+        name: tags
+        in: query
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/core.Response'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/github_com_FangcunMount_qs-server_internal_collection-server_application_scale.ListScalesResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+  /scales/categories:
+    get:
+      tags:
+      - 量表
+      summary: 获取量表分类列表
+      description: '获取量表的主类、阶段、使用年龄、填报人等分类选项列表，用于前端渲染和配置量表字段。
+
+        返回说明：
+
+        - categories: 主类列表，包含8个选项（adhd, tic, sensory, executive, mental, neurodev,
+        chronic, qol）
+
+        - stages: 阶段列表，包含3个选项（deep_assessment, follow_up, outcome）
+
+        - applicable_ages: 使用年龄列表，包含5个选项（infant, preschool, school_child, adolescent,
+        adult）
+
+        - reporters: 填报人列表，包含4个选项（parent, teacher, self, clinical）
+
+        - tags: 标签列表，返回空数组（标签已改为动态输入，通过后台输入设置）'
+      operationId: 获取量表分类列表
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/core.Response'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/scale.ScaleCategoriesResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+  /scales/hot:
+    get:
+      tags:
+      - 量表
+      summary: 获取热门量表列表
+      description: 获取当前热门量表排行榜，用于小程序首页展示 3~5 个可填写量表。默认按近 30 天答卷提交量排序。
+      operationId: 获取热门量表列表
+      parameters:
+      - type: integer
+        default: 5
+        description: 返回数量，服务端限制为 3~5
+        name: limit
+        in: query
+      - type: integer
+        default: 30
+        description: 热度统计窗口天数
+        name: window_days
+        in: query
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/core.Response'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/github_com_FangcunMount_qs-server_internal_collection-server_application_scale.ListHotScalesResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+  /scales/{code}:
+    get:
+      tags:
+      - 量表
+      summary: 获取量表详情
+      description: '根据量表编码获取量表详情。注意：返回的因子列表只包含 is_show = true 的因子。
+
+        响应字段说明：
+
+        - category: 主类（adhd/tic/sensory/executive/mental/neurodev/chronic/qol）
+
+        - stages: 阶段列表（数组，deep_assessment/follow_up/outcome）
+
+        - applicable_ages: 使用年龄列表（数组，infant/preschool/school_child/adolescent/adult）
+
+        - reporters: 填报人列表（数组，可包含 parent/teacher/self/clinical）
+
+        - tags: 标签列表（数组，动态输入）
+
+        - question_count: 题目数量（不包含 Section 题型）
+
+        - factors: 因子列表（只包含 is_show = true 的因子），每个因子包含 max_score（最大分，可选）和 is_show（是否显示）字段'
+      operationId: 获取量表详情
+      parameters:
+      - type: string
+        description: 量表编码
+        name: code
+        in: path
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/core.Response'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/scale.ScaleResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+  /testees:
+    get:
+      tags:
+      - 受试者
+      summary: 查询我的受试者列表
+      description: 查询当前用户（监护人）的所有受试者列表（支持分页）
+      operationId: 查询我的受试者列表
+      parameters:
+      - type: integer
+        default: 0
+        description: 偏移量
+        name: offset
+        in: query
+      - type: integer
+        default: 20
+        description: 每页数量
+        name: limit
+        in: query
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/core.Response'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/testee.ListTesteesResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+    post:
+      tags:
+      - 受试者
+      summary: 创建受试者
+      description: 创建新的受试者信息
+      operationId: 创建受试者
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/testee.CreateTesteeRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/core.Response'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/testee.TesteeResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+  /testees/exists:
+    get:
+      tags:
+      - 受试者
+      summary: 检查受试者是否存在
+      description: 根据 IAM ProfileID 检查受试者是否存在
+      operationId: 检查受试者是否存在
+      parameters:
+      - type: string
+        description: IAM档案ID
+        name: iam_profile_id
+        in: query
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/core.Response'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/testee.TesteeExistsResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+  /testees/{id}:
+    get:
+      tags:
+      - 受试者
+      summary: 获取受试者详情
+      description: 根据ID获取受试者详细信息
+      operationId: 获取受试者详情
+      parameters:
+      - type: integer
+        description: 受试者ID
+        name: id
+        in: path
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/core.Response'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/testee.TesteeResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+    put:
+      tags:
+      - 受试者
+      summary: 更新受试者信息
+      description: 更新受试者的基本信息
+      operationId: 更新受试者信息
+      parameters:
+      - type: integer
+        description: 受试者ID
+        name: id
+        in: path
+        required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/testee.UpdateTesteeRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/core.Response'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/testee.TesteeResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+  /testees/{id}/care-context:
+    get:
+      tags:
+      - 受试者
+      summary: 获取受试者照护上下文
+      description: 获取当前受试者关联的临床人员和入口来源摘要
+      operationId: 获取受试者照护上下文
+      parameters:
+      - type: integer
+        description: 受试者ID
+        name: id
+        in: path
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/core.Response'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/testee.TesteeCareContextResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+  /typology-assessment-sessions:
+    post:
+      tags:
+      - 类型学测评
+      summary: 开始类型学测评会话
+      description: 小程序推荐入口。根据 model_code 聚合返回模型摘要、精确题版问卷、答卷提交契约与后续 URL 模板；不提前创建测评。推荐流程：session
+        → POST /answersheets → GET /answersheets/submit-status → GET /typology-assessments（按
+        answer_sheet_id 取 assessment_id）→ GET .../report-status（或 WSS /report-events，subscribe.kind=personality）→
+        GET .../report。模型目录 kind/product_channel 为 typology；报告 model.kind 仍为 personality。
+      operationId: 开始类型学测评会话
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/typologysession.StartSessionRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/core.Response'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/typologysession.StartSessionResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+  /typology-assessments:
+    get:
+      tags:
+      - 类型学测评
+      summary: 查询类型学测评列表
+      description: 返回受试者人格测评列表。提交答卷后可用 items[].answer_sheet_id 与 submit-status 返回的
+        answersheet_id 匹配，取得 assessment_id（id 字段）。R121 后不再支持按答卷反查测评。
+      operationId: 查询类型学测评列表
+      parameters:
+      - type: string
+        description: 受试者ID（建议字符串）
+        name: testee_id
+        in: query
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/core.Response'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/typologyassessment.ListAssessmentsResponse'
+  /typology-assessments/{id}:
+    get:
+      tags:
+      - 类型学测评
+      summary: 获取类型学测评详情
+      operationId: 获取类型学测评详情
+      parameters:
+      - type: integer
+        description: 测评ID
+        name: id
+        in: path
+        required: true
+      - type: string
+        description: 受试者ID（建议字符串）
+        name: testee_id
+        in: query
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/core.Response'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/typologyassessment.AssessmentDetailResponse'
+  /typology-assessments/{id}/report:
+    get:
+      tags:
+      - 类型学测评
+      summary: 获取类型学测评报告
+      description: 仅在 report-status 终态 interpreted 后调用。model.kind 当前为 personality（测评层），与目录层
+        typology 并存。
+      operationId: 获取类型学测评报告
+      parameters:
+      - type: integer
+        description: 测评ID
+        name: id
+        in: path
+        required: true
+      - type: string
+        description: 受试者ID（建议字符串）
+        name: testee_id
+        in: query
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/core.Response'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/typologyassessment.AssessmentReportResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+  /typology-assessments/{id}/report-status:
+    get:
+      tags:
+      - 类型学测评
+      summary: 查询类型学测评报告状态
+      description: 推荐报告等待方式（优于 wait-report 长轮询）。非终态按 next_poll_after_ms 退避；亦可选用 WSS
+        /api/v1/report-events（subscribe.kind=personality，需 report_events.enabled）。
+      operationId: 查询类型学测评报告状态
+      parameters:
+      - type: integer
+        description: 测评ID
+        name: id
+        in: path
+        required: true
+      - type: string
+        description: 受试者ID（建议字符串）
+        name: testee_id
+        in: query
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/core.Response'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/typologyassessment.AssessmentStatusResponse'
+  /typology-assessments/{id}/wait-report:
+    get:
+      tags:
+      - 类型学测评
+      summary: 长轮询等待类型学测评报告
+      description: legacy 兼容；高并发下占连接。新接入请优先 report-status 短轮询或 WSS /report-events。
+      operationId: 长轮询等待类型学测评报告
+      parameters:
+      - type: integer
+        description: 测评ID
+        name: id
+        in: path
+        required: true
+      - type: string
+        description: 受试者ID（建议字符串）
+        name: testee_id
+        in: query
+        required: true
+      - type: integer
+        default: 20
+        description: 超时时间（秒）
+        name: timeout
+        in: query
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/core.Response'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/typologyassessment.AssessmentStatusResponse'
+  /typology-models:
+    get:
+      tags:
+      - 类型学模型
+      summary: 获取类型学模型列表
+      description: 浏览已发布类型学模型目录。model.kind/product_channel canonical 为 typology（R128b）。单模型详情与题版绑定请用
+        GET /typology-models/{code} 或推荐入口 POST /typology-assessment-sessions。
+      operationId: 获取类型学模型列表
+      parameters:
+      - type: integer
+        default: 1
+        description: 页码
+        name: page
+        in: query
+      - type: integer
+        default: 20
+        description: 每页数量
+        name: page_size
+        in: query
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/core.Response'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/github_com_FangcunMount_qs-server_internal_collection-server_application_typologymodel.ListTypologyModelsResponse'
+  /typology-models/categories:
+    get:
+      tags:
+      - 类型学模型
+      summary: 获取类型学模型分类
+      operationId: 获取类型学模型分类
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/core.Response'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/typologymodel.TypologyModelCategoriesResponse'
+  /typology-models/{code}:
+    get:
+      tags:
+      - 类型学模型
+      summary: 获取类型学模型详情
+      operationId: 获取类型学模型详情
+      parameters:
+      - type: string
+        description: 模型编码
+        name: code
+        in: path
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/core.Response'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/typologymodel.TypologyModelResponse'
+  /health:
+    get:
+      tags:
+      - 系统
+      summary: 健康检查
+      description: 检查服务健康状态
+      operationId: 健康检查
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.Response'
+  /ping:
+    get:
+      tags:
+      - 系统
+      summary: Ping
+      description: 测试服务连通性
+      operationId: Ping
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.Response'
+components:
+  schemas:
+    answersheet.AnswerSheetResponse:
+      type: object
+      properties:
+        answers:
+          type: array
+          items:
+            $ref: '#/components/schemas/github_com_FangcunMount_qs-server_internal_collection-server_application_answersheet.Answer'
+        created_at:
+          type: string
+        id:
+          type: string
+        questionnaire_code:
+          type: string
+        questionnaire_version:
+          type: string
+        score:
+          type: number
+        testee_id:
+          type: string
+        testee_name:
+          type: string
+        title:
+          type: string
+        updated_at:
+          type: string
+        writer_id:
+          type: string
+        writer_name:
+          type: string
+    answersheet.SubmitAcceptedResponse:
+      type: object
+      properties:
+        request_id:
+          type: string
+        status:
+          type: string
+    answersheet.SubmitAnswerSheetRequest:
+      type: object
+      required:
+      - answers
+      - questionnaire_code
+      - questionnaire_version
+      - testee_id
+      properties:
+        answers:
+          type: array
+          items:
+            $ref: '#/components/schemas/github_com_FangcunMount_qs-server_internal_collection-server_application_answersheet.Answer'
+        idempotency_key:
+          type: string
+        questionnaire_code:
+          type: string
+        questionnaire_version:
+          type: string
+        task_id:
+          type: string
+        testee_id:
+          type: integer
+        title:
+          type: string
+    answersheet.SubmitStatusResponse:
+      type: object
+      properties:
+        answersheet_id:
+          type: string
+        assessment_id:
+          description: AssessmentID 在 status=done 且异步测评已落库后出现；未就绪时省略，客户端可继续轮询 submit-status。
+          type: string
+        status:
+          type: string
+        updated_at:
+          type: integer
+    core.ErrResponse:
+      type: object
+      properties:
+        code:
+          description: Code 定义了业务错误代码
+          type: integer
+        message:
+          description: 'Message 包含此消息的详细信息
+
+            此消息适合暴露给外部'
+          type: string
+        reference:
+          description: Reference 返回参考文档，可能有助于解决此错误
+          type: string
+    core.Response:
+      type: object
+      properties:
+        code:
+          description: Code 业务状态码，0 表示成功
+          type: integer
+        data:
+          description: Data 响应数据
+        message:
+          description: Message 响应消息
+          type: string
+        reference:
+          description: Reference 返回参考文档（错误时使用）
+          type: string
+    evaluation.AssessmentFactorChangeResponse:
+      type: object
+      properties:
+        current_score:
+          type: number
+        delta:
+          type: number
+        factor_code:
+          type: string
+        factor_name:
+          type: string
+        previous_score:
+          type: number
+        risk_level:
+          type: string
+    evaluation.AssessmentFactorTrendPointResponse:
+      type: object
+      properties:
+        assessment_id:
+          type: string
+        risk_level:
+          type: string
+        score:
+          type: number
+        submitted_at:
+          type: string
+    evaluation.AssessmentFactorTrendResponse:
+      type: object
+      properties:
+        factor_code:
+          type: string
+        factor_name:
+          type: string
+        points:
+          type: array
+          items:
+            $ref: '#/components/schemas/evaluation.AssessmentFactorTrendPointResponse'
+    evaluation.AssessmentStatusResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        next_poll_after_ms:
+          type: integer
+        reason:
+          type: string
+        risk_level:
+          type: string
+        stage:
+          type: string
+        status:
+          description: pending/submitted/interpreted/failed
+          type: string
+        total_score:
+          type: number
+        updated_at:
+          description: Unix timestamp
+          type: integer
+    evaluation.AssessmentSummaryResponse:
+      type: object
+      properties:
+        answer_sheet_id:
+          description: 关联答卷 ID；提交后可用其与 answersheet_id 匹配取得 assessment_id（R121 后推荐方式）。
+          type: string
+        created_at:
+          type: string
+        id:
+          type: string
+        interpreted_at:
+          type: string
+        level:
+          $ref: '#/components/schemas/evaluation.ResultLevelResponse'
+        model:
+          $ref: '#/components/schemas/evaluation.ModelIdentityResponse'
+        origin_type:
+          type: string
+        primary_score:
+          $ref: '#/components/schemas/evaluation.ScoreValueResponse'
+        questionnaire_code:
+          type: string
+        questionnaire_version:
+          type: string
+        status:
+          type: string
+        submitted_at:
+          type: string
+    evaluation.AssessmentTrendMetaResponse:
+      type: object
+      properties:
+        comparable_count:
+          type: integer
+        display_mode:
+          type: string
+        has_multiple_fillers:
+          type: boolean
+        note:
+          type: string
+    evaluation.AssessmentTrendSnapshotResponse:
+      type: object
+      properties:
+        assessment_id:
+          type: string
+        questionnaire_version:
+          type: string
+        risk_level:
+          type: string
+        scale_code:
+          type: string
+        scale_name:
+          type: string
+        submitted_at:
+          type: string
+        total_score:
+          type: number
+    evaluation.AssessmentTrendSummaryResponse:
+      type: object
+      properties:
+        current:
+          $ref: '#/components/schemas/evaluation.AssessmentTrendSnapshotResponse'
+        factor_changes:
+          type: array
+          items:
+            $ref: '#/components/schemas/evaluation.AssessmentFactorChangeResponse'
+        factor_trends:
+          type: array
+          items:
+            $ref: '#/components/schemas/evaluation.AssessmentFactorTrendResponse'
+        meta:
+          $ref: '#/components/schemas/evaluation.AssessmentTrendMetaResponse'
+        previous:
+          $ref: '#/components/schemas/evaluation.AssessmentTrendSnapshotResponse'
+        timeline:
+          type: array
+          items:
+            $ref: '#/components/schemas/evaluation.AssessmentTrendTimelinePointResponse'
+    evaluation.AssessmentTrendTimelinePointResponse:
+      type: object
+      properties:
+        assessment_id:
+          type: string
+        filler_label:
+          type: string
+        risk_level:
+          type: string
+        submitted_at:
+          type: string
+        total_score:
+          type: number
+    evaluation.DimensionInterpretResponse:
+      type: object
+      properties:
+        description:
+          type: string
+        factor_code:
+          type: string
+        factor_name:
+          type: string
+        max_score:
+          type: number
+        raw_score:
+          type: number
+        risk_level:
+          type: string
+        suggestion:
+          type: string
+    evaluation.FactorScoreResponse:
+      type: object
+      properties:
+        conclusion:
+          type: string
+        factor_code:
+          type: string
+        factor_name:
+          type: string
+        is_total_score:
+          type: boolean
+        raw_score:
+          type: number
+        risk_level:
+          type: string
+        suggestion:
+          type: string
+    evaluation.ModelExtraResponse:
+      type: object
+      properties:
+        commentary:
+          type: string
+        image_url:
+          type: string
+        is_special:
+          type: boolean
+        kind:
+          type: string
+        match_percent:
+          type: number
+        one_liner:
+          type: string
+        rarity:
+          $ref: '#/components/schemas/evaluation.ModelRarityResponse'
+        special_trigger:
+          type: string
+        type_code:
+          type: string
+        type_name:
+          type: string
+    evaluation.ModelIdentityResponse:
+      type: object
+      properties:
+        algorithm:
+          type: string
+        algorithm_family:
+          type: string
+        code:
+          type: string
+        kind:
+          description: 测评层 kind；人格线当前输出 personality（evaluation 过滤值），读兼容 typology。
+          type: string
+          enum:
+          - personality
+          - typology
+          example: personality
+        product_channel:
+          type: string
+        sub_kind:
+          type: string
+          example: typology
+        title:
+          type: string
+        version:
+          type: string
+    evaluation.ModelRarityResponse:
+      type: object
+      properties:
+        label:
+          type: string
+        one_in_x:
+          type: integer
+        percent:
+          type: number
+    evaluation.ResultLevelResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        label:
+          type: string
+        severity:
+          type: string
+    evaluation.ScoreValueResponse:
+      type: object
+      properties:
+        kind:
+          type: string
+        label:
+          type: string
+        max:
+          type: number
+        value:
+          type: number
+    evaluation.SuggestionResponse:
+      type: object
+      properties:
+        category:
+          type: string
+        content:
+          type: string
+        factor_code:
+          type: string
+    evaluation.TrendPointResponse:
+      type: object
+      properties:
+        assessment_id:
+          type: string
+        created_at:
+          type: string
+        risk_level:
+          type: string
+        score:
+          type: number
+    github_com_FangcunMount_qs-server_internal_collection-server_application_answersheet.Answer:
+      type: object
+      required:
+      - question_code
+      - question_type
+      - value
+      properties:
+        question_code:
+          type: string
+        question_type:
+          type: string
+        score:
+          type: integer
+        value:
+          description: JSON 字符串
+          type: string
+    github_com_FangcunMount_qs-server_internal_collection-server_application_questionnaire.ListQuestionnairesResponse:
+      type: object
+      properties:
+        page:
+          type: integer
+        page_size:
+          type: integer
+        questionnaires:
+          type: array
+          items:
+            $ref: '#/components/schemas/questionnaire.QuestionnaireSummaryResponse'
+        total:
+          type: integer
+    github_com_FangcunMount_qs-server_internal_collection-server_application_scale.ListHotScalesResponse:
+      type: object
+      properties:
+        limit:
+          type: integer
+        scales:
+          type: array
+          items:
+            $ref: '#/components/schemas/scale.HotScaleSummaryResponse'
+        total:
+          type: integer
+        window_days:
+          type: integer
+    github_com_FangcunMount_qs-server_internal_collection-server_application_scale.ListScalesResponse:
+      type: object
+      properties:
+        page:
+          type: integer
+        page_size:
+          type: integer
+        scales:
+          type: array
+          items:
+            $ref: '#/components/schemas/scale.ScaleSummaryResponse'
+        total:
+          type: integer
+    github_com_FangcunMount_qs-server_internal_collection-server_application_typologymodel.ListTypologyModelsResponse:
+      type: object
+      properties:
+        models:
+          type: array
+          items:
+            $ref: '#/components/schemas/typologymodel.TypologyModelSummaryResponse'
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total:
+          type: integer
+        total_pages:
+          type: integer
+    meta.Birthday:
+      type: object
+    questionnaire.CalculationRuleResponse:
+      type: object
+      properties:
+        formula_type:
+          type: string
+    questionnaire.OptionResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        content:
+          type: string
+        score:
+          type: integer
+    questionnaire.QuestionResponse:
+      type: object
+      properties:
+        calculation_rule:
+          $ref: '#/components/schemas/questionnaire.CalculationRuleResponse'
+        code:
+          type: string
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/questionnaire.OptionResponse'
+        placeholder:
+          type: string
+        tips:
+          type: string
+        title:
+          type: string
+        type:
+          type: string
+        validation_rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/questionnaire.ValidationRuleResponse'
+    questionnaire.QuestionnaireResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        created_at:
+          type: string
+        description:
+          type: string
+        img_url:
+          type: string
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/questionnaire.QuestionResponse'
+        status:
+          type: string
+        title:
+          type: string
+        type:
+          description: 问卷类型：Survey(调查问卷) / MedicalScale(医学量表)
+          type: string
+        updated_at:
+          type: string
+        version:
+          type: string
+    questionnaire.QuestionnaireSummaryResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        created_at:
+          type: string
+        description:
+          type: string
+        img_url:
+          type: string
+        question_count:
+          type: integer
+        status:
+          type: string
+        title:
+          type: string
+        type:
+          description: 问卷类型：Survey(调查问卷) / MedicalScale(医学量表)
+          type: string
+        updated_at:
+          type: string
+        version:
+          type: string
+    questionnaire.ValidationRuleResponse:
+      type: object
+      properties:
+        rule_type:
+          type: string
+        target_value:
+          type: string
+    scale.ApplicableAgeResponse:
+      type: object
+      properties:
+        label:
+          type: string
+        value:
+          type: string
+    scale.CategoryResponse:
+      type: object
+      properties:
+        label:
+          type: string
+        value:
+          type: string
+    scale.FactorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        factor_type:
+          type: string
+        interpret_rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/scale.InterpretRuleResponse'
+        is_total_score:
+          type: boolean
+        max_score:
+          description: 最大分
+          type: number
+        question_codes:
+          type: array
+          items:
+            type: string
+        risk_level:
+          type: string
+        scoring_params:
+          type: object
+          additionalProperties:
+            type: string
+        scoring_strategy:
+          type: string
+        title:
+          type: string
+    scale.HotScaleSummaryResponse:
+      type: object
+      properties:
+        applicable_ages:
+          type: array
+          items:
+            type: string
+        category:
+          type: string
+        code:
+          type: string
+        description:
+          type: string
+        heat_score:
+          type: integer
+        question_count:
+          type: integer
+        questionnaire_code:
+          type: string
+        questionnaire_version:
+          type: string
+        rank:
+          type: integer
+        reporters:
+          type: array
+          items:
+            type: string
+        stages:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+        submission_count:
+          type: integer
+        tags:
+          type: array
+          items:
+            type: string
+        title:
+          type: string
+    scale.InterpretRuleResponse:
+      type: object
+      properties:
+        conclusion:
+          type: string
+        max_score:
+          type: number
+        min_score:
+          type: number
+        risk_level:
+          type: string
+        suggestion:
+          type: string
+    scale.ReporterResponse:
+      type: object
+      properties:
+        label:
+          type: string
+        value:
+          type: string
+    scale.ScaleCategoriesResponse:
+      type: object
+      properties:
+        applicable_ages:
+          type: array
+          items:
+            $ref: '#/components/schemas/scale.ApplicableAgeResponse'
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/scale.CategoryResponse'
+        reporters:
+          type: array
+          items:
+            $ref: '#/components/schemas/scale.ReporterResponse'
+        stages:
+          type: array
+          items:
+            $ref: '#/components/schemas/scale.StageResponse'
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/scale.TagResponse'
+    scale.ScaleResponse:
+      type: object
+      properties:
+        applicable_ages:
+          type: array
+          items:
+            type: string
+        category:
+          type: string
+        code:
+          type: string
+        description:
+          type: string
+        factors:
+          type: array
+          items:
+            $ref: '#/components/schemas/scale.FactorResponse'
+        question_count:
+          type: integer
+        questionnaire_code:
+          type: string
+        questionnaire_version:
+          type: string
+        reporters:
+          type: array
+          items:
+            type: string
+        stages:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        title:
+          type: string
+    scale.ScaleSummaryResponse:
+      type: object
+      properties:
+        applicable_ages:
+          type: array
+          items:
+            type: string
+        category:
+          type: string
+        code:
+          type: string
+        description:
+          type: string
+        question_count:
+          type: integer
+        questionnaire_code:
+          type: string
+        questionnaire_version:
+          type: string
+        reporters:
+          type: array
+          items:
+            type: string
+        stages:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        title:
+          type: string
+    scale.StageResponse:
+      type: object
+      properties:
+        label:
+          type: string
+        value:
+          type: string
+    scale.TagResponse:
+      type: object
+      properties:
+        category:
+          type: string
+        label:
+          type: string
+        value:
+          type: string
+    testee.AssessmentStatsDTO:
+      type: object
+      properties:
+        last_assessment_at:
+          description: 最后测评时间
+          type: string
+        last_risk_level:
+          description: 最后风险等级
+          type: string
+        total_count:
+          description: 总测评次数
+          type: integer
+    testee.CreateTesteeRequest:
+      type: object
+      required:
+      - gender
+      - name
+      properties:
+        birthday:
+          description: 出生日期（格式：YYYY-MM-DD）
+          allOf:
+          - $ref: '#/components/schemas/meta.Birthday'
+        gender:
+          description: 性别：1-男，2-女，3-其他
+          type: integer
+        id_card_number:
+          description: 身份证号（可选）
+          type: string
+        is_key_focus:
+          description: 是否重点关注
+          type: boolean
+        name:
+          description: 姓名
+          type: string
+        relation:
+          description: 与当前用户关系：self/parent/grandparent/other，默认 parent
+          type: string
+        source:
+          description: 来源：online_form/plan/imported
+          type: string
+        tags:
+          description: 标签列表
+          type: array
+          items:
+            type: string
+    testee.ListTesteesResponse:
+      type: object
+      properties:
+        items:
+          description: 受试者列表
+          type: array
+          items:
+            $ref: '#/components/schemas/testee.TesteeResponse'
+        total:
+          description: 总数
+          type: integer
+    testee.TesteeCareContextResponse:
+      type: object
+      properties:
+        clinician_name:
+          description: 当前跟进临床人员姓名
+          type: string
+        clinician_role:
+          description: 当前跟进临床人员角色/类型
+          type: string
+        entry_source_type:
+          description: 入口来源类型
+          type: string
+        entry_title:
+          description: 入口标题
+          type: string
+        relation_type:
+          description: 与受试者的关系类型
+          type: string
+    testee.TesteeExistsResponse:
+      type: object
+      properties:
+        exists:
+          description: 是否存在
+          type: boolean
+        testee_id:
+          description: 受试者ID（如果存在）
+          type: string
+    testee.TesteeResponse:
+      type: object
+      properties:
+        assessment_stats:
+          description: 测评统计信息
+          allOf:
+          - $ref: '#/components/schemas/testee.AssessmentStatsDTO'
+        birthday:
+          description: 出生日期（格式：YYYY-MM-DD）
+          allOf:
+          - $ref: '#/components/schemas/meta.Birthday'
+        created_at:
+          description: 创建时间
+          type: string
+        gender:
+          description: 性别
+          type: integer
+        iam_profile_id:
+          description: IAM档案ID - 使用字符串以兼容 IAM 系统和前端大数字
+          type: string
+        iam_user_id:
+          description: IAM用户ID - 使用字符串以兼容 IAM 系统和前端大数字
+          type: string
+        id:
+          description: 受试者ID
+          type: string
+        is_key_focus:
+          description: 是否重点关注
+          type: boolean
+        name:
+          description: 姓名
+          type: string
+        org_id:
+          description: 机构ID
+          type: string
+        source:
+          description: 来源
+          type: string
+        tags:
+          description: 标签列表
+          type: array
+          items:
+            type: string
+        updated_at:
+          description: 更新时间
+          type: string
+    testee.UpdateTesteeRequest:
+      type: object
+      properties:
+        birthday:
+          description: 出生日期（格式：YYYY-MM-DD）
+          allOf:
+          - $ref: '#/components/schemas/meta.Birthday'
+        gender:
+          description: 性别
+          type: integer
+        is_key_focus:
+          description: 是否重点关注
+          type: boolean
+        name:
+          description: 姓名
+          type: string
+        tags:
+          description: 标签列表
+          type: array
+          items:
+            type: string
+    typologyassessment.AssessmentDetailResponse:
+      type: object
+      properties:
+        answer_sheet_id:
+          type: string
+        created_at:
+          type: string
+        failed_at:
+          type: string
+        failure_reason:
+          type: string
+        id:
+          type: string
+        interpreted_at:
+          type: string
+        level:
+          $ref: '#/components/schemas/evaluation.ResultLevelResponse'
+        model:
+          $ref: '#/components/schemas/evaluation.ModelIdentityResponse'
+        org_id:
+          type: string
+        origin_id:
+          type: string
+        origin_type:
+          type: string
+        primary_score:
+          $ref: '#/components/schemas/evaluation.ScoreValueResponse'
+        questionnaire_code:
+          type: string
+        questionnaire_version:
+          type: string
+        status:
+          type: string
+        submitted_at:
+          type: string
+        testee_id:
+          type: string
+    typologyassessment.AssessmentReportResponse:
+      type: object
+      properties:
+        assessment_id:
+          type: string
+        conclusion:
+          type: string
+        created_at:
+          type: string
+        dimensions:
+          type: array
+          items:
+            $ref: '#/components/schemas/evaluation.DimensionInterpretResponse'
+        level:
+          $ref: '#/components/schemas/evaluation.ResultLevelResponse'
+        model:
+          $ref: '#/components/schemas/evaluation.ModelIdentityResponse'
+        model_extra:
+          $ref: '#/components/schemas/evaluation.ModelExtraResponse'
+        primary_score:
+          $ref: '#/components/schemas/evaluation.ScoreValueResponse'
+        suggestions:
+          type: array
+          items:
+            $ref: '#/components/schemas/evaluation.SuggestionResponse'
+    typologyassessment.AssessmentStatusResponse:
+      type: object
+      properties:
+        level:
+          $ref: '#/components/schemas/typologyassessment.ResultLevelResponse'
+        message:
+          type: string
+        model:
+          $ref: '#/components/schemas/typologyassessment.ModelIdentityResponse'
+        next_poll_after_ms:
+          type: integer
+        reason:
+          type: string
+        stage:
+          type: string
+        status:
+          type: string
+        updated_at:
+          type: integer
+    typologyassessment.ListAssessmentsResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/evaluation.AssessmentSummaryResponse'
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total:
+          type: integer
+        total_pages:
+          type: integer
+    typologyassessment.ModelIdentityResponse:
+      type: object
+      properties:
+        algorithm:
+          type: string
+        algorithm_family:
+          type: string
+        code:
+          type: string
+        kind:
+          description: 测评层 kind；人格线当前输出 personality（evaluation 过滤值），读兼容 typology。
+          type: string
+          enum:
+          - personality
+          - typology
+          example: personality
+        product_channel:
+          type: string
+        sub_kind:
+          type: string
+          example: typology
+        title:
+          type: string
+        version:
+          type: string
+    typologyassessment.ResultLevelResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        label:
+          type: string
+        severity:
+          type: string
+    typologymodel.TypologyCategoryResponse:
+      type: object
+      properties:
+        label:
+          type: string
+        value:
+          type: string
+    typologymodel.TypologyDimensionResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        left_pole:
+          type: string
+        name:
+          type: string
+        right_pole:
+          type: string
+    typologymodel.TypologyModelCategoriesResponse:
+      type: object
+      properties:
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/typologymodel.TypologyCategoryResponse'
+    typologymodel.TypologyModelResponse:
+      type: object
+      properties:
+        algorithm:
+          type: string
+        algorithm_family:
+          type: string
+        code:
+          type: string
+        decision_kind:
+          type: string
+        description:
+          type: string
+        dimension_order:
+          type: array
+          items:
+            type: string
+        dimensions:
+          type: array
+          items:
+            $ref: '#/components/schemas/typologymodel.TypologyDimensionResponse'
+        kind:
+          description: 模型族；R128b canonical 为 typology，读兼容 personality。
+          type: string
+          enum:
+          - typology
+          - personality
+          example: typology
+        outcomes:
+          type: array
+          items:
+            $ref: '#/components/schemas/typologymodel.TypologyOutcomeResponse'
+        payload_format:
+          type: string
+        product_channel:
+          description: 产品通道；R128b canonical 为 typology，读兼容 personality。
+          type: string
+          enum:
+          - typology
+          - personality
+          example: typology
+        question_count:
+          type: integer
+        questionnaire_code:
+          type: string
+        questionnaire_version:
+          type: string
+        status:
+          type: string
+        sub_kind:
+          description: 子机制，人格测评固定 typology。
+          type: string
+          example: typology
+        title:
+          type: string
+        version:
+          type: string
+    typologymodel.TypologyModelSummaryResponse:
+      type: object
+      properties:
+        algorithm:
+          type: string
+        algorithm_family:
+          type: string
+        code:
+          type: string
+        decision_kind:
+          type: string
+        description:
+          type: string
+        kind:
+          description: 模型族；R128b canonical 为 typology，读兼容 personality。
+          type: string
+          enum:
+          - typology
+          - personality
+          example: typology
+        payload_format:
+          type: string
+        product_channel:
+          description: 产品通道；R128b canonical 为 typology，读兼容 personality。
+          type: string
+          enum:
+          - typology
+          - personality
+          example: typology
+        question_count:
+          type: integer
+        questionnaire_code:
+          type: string
+        questionnaire_version:
+          type: string
+        status:
+          type: string
+        sub_kind:
+          description: 子机制，人格测评固定 typology。
+          type: string
+          example: typology
+        title:
+          type: string
+        version:
+          type: string
+    typologymodel.TypologyOutcomeResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        image_url:
+          type: string
+        name:
+          type: string
+        one_liner:
+          type: string
+    typologysession.SessionEndpointsResponse:
+      type: object
+      properties:
+        assessment_by_answer_sheet:
+          description: 已下线（R121）端点 URL 模板，勿调用。assessment_id 请用 GET /typology-assessments
+            列表按 answer_sheet_id 匹配。
+          type: string
+        report:
+          type: string
+        submit_answer_sheet:
+          type: string
+        wait_report:
+          description: legacy 长轮询；推荐改用 report-status 短轮询或 WSS /report-events（kind=personality）。
+          type: string
+    typologysession.StartSessionRequest:
+      type: object
+      required:
+      - model_code
+      - testee_id
+      properties:
+        model_code:
+          type: string
+          example: MBTI_OEJTS
+        testee_id:
+          description: 受试者 ID；JSON 可传字符串或数字（小程序大整数建议字符串）。
+          type: string
+          example: '618855887087350318'
+    typologysession.StartSessionResponse:
+      type: object
+      properties:
+        endpoints:
+          $ref: '#/components/schemas/typologysession.SessionEndpointsResponse'
+        model:
+          $ref: '#/components/schemas/typologymodel.TypologyModelSummaryResponse'
+        questionnaire:
+          $ref: '#/components/schemas/questionnaire.QuestionnaireResponse'
+        submit_contract:
+          $ref: '#/components/schemas/typologysession.SubmitContractResponse'
+    typologysession.SubmitContractResponse:
+      type: object
+      properties:
+        questionnaire_code:
+          type: string
+        questionnaire_version:
+          type: string
+        testee_id:
+          type: string
+    ws.ReportEventsStatusFrame:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              enum:
+              - pending
+              - submitted
+              - interpreted
+              - failed
+              example: interpreted
+        op:
+          type: string
+          example: status
+  securitySchemes:
+    BearerAuth:
+      type: apiKey
+      name: Authorization
+      in: header

@@ -36,7 +36,8 @@ const configMap = {
     iamHost: 'https://iam.fangcunmount.cn/api/v2',
     collectionHost: 'https://collect.fangcunmount.cn/api/v1',
     qsHost: 'https://qs.fangcunmount.cn/api/v1',
-    reportEventsEnabled: true,
+    // 生产默认关闭 WS（文档 12 §10）；短轮询必须可独立跑通
+    reportEventsEnabled: false,
   }
 };
 

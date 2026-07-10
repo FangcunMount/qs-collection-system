@@ -14,6 +14,7 @@ export async function submitAssessmentAndResolveAnswersheet(payload, options = {
       id: normalized.answersheetId,
       answersheet_id: normalized.answersheetId,
       assessment_id: normalized.assessmentId || submitResult?.assessment_id,
+      request_id: normalized.requestId || submitResult?.request_id || options.idempotencyKey,
       submit_mode: 'immediate',
       queued: false,
     };

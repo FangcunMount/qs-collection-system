@@ -24,7 +24,7 @@ export async function loadGroupedPersonalityCatalog({
   pageSize = 50,
   category = 'personality',
 } = {}) {
-  const result = await listPublishedPersonalityModels({ page, pageSize, category });
+  const result = await listPublishedPersonalityModels({ page, pageSize });
   const catalogItems = groupCatalogItems(mapPublishedModelsToCatalog(result.items || []));
 
   return {
@@ -36,7 +36,7 @@ export async function loadGroupedPersonalityCatalog({
 }
 
 /**
- * 详情页展示：优先用公开列表数据，避免未鉴权访问 /personality-models/:code
+ * 详情页展示：优先用公开列表数据，避免未鉴权访问 /typology-models/:code
  */
 export async function loadPersonalityModelDetail(modelCode, { publishedModels } = {}) {
   if (!modelCode) {

@@ -18,140 +18,28 @@ import SinglePageQuestionnaire from "../../questionnaire/components/SinglePageQu
 import { getValidQuestionCount, getEstimatedTime } from "../../questionnaire/lib/questionUtils";
 import "./AssessmentFillPage.less";
 
-import { parsingScene } from "@/shared/lib/scene";
 import { getLogger } from "@/shared/lib/logger";
-import { getMiniProgramEntryParams } from "@/services/api/miniProgramEntries";
-import { resolveAssessmentEntry } from "@/services/api/assessmentEntries";
 import { getQuestionnaire } from "@/services/api/questionnaires";
 import { getTestee } from "@/services/api/testees";
-import { createPersonalitySession } from "@/services/api/personality";
 import {
-  prepareQuestionnaireFromSession,
+  loadPersonalitySessionForFill,
 } from "../lib/personalityQuestionnaire";
 import { normalizeAssessmentEntryParams } from "../lib/assessmentEntryParams";
-import { ASSESSMENT_KIND } from "@/shared/lib/assessmentKind";
+import {
+  INVALID_ENTRY_STATUSES,
+  hasEntryContext,
+  redirectToEntryError,
+  resolveAssessmentFillEntryParams,
+  resolveEntryStatusText,
+  resolvePlanTaskId,
+} from "../lib/assessmentFillEntry";
+import {
+  buildPostSubmitRedirectUrl,
+  resolvePostSubmitNavigationKind,
+} from "../lib/assessmentSubmitNavigation";
 
 const PAGE_NAME = "questionnaire_fill";
 const logger = getLogger(PAGE_NAME);
-
-const INVALID_ENTRY_STATUSES = new Set(["inactive", "disabled", "revoked", "expired"]);
-
-const resolveEntryStatusText = (status) => {
-  switch (status) {
-    case "inactive":
-    case "disabled":
-      return "当前入口已停用";
-    case "revoked":
-      return "当前入口已失效";
-    case "expired":
-      return "当前入口已过期";
-    default:
-      return "";
-  }
-};
-
-const buildEntryErrorUrl = ({ title, text, desc, buttonText, buttonUrl }) => {
-  return routes.systemError({ title, text, desc, buttonText, buttonUrl });
-};
-
-const redirectToEntryError = (options) => {
-  Taro.redirectTo({ url: buildEntryErrorUrl(options) });
-};
-
-const hasEntryContext = (context) => {
-  if (!context) return false;
-  return Boolean(
-    context.mpqrcodeid ||
-      context.entry_title ||
-      context.entry_description ||
-      context.clinician_name ||
-      context.target_code
-  );
-};
-
-const isAssessmentEntryToken = (value) => /^ae_[A-Za-z0-9_]+$/.test(String(value || "").trim());
-
-const toResolvedEntryStatus = (entry) => {
-  if (!entry) return "";
-  if (!entry.is_active) return "inactive";
-  if (entry.expires_at && new Date(entry.expires_at).getTime() <= Date.now()) return "expired";
-  return "active";
-};
-
-const mapResolvedAssessmentEntry = (token, result) => {
-  const entry = result?.entry || {};
-  const clinician = result?.clinician || {};
-  const targetCode = entry.target_code || "";
-  const targetType = entry.target_type || "";
-  const targetVersion = entry.target_version || "";
-  const clinicianName = clinician.name || "";
-  const clinicianTitle = clinician.title || clinician.clinician_type || "";
-
-  return {
-    token,
-    q: targetCode,
-    target_code: targetCode,
-    target_type: targetType,
-    target_version: targetVersion,
-    entry_title: clinicianName ? `${clinicianName} 推荐测评` : "扫码测评入口",
-    entry_description: targetCode ? `来源入口 · ${targetCode}` : "请按入口指引完成测评。",
-    entry_status: toResolvedEntryStatus(entry),
-    clinician_name: clinicianName,
-    clinician_title: clinicianTitle,
-    raw: result
-  };
-};
-
-const handleEntryParams = params => {
-  return new Promise((resolve, reject) => {
-    if (params.token && isAssessmentEntryToken(params.token)) {
-      resolveAssessmentEntry(params.token)
-        .then(result => {
-          resolve(mapResolvedAssessmentEntry(params.token, result));
-        })
-        .catch(reject);
-      return;
-    }
-
-    if (!params.scene) {
-      return resolve(params);
-    }
-
-    if (!String(params.scene).includes("=") && isAssessmentEntryToken(params.scene)) {
-      resolveAssessmentEntry(params.scene)
-        .then(result => {
-          resolve(mapResolvedAssessmentEntry(params.scene, result));
-        })
-        .catch(reject);
-      return;
-    }
-
-    const np = parsingScene(params.scene);
-    if (!np.mpqrcodeid) {
-      return resolve(np);
-    }
-
-  getMiniProgramEntryParams(np.mpqrcodeid)
-      .then(result => {
-        resolve({
-          ...np,
-          ...(result.entry_data || {})
-        });
-      })
-      .catch(err => {
-        reject(err);
-      });
-  });
-};
-
-const resolvePlanTaskId = (params, context) => {
-  return String(
-    context?.task_id ||
-      context?.raw?.task_id ||
-      params?.task_id ||
-      ""
-  );
-};
 
 export default function Index() {
   const [questionnaireCode, setQuestionnaireCode] = useState(null);
@@ -193,7 +81,7 @@ export default function Index() {
 
     Taro.showLoading({ mask: true });
 
-    handleEntryParams(paramData).then(result => {
+    resolveAssessmentFillEntryParams(paramData).then(result => {
       logger.RUN("did show <RUN>, cleared params: ", result);
       if (paramData.scene || hasEntryContext(result)) {
         setAssessmentEntryContext(result);
@@ -313,18 +201,11 @@ export default function Index() {
   };
 
   const loadPersonalitySession = async (nextModelCode, testeeId) => {
-    const sessionVM = await createPersonalitySession({
-      modelCode: nextModelCode,
-      testeeId,
-    });
-    const questionnaireData = prepareQuestionnaireFromSession(sessionVM);
-
-    if (!questionnaireData?.questions?.length) {
-      throw new Error('当前人格测评题版为空');
-    }
+    const { sessionVM, questionnaireData, submitContract: nextSubmitContract } =
+      await loadPersonalitySessionForFill({ modelCode: nextModelCode, testeeId });
 
     setPersonalitySession(sessionVM);
-    setSubmitContract(sessionVM.submitContract);
+    setSubmitContract(nextSubmitContract);
     return questionnaireData;
   };
 
@@ -515,65 +396,39 @@ export default function Index() {
   /**
    * 答卷提交成功回调
    */
-  const writedCallback = async (answersheetid, assessmentId) => {
+  const writedCallback = async (answersheetid, assessmentId, requestId) => {
     const questionnaireType = questionnaire?.type;
     const selectedTesteeId = getSelectedTesteeId();
-    const taskIdParam = planTaskId ? `&task_id=${encodeURIComponent(planTaskId)}` : '';
-    
-    logger.RUN('[Fill] 答卷提交成功', { 
-      answersheetid, 
+
+    logger.RUN('[Fill] 答卷提交成功', {
+      answersheetid,
       assessmentId,
+      requestId,
       questionnaireType,
-      testeeId: selectedTesteeId 
+      testeeId: selectedTesteeId,
+      navigation: resolvePostSubmitNavigationKind({ questionnaireType, isPersonalityFlow }),
     });
 
-    if (questionnaireType === 'Survey') {
-      Taro.redirectTo({
-        url: routes.assessmentResponse({
-          a: answersheetid,
-          task_id: planTaskId || undefined,
-        })
-      });
-    } else if (questionnaireType === 'PersonalityAssessment' || isPersonalityFlow) {
-      logger.RUN('[Fill] 人格测评提交成功，跳转等待页', {
-        answersheetid,
-        assessmentId,
-        testeeId: selectedTesteeId
-      });
-      Taro.redirectTo({
-        url: routes.assessmentReportPending({
-          a: answersheetid,
-          aid: assessmentId || undefined,
-          t: selectedTesteeId || undefined,
-          kind: ASSESSMENT_KIND.PERSONALITY,
-          task_id: planTaskId || undefined,
-        })
-      });
-    } else if (questionnaireType === 'MedicalScale') {
-      logger.RUN('[Fill] 量表提交成功，跳转等待页', {
-        answersheetid,
-        assessmentId,
-        hasAssessmentId: !!assessmentId,
-        testeeId: selectedTesteeId
-      });
-      Taro.redirectTo({
-        url: routes.assessmentReportPending({
-          a: answersheetid,
-          aid: assessmentId || undefined,
-          t: selectedTesteeId || undefined,
-          task_id: planTaskId || undefined,
-        })
-      });
-    } else {
-      // 未知类型或旧数据：默认跳转到答卷详情页面
+    if (
+      questionnaireType !== 'Survey' &&
+      questionnaireType !== 'PersonalityAssessment' &&
+      questionnaireType !== 'MedicalScale' &&
+      !isPersonalityFlow
+    ) {
       logger.WARN('[Fill] 问卷类型未知，默认跳转到答卷详情', { questionnaireType });
-      Taro.redirectTo({
-        url: routes.assessmentResponse({
-          a: answersheetid,
-          task_id: planTaskId || undefined,
-        })
-      });
     }
+
+    Taro.redirectTo({
+      url: buildPostSubmitRedirectUrl({
+        questionnaireType,
+        isPersonalityFlow,
+        answersheetId: answersheetid,
+        assessmentId,
+        requestId,
+        testeeId: selectedTesteeId,
+        planTaskId,
+      }),
+    });
   };
 
   const handleAddChild = () => {

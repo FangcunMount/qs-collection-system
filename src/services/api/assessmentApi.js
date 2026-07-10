@@ -1,9 +1,16 @@
 import { request } from '../servers';
 import config from '../../config';
+import { pollAssessmentIdByAnswerSheet } from '@/modules/assessment/services/pollAssessmentIdByAnswerSheet';
+import { createMedicalAssessmentFetchItems } from '@/modules/assessment/services/medicalAssessmentIdResolver';
+import {
+  COLLECTION_API_CAPABILITIES,
+  createAssessmentsListUnavailableError,
+} from '@/shared/config/collectionApiCapabilities';
 
 /**
- * Collection 测评 API
- * 负责测评（assessment）、因子、报告的查询
+ * Collection 测评 API（collectionHost）
+ * 契约真值：docs/collection.yaml
+ * IAM / qsHost / apiserver 见各自 API 模块，不在此文件范围。
  */
 
 const buildQueryString = (params = {}) => {
@@ -25,18 +32,7 @@ const buildQueryString = (params = {}) => {
 };
 
 /**
- * 获取测评记录列表
- * @param {object} options
- * @param {string|number} options.testeeId
- * @param {string} [options.status]
- * @param {string} [options.scaleCode]
- * @param {string} [options.riskLevel]
- * @param {string} [options.dateFrom]
- * @param {string} [options.dateTo]
- * @param {string} [options.assessmentKind]
- * @param {number} [options.page]
- * @param {number} [options.pageSize]
- * @returns {Promise<{items: Array, total: number, page: number, page_size: number}>}
+ * @deprecated collection.yaml 未定义 GET /assessments 列表；仅医学降级路径保留，调用方须处理 404。
  */
 export const getAssessments = ({
   testeeId,
@@ -49,6 +45,10 @@ export const getAssessments = ({
   page = 1,
   pageSize = 20
 } = {}) => {
+  if (!COLLECTION_API_CAPABILITIES.medicalAssessmentsList) {
+    return Promise.reject(createAssessmentsListUnavailableError());
+  }
+
   const params = {
     testee_id: testeeId ? String(testeeId) : '',
     status,
@@ -71,31 +71,98 @@ export const getAssessments = ({
   });
 };
 
-/**
- * 获取测评详情
- * @param {string|number} id - 测评ID
- * @param {string|number} testeeId - 受试者ID
- * @returns {Promise<object>}
- */
-export const getAssessmentDetail = (id, testeeId) => {
-  return request(`/assessments/${String(id)}`, {}, {
-    host: config.collectionHost,
-    params: { testee_id: String(testeeId) },
-    needToken: true
-  });
+export const extractAssessmentList = (payload = {}) => {
+  const data = payload?.data !== undefined ? payload.data : payload;
+  if (Array.isArray(data?.items)) return data.items;
+  if (Array.isArray(data?.assessments)) return data.assessments;
+  if (Array.isArray(data)) return data;
+  return [];
+};
+
+export const normalizeAssessmentListItem = (raw = {}) => {
+  const item = raw || {};
+  return {
+    id: item.id !== undefined && item.id !== null ? String(item.id) : '',
+    answer_sheet_id: String(
+      item.answer_sheet_id || item.answersheet_id || item.answerSheetId || ''
+    ),
+    testee_id: item.testee_id !== undefined && item.testee_id !== null
+      ? String(item.testee_id)
+      : '',
+    status: item.status || '',
+    raw: item,
+  };
 };
 
 /**
- * 通过答卷ID获取测评详情
- * @param {string|number} answersheetId - 答卷ID
- * @returns {Promise<object>}
+ * 将 GET /assessments/{id}/scores 响应映射为报告页可消费结构。
+ * collection.yaml 未定义医学 GET /assessments/{id}/report，以 scores 为正文来源。
  */
-export const getAssessmentByAnswersheetId = (answersheetId, options = {}) => {
-  return request(`/answersheets/${String(answersheetId)}/assessment`, {}, {
-    host: config.collectionHost,
-    needToken: true,
-    ...options
+export const mapScoresToReportPayload = (scoresPayload = {}) => {
+  const data = scoresPayload?.data !== undefined ? scoresPayload.data : scoresPayload;
+  const scores = Array.isArray(data) ? data : [];
+
+  const totalFactor = scores.find((item) => item.is_total_score) || scores[0] || {};
+  const dimensions = scores
+    .filter((item) => !item.is_total_score)
+    .map((item) => ({
+      factor_code: item.factor_code,
+      factor_name: item.factor_name,
+      description: item.conclusion || '',
+      raw_score: item.raw_score,
+      max_score: item.max_score,
+      risk_level: item.risk_level,
+      suggestion: item.suggestion || '',
+    }));
+
+  const suggestions = dimensions
+    .filter((item) => item.suggestion)
+    .map((item) => ({
+      category: item.factor_name || item.factor_code || '',
+      content: item.suggestion,
+      factor_code: item.factor_code,
+    }));
+
+  return {
+    data: {
+      conclusion: totalFactor.conclusion || '',
+      total_score: totalFactor.raw_score,
+      risk_level: totalFactor.risk_level || '',
+      dimensions,
+      suggestions,
+    },
+  };
+};
+
+/**
+ * @deprecated 请使用 waitMedicalAssessmentId + getAssessmentReport；保留兼容旧 import。
+ * 通过答卷 ID 查询测评记录（走 GET /assessments 列表匹配，需 testee_id）
+ */
+export const getAssessmentByAnswersheetId = async (answersheetId, options = {}) => {
+  const { testeeId, maxAttempts = 1, onAttempt, ...requestOptions } = options;
+  const normalizedTesteeId = testeeId ? String(testeeId) : '';
+
+  if (!normalizedTesteeId) {
+    throw new Error('缺少 testee_id，无法通过答卷查询测评记录');
+  }
+
+  const matched = await pollAssessmentIdByAnswerSheet({
+    testeeId: normalizedTesteeId,
+    answerSheetId: answersheetId,
+    maxAttempts,
+    onAttempt,
+    intervalMs: maxAttempts > 1 ? 2000 : 0,
+    returnMatchedItem: true,
+    fetchItems: createMedicalAssessmentFetchItems(answersheetId, normalizedTesteeId),
   });
+
+  const payload = matched?.raw || { id: matched?.id, status: matched?.status };
+
+  if (requestOptions.suppressErrorToast) {
+    return payload;
+  }
+
+  return payload;
 };
 
 /**
@@ -113,18 +180,15 @@ export const getAssessmentScores = (id, testeeId) => {
 };
 
 /**
- * 获取测评报告
- * @param {string|number} id - 测评ID
- * @param {string|number} testeeId - 受试者ID
- * @returns {Promise<object>}
+ * 获取医学测评报告正文（基于 collection.yaml 合法的 GET /assessments/{id}/scores）
  */
-export const getAssessmentReport = (id, testeeId) => {
-  return request(`/assessments/${String(id)}/report`, {}, {
-    host: config.collectionHost,
-    params: { testee_id: String(testeeId) },
-    needToken: true
-  });
+export const getMedicalAssessmentReport = async (id, testeeId) => {
+  const result = await getAssessmentScores(id, testeeId);
+  return mapScoresToReportPayload(result);
 };
+
+/** @deprecated 请使用 getMedicalAssessmentReport */
+export const getAssessmentReport = getMedicalAssessmentReport;
 
 /**
  * 获取测评趋势摘要
@@ -244,9 +308,12 @@ export const isAssessmentPending = (detail) => {
 
 export default {
   getAssessments,
+  extractAssessmentList,
+  normalizeAssessmentListItem,
+  mapScoresToReportPayload,
   getAssessmentByAnswersheetId,
-  getAssessmentDetail,
   getAssessmentScores,
+  getMedicalAssessmentReport,
   getAssessmentReport,
   getAssessmentTrendSummary,
   getHighRiskFactors,

@@ -116,7 +116,8 @@ export const getSubmitStatus = (requestId) => {
     logger.RUN('[getSubmitStatus] 查询提交状态', {
       requestId,
       status: normalized?.status ?? 'unknown',
-      answersheetId: normalized?.answersheet_id ?? null
+      answersheetId: normalized?.answersheet_id ?? null,
+      assessmentId: normalized?.assessment_id ?? null,
     });
     return normalized;
   });
@@ -195,23 +196,97 @@ export const waitForSubmitCompletion = async (requestId, options = {}) => {
 };
 
 /**
+ * 轮询 submit-status，直至 status=done 且响应附带 assessment_id（人格/医学通用）。
+ * status=done 但尚无 assessment_id 时继续轮询，表示异步测评尚未落库。
+ */
+export const waitForSubmitAssessmentId = async (requestId, options = {}) => {
+  const interval = options.interval ?? SUBMIT_STATUS_POLL_INTERVAL;
+  const maxAttempts = options.maxAttempts ?? SUBMIT_STATUS_MAX_ATTEMPTS;
+  const onAttempt = options.onAttempt;
+  const shouldContinue = options.shouldContinue;
+
+  if (!requestId) {
+    throw new Error('缺少 request_id，无法轮询 assessment_id');
+  }
+
+  let attempts = 0;
+  while (attempts < maxAttempts) {
+    if (typeof shouldContinue === 'function' && !shouldContinue()) {
+      return '';
+    }
+
+    const currentAttempt = attempts + 1;
+    const statusResult = await getSubmitStatus(requestId);
+    const normalizedStatus = (statusResult?.status || '').toLowerCase();
+
+    if (typeof onAttempt === 'function') {
+      onAttempt(currentAttempt, statusResult);
+    }
+
+    if (statusResult && SUBMIT_STATUS_FAILURES.has(normalizedStatus)) {
+      logger.ERROR('[waitForSubmitAssessmentId] 提交处理失败', {
+        requestId,
+        status: normalizedStatus,
+        attempt: currentAttempt,
+      });
+      throw new Error('答卷提交处理失败，请稍后重试');
+    }
+
+    const assessmentId = statusResult?.assessment_id ? String(statusResult.assessment_id) : '';
+    if (normalizedStatus === 'done' && assessmentId) {
+      logger.RUN('[waitForSubmitAssessmentId] 取得 assessment_id', {
+        requestId,
+        answersheetId: statusResult.answersheet_id ?? null,
+        assessmentId,
+        attempt: currentAttempt,
+      });
+      return assessmentId;
+    }
+
+    if (normalizedStatus === 'done' && !assessmentId) {
+      logger.RUN('[waitForSubmitAssessmentId] submit 已完成，等待测评落库', {
+        requestId,
+        attempt: currentAttempt,
+      });
+    }
+
+    attempts += 1;
+    if (attempts >= maxAttempts) {
+      break;
+    }
+
+    await delay(interval);
+  }
+
+  logger.WARN('[waitForSubmitAssessmentId] 等待 assessment_id 超时', {
+    requestId,
+    maxAttempts,
+    interval,
+  });
+  throw new Error('等待测评记录超时，请稍后重试');
+};
+
+/**
  * 获取答卷详情（原始数据）
  * 在 answersheet 页面使用
  * 使用 collection.yaml 中的合法接口: GET /answersheets/{id}
  * ⚠️ ID 精度保护：所有 ID 已转换为字符串，避免 JavaScript 数字精度问题
  * @param {string|number} id - 答卷ID（自动转为字符串避免精度问题）
+ * @param {object} [options]
+ * @param {boolean} [options.showLoading=true] - 是否展示全局 loading
  */
-export const getAnswersheet = (id) => {
+export const getAnswersheet = (id, options = {}) => {
+  const { showLoading = true } = options;
   return new Promise((resolve, reject) => {
     request(`/answersheets/${String(id)}`, {}, {
       host: config.collectionHost,
       needToken: true,
-      isNeedLoading: true
+      isNeedLoading: showLoading
     })
       .then((result) => {
         let si = 1;
         // 适配 collection.yaml 返回的数据结构
-        const processedAnswers = result.answers.map(v => {
+        const processedAnswers = (result.answers || []).map(v => {
           if (v.type !== "Section") {
             v.title = `${si}. ${v.title}`;
             si++;
@@ -264,9 +339,29 @@ export const getAnswersheet = (id) => {
   })
 }
 
+/** 轮询用：仅取答卷元数据，不加工题目列表 */
+export const fetchAnswersheetRecord = async (id, { showLoading = false } = {}) => {
+  const result = await request(`/answersheets/${String(id)}`, {}, {
+    host: config.collectionHost,
+    needToken: true,
+    isNeedLoading: showLoading,
+  });
+  const data = result?.data !== undefined ? result.data : result;
+  return data && typeof data === 'object' ? data : {};
+};
+
+export const extractAssessmentIdFromAnswersheet = (payload = {}) => {
+  const data = payload?.data !== undefined ? payload.data : payload;
+  const assessmentId = data?.assessment_id ?? data?.assessmentId ?? data?.assessment?.id ?? '';
+  return assessmentId ? String(assessmentId) : '';
+};
+
 export default {
   submitAnswersheet,
   getAnswersheet,
+  fetchAnswersheetRecord,
+  extractAssessmentIdFromAnswersheet,
   getSubmitStatus,
-  waitForSubmitCompletion
+  waitForSubmitCompletion,
+  waitForSubmitAssessmentId,
 }

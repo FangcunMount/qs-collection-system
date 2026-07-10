@@ -3,8 +3,10 @@ import { View, Text, Button } from "@tarojs/components";
 import Taro from "@tarojs/taro";
 import { AtActivityIndicator } from "taro-ui";
 
-import { getPersonalityReport } from "@/services/api/personality";
-import { getAssessmentByAnswersheetId } from "@/services/api/assessments";
+import {
+  loadPersonalityReportByAssessmentId,
+  loadPersonalityReportByAnswerSheet,
+} from "@/modules/assessment/services/loadPersonalityReport";
 import { normalizePersonalityReport } from "@/modules/assessment/services/personalityReportMapper";
 import { getLogger } from "@/shared/lib/logger";
 import { getAssessmentEntryContext } from "@/shared/stores/assessmentEntry";
@@ -90,45 +92,39 @@ const PersonalityReport = () => {
     });
   }, []);
 
-  const loadByAssessmentId = useCallback(async (assessmentId, testeeId) => {
-    if (!assessmentId || !testeeId) {
-      Taro.showToast({ title: "参数不完整", icon: "none" });
-      setIsReady(true);
-      return;
-    }
+  const loadReport = useCallback(async (loader) => {
     try {
       Taro.showLoading({ title: "加载中..." });
-      const result = await getPersonalityReport({ assessmentId, testeeId });
+      const result = await loader();
       applyReportVM(result);
     } catch (error) {
       logger.ERROR("[PersonalityReport] 获取报告失败:", error);
-      Taro.showToast({ title: "加载人格报告失败", icon: "none" });
-    } finally {
-      try { Taro.hideLoading(); } catch (e) { /* noop */ }
-      setIsReady(true);
-    }
-  }, [applyReportVM]);
-
-  const loadByAnswersheetId = useCallback(async (sheetId) => {
-    try {
-      Taro.showLoading({ title: "加载中..." });
-      const detailResult = await getAssessmentByAnswersheetId(sheetId);
-      const detail = detailResult?.data || detailResult || {};
-      const assessmentId = detail.id || "";
-      const testeeId = detail.testee_id || "";
-      if (!assessmentId || !testeeId) {
-        throw new Error("缺少 assessment_id 或 testee_id");
-      }
-      const result = await getPersonalityReport({ assessmentId, testeeId });
-      applyReportVM(result);
-    } catch (error) {
-      logger.ERROR("[PersonalityReport] 通过答卷ID加载失败:", error);
       Taro.showToast({ title: error?.message || "加载人格报告失败", icon: "none" });
     } finally {
       try { Taro.hideLoading(); } catch (e) { /* noop */ }
       setIsReady(true);
     }
   }, [applyReportVM]);
+
+  const loadByAssessmentId = useCallback(async (assessmentId, testeeId) => {
+    if (!assessmentId || !testeeId) {
+      Taro.showToast({ title: "参数不完整", icon: "none" });
+      setIsReady(true);
+      return;
+    }
+    await loadReport(() => loadPersonalityReportByAssessmentId({ assessmentId, testeeId }));
+  }, [loadReport]);
+
+  const loadByAnswersheetId = useCallback(async (sheetId, testeeIdFromUrl) => {
+    await loadReport(async () => {
+      const { report } = await loadPersonalityReportByAnswerSheet({
+        answersheetId: sheetId,
+        testeeIdFromUrl,
+        logger,
+      });
+      return report;
+    });
+  }, [loadReport]);
 
   useEffect(() => {
     const params = Taro.getCurrentInstance().router.params || {};
@@ -137,7 +133,7 @@ const PersonalityReport = () => {
       loadByAssessmentId(params.aid || params.rid, params.t);
     } else {
       setAnswersheetId(params.a || "");
-      loadByAnswersheetId(params.a);
+      loadByAnswersheetId(params.a, params.t);
     }
   }, [loadByAssessmentId, loadByAnswersheetId]);
 
