@@ -201,7 +201,7 @@
 
 ```text
 pages/tab/home/index
-pages/tab/scales/index
+pages/catalog-medical/index
 pages/assessment/fill/index
 pages/tab/me/index
 pages/system/error/index
@@ -245,7 +245,7 @@ pages/testees/edit/index
 | Current route | Proposed route | Reason |
 | --- | --- | --- |
 | `/pages/home/index/index` | `/pages/tab/home/index` | 首页属于 tab，不需要双层 `index/index` |
-| `/pages/questionnaire/list/index` | `/pages/tab/scales/index` | 实际展示的是量表目录，不是问卷目录 |
+| `/pages/questionnaire/list/index` | `/pages/catalog-medical/index` | 实际展示的是量表目录，不是问卷目录 |
 | `/pages/questionnaire/fill/index` | `/pages/assessment/fill/index` | 页面承载的是完整测评流程，不只是问卷填写 |
 | `/pages/answersheet/list/index` | `/pages/assessment/records/index` | 页面展示的是测评记录，不是原始答卷资源列表 |
 | `/pages/answersheet/detail/index` | `/pages/assessment/response/index` | 这是测评下的原始作答详情 |
@@ -343,7 +343,7 @@ src/
         assessmentMappers.js
     catalog/
       api/
-        scaleApi.js
+        assessmentModelCatalogApi.js
       pages/
         ScaleCatalogPage.jsx
       components/
@@ -465,7 +465,7 @@ src/
 export default {
   pages: [
     "pages/tab/home/index",
-    "pages/tab/scales/index",
+    "pages/catalog-medical/index",
     "pages/assessment/fill/index",
     "pages/tab/me/index",
     "pages/system/error/index",

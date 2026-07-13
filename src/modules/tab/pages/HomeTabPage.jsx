@@ -7,9 +7,10 @@ import BottomMenu from "@/shared/ui/BottomMenu";
 import { routes } from "@/shared/config/routes";
 import { ASSESSMENT_PORTALS } from "@/shared/config/assessmentPortals";
 import { loadRecentAssessments as fetchRecentAssessments } from "@/modules/assessment/services/loadRecentAssessments";
-import { getHotScales } from "@/services/api/scales";
+import { listHotPublishedAssessmentModels } from "@/services/api/assessmentModelCatalogApi";
 import { parseDateSafe } from "@/shared/lib/dateFormatters";
 import { getRiskConfig } from "@/shared/lib/statusFormatters";
+import { resolveAssessmentKind, isPersonalityAssessmentKind } from "@/shared/lib/assessmentKind";
 import { getAssessmentEntryContext, subscribeAssessmentEntryContext } from "@/shared/stores/assessmentEntry";
 import { findTesteeById, getSelectedTesteeId, subscribeTesteeStore } from "@/shared/stores/testees";
 import HomeHeader from "../components/home/HomeHeader";
@@ -102,6 +103,8 @@ const normalizeRecentAssessment = (item, index = 0) => {
     riskLabel: resolveRiskLabel(riskLevel),
     icon: REPORT_ICONS[index % REPORT_ICONS.length],
     status: item.status,
+    assessmentKind: resolveAssessmentKind(item),
+    testeeId: normalizeLabel(item.testee_id || item.testeeId),
     raw: item,
   };
 };
@@ -179,9 +182,9 @@ const HomeIndex = () => {
   const loadHotScales = useCallback(async () => {
     try {
       setHotLoading(true);
-      const result = await getHotScales({ limit: 3, windowDays: 30 });
+      const result = await listHotPublishedAssessmentModels();
       const payload = result.data || result;
-      const list = (payload.scales || [])
+      const list = (payload.models || [])
         .map(normalizeHotScale)
         .filter(Boolean);
       setHotScales(list);
@@ -218,12 +221,20 @@ const HomeIndex = () => {
   }, []);
 
   const handleViewReport = useCallback((assessment) => {
-    if (assessment?.answerSheetId) {
-      Taro.navigateTo({ url: routes.assessmentReport({ a: assessment.answerSheetId }) });
-      return;
-    }
-    if (assessment?.id && currentTestee?.id) {
-      Taro.navigateTo({ url: routes.assessmentReport({ aid: assessment.id, t: currentTestee.id }) });
+    const assessmentKind = assessment?.assessmentKind;
+    const reportRoute = isPersonalityAssessmentKind(assessmentKind)
+      ? routes.personalityReport
+      : routes.assessmentReport;
+    const testeeId = assessment?.testeeId || currentTestee?.id;
+    if ((assessment?.answerSheetId || assessment?.id) && testeeId) {
+      Taro.navigateTo({
+        url: reportRoute({
+          a: assessment.answerSheetId || undefined,
+          aid: assessment.id || undefined,
+          t: testeeId,
+          kind: assessmentKind || undefined,
+        }),
+      });
       return;
     }
     Taro.navigateTo({ url: routes.assessmentRecords() });

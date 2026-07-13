@@ -6,7 +6,7 @@ import BottomMenu from "@/shared/ui/BottomMenu";
 import { routes } from "@/shared/config/routes";
 import { SCALE_COMMON_CATEGORIES } from "@/shared/config/scaleCatalogHome";
 import { buildAssessmentScanTargetUrl, isScanCancelError } from "@/shared/lib/entryScan";
-import { getHotScales } from "@/services/api/scales";
+import { listHotPublishedAssessmentModels } from "@/services/api/assessmentModelCatalogApi";
 import { getLogger } from "@/shared/lib/logger";
 import medicalHeroBanner from "@/pages/catalog-medical/assets/banner/banner_2.png";
 import medicalTrustImage from "@/pages/catalog-medical/assets/home/home-current-record-checklist.png";
@@ -106,9 +106,9 @@ const ScaleCatalogPage = () => {
   const loadHotScales = useCallback(async () => {
     try {
       setHotLoading(true);
-      const result = await getHotScales({ limit: 3, windowDays: 30 });
-      const payload = result.data || result;
-      setHotScales((payload.scales || []).map(normalizeScale));
+      const result = await listHotPublishedAssessmentModels();
+	  const payload = result.data || result;
+	  setHotScales((payload.models || []).map(normalizeScale));
     } catch (error) {
       console.error("加载热门量表失败:", error);
       setHotScales([]);

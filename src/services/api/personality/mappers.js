@@ -292,7 +292,7 @@ export const normalizeReportStatus = (raw = {}) => {
 /** @deprecated 与 normalizeReportStatus 相同，保留兼容 */
 export const normalizeWaitReportStatus = normalizeReportStatus;
 
-const PERSONALITY_DONE_STATUSES = new Set(['interpreted', 'completed', 'done']);
+const PERSONALITY_DONE_STATUSES = new Set(['interpreted']);
 
 export const extractPersonalityAssessmentList = (payload = {}) => {
   if (Array.isArray(payload.items)) return payload.items;
@@ -313,6 +313,7 @@ export const normalizePersonalityAssessmentRecord = (raw = {}) => {
   return {
     id: toStringId(item.id),
     answer_sheet_id: toStringId(item.answer_sheet_id || item.answersheet_id || item.answerSheetId),
+    testee_id: toStringId(item.testee_id || item.testeeId),
     title: item.model_name || model.title || item.model_code || model.code || '人格测评',
     description: item.model_code || model.code || '',
     createtime: item.submitted_at || item.created_at || item.interpreted_at || '',

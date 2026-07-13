@@ -15,9 +15,16 @@
   "conclusion": "你倾向于在独处中恢复能量，并关注具体事实与细节。",
   "model_extra": {
     "type_code": "ISTJ",
+    "type_name": "物流师",
+    "one_liner": "务实可靠，注重秩序",
+    "image_url": "https://example.com/istj.png",
     "nickname": "物流师",
     "tagline": "务实可靠，注重秩序",
-    "rarity": "约 12%"
+    "rarity": {
+      "percent": 12,
+      "label": "约 12%",
+      "one_in_x": 8
+    }
   },
   "outcome": {
     "code": "ISTJ",

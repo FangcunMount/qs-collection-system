@@ -42,7 +42,7 @@
 当前已注册的主路由如下：
 
 - `/pages/tab/home/index`
-- `/pages/tab/scales/index`
+- `/pages/catalog-medical/index`
 - `/pages/assessment/fill/index`
 - `/pages/assessment/records/index`
 - `/pages/assessment/response/index`
@@ -76,7 +76,7 @@
 | Old path | New path | Route builder | Main query params | Notes |
 | --- | --- | --- | --- | --- |
 | `/pages/home/index/index` | `/pages/tab/home/index` | `routes.tabHome()` | 无 | 首页路由收口到 `tab/home` |
-| `/pages/questionnaire/list/index` | `/pages/tab/scales/index` | `routes.tabScales(params)` | `keyword` `category` | 实际业务是量表目录，不再叫 questionnaire list |
+| `/pages/questionnaire/list/index` | `/pages/catalog-medical/index` | `routes.tabScales(params)` | `keyword` `category` | 实际业务是量表目录，不再叫 questionnaire list |
 | `/pages/questionnaire/fill/index` | `/pages/assessment/fill/index` | `routes.assessmentFill(params)` | `q` `scene` `token` `t` `signid` `task_id` `sp` | 测评入口页，支持直达、扫码、入口 token |
 | `/pages/answersheet/list/index` | `/pages/assessment/records/index` | `routes.assessmentRecords()` | 无 | 展示的是测评记录，不是 raw answersheet list |
 | `/pages/answersheet/detail/index` | `/pages/assessment/response/index` | `routes.assessmentResponse(params)` | `a` `task_id` | `a` 为 answersheet id |
@@ -231,7 +231,7 @@ routes.systemError(params)
 
 ### 7.6 Catalog / Register / Testee / Error
 
-`/pages/tab/scales/index`
+`/pages/catalog-medical/index`
 
 - `keyword`
 - `category`
@@ -317,7 +317,7 @@ routes.systemError(params)
 ```json
 {
   "/pages/home/index/index": "/pages/tab/home/index",
-  "/pages/questionnaire/list/index": "/pages/tab/scales/index",
+  "/pages/questionnaire/list/index": "/pages/catalog-medical/index",
   "/pages/questionnaire/fill/index": "/pages/assessment/fill/index",
   "/pages/answersheet/list/index": "/pages/assessment/records/index",
   "/pages/answersheet/detail/index": "/pages/assessment/response/index",
@@ -365,4 +365,3 @@ routes.systemError(params)
 1. **旧路径全部作废，不能继续使用。**
 2. **大多数 query 参数不用改，主要改 path。**
 3. **以后以 `src/shared/config/routes.js` 这一套命名作为唯一标准。**
-

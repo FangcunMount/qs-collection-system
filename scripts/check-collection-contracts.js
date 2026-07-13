@@ -63,13 +63,16 @@ function parseCollectionYamlPaths(yamlSource) {
   for (const line of lines) {
     const match = line.match(/^  (\/[^:]+):$/);
     if (match) {
-      paths.add(match[1]);
+      const path = match[1].replace(/^\/api\/v1(?=\/|$)/, '');
+      paths.add(path || '/');
     }
   }
   return paths;
 }
 
 const yamlSource = read('docs/collection.yaml');
+const reportWaitGuide = read('docs/12-小程序报告等待接入指南.md');
+const miniProgramGuide = read('docs/15-小程序接入文档.md');
 const yamlPaths = parseCollectionYamlPaths(yamlSource);
 
 const requiredYamlPaths = [
@@ -77,11 +80,21 @@ const requiredYamlPaths = [
   '/typology-assessments',
   '/typology-models',
   '/assessments/trend',
+  '/assessment-models',
+  '/assessment-models/hot',
+  '/assessment-models/options',
 ];
 
 requiredYamlPaths.forEach((yamlPath) => {
   if (!yamlPaths.has(yamlPath)) {
     fail(`collection.yaml must define path ${yamlPath}`);
+  }
+});
+
+const retiredScalePath = `/${'scales'}`;
+['', '/categories', '/hot', '/{code}'].map((suffix) => `${retiredScalePath}${suffix}`).forEach((legacyPath) => {
+  if (yamlPaths.has(legacyPath)) {
+    fail(`collection.yaml must not define retired path ${legacyPath}`);
   }
 });
 
@@ -101,6 +114,7 @@ const combinedApiSource = servicesApiSources.map(({ source }) => source).join('\
 const combinedSrcSource = collectionApiSources.map(({ source }) => source).join('\n');
 
 const forbiddenPatterns = [
+	{ pattern: new RegExp("[`'\\\"]\\/" + 'scales' + "(?:[/?`'\\\"])") , message: 'collection API must not call retired scale paths' },
   { pattern: /\/personality-/, message: 'collection API must not call legacy /personality-* paths' },
   { pattern: /\/answersheets\/\$\{[^}]+\}\/assessment/, message: 'collection API must not call deprecated /answersheets/{id}/assessment' },
   { pattern: /\/questionsheet\//, message: 'collection API must not call legacy /questionsheet/* paths' },
@@ -162,6 +176,7 @@ pageModuleSources.forEach(({ relativePath, source }) => {
 });
 
 const assessmentApi = read('src/services/api/assessmentApi.js');
+const collectionApiCapabilities = read('src/shared/config/collectionApiCapabilities.js');
 const analysisApi = read('src/services/api/analysisApi.js');
 const questionnaireSubmissionApi = read('src/services/api/questionnaireSubmissionApi.js');
 const testeeApi = read('src/services/api/testeeApi.js');
@@ -169,6 +184,14 @@ const personalityAssessmentApi = read('src/services/api/personality/assessmentAp
 const personalityModelApi = read('src/services/api/personality/modelApi.js');
 
 assertContains(assessmentApi, /COLLECTION_API_CAPABILITIES\.medicalAssessmentsList/, 'getAssessments must gate GET /assessments behind capability flag');
+assertNotContains(assessmentApi, /assessment_kind\s*:/, 'GET /assessments must not send undocumented assessment_kind query parameter');
+assertContains(collectionApiCapabilities, /medicalAssessmentsList:\s*true/, 'medical report menu requires the documented assessments list capability');
+assertContains(reportWaitGuide, /\/assessments\/\{id\}\/scores/, 'report wait guide must use collection medical scores endpoint');
+assertNotContains(reportWaitGuide, /evaluations\/assessments\/\{id\}\/report/, 'report wait guide must not direct medical reports to apiserver');
+assertNotContains(reportWaitGuide, /\['interpreted', 'failed', 'completed'\]/, 'report wait guide must not treat completed as a current success terminal state');
+assertContains(miniProgramGuide, /优先订阅 WebSocket 报告状态/, 'mini-program guide must make WebSocket the default report waiter');
+assertContains(miniProgramGuide, /关闭连接后降级到 `report-status`/, 'mini-program guide must forbid concurrent WS and polling');
+assertContains(miniProgramGuide, /kind=scale&category=<category>/, 'mini-program guide must document the scale category catalog query');
 assertContains(read('src/modules/assessment/services/medicalAssessmentIdResolver.js'), /pollAssessmentIdByAnswerSheet/, 'medical resolver must use assessments list matching when available');
 
 assertContains(assessmentApi, /getMedicalAssessmentReport|mapScoresToReportPayload/, 'assessment API must expose yaml-aligned medical report fetch via scores');
@@ -182,6 +205,35 @@ assertNotContains(
   'typology-assessments list must only send testee_id per collection.yaml'
 );
 assertNotContains(personalityModelApi, /category,|keyword,/, 'typology-models list must not send undocumented query params');
+
+const assessmentModelCatalogApi = read('src/services/api/assessmentModelCatalogApi.js');
+assertNotContains(assessmentModelCatalogApi, /baseURL\s*:/, 'assessment model catalog must use request host option');
+assertNotContains(
+  assessmentModelCatalogApi,
+  /window_days|keyword|limit\s*:/,
+  'assessment model catalog must not send undocumented query params'
+);
+assertContains(
+  assessmentModelCatalogApi,
+  /category,\s*\n\s*page,/,
+  'assessment model catalog must send the documented category query parameter'
+);
+const scaleListPage = read('src/modules/catalog/pages/ScaleListPage.jsx');
+assertContains(
+  scaleListPage,
+  /category:\s*selectedCategory\s*\|\|\s*undefined/,
+  'scale list must pass its selected category to the model catalog'
+);
+assertNotContains(
+  scaleListPage,
+  /matchesScale(?:Filters|Search)\(scale,\s*searchText,\s*selectedCategory\)/,
+  'scale list must not locally discard category-filtered catalog results'
+);
+assertContains(
+  assessmentModelCatalogApi,
+  /needToken\s*=\s*false|needToken:\s*false/,
+  'public assessment model catalog reads must be anonymous'
+);
 
 assertContains(read('src/services/api/assessmentReports.js'), /assessmentApi/, 'assessmentReports must re-export from assessmentApi');
 assertNotContains(

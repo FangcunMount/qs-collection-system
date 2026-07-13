@@ -36,11 +36,12 @@ const homeProfileCard = read('src/modules/tab/components/home/HomeCurrentProfile
 const personalityCatalog = read('src/modules/catalog/pages/PersonalityCatalogPage.jsx');
 const personalityCatalogService = read('src/modules/catalog/services/personalityCatalogService.js');
 const assessmentRecordsPage = read('src/modules/assessment/pages/AssessmentRecordsPage.jsx');
+const homeRecentAssessments = read('src/modules/assessment/services/loadRecentAssessments.js');
 
 assertContains(appConfig, /root:\s*['"]pages\/catalog-medical['"]/, 'app config must register catalog-medical subpackage');
 assertContains(appConfig, /root:\s*['"]pages\/catalog-personality['"]/, 'app config must register catalog-personality subpackage');
 assertContains(appConfig, /root:\s*['"]pages\/catalog-ability['"]/, 'app config must register catalog-ability subpackage');
-assertNotContains(appConfig, /pages\/tab\/scales/, 'main package must not register tab/scales');
+assertNotContains(appConfig, new RegExp('pages\\/tab\\/' + 'scales'), 'main package must not register the retired scale tab');
 assertNotContains(appConfig, /personality\/index/, 'assessment subpackage must not register personality catalog page');
 assertNotContains(appConfig, /ability\/index/, 'assessment subpackage must not register ability catalog page');
 
@@ -53,6 +54,7 @@ assertContains(routes, /abilityCatalog:\s*\(params\)/, 'routes helper must defin
 assertContains(bottomMenu, /label:\s*["']首页["']/, 'BottomMenu must include 首页');
 assertContains(bottomMenu, /label:\s*["']量表["']/, 'BottomMenu must include 量表');
 assertContains(bottomMenu, /label:\s*["']报告["']/, 'BottomMenu must include 报告');
+assertContains(bottomMenu, /routes\.assessmentRecords\(\{\s*kind:\s*ASSESSMENT_KIND\.MEDICAL\s*\}\)/, 'BottomMenu 报告 must open medical assessment reports');
 assertContains(bottomMenu, /label:\s*["']我的["']/, 'BottomMenu must include 我的');
 assertNotContains(bottomMenu, /扫码测评/, 'BottomMenu must not include 扫码测评 tab');
 assertNotContains(bottomMenuStyle, /menu-item--scan|scan-button|label--scan/, 'BottomMenu styles must not keep scan tab styles');
@@ -70,8 +72,11 @@ assertContains(assessmentPortals, /home-entry-personality\.png/, 'personality po
 assertContains(assessmentPortals, /home-(entry|child)-behavior\.(png|webp)/, 'ability portal must reference home entry image');
 
 assertContains(homeProfileCard, /home-current-record-checklist\.png/, 'home current record card must reference checklist image');
-assertContains(homeTabPage, /getHotScales/, 'home page must load hot scales');
+assertContains(homeTabPage, /listHotPublishedAssessmentModels/, 'home page must load hot published assessment models');
 assertContains(homeTabPage, /home-portal-card__art/, 'home page must render image-backed portal cards');
+assertContains(homeTabPage, /assessmentKind: resolveAssessmentKind\(item\)/, 'home recent reports must preserve assessment kind');
+assertContains(homeTabPage, /isPersonalityAssessmentKind\(assessmentKind\)/, 'home report navigation must route personality separately');
+assertContains(homeRecentAssessments, /isReportReadable\(item\.status\)/, 'home recent reports must only expose readable reports');
 assertNotContains(homeTabPage, /HomeStatusPanel/, 'home page must not import old HomeStatusPanel');
 assertNotContains(homeTabStyle, /home-category-|home-scale-card-|home-recent-card-|home-status-panel|home-status-card/, 'home styles must not keep removed home modules');
 
@@ -80,8 +85,9 @@ assertContains(personalityCatalog, /loadGroupedPersonalityCatalog/, 'Personality
 assertNotContains(personalityCatalog, /PERSONALITY_CATALOG_ITEMS|personalityModels/, 'PersonalityCatalogPage must not use hardcoded personality catalog');
 assertContains(personalityCatalogService, /listPublishedPersonalityModels/, 'personality catalog service must use published models API');
 assertNotContains(personalityCatalogService, /PERSONALITY_CATALOG_ITEMS|personalityModels/, 'personality catalog service must not use hardcoded catalog');
-assertNotContains(assessmentRecordsPage, /assessmentKind=\{ASSESSMENT_KIND\.MEDICAL\}/, 'AssessmentRecordsPage must not query deprecated GET /assessments list');
-assertNotContains(assessmentRecordsPage, /ASSESSMENT_KIND\.MEDICAL/, 'report tab must load typology-assessments instead of medical list');
+assertContains(assessmentRecordsPage, /useRouter/, 'AssessmentRecordsPage must read report kind from route params');
+assertContains(assessmentRecordsPage, /ASSESSMENT_KIND\.MEDICAL/, 'AssessmentRecordsPage must default the report tab to medical assessments');
+assertContains(assessmentRecordsPage, /assessmentKind=\{assessmentKind\}/, 'AssessmentRecordsPage must pass the resolved kind to the record loader');
 
 if (process.exitCode) {
   process.exit(process.exitCode);

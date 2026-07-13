@@ -132,13 +132,28 @@ const QPS_BACKOFF_BASE_MS = 800;
 function extractResponseMeta(res) {
   const statusCode = res.statusCode ?? 0;
   const data = res.data || {};
+  const headers = res.header || res.headers || {};
   const isObjectPayload = data !== null && typeof data === 'object' && !Array.isArray(data);
   const hasBusinessCode = isObjectPayload && (data.code !== undefined || data.errno !== undefined);
   const code = hasBusinessCode ? String(data?.code ?? data?.errno ?? '') : '';
   const message = String(data?.message ?? data?.errmsg ?? '');
   const payload = hasBusinessCode && data?.data !== undefined ? data.data : data;
 
-  return { statusCode, data, code, message, payload, hasBusinessCode };
+  return { statusCode, data, headers, code, message, payload, hasBusinessCode };
+}
+
+function readHeader(headers = {}, name) {
+  const target = String(name).toLowerCase();
+  const key = Object.keys(headers).find((candidate) => String(candidate).toLowerCase() === target);
+  return key ? headers[key] : undefined;
+}
+
+function resolveRetryAfterMs(meta = {}, fallbackMs = 0) {
+  const headerValue = Number(readHeader(meta.headers, 'Retry-After'));
+  const headerDelayMs = Number.isFinite(headerValue) && headerValue > 0 ? headerValue * 1000 : 0;
+  const payload = meta.payload && typeof meta.payload === 'object' ? meta.payload : {};
+  const bodyDelayMs = Number(payload.retry_after_ms || payload.next_poll_after_ms || 0);
+  return Math.max(headerDelayMs, Number.isFinite(bodyDelayMs) ? bodyDelayMs : 0, fallbackMs);
 }
 
 function createRequestError(meta, extra = {}) {
@@ -146,6 +161,8 @@ function createRequestError(meta, extra = {}) {
     code: meta.code || String(meta.statusCode || ''),
     message: meta.message,
     data: meta.payload,
+    headers: meta.headers,
+    retryAfterMs: resolveRetryAfterMs(meta),
     statusCode: meta.statusCode,
     ...extra
   };
@@ -191,6 +208,7 @@ function baseRequest(params, context) {
         });
 
         if (meta.statusCode === QPS_STATUS_CODE) {
+          const retryAfterMs = resolveRetryAfterMs(meta);
           if (context.qpsRetryCount >= QPS_RETRY_LIMIT) {
             const throttledMessage = meta.data?.message || meta.data?.errmsg || '请求过于频繁，请稍候再试';
             console.warn('[BaseRequest] 接口返回 429，重试次数已达上限', {
@@ -201,12 +219,22 @@ function baseRequest(params, context) {
             if (!params.suppressErrorToast) {
               Taro.showToast({ title: throttledMessage, icon: 'none' });
             }
-            reject({ code: '429', message: throttledMessage, statusCode: meta.statusCode, data: meta.data });
+            reject({
+              code: '429',
+              message: throttledMessage,
+              statusCode: meta.statusCode,
+              data: meta.payload,
+              headers: meta.headers,
+              retryAfterMs,
+            });
             return;
           }
 
           const nextAttempt = context.qpsRetryCount + 1;
-          const delayMs = QPS_BACKOFF_BASE_MS * Math.pow(2, context.qpsRetryCount);
+          const delayMs = Math.max(
+            retryAfterMs,
+            QPS_BACKOFF_BASE_MS * Math.pow(2, context.qpsRetryCount)
+          );
           console.warn('[BaseRequest] 接口返回 429，准备重试', {
             url: params.url,
             attempt: nextAttempt,

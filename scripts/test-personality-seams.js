@@ -35,6 +35,24 @@ function assertEqual(actual, expected, message) {
 
 const originalResolveFilename = Module._resolveFilename;
 Module._resolveFilename = function resolveWithAlias(request, parent, isMain, options) {
+  if (request === '@/store/tokenStore') {
+    return originalResolveFilename.call(
+      this,
+      path.join(__dirname, 'stubs/token-store-stub.js'),
+      parent,
+      isMain,
+      options
+    );
+  }
+  if (request === '@/services/auth/sessionManager') {
+    return originalResolveFilename.call(
+      this,
+      path.join(__dirname, 'stubs/session-manager-stub.js'),
+      parent,
+      isMain,
+      options
+    );
+  }
   if (request.startsWith('@/')) {
     return originalResolveFilename.call(
       this,
@@ -75,9 +93,25 @@ const {
   normalizePersonalityAssessmentRecord,
   isPersonalityAssessmentDoneStatus,
 } = require('../src/services/api/personality/mappers');
+const { assertSubmitStatusReady, SubmissionContractViolation } = require('../src/modules/assessment/services/submissionStatus');
+const { normalizeSubmissionContext } = require('../src/modules/assessment/services/submissionContextStore');
+const { resolveSubmissionAttempt } = require('../src/modules/assessment/services/submissionAttempt');
+const { createRequestId } = require('../src/shared/lib/requestId');
 
 const { normalizePersonalityReport } = require('../src/modules/assessment/services/personalityReportMapper');
 const { pollAssessmentIdByAnswerSheet } = require('../src/modules/assessment/services/pollAssessmentIdByAnswerSheet');
+const {
+  getReportEventsCapability,
+  REPORT_EVENTS_CAPABILITY,
+  resetReportEventsCapability,
+  watchReportViaWebSocket,
+} = require('../src/modules/assessment/services/reportEventsClient');
+const {
+  resolvePollDelayMs,
+  resolveRetryAfterMs,
+  waitForReportReady,
+} = require('../src/modules/assessment/services/waitForReportReady');
+const { assertReportReadable, isReportReadable } = require('../src/modules/assessment/lib/reportReadiness');
 const {
   isTypologyCatalogModel,
   isTypologyAssessmentModel,
@@ -90,6 +124,10 @@ const modelsFixture = readJson('src/modules/assessment/__fixtures__/personality-
 const reportFixture = readJson('src/modules/assessment/__fixtures__/personality-report.json');
 const submitAcceptedFixture = readJson('src/modules/assessment/__fixtures__/personality-submit-accepted.json');
 const submitDoneFixture = readJson('src/modules/assessment/__fixtures__/personality-submit-status-done.json');
+const submitDoneMissingAssessmentFixture = readJson('src/modules/assessment/__fixtures__/personality-submit-status-done-missing-assessment.json');
+const reportProcessingFixture = readJson('src/modules/assessment/__fixtures__/personality-report-status-processing.json');
+const reportInterpretedFixture = readJson('src/modules/assessment/__fixtures__/personality-report-status-interpreted.json');
+const reportFailedFixture = readJson('src/modules/assessment/__fixtures__/personality-report-status-failed.json');
 
 // --- mapper: session ---
 {
@@ -99,6 +137,51 @@ const submitDoneFixture = readJson('src/modules/assessment/__fixtures__/personal
   assert(session.submitContract.questionnaire_code === 'MBTI_OEJTS_V1', 'session submit_contract questionnaire_code');
   assert(session.submitContract.testee_id === '10001', 'session submit_contract testee_id as string');
   assert(!session.submitContract.kind || session.submitContract.kind === 'typology', 'session submit_contract kind defaults typology');
+}
+
+// --- submission context: IDs and recovery fields ---
+{
+  const context = normalizeSubmissionContext({
+    fingerprint: 'fp_1',
+    request_id: 'req_1',
+    idempotency_key: 'idem_1',
+    testee_id: '618855887087350318',
+    answersheet_id: 71001,
+    assessment_id: 80001,
+    phase: 'assessment_ready',
+  });
+  assert(context.fingerprint === 'fp_1', 'submission context fingerprint');
+  assert(context.requestId === 'req_1', 'submission context requestId');
+  assert(context.testeeId === '618855887087350318', 'submission context testeeId string');
+  assert(context.answersheetId === '71001', 'submission context answersheetId string');
+  assert(context.assessmentId === '80001', 'submission context assessmentId string');
+  assert(context.phase === 'assessment_ready', 'submission context phase');
+}
+
+// --- submission attempt: retry uses the same idempotency/request IDs, changed answers rotate ---
+{
+  const payload = {
+    questionnaire_code: 'MBTI_OEJTS_V1',
+    questionnaire_version: '1.0.0',
+    testee_id: '618855887087350318',
+    task_id: 'task_1',
+    answers: [{ question_code: 'Q1', question_type: 'Radio', score: 1, value: '{"option":"A"}' }],
+  };
+  const first = resolveSubmissionAttempt(payload);
+  const retry = resolveSubmissionAttempt(payload, first);
+  const changed = resolveSubmissionAttempt({
+    ...payload,
+    answers: [{ ...payload.answers[0], value: '{"option":"B"}' }],
+  }, first);
+  const explicitlyNew = resolveSubmissionAttempt(payload, first, true);
+
+  assert(retry.idempotencyKey === first.idempotencyKey, 'same answers reuse idempotency key');
+  assert(retry.requestId === first.requestId, 'same answers reuse request ID');
+  assert(changed.idempotencyKey !== first.idempotencyKey, 'changed answers rotate idempotency key');
+  assert(changed.requestId !== first.requestId, 'changed answers rotate request ID');
+  assert(explicitlyNew.idempotencyKey !== first.idempotencyKey, 'explicit new submission rotates idempotency key');
+  assert(explicitlyNew.requestId !== first.requestId, 'explicit new submission rotates request ID');
+  assert(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(createRequestId()), 'request ID is UUID v4');
 }
 
 // --- mapper: models list ---
@@ -148,6 +231,20 @@ const submitDoneFixture = readJson('src/modules/assessment/__fixtures__/personal
     },
     'submit-status done normalization'
   );
+
+  const incomplete = normalizeSubmitDone(submitDoneMissingAssessmentFixture);
+  assert(incomplete.answersheetId === '90010001', 'incomplete done keeps answersheet_id as string');
+  assert(incomplete.assessmentId === '', 'incomplete done exposes missing assessment_id');
+
+  const ready = assertSubmitStatusReady(submitDoneFixture, 'req_personality_submit_001');
+  assert(ready.answersheet_id === '90010001', 'strict submit ready answersheet_id');
+  assert(ready.assessment_id === '80020001', 'strict submit ready assessment_id');
+  try {
+    assertSubmitStatusReady(submitDoneMissingAssessmentFixture, 'req_personality_submit_001');
+    fail('strict submit ready should reject missing assessment_id');
+  } catch (error) {
+    assert(error instanceof SubmissionContractViolation, 'missing assessment_id uses contract violation');
+  }
 }
 
 // --- mapper: report status ---
@@ -156,6 +253,9 @@ const submitDoneFixture = readJson('src/modules/assessment/__fixtures__/personal
   assert(status.status === 'processing', 'report status lowercased');
   assert(status.stage === 'interpreting', 'report stage preserved');
   assert(status.nextPollAfterMs === 1500, 'report nextPollAfterMs');
+  assert(normalizeReportStatus(reportProcessingFixture).status === 'processing', 'processing fixture status');
+  assert(normalizeReportStatus(reportInterpretedFixture).status === 'interpreted', 'interpreted fixture status');
+  assert(normalizeReportStatus(reportFailedFixture).reason === 'interpretation failed', 'failed fixture reason');
 }
 
 // --- mapper: report body ---
@@ -163,6 +263,8 @@ const submitDoneFixture = readJson('src/modules/assessment/__fixtures__/personal
   const vm = normalizePersonalityReport(reportFixture);
   assert(vm.modelTitle === '16 型人格测评', 'report modelTitle');
   assert(vm.outcome.code === 'ISTJ', 'report outcome from model_extra/type_code');
+  assert(vm.outcome.title === '物流师', 'report outcome from model_extra/type_name');
+  assert(vm.outcome.summary === '务实可靠，注重秩序', 'report outcome from model_extra/one_liner');
   assert(vm.hero.modelExtra.type_code === 'ISTJ', 'report model_extra.type_code');
   assert(vm.sections.length === 1, 'report sections from report_sections');
   assert(vm.hasContent === true, 'report hasContent');
@@ -196,9 +298,17 @@ const submitDoneFixture = readJson('src/modules/assessment/__fixtures__/personal
 // --- report wait terminal statuses (aligned with reportWaitStrategy + assessmentApi) ---
 {
   assert(isPersonalityAssessmentDoneStatus('interpreted'), 'interpreted completes personality wait');
-  assert(isPersonalityAssessmentDoneStatus('completed'), 'completed completes personality wait');
+  assert(!isPersonalityAssessmentDoneStatus('completed'), 'completed is not a current personality report terminal state');
   assert(!isPersonalityAssessmentDoneStatus('processing'), 'processing not complete');
   assert(normalizeAssessmentKind('typology') === ASSESSMENT_KIND.PERSONALITY, 'WS/report kind uses personality not typology route');
+  assert(isReportReadable('interpreted'), 'interpreted report is readable');
+  assert(!isReportReadable('completed'), 'completed is not a current report-read terminal state');
+  try {
+    assertReportReadable({ status: 'processing' });
+    fail('processing report must not be readable');
+  } catch (error) {
+    assert(/报告尚未生成/.test(error.message), 'processing report read is rejected');
+  }
 }
 
 // --- submit navigation ---
@@ -222,6 +332,129 @@ const submitDoneFixture = readJson('src/modules/assessment/__fixtures__/personal
 
 // --- pollAssessmentIdByAnswerSheet ---
 (async () => {
+  const createSocketTask = () => {
+    const handlers = {};
+    return {
+      handlers,
+      sent: [],
+      closed: false,
+      onOpen(handler) { handlers.open = handler; },
+      onMessage(handler) { handlers.message = handler; },
+      onError(handler) { handlers.error = handler; },
+      onClose(handler) { handlers.close = handler; },
+      send({ data }) { this.sent.push(JSON.parse(data)); },
+      close() { this.closed = true; },
+    };
+  };
+
+  // --- report-events: subscribe once after open and terminal status completes ---
+  resetReportEventsCapability();
+  const socket = createSocketTask();
+  const wsResultPromise = watchReportViaWebSocket({
+    assessmentId: '80020001',
+    testeeId: '10001',
+    kind: 'personality',
+    shouldContinue: () => true,
+    getToken: () => 'token',
+    connectSocket: () => {
+      setTimeout(() => {
+        socket.handlers.open();
+        socket.handlers.message({ data: JSON.stringify({ op: 'status', data: { status: 'interpreted' } }) });
+      }, 0);
+      return socket;
+    },
+  });
+  const wsResult = await wsResultPromise;
+  assert(wsResult.completed === true, 'WS interpreted status completes report wait');
+  assertEqual(socket.sent, [{
+    op: 'subscribe',
+    assessment_id: '80020001',
+    testee_id: '10001',
+    kind: 'personality',
+  }], 'WS sends exactly one subscribe frame');
+  assert(socket.closed, 'WS closes after terminal status');
+  assert(getReportEventsCapability() === REPORT_EVENTS_CAPABILITY.AVAILABLE, 'WS open marks capability available');
+
+  // --- report-events: first-status timer starts after open, then falls back ---
+  const delayedSocket = createSocketTask();
+  const timeoutPromise = watchReportViaWebSocket({
+    assessmentId: '80020002',
+    testeeId: '10001',
+    kind: 'medical',
+    shouldContinue: () => true,
+    firstStatusTimeoutMs: 5,
+    getToken: () => 'token',
+    connectSocket: () => {
+      setTimeout(() => delayedSocket.handlers.open(), 15);
+      return delayedSocket;
+    },
+  });
+  const timeoutResult = await timeoutPromise;
+  assert(timeoutResult.reason === 'first_status_timeout', 'WS first-status timeout starts after subscribe');
+  assert(delayedSocket.sent.length === 1, 'delayed WS still subscribes before timing out');
+
+  // --- report-events: a confirmed 404 is identified as WS-unavailable ---
+  const unavailableSocket = createSocketTask();
+  const unavailablePromise = watchReportViaWebSocket({
+    assessmentId: '80020005',
+    testeeId: '10001',
+    kind: 'medical',
+    shouldContinue: () => true,
+    getToken: () => 'token',
+    connectSocket: () => {
+      setTimeout(() => unavailableSocket.handlers.error({ statusCode: 404 }), 0);
+      return unavailableSocket;
+    },
+  });
+  const unavailableResult = await unavailablePromise;
+  assert(unavailableResult.unavailable === true, 'WS 404 confirms the report-events capability is unavailable');
+
+  // --- HTTP fallback: honour server guidance and never poll faster than 500 ms ---
+  assert(resolvePollDelayMs({ nextPollAfterMs: 200 }) === 500, 'report poll delay has a 500 ms floor');
+  assert(resolvePollDelayMs({ nextPollAfterMs: 4500 }) === 4500, 'report poll delay honours next_poll_after_ms');
+  assert(
+    resolveRetryAfterMs({ retryAfterMs: 5000, data: { retry_after_ms: 4000 } }, 3000) === 5000,
+    '429 retry delay uses the largest response header/body/default value'
+  );
+
+  // --- report wait: unavailable WS is cached and falls back to HTTP exactly once ---
+  resetReportEventsCapability();
+  let websocketAttempts = 0;
+  let httpAttempts = 0;
+  const strategy = {
+    kind: 'personality',
+    pollReportStatus: async () => {
+      httpAttempts += 1;
+      return { status: 'interpreted' };
+    },
+    isCompleted: (status) => status === 'interpreted',
+    isFailed: () => false,
+  };
+  const fallbackResult = await waitForReportReady({
+    strategy,
+    assessmentId: '80020003',
+    testeeId: '10001',
+    shouldContinue: () => true,
+    watchReport: async () => {
+      websocketAttempts += 1;
+      return { completed: false, unavailable: true, reason: 'connect_failed' };
+    },
+  });
+  assert(fallbackResult.source === 'report-status', 'WS failure falls back to report-status');
+  assert(websocketAttempts === 1 && httpAttempts === 1, 'fallback runs only one HTTP waiter');
+  assert(getReportEventsCapability() === REPORT_EVENTS_CAPABILITY.UNAVAILABLE, 'unavailable WS is cached for this process');
+  await waitForReportReady({
+    strategy,
+    assessmentId: '80020004',
+    testeeId: '10001',
+    shouldContinue: () => true,
+    watchReport: async () => {
+      websocketAttempts += 1;
+      return { completed: false };
+    },
+  });
+  assert(websocketAttempts === 1 && httpAttempts === 2, 'cached unavailable WS skips the next connection attempt');
+
   const found = await pollAssessmentIdByAnswerSheet({
     testeeId: '10001',
     answerSheetId: '90010001',

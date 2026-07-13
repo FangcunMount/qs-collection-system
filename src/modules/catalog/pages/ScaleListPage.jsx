@@ -5,7 +5,7 @@ import { AtIcon } from "taro-ui";
 import SearchBox from "@/shared/ui/SearchBox";
 import { routes } from "@/shared/config/routes";
 import { SCALE_COMMON_CATEGORIES } from "@/shared/config/scaleCatalogHome";
-import { getScales } from "@/services/api/scales";
+import { listPublishedAssessmentModels } from "@/services/api/assessmentModelCatalogApi";
 import { getLogger } from "@/shared/lib/logger";
 import categorySleepImage from "@/pages/catalog-medical/assets/home/category-sleep.png";
 import categoryMoodImage from "@/pages/catalog-medical/assets/home/category-mood.png";
@@ -21,6 +21,15 @@ const CATEGORY_CHIPS = [
   { value: null, key: "all", title: "全部" },
   ...SCALE_COMMON_CATEGORIES.map((item) => ({ value: item.value, key: item.key, title: item.title })),
 ];
+
+const matchesScaleSearch = (scale, searchText) => {
+  const query = String(searchText || '').trim().toLowerCase();
+  const haystack = [scale.code, scale.name, scale.description, scale.category, ...(scale.tags || [])]
+    .map(value => String(value || '').toLowerCase())
+    .join(' ');
+  if (query && !haystack.includes(query)) return false;
+  return true;
+};
 
 const normalizeLabel = (value) => {
   if (!value) return "";
@@ -99,21 +108,36 @@ const ScaleListPage = () => {
   const loadScaleList = useCallback(async (page = 1, append = false) => {
     try {
       setLoading(true);
-      const result = await getScales({
-        page,
-        pageSize: 20,
-        title: searchText,
-        category: selectedCategory,
-      });
-      const payload = result.data || result;
-      const scales = (payload.scales || []).map(normalizeScale);
+      const hasSearch = Boolean(String(searchText || '').trim());
+      let currentPage = hasSearch ? 1 : page;
+      let totalPages = 1;
+      let total = 0;
+      const collected = [];
 
-      setScaleList((prev) => (append ? [...prev, ...scales] : scales));
+      do {
+        const result = await listPublishedAssessmentModels({
+          kind: 'scale',
+          category: selectedCategory || undefined,
+          page: currentPage,
+          pageSize: 20,
+        });
+        const payload = result.data || result;
+        collected.push(...(payload.models || []).map(normalizeScale));
+        total = Number(payload.total || collected.length);
+        totalPages = Math.max(1, Number(payload.total_pages || Math.ceil(total / (payload.page_size || 20))));
+        if (!hasSearch) break;
+        currentPage += 1;
+      } while (currentPage <= totalPages);
+
+      const filtered = hasSearch
+        ? collected.filter(scale => matchesScaleSearch(scale, searchText))
+        : collected;
+      setScaleList((prev) => (append ? [...prev, ...filtered] : filtered));
       setPagination({
-        page: payload.page || page,
-        page_size: payload.page_size || 20,
-        total: payload.total || 0,
-        total_pages: payload.total_pages || 0,
+        page: hasSearch ? 1 : page,
+        page_size: 20,
+        total: hasSearch ? filtered.length : total,
+        total_pages: hasSearch ? 1 : totalPages,
       });
     } catch (error) {
       console.error("加载量表列表失败:", error);

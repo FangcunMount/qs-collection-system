@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { View, Text, ScrollView } from "@tarojs/components";
 import Taro from "@tarojs/taro";
 
@@ -46,6 +46,7 @@ export default props => {
   const [writerRoles, setWriterRoles] = useState([]);
   const [writerRoleCode, setWriterRoleCode] = useState(null);
   const [needWriterRole, setNeedWriterRole] = useState(false);
+  const submissionAttemptRef = useRef(null);
 
   const applyQuestionnaire = (result) => {
     const questionnaire = result.questionnaire || result;
@@ -343,8 +344,9 @@ export default props => {
           answersheetId: statusResult?.answersheet_id ?? null
         });
       }
-    }, { submitContract })
+    }, { submitContract, submissionAttempt: submissionAttemptRef.current })
       .then(async result => {
+        submissionAttemptRef.current = result.submission_attempt || submissionAttemptRef.current;
         Taro.hideLoading();
         logger.RUN('[SinglePageQuestionnaire] 提交完成', {
           answersheetId: result.id,
@@ -353,9 +355,15 @@ export default props => {
         });
         Taro.showToast({ title: "提交成功", icon: "success" });
         // 传递答卷 ID 和测评 ID（如果有）给回调函数
-        await writedCallback(result.id, result.assessment_id, result.request_id || result.idempotency_key);
+        await writedCallback(
+          result.id || '',
+          result.assessment_id || '',
+          result.request_id || '',
+          result
+        );
       })
       .catch(err => {
+        submissionAttemptRef.current = err?.submissionAttempt || submissionAttemptRef.current;
         Taro.hideLoading();
         Taro.showToast({ title: String(err?.errmsg ?? err?.message ?? '提交失败'), icon: "none" });
       });

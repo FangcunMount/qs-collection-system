@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useCallback } from "react";
-import Taro from "@tarojs/taro";
+import Taro, { useRouter } from "@tarojs/taro";
 import { View, Text } from "@tarojs/components";
 import { AtIcon } from "taro-ui";
 import AssessmentRecordListContainer from "../components/records/AssessmentRecordListContainer";
 import BottomMenu from "@/shared/ui/BottomMenu";
 import { ROUTES, routes } from "@/shared/config/routes";
+import { ASSESSMENT_KIND, normalizeAssessmentKind } from "@/shared/lib/assessmentKind";
 import {
   findTesteeById,
   getSelectedTesteeId,
@@ -16,6 +17,11 @@ import {
 import "./AssessmentRecordsPage.less";
 
 const AssessmentRecordCenterPage = () => {
+  const router = useRouter();
+  const assessmentKind = normalizeAssessmentKind(
+    router.params?.kind || router.params?.assessment_kind
+  ) || ASSESSMENT_KIND.MEDICAL;
+  const isMedicalReport = assessmentKind === ASSESSMENT_KIND.MEDICAL;
   const statusTabs = [
     { key: '', label: '全部' },
     { key: 'pending', label: '待解读' },
@@ -172,9 +178,12 @@ const AssessmentRecordCenterPage = () => {
 
             <AssessmentRecordListContainer 
               testee={selectedTestee}
+              assessmentKind={assessmentKind}
               statusFilter={statusFilter}
               showFilterBar={true}
-              emptyText="暂无测评报告，完成人格或量表测评后将在这里展示"
+              emptyText={isMedicalReport
+                ? "暂无医学量表报告，完成医学量表测评后将在这里展示"
+                : "暂无测评报告，完成人格或量表测评后将在这里展示"}
               showTesteeSheet={showTesteeSheet}
               showFilterSheet={showFilterSheet}
               testeeList={testeeList}

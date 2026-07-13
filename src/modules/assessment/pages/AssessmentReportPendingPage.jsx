@@ -9,6 +9,11 @@ import { ASSESSMENT_KIND, isPersonalityAssessmentKind } from "@/shared/lib/asses
 import { createReportWaitStrategy, formatReportWaitStageMessage } from "@/modules/assessment/services/reportWaitStrategy";
 import { waitAssessmentReportLifecycle } from "@/modules/assessment/services/waitAssessmentReportLifecycle";
 import { resolveTesteeIdForAnswerSheet } from "@/modules/assessment/lib/resolveTesteeId";
+import {
+  clearSubmissionContext,
+  getSubmissionContext,
+  saveSubmissionContext,
+} from "@/modules/assessment/services/submissionContextStore";
 import { getLogger } from "@/shared/lib/logger";
 import carLoadingData from "@/assets/lotties/car-loading-data.json";
 import "./AssessmentReportPendingPage.less";
@@ -38,7 +43,8 @@ const AnalysisWait = () => {
     // 记录页面开始时间
     startTimeRef.current = Date.now();
     
-    const params = Taro.getCurrentInstance().router.params;
+    const params = Taro.getCurrentInstance().router.params || {};
+    const storedContext = getSubmissionContext();
     logger.RUN("等待解析页面初始化", { 
       assessmentId: params.aid, 
       answersheetId: params.a,
@@ -46,17 +52,17 @@ const AnalysisWait = () => {
       requestId: params.request_id,
     });
 
-    const assessmentId = params.aid;
-    const answersheetId = params.a;
-    const testeeIdFromUrl = params.t;
-    const requestId = params.request_id;
+    const assessmentId = params.aid || storedContext.assessmentId;
+    const answersheetId = params.a || storedContext.answersheetId;
+    const testeeIdFromUrl = params.t || storedContext.testeeId;
+    const requestId = params.request_id || storedContext.requestId;
     const taskId = params.task_id;
-    const assessmentKind = params.kind;
+    const assessmentKind = params.kind || storedContext.assessmentKind;
 
-    if (!answersheetId) {
-      logger.ERROR("缺少答卷ID参数");
+    if (!answersheetId && !requestId) {
+      logger.ERROR("缺少 answersheet_id 和 request_id 参数");
       setStatus("error");
-      setMessage("参数错误，请重新提交");
+      setMessage("提交状态已失效，请重新提交或查看历史记录");
       return;
     }
 
@@ -186,7 +192,7 @@ const AnalysisWait = () => {
         setMessage(formatStageMessage(strategy, reportStage, statusData.message));
       };
 
-      const redirectToReport = (assessmentId) => {
+      const redirectToReport = (resolvedAssessmentId, resolvedAnswerSheetId) => {
         setStatus('success');
         isPollingRef.current = false;
 
@@ -194,8 +200,8 @@ const AnalysisWait = () => {
         const remainingTime = Math.max(0, MIN_WAIT_TIME - elapsedTime);
 
         logger.RUN('报告生成完成，准备跳转', {
-          answersheetId,
-          assessmentId,
+          answersheetId: resolvedAnswerSheetId,
+          assessmentId: resolvedAssessmentId,
           elapsedTime,
           remainingTime,
           assessmentKind: strategy.kind,
@@ -204,13 +210,14 @@ const AnalysisWait = () => {
         setTimeout(() => {
           Taro.redirectTo({
             url: strategy.reportRoute({
-              a: answersheetId,
-              aid: assessmentId,
+              a: resolvedAnswerSheetId,
+              aid: resolvedAssessmentId,
               t: testeeId,
               kind: strategy.kind === ASSESSMENT_KIND.PERSONALITY ? ASSESSMENT_KIND.PERSONALITY : undefined,
               task_id: taskId || undefined,
             }),
           });
+          clearSubmissionContext();
         }, remainingTime);
       };
 
@@ -230,6 +237,16 @@ const AnalysisWait = () => {
         requestId,
         testeeId,
         onStatus: applyStatus,
+        onSubmissionReady: ({ requestId: resolvedRequestId, answersheetId: resolvedAnswerSheetId, assessmentId: resolvedAssessmentId }) => {
+          saveSubmissionContext({
+            requestId: resolvedRequestId,
+            testeeId,
+            assessmentKind: strategy.kind,
+            answersheetId: resolvedAnswerSheetId,
+            assessmentId: resolvedAssessmentId,
+            phase: 'assessment_ready',
+          });
+        },
         shouldContinue: () => isPollingRef.current,
         logger,
         assessmentLookupOptions: {
@@ -239,6 +256,7 @@ const AnalysisWait = () => {
             setMessage('正在关联测评记录，请稍候...');
           },
         },
+        allowLegacyListFallback: !requestId,
       });
 
       if (result.cancelled || !isPollingRef.current) {
@@ -247,6 +265,16 @@ const AnalysisWait = () => {
 
       const statusData = result.statusData || {};
       const resolvedAssessmentId = result.assessmentId;
+      const resolvedAnswerSheetId = result.answerSheetId || answersheetId;
+
+      saveSubmissionContext({
+        requestId,
+        testeeId,
+        assessmentKind: strategy.kind,
+        answersheetId: resolvedAnswerSheetId,
+        assessmentId: resolvedAssessmentId,
+        phase: 'report_processing',
+      });
 
       logger.RUN('[AnalysisWait] 等待结束', {
         source: result.source,
@@ -263,7 +291,7 @@ const AnalysisWait = () => {
       }
 
       if (strategy.isCompleted(statusData.status) && resolvedAssessmentId) {
-        redirectToReport(resolvedAssessmentId);
+        redirectToReport(resolvedAssessmentId, resolvedAnswerSheetId);
         return;
       }
 
@@ -272,6 +300,12 @@ const AnalysisWait = () => {
       isPollingRef.current = false;
     } catch (error) {
       logger.ERROR('[AnalysisWait] 等待流程失败', error);
+      saveSubmissionContext({
+        requestId,
+        testeeId: testeeIdFromUrl,
+        assessmentKind,
+        phase: 'failed',
+      });
       setStatus('error');
       setMessage(error?.message || '加载测评状态失败，请稍后重试');
       isPollingRef.current = false;

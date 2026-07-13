@@ -2,14 +2,19 @@ import React from "react";
 import { View, Text } from "@tarojs/components";
 import { AtIcon } from "taro-ui";
 import Taro from "@tarojs/taro";
-import { ROUTES } from "../../config/routes";
+import { ROUTES, routes } from "../../config/routes";
+import { ASSESSMENT_KIND } from "../../lib/assessmentKind";
 import { buildAssessmentScanTargetUrl, isScanCancelError } from "../../lib/entryScan";
 import "./index.less";
 
 const bottomMenu = [
   { label: "首页", icon: "home", url: ROUTES.tabHome },
   { label: "量表", icon: "list", url: ROUTES.tabScales },
-  { label: "报告", icon: "file-generic", url: ROUTES.assessmentRecords },
+  {
+    label: "报告",
+    icon: "file-generic",
+    url: routes.assessmentRecords({ kind: ASSESSMENT_KIND.MEDICAL }),
+  },
   { label: "我的", icon: "user", url: ROUTES.tabMe },
 ];
 
@@ -22,7 +27,8 @@ const BottomMenu = ({ activeKey }) => {
     }
 
     const currentPath = Taro.getCurrentInstance().router.path;
-    if (currentPath !== item.url) {
+    const targetPath = item.url.split("?")[0];
+    if (currentPath !== targetPath) {
       Taro.redirectTo({ url: item.url });
     }
   };

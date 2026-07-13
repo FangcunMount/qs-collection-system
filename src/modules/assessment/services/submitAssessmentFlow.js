@@ -2,7 +2,7 @@ import { submitAnswersheet, waitForSubmitCompletion } from '@/services/api/answe
 import { normalizeSubmitDone } from '@/services/api/personality';
 
 /**
- * 统一提交答卷并解析 answersheet_id
+ * 提交答卷。测评类答卷在 HTTP 202 后立即返回，Survey 可选择等待 answersheet_id。
  */
 export async function submitAssessmentAndResolveAnswersheet(payload, options = {}) {
   const submitResult = await submitAnswersheet(payload, options);
@@ -14,7 +14,7 @@ export async function submitAssessmentAndResolveAnswersheet(payload, options = {
       id: normalized.answersheetId,
       answersheet_id: normalized.answersheetId,
       assessment_id: normalized.assessmentId || submitResult?.assessment_id,
-      request_id: normalized.requestId || submitResult?.request_id || options.idempotencyKey,
+      request_id: normalized.requestId || submitResult?.request_id || options.requestId || options.idempotencyKey,
       submit_mode: 'immediate',
       queued: false,
     };
@@ -22,6 +22,19 @@ export async function submitAssessmentAndResolveAnswersheet(payload, options = {
 
   if (normalized.requestId || submitResult?.request_id) {
     const requestId = normalized.requestId || submitResult.request_id;
+
+    if (options.waitForCompletion !== true) {
+      return {
+        ...submitResult,
+        id: '',
+        answersheet_id: '',
+        assessment_id: '',
+        request_id: requestId,
+        submit_mode: 'accepted',
+        queued: true,
+      };
+    }
+
     const statusResult = await waitForSubmitCompletion(requestId, {
       onProgress: options.onProgress,
       onSuccess: options.onSuccess,

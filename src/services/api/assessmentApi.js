@@ -32,7 +32,7 @@ const buildQueryString = (params = {}) => {
 };
 
 /**
- * @deprecated collection.yaml 未定义 GET /assessments 列表；仅医学降级路径保留，调用方须处理 404。
+ * 查询医学量表测评列表（collection.yaml: GET /assessments）。
  */
 export const getAssessments = ({
   testeeId,
@@ -41,7 +41,6 @@ export const getAssessments = ({
   riskLevel,
   dateFrom,
   dateTo,
-  assessmentKind,
   page = 1,
   pageSize = 20
 } = {}) => {
@@ -56,7 +55,6 @@ export const getAssessments = ({
     risk_level: riskLevel,
     date_from: dateFrom,
     date_to: dateTo,
-    assessment_kind: assessmentKind,
     page,
     page_size: pageSize
   };

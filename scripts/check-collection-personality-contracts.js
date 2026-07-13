@@ -42,9 +42,13 @@ const personalityCatalogService = read('src/modules/catalog/services/personality
 const personalityCatalog = read('src/modules/catalog/lib/personalityCatalog.js');
 const mbtiVariants = read('src/modules/catalog/lib/mbtiVariants.js');
 const submitFlow = read('src/modules/assessment/services/submitAssessmentFlow.js');
+const questionnaireSubmissionApi = read('src/services/api/questionnaireSubmissionApi.js');
+const submissionAttempt = read('src/modules/assessment/services/submissionAttempt.js');
+const requestId = read('src/shared/lib/requestId.js');
 const waitTypologyAssessmentId = read('src/modules/assessment/services/waitTypologyAssessmentId.js');
 const waitAssessmentReportLifecycle = read('src/modules/assessment/services/waitAssessmentReportLifecycle.js');
 const reportEventsClient = read('src/modules/assessment/services/reportEventsClient.js');
+const waitForReportReady = read('src/modules/assessment/services/waitForReportReady.js');
 const personalityReportPage = read('src/modules/assessment/pages/PersonalityReportPage.jsx');
 const loadPersonalityReportService = read('src/modules/assessment/services/loadPersonalityReport.js');
 const homeTabPage = read('src/modules/tab/pages/HomeTabPage.jsx');
@@ -53,6 +57,7 @@ const loadMedicalRecordsService = read('src/modules/assessment/services/loadMedi
 const assessmentRecordsPage = read('src/modules/assessment/pages/AssessmentRecordsPage.jsx');
 const medicalReportPage = read('src/modules/assessment/pages/AssessmentReportPage.jsx');
 const loadMedicalReportService = read('src/modules/assessment/services/loadMedicalReport.js');
+const reportReadiness = read('src/modules/assessment/lib/reportReadiness.js');
 const assessmentFillPage = read('src/modules/assessment/pages/AssessmentFillPage.jsx');
 const assessmentFillEntry = read('src/modules/assessment/lib/assessmentFillEntry.js');
 const assessmentSubmitNavigation = read('src/modules/assessment/lib/assessmentSubmitNavigation.js');
@@ -83,6 +88,9 @@ assertContains(personalityAssessmentApi, /\/typology-assessments/, 'assessment A
 assertContains(reportApi, /\/typology-assessments\//, 'report API must call typology assessment endpoints');
 assertContains(reportApi, /report-status/, 'report API must call report-status endpoint');
 assertContains(reportApi, /wait-report/, 'report API must call wait-report endpoint for legacy compatibility');
+assertContains(reportWaitStrategy, /isInterpreted/, 'new report wait strategy must use interpreted as the only success status');
+assertNotContains(reportWaitStrategy, /waitPersonalityReport|waitAssessmentReport/, 'new report wait strategy must not call legacy wait-report');
+assertNotContains(reportWaitStrategy, /completed:\s*['"]报告已生成/, 'new report strategy must not treat completed as a current terminal state');
 
 assertNotContains(sessionApi, /\/personality-/, 'session API must not call legacy /personality-* paths');
 assertNotContains(modelApi, /\/personality-/, 'model API must not call legacy /personality-* paths');
@@ -91,18 +99,29 @@ assertNotContains(reportApi, /\/personality-/, 'report API must not call legacy 
 
 assertContains(waitTypologyAssessmentId, /listPersonalityAssessments/, 'waitTypologyAssessmentId must poll typology-assessments list');
 assertContains(waitTypologyAssessmentId, /pollAssessmentIdByAnswerSheet/, 'waitTypologyAssessmentId must use shared poll helper');
-assertContains(waitAssessmentReportLifecycle, /waitSubmitStatusAssessmentId/, 'lifecycle must resolve assessment_id via submit-status first');
+assertContains(waitAssessmentReportLifecycle, /waitSubmitStatusCompletion/, 'lifecycle must resolve assessment_id via strict submit-status completion');
 assertContains(waitAssessmentReportLifecycle, /waitTypologyAssessmentId/, 'lifecycle must fall back to typology list for personality');
+assertContains(waitAssessmentReportLifecycle, /allowLegacyListFallback/, 'lifecycle must gate list fallback to legacy links');
 assertContains(waitAssessmentReportLifecycle, /waitMedicalAssessmentId/, 'lifecycle must fall back to medical list when available');
 assertContains(waitAssessmentReportLifecycle, /waitForReportReady/, 'lifecycle must delegate report waiting to waitForReportReady');
 assertContains(read('src/services/api/answersheetApi.js'), /waitForSubmitAssessmentId/, 'answersheet API must poll submit-status for assessment_id');
 assertContains(read('src/modules/assessment/pages/AssessmentReportPendingPage.jsx'), /request_id/, 'pending page must pass request_id into lifecycle');
 assertContains(submitFlow, /idempotencyKey/, 'submit flow must preserve request_id for submit-status polling');
+assertContains(submitFlow, /waitForCompletion/, 'submit flow must allow accepted assessment submissions to return before polling');
+assertContains(questionnaireSubmissionApi, /resolveSubmissionAttempt/, 'questionnaire submit must resolve a reusable submission attempt');
+assertContains(questionnaireSubmissionApi, /requestId:\s*submissionAttempt\.requestId/, 'questionnaire submit must pass the client request ID to answersheet submit');
+assertContains(submissionAttempt, /fingerprint/, 'submission attempt must use an answer snapshot fingerprint');
+assertContains(submissionAttempt, /forceNewAttempt/, 'submission attempt must support explicit new submissions');
+assertContains(requestId, /createUuidV4/, 'request IDs must be UUID v4 values');
+assertContains(read('src/modules/assessment/services/submissionContextStore.js'), /SUBMISSION_CONTEXT_STORAGE_KEY/, 'assessment submissions must persist recoverable context');
 assertNotContains(reportEventsClient, /answer_sheet_id/, 'report-events subscribe must not send undocumented answer_sheet_id');
 assertContains(reportEventsClient, /assessment_id:\s*String\(assessmentId\)/, 'report-events subscribe must include assessment_id per doc 12');
+assertContains(reportEventsClient, /startFirstStatusTimer/, 'report-events first-status timeout must start after subscription');
+assertContains(reportEventsClient, /REPORT_EVENTS_CAPABILITY/, 'report-events must keep runtime capability state');
 assertContains(read('src/modules/assessment/pages/AssessmentReportPendingPage.jsx'), /waitAssessmentReportLifecycle/, 'pending page must use unified report lifecycle waiter');
 assertNotContains(personalityReportPage, /getAssessmentByAnswersheetId/, 'personality report page must not call deprecated answersheets assessment endpoint');
 assertContains(loadPersonalityReportService, /loadPersonalityReportByAssessmentId/, 'personality report loader must expose assessment-id entry');
+assertContains(loadPersonalityReportService, /getPersonalityReportStatus/, 'assessment-id report loader must gate report read by report-status');
 assertContains(loadPersonalityReportService, /loadPersonalityReportByAnswerSheet/, 'personality report loader must expose answersheet compat entry');
 assertContains(loadPersonalityReportService, /waitTypologyAssessmentId/, 'answersheet compat must resolve assessment_id via typology list');
 assertContains(personalityReportPage, /loadPersonalityReportByAssessmentId/, 'personality report page must load via report service');
@@ -112,9 +131,10 @@ assertContains(homeTabPage, /fetchRecentAssessments/, 'home tab must call recent
 assertNotContains(homeTabPage, /await loadRecentAssessments\(testeeId/, 'home tab must not recursively call shadowed loadRecentAssessments');
 assertNotContains(homeTabPage, /getAssessments/, 'home tab must not call deprecated GET /assessments list');
 assertContains(loadMedicalRecordsService, /COLLECTION_API_CAPABILITIES\.medicalAssessmentsList/, 'medical record loader must gate GET /assessments behind capability flag');
-assertNotContains(assessmentRecordsPage, /ASSESSMENT_KIND\.MEDICAL/, 'report tab page must not force medical assessments list');
+assertContains(assessmentRecordsPage, /ASSESSMENT_KIND\.MEDICAL/, 'report tab page must default to medical assessments list');
 assertNotContains(medicalReportPage, /getAssessmentByAnswersheetId/, 'medical report page must not call deprecated answersheets assessment endpoint');
 assertContains(loadMedicalReportService, /loadMedicalReportByAssessmentId/, 'medical report loader must expose assessment-id entry');
+assertContains(loadMedicalReportService, /ensureMedicalReportReadable/, 'medical report loader must gate scores behind report-status');
 assertContains(loadMedicalReportService, /loadMedicalReportByAnswerSheet/, 'medical report loader must expose answersheet compat entry');
 assertContains(loadMedicalReportService, /waitMedicalAssessmentId/, 'answersheet compat must resolve assessment_id via medical list');
 assertContains(medicalReportPage, /loadMedicalReportByAssessmentId/, 'medical report page must load via report service');
@@ -138,10 +158,12 @@ assertContains(assessmentKind, /isTypologyAssessmentModel/, 'assessmentKind must
 assertContains(mappers, /product_channel|productChannel/, 'model mapper must read product_channel');
 
 assertContains(
-  read('src/modules/assessment/services/waitForReportReady.js'),
+  waitForReportReady,
   /pollReportStatus/,
   'report wait flow must use report-status short polling'
 );
+assertContains(waitForReportReady, /tryWebSocket\s*=\s*true/, 'report wait must try WebSocket by default');
+assertContains(waitForReportReady, /retryAfterMs/, 'report wait must honor retry-after backoff');
 assertContains(
   read('src/modules/assessment/services/reportWaitStrategy.js'),
   /pollReportStatus/,
@@ -157,6 +179,7 @@ assertContains(
   'medical assessment API must expose report-status'
 );
 assertContains(reportWaitStrategy, /interpreted/, 'report wait strategy must treat interpreted as completed for personality');
+assertNotContains(reportReadiness, /completed/, 'current report readability must not treat completed as a success terminal state');
 assertContains(reportWaitStrategy, /pending/, 'report wait strategy must include pending stage text');
 
 assertContains(reportMapper, /model_extra/, 'report mapper must read model_extra');

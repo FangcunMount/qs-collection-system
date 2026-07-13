@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { View } from "@tarojs/components";
 import Taro from "@tarojs/taro";
 import { AtButton } from "taro-ui";
@@ -152,6 +152,7 @@ export default function QuestionnaireForm({
   const [writerRoles, setWriterRoles] = useState([]);
   const [writerRoleCode, setWriterRoleCode] = useState(null);
   const [scrollTop, setScrollTop] = useState(-1);
+  const submissionAttemptRef = useRef(null);
 
   const applyQuestionnaire = (result) => {
     logger.RUN('[QuestionnaireForm] 问卷数据加载成功:', {
@@ -444,39 +445,50 @@ export default function QuestionnaireForm({
         subSignid
       });
 
-      const res = await submitQuestionnaire(
-        submitData,
-        writerRoleCode,
-        subSignid,
-        {
-          onQueued: ({ requestId }) => {
-            logger.WARN('[QuestionnaireForm] 提交已进入队列', {
-              requestId,
-              questionnaireCode: submitData.code
-            });
-            Taro.showLoading({
-              title: '排队处理中',
-              mask: true
-            });
+      let res;
+      try {
+        res = await submitQuestionnaire(
+          submitData,
+          writerRoleCode,
+          subSignid,
+          {
+            onQueued: ({ requestId }) => {
+              logger.WARN('[QuestionnaireForm] 提交已进入队列', {
+                requestId,
+                questionnaireCode: submitData.code
+              });
+              Taro.showLoading({
+                title: '排队处理中',
+                mask: true
+              });
+            },
+            onQueueCompleted: ({ requestId, statusResult }) => {
+              logger.RUN('[QuestionnaireForm] 队列处理完成', {
+                requestId,
+                answersheetId: statusResult?.answersheet_id ?? null
+              });
+            }
           },
-          onQueueCompleted: ({ requestId, statusResult }) => {
-            logger.RUN('[QuestionnaireForm] 队列处理完成', {
-              requestId,
-              answersheetId: statusResult?.answersheet_id ?? null
-            });
-          }
-        },
-        { submitContract }
-      );
+          { submitContract, submissionAttempt: submissionAttemptRef.current }
+        );
+      } catch (error) {
+        submissionAttemptRef.current = error?.submissionAttempt || submissionAttemptRef.current;
+        throw error;
+      }
+      submissionAttemptRef.current = res.submission_attempt || submissionAttemptRef.current;
       logger.RUN('[QuestionnaireForm] 提交完成', {
         answersheetId: res.id,
         submitMode: res.submit_mode,
         queued: res.queued
       });
-      if (res.id) {
+      if (res.id || res.request_id) {
         Taro.showToast({ title: "提交成功", icon: "success", mask: true });
-        // 传递答卷 ID 和测评 ID（如果有）给回调函数
-        await writedCallback(res.id, res.assessment_id, res.request_id || res.idempotency_key);
+        await writedCallback(
+          res.id || '',
+          res.assessment_id || '',
+          res.request_id || '',
+          res
+        );
       }
     },
     options: {

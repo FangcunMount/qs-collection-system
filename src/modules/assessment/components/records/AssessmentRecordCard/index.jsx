@@ -12,6 +12,7 @@ import {
   resolveAssessmentKind,
 } from "@/shared/lib/assessmentKind";
 import { getAssessmentStatus } from "@/shared/lib/statusFormatters";
+import { isReportReadable } from "@/modules/assessment/lib/reportReadiness";
 import "./index.less";
 
 /**
@@ -21,6 +22,7 @@ const AssessmentRecordCard = ({ record, testeeId = "" }) => {
   const status = getAssessmentStatus(record);
   const assessmentKind = resolveAssessmentKind(record);
   const showTrendAction = isMedicalAssessmentKind(assessmentKind);
+  const reportReadable = isReportReadable(record.status);
 
   // 跳转到答卷详情页
   const jumpToAnswersheetDetail = () => {
@@ -81,8 +83,8 @@ const AssessmentRecordCard = ({ record, testeeId = "" }) => {
       {/* 状态标签和风险等级 */}
       <View className="card-tags">
         <StatusTag status={status} />
-        {/* 显示风险等级（在 interpreted 或 completed 状态下显示） */}
-        {record.risk_level && (record.status === 'interpreted' || record.status === 'completed') && (
+        {/* 仅在当前契约的 interpreted 状态展示风险等级 */}
+        {record.risk_level && reportReadable && (
           <RiskTag riskLevel={record.risk_level} />
         )}
       </View>
@@ -99,10 +101,10 @@ const AssessmentRecordCard = ({ record, testeeId = "" }) => {
           {status === 'failed' && (
             <Text className="score-text-failed">解读失败</Text>
           )}
-          {(status === 'normal' || status === 'abnormal') && record.score !== undefined && record.score !== null && (
+          {reportReadable && record.score !== undefined && record.score !== null && (
             <Text className={`score-text-${status}`}>总分: {record.score}</Text>
           )}
-          {status === 'normal' && (record.score === undefined || record.score === null) && (
+          {reportReadable && (record.score === undefined || record.score === null) && (
             <Text className="score-text-normal">已完成</Text>
           )}
         </View>
@@ -123,7 +125,7 @@ const AssessmentRecordCard = ({ record, testeeId = "" }) => {
               <Text className="btn-text">查看详情</Text>
             </View>
           )}
-          {(status === 'normal' || status === 'abnormal') && (
+          {reportReadable && (
             <>
               <View className="btn btn-secondary" onClick={jumpToAnswersheetDetail}>
                 <Text className="btn-text">查看详情</Text>

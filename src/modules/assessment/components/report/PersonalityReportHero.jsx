@@ -5,7 +5,10 @@ import "./PersonalityReportHero.less";
 const PersonalityReportHero = ({ modelExtra = {}, conclusion = "", modelTitle = "" }) => {
   const typeCode = modelExtra.type_code || modelExtra.typeCode || "";
   const tagline = modelExtra.tagline || modelExtra.one_liner || modelExtra.summary || "";
-  const rarity = modelExtra.rarity || modelExtra.rarity_label || "";
+  const rarityValue = modelExtra.rarity || modelExtra.rarity_label || "";
+  const rarity = typeof rarityValue === "object"
+    ? rarityValue.label || (rarityValue.percent != null ? `${rarityValue.percent}%` : "")
+    : rarityValue;
   const nickname = modelExtra.nickname || modelExtra.type_name || "";
   const heroTitle = typeCode || nickname || "人格画像";
 

@@ -2,14 +2,12 @@ import { routes } from '@/shared/config/routes';
 import { ASSESSMENT_KIND, isPersonalityAssessmentKind } from '@/shared/lib/assessmentKind';
 import {
   getAssessmentReportStatus,
-  waitAssessmentReport,
-  isReportWaitCompleted,
   isReportWaitFailed,
 } from '@/services/api/assessments';
 import {
   getPersonalityReportStatus,
-  waitPersonalityReport,
 } from '@/services/api/personality';
+import { isReportReadable } from '@/modules/assessment/lib/reportReadiness';
 
 const PERSONALITY_STAGE_TEXT = Object.freeze({
   pending: '正在排队',
@@ -19,7 +17,6 @@ const PERSONALITY_STAGE_TEXT = Object.freeze({
   scoring: '正在计分',
   interpreting: '正在生成解读',
   interpreted: '报告已生成',
-  completed: '报告已生成',
   failed: '生成失败',
 });
 
@@ -28,9 +25,11 @@ const MEDICAL_STAGE_TEXT = Object.freeze({
   processing: '处理中',
   scoring: '正在计分',
   interpreting: '正在解读',
-  completed: '报告已生成',
+  interpreted: '报告已生成',
   failed: '报告生成失败',
 });
+
+const isInterpreted = isReportReadable;
 
 export function formatReportWaitStageMessage(kind, stage, fallbackMessage) {
   const stageKey = String(stage || '').toLowerCase();
@@ -47,11 +46,9 @@ export function createReportWaitStrategy(kind) {
       kind: ASSESSMENT_KIND.PERSONALITY,
       pollReportStatus: ({ assessmentId, testeeId }) =>
         getPersonalityReportStatus({ assessmentId, testeeId }),
-      waitReport: ({ assessmentId, testeeId, timeout }) =>
-        waitPersonalityReport({ assessmentId, testeeId, timeout }),
       reportRoute: routes.personalityReport,
-      completedStatuses: ['interpreted', 'completed'],
-      isCompleted: (status) => isReportWaitCompleted(status),
+      completedStatuses: ['interpreted'],
+      isCompleted: isInterpreted,
       isFailed: (status) => isReportWaitFailed(status),
       formatStageMessage: (stage, fallbackMessage) =>
         formatReportWaitStageMessage(ASSESSMENT_KIND.PERSONALITY, stage, fallbackMessage),
@@ -62,11 +59,9 @@ export function createReportWaitStrategy(kind) {
     kind: ASSESSMENT_KIND.MEDICAL,
     pollReportStatus: ({ assessmentId, testeeId }) =>
       getAssessmentReportStatus(assessmentId, testeeId),
-    waitReport: ({ assessmentId, testeeId, timeout }) =>
-      waitAssessmentReport(assessmentId, testeeId, timeout),
     reportRoute: routes.assessmentReport,
-    completedStatuses: ['completed', 'interpreted'],
-    isCompleted: (status) => isReportWaitCompleted(status),
+    completedStatuses: ['interpreted'],
+    isCompleted: isInterpreted,
     isFailed: (status) => isReportWaitFailed(status),
     formatStageMessage: (stage, fallbackMessage) =>
       formatReportWaitStageMessage(ASSESSMENT_KIND.MEDICAL, stage, fallbackMessage),

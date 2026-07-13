@@ -11,8 +11,38 @@ const RECOVERABLE_WS_ERROR_CODES = new Set([
   'capacity_exhausted',
 ]);
 
+const REPORT_EVENTS_CAPABILITY = Object.freeze({
+  UNKNOWN: 'unknown',
+  AVAILABLE: 'available',
+  UNAVAILABLE: 'unavailable',
+});
+
+const capabilityByHost = new Map();
+
+const normalizeCapabilityHost = (collectionHost = config.collectionHost) => {
+  return String(collectionHost || '').replace(/\/$/, '');
+};
+
+export const getReportEventsCapability = (collectionHost = config.collectionHost) => {
+  return capabilityByHost.get(normalizeCapabilityHost(collectionHost)) || REPORT_EVENTS_CAPABILITY.UNKNOWN;
+};
+
+export const setReportEventsCapability = (capability, collectionHost = config.collectionHost) => {
+  capabilityByHost.set(normalizeCapabilityHost(collectionHost), capability);
+};
+
+export const resetReportEventsCapability = () => {
+  capabilityByHost.clear();
+};
+
+const isReportEventsUnavailable = (error = {}) => {
+  const code = String(error?.statusCode ?? error?.code ?? '');
+  const message = String(error?.errMsg ?? error?.message ?? '').toLowerCase();
+  return code === '404' || /(^|\D)404(\D|$)/.test(message);
+};
+
 export const buildReportEventsUrl = (collectionHost = config.collectionHost) => {
-  const trimmed = String(collectionHost || '').replace(/\/$/, '');
+  const trimmed = normalizeCapabilityHost(collectionHost);
   return `${trimmed.replace(/^http/i, 'ws')}/report-events`;
 };
 
@@ -29,7 +59,7 @@ const parseStatusFrame = (frame = {}) => {
 };
 
 const isTerminalReportStatus = (status) => {
-  return ['interpreted', 'failed', 'completed'].includes(String(status || '').toLowerCase());
+  return ['interpreted', 'failed'].includes(String(status || '').toLowerCase());
 };
 
 /**
@@ -41,9 +71,13 @@ export function watchReportViaWebSocket({
   testeeId,
   kind,
   onStatus,
-  shouldContinue,
+  shouldContinue = () => true,
   firstStatusTimeoutMs = 15000,
   logger = console,
+  collectionHost = config.collectionHost,
+  connectSocket = Taro.connectSocket,
+  getToken = getAccessToken,
+  ensureAccessToken = sessionManager.ensureValidAccessToken,
 }) {
   return new Promise((resolve) => {
     let settled = false;
@@ -69,7 +103,7 @@ export function watchReportViaWebSocket({
     };
 
     const handleStatus = (statusData) => {
-      if (!statusData || !shouldContinue?.()) {
+      if (!statusData || !shouldContinue()) {
         return;
       }
 
@@ -90,13 +124,25 @@ export function watchReportViaWebSocket({
       }
     };
 
-    const handleRecoverableFailure = (reason) => {
+    const handleRecoverableFailure = (reason, error) => {
       logger?.WARN?.('[ReportEvents] WebSocket 不可用，降级短轮询', { reason });
       finish({
         completed: false,
         shouldFallback: true,
         reason,
+        unavailable: isReportEventsUnavailable(error),
       });
+    };
+
+    const startFirstStatusTimer = () => {
+      if (firstStatusTimer || receivedStatus) {
+        return;
+      }
+      firstStatusTimer = setTimeout(() => {
+        if (!receivedStatus) {
+          handleRecoverableFailure('first_status_timeout');
+        }
+      }, firstStatusTimeoutMs);
     };
 
     if (!assessmentId) {
@@ -105,10 +151,10 @@ export function watchReportViaWebSocket({
     }
 
     (async () => {
-      let token = getAccessToken();
+      let token = getToken();
       if (!token) {
         try {
-          token = await sessionManager.ensureValidAccessToken({ allowInteractiveLogin: true });
+          token = await ensureAccessToken({ allowInteractiveLogin: true });
         } catch (error) {
           handleRecoverableFailure(error?.reason || 'no_token');
           return;
@@ -120,28 +166,22 @@ export function watchReportViaWebSocket({
         return;
       }
 
-      const url = buildReportEventsUrl();
+      const url = buildReportEventsUrl(collectionHost);
 
       try {
-        socketTask = await Taro.connectSocket({
+        socketTask = await connectSocket({
           url,
           header: {
             Authorization: `Bearer ${token}`,
           },
         });
       } catch (error) {
-        handleRecoverableFailure('connect_failed');
+        handleRecoverableFailure('connect_failed', error);
         return;
       }
 
-      firstStatusTimer = setTimeout(() => {
-        if (!receivedStatus) {
-          handleRecoverableFailure('first_status_timeout');
-        }
-      }, firstStatusTimeoutMs);
-
       socketTask.onOpen(() => {
-        if (!shouldContinue?.()) {
+        if (!shouldContinue()) {
           finish({ completed: false, shouldFallback: true, reason: 'cancelled' });
           return;
         }
@@ -154,10 +194,12 @@ export function watchReportViaWebSocket({
             kind,
           }),
         });
+        setReportEventsCapability(REPORT_EVENTS_CAPABILITY.AVAILABLE, collectionHost);
+        startFirstStatusTimer();
       });
 
       socketTask.onMessage((message) => {
-        if (!shouldContinue?.()) {
+        if (!shouldContinue()) {
           finish({ completed: false, shouldFallback: true, reason: 'cancelled' });
           return;
         }
@@ -188,15 +230,15 @@ export function watchReportViaWebSocket({
         }
       });
 
-      socketTask.onError(() => {
+      socketTask.onError((error) => {
         if (!settled) {
-          handleRecoverableFailure('socket_error');
+          handleRecoverableFailure('socket_error', error);
         }
       });
 
       socketTask.onClose(() => {
         if (!settled) {
-          if (receivedStatus && shouldContinue?.()) {
+          if (receivedStatus && shouldContinue()) {
             handleRecoverableFailure('socket_closed');
             return;
           }
@@ -206,3 +248,5 @@ export function watchReportViaWebSocket({
     })();
   });
 }
+
+export { REPORT_EVENTS_CAPABILITY };

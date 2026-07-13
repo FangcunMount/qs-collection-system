@@ -4,6 +4,7 @@ import {
   normalizePersonalityAssessmentRecord,
 } from '@/services/api/personality';
 import { loadMedicalAssessmentRecords } from './loadMedicalAssessmentRecords';
+import { isReportReadable } from '@/modules/assessment/lib/reportReadiness';
 
 const toTimestamp = (value) => {
   if (!value) return 0;
@@ -23,11 +24,13 @@ const mapTypologyItemToSummary = (record) => ({
   status: record.status,
   risk_level: record.risk_level,
   total_score: record.score,
+  assessment_kind: 'personality',
+  testee_id: record.testee_id,
   model: { kind: 'typology', code: record.model_code },
 });
 
 /**
- * 首页「最近测评」：人格走 typology-assessments；医学列表接口未上线时自动忽略。
+ * 首页「最近测评报告」：仅展示正文可读取的已解释报告。
  */
 export async function loadRecentAssessments(testeeId, { pageSize = 3 } = {}) {
   if (!testeeId) {
@@ -53,6 +56,7 @@ export async function loadRecentAssessments(testeeId, { pageSize = 3 } = {}) {
   const medicalItems = medicalResult.unavailable ? [] : (medicalResult.items || []);
 
   return [...typologyItems, ...medicalItems]
+    .filter((item) => isReportReadable(item.status))
     .sort((a, b) => {
       return toTimestamp(b.submitted_at || b.created_at || b.updated_at)
         - toTimestamp(a.submitted_at || a.created_at || a.updated_at);

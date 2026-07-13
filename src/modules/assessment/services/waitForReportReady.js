@@ -1,24 +1,28 @@
-import config from '@/config';
-import { watchReportViaWebSocket } from '@/modules/assessment/services/reportEventsClient';
+import {
+  getReportEventsCapability,
+  REPORT_EVENTS_CAPABILITY,
+  setReportEventsCapability,
+  watchReportViaWebSocket,
+} from '@/modules/assessment/services/reportEventsClient';
 
 const DEFAULT_POLL_INTERVAL_MS = 3000;
 const MIN_POLL_INTERVAL_MS = 500;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const resolvePollDelayMs = (statusData = {}) => {
+export const resolvePollDelayMs = (statusData = {}) => {
   const suggested = Number(statusData.nextPollAfterMs) > 0
     ? Number(statusData.nextPollAfterMs)
     : DEFAULT_POLL_INTERVAL_MS;
   return Math.max(suggested, MIN_POLL_INTERVAL_MS);
 };
 
-const resolveRetryAfterMs = (error, fallbackMs = DEFAULT_POLL_INTERVAL_MS) => {
-  const retryAfterMs = Number(error?.data?.retry_after_ms);
-  if (retryAfterMs > 0) {
-    return Math.max(retryAfterMs, MIN_POLL_INTERVAL_MS);
-  }
-  return Math.max(fallbackMs, MIN_POLL_INTERVAL_MS);
+export const resolveRetryAfterMs = (error, fallbackMs = DEFAULT_POLL_INTERVAL_MS) => {
+  const retryAfterMs = Number(error?.retryAfterMs || 0);
+  const bodyRetryAfterMs = Number(
+    error?.data?.retry_after_ms || error?.data?.next_poll_after_ms || 0
+  );
+  return Math.max(retryAfterMs, bodyRetryAfterMs, fallbackMs, MIN_POLL_INTERVAL_MS);
 };
 
 /**
@@ -29,12 +33,14 @@ export async function waitForReportReady({
   assessmentId,
   testeeId,
   onStatus,
-  shouldContinue,
+  shouldContinue = () => true,
   logger,
-  tryWebSocket = config.reportEventsEnabled === true,
+  tryWebSocket = true,
+  watchReport = watchReportViaWebSocket,
 }) {
-  if (tryWebSocket) {
-    const wsResult = await watchReportViaWebSocket({
+  const wsAvailable = getReportEventsCapability() !== REPORT_EVENTS_CAPABILITY.UNAVAILABLE;
+  if (tryWebSocket && wsAvailable) {
+    const wsResult = await watchReport({
       assessmentId,
       testeeId,
       kind: strategy.kind,
@@ -45,6 +51,10 @@ export async function waitForReportReady({
 
     if (wsResult.completed) {
       return { statusData: wsResult.statusData, source: 'websocket' };
+    }
+
+    if (wsResult.unavailable) {
+      setReportEventsCapability(REPORT_EVENTS_CAPABILITY.UNAVAILABLE);
     }
 
     if (!shouldContinue()) {

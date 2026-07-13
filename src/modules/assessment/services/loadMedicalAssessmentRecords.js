@@ -12,7 +12,7 @@ const emptyMedicalListResult = (pageSize = 20) => ({
 
 /**
  * 加载医学量表测评记录。
- * collection.yaml 未定义 GET /assessments 时不发起网络请求。
+ * 通过 collection.yaml 定义的 GET /assessments 加载医学量表测评列表。
  */
 export async function loadMedicalAssessmentRecords(params = {}) {
   const {

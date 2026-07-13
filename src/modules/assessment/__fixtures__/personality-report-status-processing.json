@@ -1,0 +1,7 @@
+{
+  "status": "processing",
+  "stage": "interpreting",
+  "message": "报告生成中",
+  "next_poll_after_ms": 3000,
+  "updated_at": 1783785600
+}

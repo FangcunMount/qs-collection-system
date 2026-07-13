@@ -1,7 +1,7 @@
-import { waitForSubmitAssessmentId } from '@/services/api/answersheetApi';
+import { waitForSubmitAssessmentId, waitForSubmitReady } from '@/services/api/answersheetApi';
 
 /**
- * 轮询 submit-status，在 status=done 且测评落库后取得 assessment_id（人格/医学通用，文档 12/13）。
+ * 兼容导出：严格轮询 submit-status，在 status=done 后取得 assessment_id。
  */
 export async function waitSubmitStatusAssessmentId(requestId, options = {}) {
   if (!requestId) {
@@ -9,4 +9,11 @@ export async function waitSubmitStatusAssessmentId(requestId, options = {}) {
   }
 
   return waitForSubmitAssessmentId(String(requestId), options);
+}
+
+export async function waitSubmitStatusCompletion(requestId, options = {}) {
+  if (!requestId) {
+    throw new Error('缺少 request_id，无法等待提交完成');
+  }
+  return waitForSubmitReady(String(requestId), options);
 }

@@ -5,9 +5,16 @@
 import { request } from '../servers';
 import config from '../../config';
 import { getLogger } from '../../shared/lib/logger';
-import { createIdempotencyKey } from '../../shared/lib/requestId';
+import { createIdempotencyKey, createRequestId } from '../../shared/lib/requestId';
+import {
+  assertSubmitStatusReady,
+  SubmissionContractViolation,
+} from '@/modules/assessment/services/submissionStatus';
 
 export { createIdempotencyKey };
+export { createRequestId };
+
+export { assertSubmitStatusReady, SubmissionContractViolation };
 
 const logger = getLogger('answersheet_api');
 
@@ -37,13 +44,14 @@ const normalizeSubmitResult = (result) => {
  * @param {Array} data.answers - 答案列表
  * @param {string} data.questionnaire_code - 问卷编码
  * @param {string} data.questionnaire_version - 问卷版本
- * @param {number} data.testee_id - 受试者ID
+ * @param {string} data.testee_id - 受试者ID（64 位 ID 以字符串传输）
  * @param {string} data.title - 答卷标题（可选）
  * @returns {Promise<{id: string, message: string}>} ID 已转换为字符串
  */
 export const submitAnswersheet = (data, options = {}) => {
   const payload = { ...data };
   const idempotencyKey = payload.idempotency_key || options.idempotencyKey || createIdempotencyKey();
+  const requestId = options.requestId || createRequestId();
 
   if (!payload.idempotency_key) {
     payload.idempotency_key = idempotencyKey;
@@ -64,7 +72,7 @@ export const submitAnswersheet = (data, options = {}) => {
     method: 'POST',
     needToken: true,
     header: {
-      'X-Request-ID': idempotencyKey
+      'X-Request-Id': requestId
     }
   }).then(result => {
     const normalized = normalizeSubmitResult(result);
@@ -74,7 +82,7 @@ export const submitAnswersheet = (data, options = {}) => {
         requestId: normalized.request_id,
         status: normalized.status ?? 'queued'
       });
-      return normalized;
+      return { ...normalized, client_request_id: requestId };
     }
 
     logger.RUN('[submitAnswersheet] collection 直接返回结果', {
@@ -85,7 +93,7 @@ export const submitAnswersheet = (data, options = {}) => {
     // ⚠️ ID 精度保护：将数字 ID 转换为字符串，避免 JavaScript 大数精度丢失
     // 后端返回的 ID 可能是数字类型，但由于 JavaScript 整数精度限制（2^53），
     // 大于此值的 ID 会丢失精度。统一转换为字符串可避免此问题。
-    return normalized;
+    return { ...normalized, client_request_id: requestId };
   }).catch(error => {
     logger.ERROR('[submitAnswersheet] 提交失败', {
       questionnaireCode: data?.questionnaire_code,
@@ -149,7 +157,7 @@ export const waitForSubmitCompletion = async (requestId, options = {}) => {
       });
     }
 
-    if (statusResult && (statusResult.answersheet_id || normalizedStatus === 'done')) {
+    if (statusResult && normalizedStatus === 'done') {
       if (!statusResult.answersheet_id) {
         logger.WARN('[waitForSubmitCompletion] status=done 但缺少 answersheet_id', {
           requestId,
@@ -196,8 +204,45 @@ export const waitForSubmitCompletion = async (requestId, options = {}) => {
 };
 
 /**
- * 轮询 submit-status，直至 status=done 且响应附带 assessment_id（人格/医学通用）。
- * status=done 但尚无 assessment_id 时继续轮询，表示异步测评尚未落库。
+ * 轮询提交状态，只有 status=done 且同时拥有两个业务 ID 才算完成。
+ */
+export const waitForSubmitReady = async (requestId, options = {}) => {
+  const interval = options.interval ?? SUBMIT_STATUS_POLL_INTERVAL;
+  const maxAttempts = options.maxAttempts ?? SUBMIT_STATUS_MAX_ATTEMPTS;
+  const onAttempt = options.onAttempt;
+  const shouldContinue = options.shouldContinue;
+
+  if (!requestId) {
+    throw new Error('缺少 request_id，无法等待提交完成');
+  }
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    if (typeof shouldContinue === 'function' && !shouldContinue()) {
+      return null;
+    }
+
+    const statusResult = await getSubmitStatus(String(requestId));
+    const status = String(statusResult?.status || '').toLowerCase();
+    onAttempt?.(attempt, statusResult);
+
+    if (SUBMIT_STATUS_FAILURES.has(status)) {
+      throw new Error(statusResult?.message || '答卷提交处理失败，请稍后重试');
+    }
+
+    if (status === 'done') {
+      return assertSubmitStatusReady(statusResult, requestId);
+    }
+
+    if (attempt < maxAttempts) {
+      await delay(interval);
+    }
+  }
+
+  throw new Error('等待答卷提交完成超时，请稍后重试');
+};
+
+/**
+ * 兼容导出：严格轮询 submit-status，直至 status=done 且响应同时附带两个业务 ID。
  */
 export const waitForSubmitAssessmentId = async (requestId, options = {}) => {
   const interval = options.interval ?? SUBMIT_STATUS_POLL_INTERVAL;
@@ -232,22 +277,15 @@ export const waitForSubmitAssessmentId = async (requestId, options = {}) => {
       throw new Error('答卷提交处理失败，请稍后重试');
     }
 
-    const assessmentId = statusResult?.assessment_id ? String(statusResult.assessment_id) : '';
-    if (normalizedStatus === 'done' && assessmentId) {
+    if (normalizedStatus === 'done') {
+      const ready = assertSubmitStatusReady(statusResult, requestId);
       logger.RUN('[waitForSubmitAssessmentId] 取得 assessment_id', {
         requestId,
-        answersheetId: statusResult.answersheet_id ?? null,
-        assessmentId,
+        answersheetId: ready.answersheet_id,
+        assessmentId: ready.assessment_id,
         attempt: currentAttempt,
       });
-      return assessmentId;
-    }
-
-    if (normalizedStatus === 'done' && !assessmentId) {
-      logger.RUN('[waitForSubmitAssessmentId] submit 已完成，等待测评落库', {
-        requestId,
-        attempt: currentAttempt,
-      });
+      return ready.assessment_id;
     }
 
     attempts += 1;

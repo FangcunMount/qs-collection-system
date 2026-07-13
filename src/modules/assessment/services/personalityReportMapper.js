@@ -31,11 +31,12 @@ const mapSection = (section = {}) => ({
 
 const resolveOutcome = (raw = {}) => {
   const outcome = raw.outcome || raw.score_detail?.outcome || {};
+  const modelExtra = raw.model_extra || raw.modelExtra || {};
   return {
-    code: outcome.code || outcome.type_code || raw.model_extra?.type_code || '',
-    title: outcome.title || outcome.nickname || raw.model_extra?.nickname || '',
-    summary: outcome.summary || outcome.tagline || raw.model_extra?.tagline || '',
-    rarityLabel: outcome.rarity_label || outcome.rarity || raw.model_extra?.rarity || '',
+    code: outcome.code || outcome.type_code || modelExtra.type_code || '',
+    title: outcome.title || outcome.nickname || modelExtra.type_name || modelExtra.nickname || '',
+    summary: outcome.summary || outcome.tagline || modelExtra.one_liner || modelExtra.tagline || '',
+    rarityLabel: outcome.rarity_label || outcome.rarity || modelExtra.rarity?.label || modelExtra.rarity || '',
     percentile: outcome.percentile ?? null,
   };
 };

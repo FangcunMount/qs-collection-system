@@ -1,12 +1,22 @@
-import { getMedicalAssessmentReport } from '@/services/api/assessmentApi';
+import {
+  getAssessmentReportStatus,
+  getMedicalAssessmentReport,
+} from '@/services/api/assessmentApi';
 import { waitMedicalAssessmentId } from '@/modules/assessment/services/waitMedicalAssessmentId';
 import { resolveTesteeIdForAnswerSheet } from '@/modules/assessment/lib/resolveTesteeId';
+import { assertReportReadable } from '@/modules/assessment/lib/reportReadiness';
+
+export async function ensureMedicalReportReadable({ assessmentId, testeeId }) {
+  const status = await getAssessmentReportStatus(assessmentId, testeeId);
+  return assertReportReadable(status);
+}
 
 export async function loadMedicalReportByAssessmentId({ assessmentId, testeeId }) {
   if (!assessmentId || !testeeId) {
     throw new Error('参数不完整');
   }
 
+  await ensureMedicalReportReadable({ assessmentId, testeeId });
   const report = await getMedicalAssessmentReport(assessmentId, testeeId);
 
   return {
@@ -36,7 +46,7 @@ export async function loadMedicalReportByAnswerSheet({
   }
 
   const assessmentId = await waitMedicalAssessmentId(testeeId, answersheetId, lookupOptions);
-  const report = await getMedicalAssessmentReport(assessmentId, testeeId);
+  const { report } = await loadMedicalReportByAssessmentId({ assessmentId, testeeId });
 
   return {
     report,

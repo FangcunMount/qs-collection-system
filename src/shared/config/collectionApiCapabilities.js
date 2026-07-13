@@ -3,13 +3,13 @@
  * 未列入 yaml 的接口在前端禁止发起请求，避免无意义 404。
  */
 export const COLLECTION_API_CAPABILITIES = Object.freeze({
-  /** GET /assessments 列表 */
-  medicalAssessmentsList: false,
+  /** GET /assessments 医学量表测评列表，已在 collection.yaml 中定义 */
+  medicalAssessmentsList: true,
 });
 
 export function createAssessmentsListUnavailableError(message) {
   const error = new Error(
-    message || 'GET /assessments 未在 collection-server 提供'
+    message || 'GET /assessments 医学量表列表暂不可用'
   );
   error.code = '404';
   return error;
