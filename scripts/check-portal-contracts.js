@@ -30,7 +30,8 @@ const routes = read('src/shared/config/routes.js');
 const bottomMenu = read('src/shared/ui/BottomMenu/index.tsx');
 const bottomMenuStyle = read('src/shared/ui/BottomMenu/index.less');
 const assessmentPortals = read('src/shared/config/assessmentPortals.js');
-const homeTabPage = read('src/modules/tab/pages/HomeTabPage.jsx');
+const homeTabPage = read('src/modules/tab/pages/HomeTabPage.tsx');
+const homeViewModel = read('src/modules/tab/viewModels/home.ts');
 const homeTabStyle = read('src/modules/tab/pages/HomeTabPage.less');
 const homeProfileCard = read('src/modules/tab/components/home/HomeCurrentProfileCard.jsx');
 const personalityCatalog = read('src/modules/catalog/pages/PersonalityCatalogPage.tsx');
@@ -74,7 +75,7 @@ assertContains(assessmentPortals, /home-(entry|child)-behavior\.(png|webp)/, 'ab
 assertContains(homeProfileCard, /home-current-record-checklist\.png/, 'home current record card must reference checklist image');
 assertContains(homeTabPage, /listHotPublishedAssessmentModels/, 'home page must load hot published assessment models');
 assertContains(homeTabPage, /home-portal-card__art/, 'home page must render image-backed portal cards');
-assertContains(homeTabPage, /assessmentKind: resolveAssessmentKind\(item\)/, 'home recent reports must preserve assessment kind');
+assertContains(homeViewModel, /assessmentKind:\s*String\(resolveAssessmentKind\(item\)/, 'home recent reports must preserve assessment kind');
 assertContains(homeTabPage, /isPersonalityAssessmentKind\(assessmentKind\)/, 'home report navigation must route personality separately');
 assertContains(homeRecentAssessments, /isReportReadable\(item\.status\)/, 'home recent reports must only expose readable reports');
 assertNotContains(homeTabPage, /HomeStatusPanel/, 'home page must not import old HomeStatusPanel');

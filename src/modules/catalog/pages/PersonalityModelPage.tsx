@@ -1,9 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Taro, { useRouter } from "@tarojs/taro";
-import { View, Text, ScrollView, Picker } from "@tarojs/components";
-import { AtActivityIndicator } from "taro-ui";
+import { View, Text, Picker } from "@tarojs/components";
 
 import { PrivacyAuthorization } from "@/shared/ui/PrivacyAuthorization";
+import AppNavigationBar from "@/shared/ui/AppNavigationBar";
+import BottomActionBar from "@/shared/ui/BottomActionBar";
+import PageShell from "@/shared/ui/PageShell";
+import ActionButton from "@/shared/ui/ActionButton";
+import StatePanel from "@/shared/ui/StatePanel";
+import SurfaceCard from "@/shared/ui/SurfaceCard";
 import { ROUTES, routes } from "@/shared/config/routes";
 import {
   findTesteeById,
@@ -26,15 +31,83 @@ import {
 import { applyAlgorithmPresentation } from "@/modules/catalog/lib/personalityPresentation";
 import "./PersonalityModelPage.less";
 
-const formatGender = (gender) => {
+interface TesteeViewModel {
+  id: string;
+  legalName?: string;
+  name?: string;
+  gender?: string | number;
+  birthday?: string;
+}
+
+interface PersonalityVariantViewModel {
+  key: string;
+  label: string;
+  subtitle?: string;
+  actionLabel?: string;
+  questionCount?: number;
+  durationMin?: number;
+  modelCode: string;
+  recommended?: boolean;
+  description?: string;
+}
+
+interface PersonalityModelViewModel {
+  key?: string;
+  modelCode?: string;
+  familyCode?: string;
+  algorithm?: string;
+  title?: string;
+  subtitle?: string;
+  description?: string;
+  intro?: string;
+  cta?: string;
+  questionCount?: number;
+  durationMin?: number;
+  theme?: string;
+  badge?: string;
+  gains?: string[];
+  suitableFor?: string[];
+  disclaimer?: string;
+  hero?: {
+    kicker?: string;
+    title?: string;
+    subtitle?: string;
+    sticker?: string;
+  };
+}
+
+interface PublishedPersonalityModel {
+  familyCode?: string;
+  [key: string]: unknown;
+}
+
+interface PersonalityListResult {
+  items?: PublishedPersonalityModel[];
+}
+
+interface PickerChangeEvent {
+  detail: {
+    value: string | number;
+  };
+}
+
+const listPersonalityModels = listPublishedPersonalityModels as unknown as (
+  params: { page: number; pageSize: number; category?: string },
+) => Promise<PersonalityListResult>;
+
+const getErrorMessage = (error: unknown): string => (
+  error instanceof Error ? error.message : "模型加载失败"
+);
+
+const formatGender = (gender?: string | number) => {
   if (gender === 1 || gender === "1") return "男";
   if (gender === 2 || gender === "2") return "女";
   return "未设置";
 };
 
-const formatTesteeName = (testee) => testee?.legalName || testee?.name || "未命名档案";
+const formatTesteeName = (testee?: TesteeViewModel | null) => testee?.legalName || testee?.name || "未命名档案";
 
-const resolvePageThemeClass = (theme) => {
+const resolvePageThemeClass = (theme?: string) => {
   const value = String(theme || "mbti").toLowerCase();
   if (["mbti", "fun", "deep", "ocean", "sbti", "default"].includes(value)) {
     return value === "sbti" ? "fun" : value;
@@ -42,7 +115,10 @@ const resolvePageThemeClass = (theme) => {
   return "mbti";
 };
 
-const resolveFooterCta = (model, selectedVariant) => {
+const resolveFooterCta = (
+  model: PersonalityModelViewModel | null,
+  selectedVariant: PersonalityVariantViewModel | null,
+) => {
   if (!selectedVariant) {
     return model?.cta || "开始测评";
   }
@@ -75,14 +151,15 @@ const PersonalityModelPage = () => {
   const routeModelCode = router.params?.model_code || router.params?.mc || "";
   const routeFamilyCode = router.params?.model || router.params?.family_code || "";
 
-  const [model, setModel] = useState(null);
+  const [model, setModel] = useState<PersonalityModelViewModel | null>(null);
   const [pageLoading, setPageLoading] = useState(true);
   const [pageError, setPageError] = useState("");
-  const [testees, setTestees] = useState(() => getTesteeList());
-  const [selectedId, setSelectedId] = useState(() => getSelectedTesteeId());
+  const [testees, setTestees] = useState<TesteeViewModel[]>(() => getTesteeList());
+  const [selectedId, setSelectedId] = useState<string | null>(() => getSelectedTesteeId());
   const [testeeLoading, setTesteeLoading] = useState(false);
-  const [variants, setVariants] = useState([]);
+  const [variants, setVariants] = useState<PersonalityVariantViewModel[]>([]);
   const [selectedVariantKey, setSelectedVariantKey] = useState("");
+  const [reloadToken, setReloadToken] = useState(0);
 
   const activeFamilyCode = model?.familyCode || routeFamilyCode || "";
   const hasVariantFamily = variants.length > 1;
@@ -100,7 +177,9 @@ const PersonalityModelPage = () => {
     [model, selectedVariant]
   );
 
-  const selectedTestee = selectedId ? findTesteeById(selectedId) : null;
+  const selectedTestee = selectedId
+    ? findTesteeById(selectedId) as TesteeViewModel | null
+    : null;
   const selectedIndex = Math.max(0, testees.findIndex((item) => item.id === selectedId));
   const pickerOptions = testees.map((item) => ({
     label: formatTesteeName(item),
@@ -108,7 +187,10 @@ const PersonalityModelPage = () => {
   }));
 
   useEffect(() => {
-    const unsubscribe = subscribeTesteeStore(({ testeeList, selectedTesteeId }) => {
+    const unsubscribe = subscribeTesteeStore(({
+      testeeList,
+      selectedTesteeId,
+    }: { testeeList: TesteeViewModel[]; selectedTesteeId: string | null }) => {
       setTestees(testeeList);
       setSelectedId(selectedTesteeId);
     });
@@ -131,10 +213,14 @@ const PersonalityModelPage = () => {
   useEffect(() => {
     let cancelled = false;
 
-    const loadFamilyVariants = async (familyCode, preferredModelCode, publishedModels = []) => {
+    const loadFamilyVariants = async (
+      familyCode: string,
+      preferredModelCode: string,
+      publishedModels: PublishedPersonalityModel[] = [],
+    ): Promise<PersonalityModelViewModel | null> => {
       let models = publishedModels;
       if (!models.length) {
-        const result = await listPublishedPersonalityModels({
+        const result = await listPersonalityModels({
           page: 1,
           pageSize: 50,
           category: "personality",
@@ -146,7 +232,7 @@ const PersonalityModelPage = () => {
       const familyModels = models.filter(
         (item) => String(item.familyCode || "").toLowerCase() === String(familyCode).toLowerCase()
       );
-      const nextVariants = buildVariantsFromPublished(familyModels);
+      const nextVariants = buildVariantsFromPublished(familyModels) as PersonalityVariantViewModel[];
       if (!nextVariants.length) {
         throw new Error("未找到已发布的题版");
       }
@@ -168,7 +254,7 @@ const PersonalityModelPage = () => {
           familyCode,
         },
         familyCode
-      );
+      ) as PersonalityModelViewModel;
     };
 
     const loadModel = async () => {
@@ -176,7 +262,7 @@ const PersonalityModelPage = () => {
       setPageError("");
 
       try {
-        const listResult = await listPublishedPersonalityModels({
+        const listResult = await listPersonalityModels({
           page: 1,
           pageSize: 50,
           category: "personality",
@@ -186,9 +272,10 @@ const PersonalityModelPage = () => {
         const publishedModels = listResult.items || [];
 
         if (routeModelCode) {
-          const detail =
+          const detail = (
             resolvePublishedModelCatalogItem(publishedModels, routeModelCode) ||
-            (await loadPersonalityModelDetail(routeModelCode, { publishedModels }));
+            (await loadPersonalityModelDetail(routeModelCode, { publishedModels }))
+          ) as PersonalityModelViewModel;
           if (cancelled) return;
 
           if (detail.familyCode) {
@@ -200,7 +287,7 @@ const PersonalityModelPage = () => {
           }
 
           setVariants([]);
-          setModel(detail);
+          setModel(detail as PersonalityModelViewModel);
           return;
         }
 
@@ -218,7 +305,7 @@ const PersonalityModelPage = () => {
       } catch (error) {
         if (cancelled) return;
         console.warn("[PersonalityModelPage] 加载模型失败", error);
-        setPageError(error?.message || "模型加载失败");
+        setPageError(getErrorMessage(error));
         setModel(null);
         setVariants([]);
       } finally {
@@ -232,10 +319,10 @@ const PersonalityModelPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [routeModelCode, routeFamilyCode]);
+  }, [routeModelCode, routeFamilyCode, reloadToken]);
 
-  const handleSelectTestee = (event) => {
-    const next = testees[event.detail.value];
+  const handleSelectTestee = (event: PickerChangeEvent) => {
+    const next = testees[Number(event.detail.value)];
     if (!next?.id) return;
     setSelectedTesteeId(next.id);
     setSelectedId(next.id);
@@ -278,11 +365,32 @@ const PersonalityModelPage = () => {
     });
   };
 
+  const handleBack = () => {
+    const pages = Taro.getCurrentPages?.() || [];
+    if (pages.length > 1) {
+      Taro.navigateBack();
+      return;
+    }
+    Taro.redirectTo({ url: routes.personalityCatalog() });
+  };
+
+  const navigation = (
+    <AppNavigationBar
+      title="人格测评"
+      showBack
+      onBack={handleBack}
+      tone="personality"
+      transparent
+    />
+  );
+
   if (pageLoading) {
     return (
       <>
+        <PageShell tone="personality" navigation={navigation}>
+          <StatePanel state="loading" title="加载模型信息" tone="personality" />
+        </PageShell>
         <PrivacyAuthorization />
-        <AtActivityIndicator mode="center" content="加载模型信息..." />
       </>
     );
   }
@@ -291,12 +399,16 @@ const PersonalityModelPage = () => {
     return (
       <>
         <PrivacyAuthorization />
-        <View className="personality-model-page">
-          <View className="personality-model-empty">
-            <Text className="personality-model-empty__title">模型暂不可用</Text>
-            <Text className="personality-model-empty__desc">{pageError || "请返回重试"}</Text>
-          </View>
-        </View>
+        <PageShell tone="personality" navigation={navigation}>
+          <StatePanel
+            state="error"
+            title="模型暂不可用"
+            description={pageError || "请返回重试"}
+            actionText="重新加载"
+            onAction={() => setReloadToken((token) => token + 1)}
+            tone="personality"
+          />
+        </PageShell>
       </>
     );
   }
@@ -309,8 +421,26 @@ const PersonalityModelPage = () => {
   const introText = model.intro || model.description || selectedVariant?.description || "";
 
   return (
-    <View className={`personality-model-page personality-model-page--${pageThemeClass}`}>
-      <ScrollView scrollY className="personality-model-page__scroll" enhanced showScrollbar={false}>
+    <>
+      <PageShell
+        tone="personality"
+        className={`personality-model-page personality-model-page--${pageThemeClass}`}
+        contentClassName="personality-model-page__scroll"
+        navigation={navigation}
+        fixedAction={(
+          <BottomActionBar className="personality-model-footer">
+            <ActionButton
+              tone="personality"
+              block
+              disabled={!selectedId}
+              className="personality-model-footer__button"
+              onClick={handleStart}
+            >
+              {footerCta}
+            </ActionButton>
+          </BottomActionBar>
+        )}
+      >
         <View className="personality-model-hero">
           {model.hero?.kicker || model.badge ? (
             <Text className="personality-model-hero__kicker">{model.hero?.kicker || model.badge}</Text>
@@ -334,7 +464,7 @@ const PersonalityModelPage = () => {
               {variants.map((variant) => {
                 const isActive = variant.key === selectedVariantKey;
                 return (
-                  <View
+                  <SurfaceCard
                     key={variant.key}
                     className={`personality-variant-card ${isActive ? "is-active" : ""}`}
                     onClick={() => setSelectedVariantKey(variant.key)}
@@ -350,7 +480,7 @@ const PersonalityModelPage = () => {
                       {variant.questionCount ? <Text>{variant.questionCount} 道题</Text> : null}
                       {variant.durationMin ? <Text>约 {variant.durationMin} 分钟</Text> : null}
                     </View>
-                  </View>
+                  </SurfaceCard>
                 );
               })}
             </View>
@@ -450,19 +580,9 @@ const PersonalityModelPage = () => {
         </View>
 
         <View className="personality-model-page__bottom-spacer" />
-      </ScrollView>
-
-      <View className="personality-model-footer">
-        <View
-          className={`personality-model-footer__button ${!selectedId ? "is-disabled" : ""}`}
-          onClick={handleStart}
-        >
-          <Text>{footerCta}</Text>
-        </View>
-      </View>
-
+      </PageShell>
       <PrivacyAuthorization />
-    </View>
+    </>
   );
 };
 

@@ -102,14 +102,15 @@ const PersonalityCatalogPage = () => {
   };
 
   return (
-    <PageShell
-      tone="personality"
-      className="personality-home"
-      contentClassName="personality-home__scroll"
-      navigation={(
-        <AppNavigationBar title="人格探索" showBack onBack={handleBack} tone="personality" transparent />
-      )}
-    >
+    <>
+      <PageShell
+        tone="personality"
+        className="personality-home"
+        contentClassName="personality-home__scroll"
+        navigation={(
+          <AppNavigationBar title="人格探索" showBack onBack={handleBack} tone="personality" transparent />
+        )}
+      >
 
         <View className="personality-hero">
           <View className="personality-hero__content">
@@ -260,8 +261,9 @@ const PersonalityCatalogPage = () => {
         </View>
 
         <View className="personality-home__bottom-spacer" />
+      </PageShell>
       <PrivacyAuthorization />
-    </PageShell>
+    </>
   );
 };
 

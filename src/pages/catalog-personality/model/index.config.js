@@ -1,4 +1,5 @@
 export default {
+  navigationStyle: 'custom',
   navigationBarTitleText: '人格测评',
   navigationBarBackgroundColor: '#FFF5BA',
   navigationBarTextStyle: 'black',

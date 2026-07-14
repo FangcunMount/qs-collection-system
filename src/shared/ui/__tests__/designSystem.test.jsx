@@ -55,7 +55,10 @@ describe("Qlume shared UI", () => {
 
   test("PageShell reserves safe area and fixed action space", () => {
     const component = renderer.create(
-      <PageShell fixedAction={<BottomActionBar>操作</BottomActionBar>}>
+      <PageShell
+        scrollIntoView="ability-specialized"
+        fixedAction={<BottomActionBar>操作</BottomActionBar>}
+      >
         内容
       </PageShell>
     );
@@ -65,6 +68,8 @@ describe("Qlume shared UI", () => {
     expect(content.props.className).toContain("page-shell__content--with-action");
     expect(findByClass(component.root, "bottom-action-bar").props.className)
       .toContain("bottom-action-bar--elevated");
+    expect(component.root.findByType("taro-scroll-view").props.scrollIntoView)
+      .toBe("ability-specialized");
   });
 
   test.each(["neutral", "medical", "personality", "ability"])(

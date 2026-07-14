@@ -1,15 +1,20 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import Taro from "@tarojs/taro";
-import { View, Text, ScrollView, Image } from "@tarojs/components";
+import { View, Text, Image } from "@tarojs/components";
 import { AtIcon } from "taro-ui";
 
 import { routes } from "@/shared/config/routes";
-import {
-  ABILITY_SPECIALIZED_ASSESSMENTS,
-  isAbilityAssessmentAvailable,
-} from "@/shared/config/abilityAssessments";
+import { ABILITY_SPECIALIZED_ASSESSMENTS } from "@/shared/config/abilityAssessments";
+import AppNavigationBar from "@/shared/ui/AppNavigationBar";
+import PageShell from "@/shared/ui/PageShell";
+import SectionHeader from "@/shared/ui/SectionHeader";
+import SurfaceCard from "@/shared/ui/SurfaceCard";
 import AssessmentKindReportSection from "@/modules/assessment/components/records/AssessmentKindReportSection";
 import { ASSESSMENT_KIND } from "@/shared/lib/assessmentKind";
+import {
+  mapAbilityCatalogCard,
+  type CatalogCardViewModel,
+} from "@/modules/catalog/viewModels/catalogCard";
 import behaviorHeroImage from "@/pages/catalog-ability/assets/home/home-entry-behavior.webp";
 import executiveImage from "@/pages/catalog-ability/assets/icon/icon-executive-function.png";
 import abilityImage from "@/pages/catalog-ability/assets/icon/icon-behavior-ability.png";
@@ -17,7 +22,7 @@ import workingMemoryImage from "@/pages/catalog-ability/assets/icon/icon-working
 import sensoryImage from "@/pages/catalog-ability/assets/home/category-sensory.png";
 import "./AbilityCatalogPage.less";
 
-const ASSESSMENT_IMAGES = {
+const ASSESSMENT_IMAGES: Record<string, string> = {
   executive: executiveImage,
   sensory: sensoryImage,
 };
@@ -71,25 +76,11 @@ const FLOW_STEPS = Object.freeze([
   },
 ]);
 
-const resolveHeaderMetrics = () => {
-  try {
-    const systemInfo = Taro.getSystemInfoSync?.() || {};
-    return {
-      statusBarHeight: systemInfo.statusBarHeight || 0,
-    };
-  } catch (error) {
-    console.warn("[AbilityCatalogPage] 获取状态栏高度失败:", error);
-    return { statusBarHeight: 0 };
-  }
-};
+const ASSESSMENT_CARDS: CatalogCardViewModel[] = ABILITY_SPECIALIZED_ASSESSMENTS
+  .map(mapAbilityCatalogCard);
 
 const AbilityCatalogPage = () => {
-  const [navMetrics, setNavMetrics] = useState(() => resolveHeaderMetrics());
   const [scrollTarget, setScrollTarget] = useState("");
-
-  useEffect(() => {
-    setNavMetrics(resolveHeaderMetrics());
-  }, []);
 
   const handleBack = useCallback(() => {
     const pages = Taro.getCurrentPages?.() || [];
@@ -105,8 +96,8 @@ const AbilityCatalogPage = () => {
     setTimeout(() => setScrollTarget(""), 300);
   }, []);
 
-  const handleOpenAssessment = useCallback((item) => {
-    if (!isAbilityAssessmentAvailable(item)) {
+  const handleOpenAssessment = useCallback((item: CatalogCardViewModel) => {
+    if (item.disabled) {
       Taro.showToast({
         title: "即将开放",
         icon: "none",
@@ -115,29 +106,20 @@ const AbilityCatalogPage = () => {
     }
 
     Taro.navigateTo({
-      url: routes.assessmentFill({ q: item.scaleCode }),
+      url: routes.assessmentFill({ q: item.code }),
     });
   }, []);
 
   return (
-    <View className="ability-home">
-      <ScrollView
-        scrollY
-        scrollIntoView={scrollTarget}
-        className="ability-home__scroll"
-        enhanced
-        showScrollbar={false}
-      >
-        <View
-          className="ability-nav"
-          style={{ paddingTop: `${navMetrics.statusBarHeight}px` }}
-        >
-          <View className="ability-nav__back" onClick={handleBack}>
-            <AtIcon value="chevron-left" size="26" color="#071735" />
-          </View>
-          <Text className="ability-nav__title">行为能力</Text>
-          <View className="ability-nav__spacer" />
-        </View>
+    <PageShell
+      tone="ability"
+      className="ability-home"
+      contentClassName="ability-home__scroll"
+      scrollIntoView={scrollTarget}
+      navigation={(
+        <AppNavigationBar title="行为能力" showBack onBack={handleBack} tone="ability" transparent />
+      )}
+    >
 
         <View className="ability-hero">
           <View className="ability-hero__content">
@@ -175,18 +157,19 @@ const AbilityCatalogPage = () => {
         </View>
 
         <View id="ability-specialized" className="ability-section ability-specialized">
-          <View className="ability-section__header">
-            <Text className="ability-section__title">核心测评</Text>
-            <View className="ability-section__more" onClick={handleViewAssessments}>
-              <Text>暂仅展示 2 项</Text>
-            </View>
-          </View>
+          <SectionHeader
+            title="核心测评"
+            actionLabel="暂仅展示 2 项"
+            onAction={handleViewAssessments}
+            tone="ability"
+            className="ability-section__header"
+          />
 
           <View className="ability-assessment-grid">
-            {ABILITY_SPECIALIZED_ASSESSMENTS.map((item, index) => (
-              <View
+            {ASSESSMENT_CARDS.map((item, index) => (
+              <SurfaceCard
                 key={item.key}
-                className={`ability-assessment-card ability-assessment-card--${item.iconKey} ${isAbilityAssessmentAvailable(item) ? "" : "is-disabled"}`}
+                className={`ability-assessment-card ability-assessment-card--${item.iconKey} ${item.disabled ? "is-disabled" : ""}`}
                 onClick={() => handleOpenAssessment(item)}
               >
                 <View className="ability-assessment-card__rank">
@@ -209,14 +192,14 @@ const AbilityCatalogPage = () => {
                   </View>
                   <Text className="ability-assessment-card__desc">{item.description}</Text>
                   <View className="ability-assessment-card__meta">
-                    <Text className="ability-assessment-card__duration">{item.duration || "约 10 分钟"}</Text>
+                    <Text className="ability-assessment-card__duration">{item.durationLabel}</Text>
                     <Text className="ability-assessment-card__tested">{item.testedLabel || "持续扩展中"}</Text>
                   </View>
                 </View>
                 <View className="ability-assessment-card__arrow">
                   <AtIcon value="chevron-right" size="18" color="#FFFFFF" />
                 </View>
-              </View>
+              </SurfaceCard>
             ))}
           </View>
         </View>
@@ -230,15 +213,15 @@ const AbilityCatalogPage = () => {
         />
 
         <View className="ability-section ability-observation">
-          <View className="ability-section__header">
-            <Text className="ability-section__title">观察重点</Text>
-            <View className="ability-section__more">
-              <Text>围绕 2 项测评</Text>
-            </View>
-          </View>
+          <SectionHeader
+            title="观察重点"
+            description="围绕 2 项测评"
+            tone="ability"
+            className="ability-section__header"
+          />
           <View className="ability-observation-grid">
             {OBSERVATION_ITEMS.map((item) => (
-              <View key={item.title} className="ability-observation-card">
+              <SurfaceCard key={item.title} className="ability-observation-card">
                 <View className="ability-observation-card__icon">
                   <Image className="ability-observation-card__image" src={item.image} mode="aspectFit" />
                 </View>
@@ -246,7 +229,7 @@ const AbilityCatalogPage = () => {
                   <Text className="ability-observation-card__title">{item.title}</Text>
                   <Text className="ability-observation-card__subtitle">{item.subtitle}</Text>
                 </View>
-              </View>
+              </SurfaceCard>
             ))}
           </View>
         </View>
@@ -271,8 +254,7 @@ const AbilityCatalogPage = () => {
         </View>
 
         <View className="ability-home__bottom-spacer" />
-      </ScrollView>
-    </View>
+    </PageShell>
   );
 };
 

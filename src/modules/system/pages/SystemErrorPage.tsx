@@ -4,9 +4,9 @@ import Taro, { useRouter } from "@tarojs/taro";
 
 import emptyData from "@/assets/images/empty_data.png";
 import { ROUTES } from "@/shared/config/routes";
-import ActionButton from "@/shared/ui/ActionButton";
 import AppNavigationBar from "@/shared/ui/AppNavigationBar";
 import PageShell from "@/shared/ui/PageShell";
+import ActionButton from "@/shared/ui/ActionButton";
 import SurfaceCard from "@/shared/ui/SurfaceCard";
 
 import "./SystemErrorPage.less";
