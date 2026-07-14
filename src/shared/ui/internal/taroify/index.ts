@@ -5,7 +5,6 @@ export { default as TaroifyCheckbox } from "@taroify/core/checkbox";
 export { default as TaroifyDatetimePicker } from "@taroify/core/datetime-picker";
 export { default as TaroifyDialog } from "@taroify/core/dialog";
 export { default as TaroifyEmpty } from "@taroify/core/empty";
-export { default as TaroifyField } from "@taroify/core/field";
 export { default as TaroifyInput } from "@taroify/core/input";
 export { default as TaroifyLoading } from "@taroify/core/loading";
 export { default as TaroifyPicker } from "@taroify/core/picker";

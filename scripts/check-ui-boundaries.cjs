@@ -4,6 +4,7 @@ const path = require('path');
 
 const root = path.resolve(__dirname, '..');
 const sourceRoot = path.join(root, 'src');
+const packageManifest = require('../package.json');
 const allowlist = require('./ui-boundary-allowlist.json');
 const legacyAllowed = new Set(allowlist.legacyUiImports || []);
 const sourceExtensions = new Set(['.js', '.jsx', '.ts', '.tsx']);
@@ -30,6 +31,17 @@ const walk = (directory) => {
 };
 
 walk(sourceRoot);
+
+const declaredPackages = {
+  ...(packageManifest.dependencies || {}),
+  ...(packageManifest.devDependencies || {}),
+};
+
+for (const legacyPackage of ['taro-ui', 'taro-ui-fc']) {
+  if (declaredPackages[legacyPackage]) {
+    violations.push(`package.json: 已退出的 ${legacyPackage} 不能重新加入依赖`);
+  }
+}
 
 for (const allowedPath of legacyAllowed) {
   if (!fs.existsSync(path.join(root, allowedPath))) {

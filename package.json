@@ -26,6 +26,7 @@
     "check:package-size": "node scripts/check-package-size.cjs",
     "check:ui-boundaries": "node scripts/check-ui-boundaries.cjs",
     "check:ui-assets": "node scripts/check-ui-assets.cjs",
+    "report:ui-governance": "node scripts/report-ui-governance.cjs",
     "verify:frontend": "npm run typecheck:strict && npm run test:ui && npm run test:contracts && npm run check:ui-boundaries && npm run check:ui-assets && npm run build:weapp && npm run check:package-size && git diff --check"
   },
   "browserslist": [
