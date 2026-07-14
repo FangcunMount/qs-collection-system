@@ -17,10 +17,10 @@ import type { ReportWaitPhase } from "@/modules/assessment/types";
 import { routes } from "@/shared/config/routes";
 import { ASSESSMENT_KIND, isPersonalityAssessmentKind } from "@/shared/lib/assessmentKind";
 import { getLogger } from "@/shared/lib/logger";
-import ActionButton from "@/shared/ui/ActionButton";
 import PageShell from "@/shared/ui/PageShell";
-import { PrivacyAuthorization } from "@/shared/ui/PrivacyAuthorization";
 import StatePanel from "@/shared/ui/StatePanel";
+import ActionButton from "@/shared/ui/ActionButton";
+import { PrivacyAuthorization } from "@/shared/ui/PrivacyAuthorization";
 import SurfaceCard from "@/shared/ui/SurfaceCard";
 import "./AssessmentReportPendingPage.less";
 

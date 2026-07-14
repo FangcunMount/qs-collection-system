@@ -34,6 +34,7 @@
     "src/modules/assessment/components/report/MedicalReportTrendSummary.tsx",
     "src/modules/assessment/components/report/MedicalReportContent.tsx",
     "src/modules/assessment/components/report/PersonalityReportContent.tsx",
+    "src/modules/assessment/components/report/PersonalityReportHero.tsx",
     "src/modules/assessment/viewModels/**/*.ts",
     "src/modules/assessment/views/*.tsx",
     "src/modules/questionnaire/types.ts",

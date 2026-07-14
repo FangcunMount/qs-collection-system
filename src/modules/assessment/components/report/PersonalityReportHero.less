@@ -1,59 +1,62 @@
+@import "../../../../styles/tokens.less";
+
 .personality-report-hero {
   position: relative;
-  margin: 24rpx;
-  padding: 42rpx 32rpx 36rpx;
-  border-radius: 30rpx;
+  margin: @space-3;
+  padding: @space-5 @space-4 @space-4;
+  border: 3rpx solid @text-color-primary;
+  border-radius: @radius-card;
   overflow: hidden;
-  background: linear-gradient(135deg, #fff4b8 0%, #e7fcff 58%, #f7f3ff 100%);
-  border: 3rpx solid #111111;
-  box-shadow: 8rpx 8rpx 0 rgba(17, 17, 17, 0.95);
+  background: linear-gradient(135deg, @color-personality-100 0%, @color-medical-50 58%, @color-ability-50 100%);
+  box-shadow: @shadow-large;
   text-align: center;
   box-sizing: border-box;
 }
 
-.personality-report-hero::before {
+.personality-report-hero::before,
+.personality-report-hero::after {
   content: "";
   position: absolute;
+  border-radius: 50%;
+}
+
+.personality-report-hero::before {
   width: 180rpx;
   height: 180rpx;
   right: -54rpx;
   top: -42rpx;
-  border-radius: 50%;
-  background: rgba(255, 107, 143, 0.24);
+  background: @color-personality-200;
 }
 
 .personality-report-hero::after {
-  content: "";
-  position: absolute;
   width: 150rpx;
   height: 150rpx;
   left: -54rpx;
   bottom: -48rpx;
-  border-radius: 50%;
-  background: rgba(19, 194, 194, 0.24);
+  background: @color-medical-200;
 }
 
 .personality-report-hero__badge {
   position: relative;
   z-index: 1;
   display: inline-flex;
-  padding: 10rpx 18rpx;
-  border-radius: 999rpx;
-  background: #111111;
-  color: #ffffff;
-  font-size: 22rpx;
-  font-weight: 900;
+  padding: @space-1 @space-2;
+  border-radius: @radius-pill;
+  color: @color-white;
+  background: @text-color-primary;
+  font-size: @font-size-caption;
+  font-weight: @font-weight-black;
 }
 
 .personality-report-hero__type {
   position: relative;
   z-index: 1;
   display: block;
-  margin-top: 28rpx;
-  font-size: 70rpx;
+  margin-top: @space-4;
+  color: @text-color-primary;
+  font-size: @font-size-display;
   line-height: 1.08;
-  font-weight: 900;
-  color: #111111;
+  font-weight: @font-weight-black;
   letter-spacing: 2rpx;
 }
 
@@ -61,45 +64,45 @@
   position: relative;
   z-index: 1;
   display: block;
-  margin-top: 12rpx;
-  font-size: 34rpx;
+  margin-top: @space-2;
+  color: @text-color-primary;
+  font-size: @font-size-card-title;
   line-height: 1.35;
-  font-weight: 800;
-  color: #243044;
+  font-weight: @font-weight-bold;
 }
 
 .personality-report-hero__tagline {
   position: relative;
   z-index: 1;
   display: block;
-  margin-top: 20rpx;
-  font-size: 28rpx;
+  margin-top: @space-3;
+  color: @text-color-secondary;
+  font-size: @font-size-action;
   line-height: 1.7;
-  color: #344054;
 }
 
 .personality-report-hero__conclusion {
   position: relative;
   z-index: 1;
-  margin-top: 24rpx;
-  padding: 22rpx 24rpx;
-  border-radius: 22rpx;
-  background: rgba(255, 255, 255, 0.78);
-  font-size: 26rpx;
+  margin-top: @space-3;
+  padding: @space-3;
+  border-radius: @radius-lg-token;
+  color: @text-color-secondary;
+  background: @surface-card-94;
+  font-size: @font-size-body;
   line-height: 1.75;
-  color: #344054;
   text-align: left;
 }
 
 .personality-report-hero__rarity {
   position: relative;
   z-index: 1;
-  margin-top: 22rpx;
+  margin-top: @space-3;
+  padding: @space-1 @space-3;
   display: inline-flex;
-  padding: 10rpx 20rpx;
-  border-radius: 999rpx;
-  background: #ffffff;
-  color: #6941c6;
-  font-size: 24rpx;
-  font-weight: 800;
+  border-radius: @radius-pill;
+  color: @color-personality-700;
+  background: @surface-card;
+  font-size: @font-size-caption;
+  font-weight: @font-weight-bold;
 }

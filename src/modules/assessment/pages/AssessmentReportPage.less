@@ -1,23 +1,23 @@
 @import "../../../styles/theme.less";
 
 // 颜色变量
-@primary-blue: #3B82F6;
-@orange-main: #F97316;
-@orange-light: #FFF7ED;
-@orange-border: #FFEDD5;
-@red-main: #EF4444;
-@green-main: #22C55E;
-@gray-bg: #F5F5F5;
-@gray-light: #F3F4F6;
-@gray-border: #E5E7EB;
-@text-dark: #1F2937;
-@text-gray: #6B7280;
-@text-light: #9CA3AF;
+@primary-blue: @color-info-500;
+@orange-main: @color-personality-500;
+@orange-light: @color-personality-50;
+@orange-border: @color-personality-200;
+@red-main: @color-danger-500;
+@green-main: @color-success-500;
+@gray-bg: @surface-disabled;
+@gray-light: @surface-subtle;
+@gray-border: @border-color-base;
+@text-dark: @text-color-primary;
+@text-gray: @text-color-secondary;
+@text-light: @text-color-disabled;
 
 // 页面整体容器
 .analysis-report-page {
-  min-height: 100vh;
-  background: @gray-bg;
+  min-height: 100%;
+  background: transparent;
   padding-bottom: 120rpx;
 }
 
@@ -92,7 +92,7 @@
         font-size: 96rpx;
         line-height: 1;
         letter-spacing: -4rpx;
-        font-weight: 800;
+        font-weight: 900;
       }
 
       .score-unit {

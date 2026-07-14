@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useState } from "react";
 import Taro from "@tarojs/taro";
 
-import PlanSubscribeConfirm from "@/shared/ui/PlanSubscribeConfirm";
 import { getLogger } from "@/shared/lib/logger";
 import { getAssessmentEntryContext } from "@/shared/stores/assessmentEntry";
 import { findTesteeById, getSelectedTesteeId } from "@/shared/stores/testees";
+import ReportPageShell from "../components/report/ReportPageShell";
+import PlanSubscribeConfirm from "@/shared/ui/PlanSubscribeConfirm";
 import {
   loadPersonalityReportByAnswerSheet,
   loadPersonalityReportByAssessmentId,
@@ -13,7 +14,6 @@ import { buildPersonalityReportViewModel } from "../viewModels/personalityReport
 import type { PersonalityReportViewModel } from "../types";
 import PersonalityReportContent from "../components/report/PersonalityReportContent";
 import ReportCompletionAction from "../components/report/ReportCompletionAction";
-import ReportPageShell from "../components/report/ReportPageShell";
 import "./PersonalityReportPage.less";
 
 const logger = getLogger("personality-report");

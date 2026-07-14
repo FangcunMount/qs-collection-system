@@ -2,13 +2,14 @@ import React, { useCallback, useEffect, useState } from "react";
 import Taro from "@tarojs/taro";
 import { View } from "@tarojs/components";
 
-import PlanSubscribeConfirm from "@/shared/ui/PlanSubscribeConfirm";
 import { routes } from "@/shared/config/routes";
 import { isPersonalityAssessmentKind } from "@/shared/lib/assessmentKind";
 import { getLogger } from "@/shared/lib/logger";
 import { getAssessmentEntryContext } from "@/shared/stores/assessmentEntry";
 import { findTesteeById, getSelectedTesteeId } from "@/shared/stores/testees";
 import { getAssessmentTrendSummary } from "@/services/api/assessments";
+import ReportPageShell from "../components/report/ReportPageShell";
+import PlanSubscribeConfirm from "@/shared/ui/PlanSubscribeConfirm";
 import {
   loadMedicalReportByAnswerSheet,
   loadMedicalReportByAssessmentId,
@@ -22,7 +23,6 @@ import MedicalReportContent from "../components/report/MedicalReportContent";
 import MedicalReportOverview from "../components/report/MedicalReportOverview";
 import MedicalReportTrendSummary from "../components/report/MedicalReportTrendSummary";
 import ReportCompletionAction from "../components/report/ReportCompletionAction";
-import ReportPageShell from "../components/report/ReportPageShell";
 import "./AssessmentReportPage.less";
 
 const logger = getLogger("analysis");

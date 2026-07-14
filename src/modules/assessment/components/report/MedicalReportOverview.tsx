@@ -29,7 +29,7 @@ const MedicalReportOverview = ({ report }: MedicalReportOverviewProps) => {
           <Text className="score-main">{report.total?.score ?? 0}</Text>
           <Text className="score-unit">分</Text>
         </View>
-        <View className="risk-level-badge" style={{ backgroundColor: "#FFFFFF", color: risk.scoreBadgeColor || "#F97316" }}>
+        <View className="risk-level-badge" style={{ color: risk.scoreBadgeColor || undefined }}>
           <Text className="risk-level-text">
             {risk.label}{report.total?.content ? `:${report.total.content}` : ""}
           </Text>

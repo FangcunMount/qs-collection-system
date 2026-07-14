@@ -6,13 +6,13 @@ import TrendLineChart from "@/modules/assessment/components/report/TrendLineChar
 import { formatReportDelta } from "@/modules/assessment/lib/reportTrend";
 import { routes } from "@/shared/config/routes";
 import { formatChartDateLabel, formatSimpleDate } from "@/shared/lib/dateFormatters";
-import ActionButton from "@/shared/ui/ActionButton";
-import FilterChip from "@/shared/ui/FilterChip";
 import PageShell from "@/shared/ui/PageShell";
-import { PrivacyAuthorization } from "@/shared/ui/PrivacyAuthorization";
-import RiskTag from "@/shared/ui/RiskTag";
 import SectionHeader from "@/shared/ui/SectionHeader";
 import StatePanel from "@/shared/ui/StatePanel";
+import ActionButton from "@/shared/ui/ActionButton";
+import FilterChip from "@/shared/ui/FilterChip";
+import { PrivacyAuthorization } from "@/shared/ui/PrivacyAuthorization";
+import RiskTag from "@/shared/ui/RiskTag";
 import SurfaceCard from "@/shared/ui/SurfaceCard";
 import { getAssessmentTrendSummary } from "@/services/api/assessments";
 import "./AssessmentReportTrendPage.less";

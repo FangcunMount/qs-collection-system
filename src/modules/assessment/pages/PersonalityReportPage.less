@@ -1,68 +1,72 @@
+@import "../../../styles/tokens.less";
+
 .personality-report-page {
-  min-height: 100vh;
-  padding: 0 0 48rpx;
-  background: linear-gradient(180deg, #FBFCFF 0%, #FFFFFF 40%, #F7F4FF 100%);
+  min-height: 100%;
+  padding: 0 0 @space-6;
+  background: transparent;
   box-sizing: border-box;
 }
 
 .pr-meta {
-  margin: 0 24rpx;
-  padding: 0 8rpx;
+  margin: 0 @space-3;
+  padding: 0 @space-1;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16rpx;
+  gap: @space-2;
 }
 
 .pr-meta__name {
-  color: #243044;
-  font-size: 26rpx;
-  font-weight: 800;
+  color: @text-color-primary;
+  font-size: @font-size-body;
+  font-weight: @font-weight-bold;
 }
 
 .pr-meta__time {
-  color: #7B849A;
-  font-size: 24rpx;
-  font-weight: 600;
+  color: @text-color-secondary;
+  font-size: @font-size-caption;
+  font-weight: @font-weight-semibold;
 }
 
 .pr-section {
-  margin: 32rpx 24rpx 0;
+  margin: @space-4 @space-3 0;
 }
 
 .pr-section__header {
-  margin: 0 4rpx 20rpx;
+  margin: 0 4rpx @space-3;
   display: flex;
   flex-direction: column;
-  gap: 8rpx;
+  gap: @space-1;
 }
 
 .pr-section__title {
-  color: #1D2433;
-  font-size: 34rpx;
+  color: @text-color-primary;
+  font-size: @font-size-card-title;
   line-height: 1.2;
-  font-weight: 900;
+  font-weight: @font-weight-black;
 }
 
 .pr-section__subtitle {
-  color: #7B849A;
-  font-size: 24rpx;
+  color: @text-color-secondary;
+  font-size: @font-size-caption;
   line-height: 1.4;
-  font-weight: 600;
+  font-weight: @font-weight-semibold;
 }
 
-.pr-dimension-list {
+.pr-dimension-list,
+.pr-advice-list {
   display: flex;
   flex-direction: column;
-  gap: 22rpx;
+  gap: @space-3;
 }
 
-.pr-dimension-card {
-  padding: 28rpx 26rpx;
-  border-radius: 24rpx;
-  background: #FFFFFF;
-  border: 2rpx solid #ECEAF6;
-  box-shadow: 0 14rpx 32rpx rgba(48, 40, 96, 0.06);
+.pr-dimension-card,
+.pr-advice-card {
+  padding: @space-4 @space-3;
+  border: 2rpx solid @color-personality-200;
+  border-radius: @radius-lg-token;
+  background: @surface-card;
+  box-shadow: @shadow-medium;
   box-sizing: border-box;
 }
 
@@ -70,138 +74,82 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 16rpx;
+  gap: @space-2;
 }
 
 .pr-dimension-card__title {
   min-width: 0;
   flex: 1;
-  color: #1D2433;
-  font-size: 30rpx;
+  color: @text-color-primary;
+  font-size: @font-size-card-title-sm;
   line-height: 1.3;
-  font-weight: 850;
+  font-weight: @font-weight-bold;
 }
 
 .pr-dimension-card__score {
-  color: #6941C6;
-  font-size: 32rpx;
+  color: @color-personality-700;
+  font-size: @font-size-card-title;
   line-height: 1;
-  font-weight: 900;
+  font-weight: @font-weight-black;
 }
 
 .pr-dimension-card__score-max {
-  color: #A0A6B8;
-  font-size: 22rpx;
-  font-weight: 700;
+  color: @text-color-disabled;
+  font-size: @font-size-caption;
+  font-weight: @font-weight-bold;
 }
 
 .pr-dimension-card__track {
-  margin-top: 18rpx;
-  height: 16rpx;
-  border-radius: 999rpx;
-  background: #F0EEF8;
+  height: @space-2;
+  margin-top: @space-2;
+  border-radius: @radius-pill;
+  background: @color-personality-100;
   overflow: hidden;
 }
 
 .pr-dimension-card__bar {
   height: 100%;
-  border-radius: 999rpx;
-  background: linear-gradient(90deg, #A78BFF 0%, #6941C6 100%);
+  border-radius: @radius-pill;
+  background: linear-gradient(90deg, @color-personality-500 0%, @color-personality-700 100%);
 }
 
-.pr-dimension-card__desc {
-  margin-top: 18rpx;
-  color: #475067;
-  font-size: 26rpx;
+.pr-dimension-card__desc,
+.pr-advice-card__content {
+  margin-top: @space-2;
+  color: @text-color-secondary;
+  font-size: @font-size-body;
   line-height: 1.7;
 }
 
 .pr-dimension-card__suggestion {
-  margin-top: 20rpx;
-  padding: 18rpx 20rpx;
-  border-radius: 18rpx;
-  background: #F7F4FF;
+  margin-top: @space-3;
+  padding: @space-2 @space-3;
+  border-radius: @radius-md;
+  background: @color-personality-50;
 }
 
-.pr-dimension-card__suggestion-label {
+.pr-dimension-card__suggestion-label,
+.pr-advice-card__category {
   display: inline-block;
-  margin-bottom: 8rpx;
-  color: #6941C6;
-  font-size: 24rpx;
-  font-weight: 850;
+  margin-bottom: @space-1;
+  color: @color-personality-700;
+  font-size: @font-size-caption;
+  font-weight: @font-weight-bold;
 }
 
 .pr-dimension-card__suggestion-text {
-  color: #475067;
-  font-size: 25rpx;
+  color: @text-color-secondary;
+  font-size: @font-size-description;
   line-height: 1.65;
 }
 
-.pr-advice-list {
-  display: flex;
-  flex-direction: column;
-  gap: 18rpx;
-}
-
-.pr-advice-card {
-  padding: 26rpx 24rpx;
-  border-radius: 22rpx;
-  background: #FFFFFF;
-  border: 2rpx solid #ECEAF6;
-  box-shadow: 0 12rpx 28rpx rgba(48, 40, 96, 0.05);
-  box-sizing: border-box;
-}
-
 .pr-advice-card__category {
-  display: inline-block;
-  margin-bottom: 12rpx;
-  padding: 6rpx 16rpx;
-  border-radius: 999rpx;
-  background: #F0EBFF;
-  color: #6941C6;
-  font-size: 22rpx;
-  font-weight: 800;
+  padding: 6rpx @space-2;
+  border-radius: @radius-pill;
+  background: @color-personality-100;
 }
 
 .pr-advice-card__content {
-  color: #475067;
-  font-size: 26rpx;
+  margin-top: 0;
   line-height: 1.75;
-}
-
-.pr-empty {
-  margin: 60rpx 24rpx;
-  padding: 60rpx 24rpx;
-  border-radius: 24rpx;
-  background: #FFFFFF;
-  border: 2rpx dashed #E2DEF2;
-  text-align: center;
-}
-
-.pr-empty__text {
-  color: #8A92A6;
-  font-size: 26rpx;
-  font-weight: 600;
-}
-
-.pr-actions {
-  margin: 44rpx 24rpx 0;
-}
-
-.pr-actions__primary {
-  width: 100%;
-  height: 92rpx;
-  border-radius: 999rpx;
-  background: linear-gradient(135deg, #7A5AF8 0%, #6941C6 100%);
-  color: #FFFFFF;
-  font-size: 30rpx;
-  font-weight: 850;
-  line-height: 92rpx;
-  text-align: center;
-  border: none;
-  box-shadow: 0 16rpx 32rpx rgba(105, 65, 198, 0.28);
-}
-
-.pr-actions__primary::after {
-  border: none;
 }
