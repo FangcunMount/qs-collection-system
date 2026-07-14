@@ -35,6 +35,7 @@ const ActionButton = ({
       hoverClass={unavailable ? "none" : "action-button--pressed"}
       variant="contained"
       size="medium"
+      block={block}
       onClick={onClick}
     >
       <View className="action-button__content">

@@ -271,3 +271,9 @@
   width: 100%;
   justify-content: center;
 }
+
+// The page-specific padding shorthand above must not override PageShell's
+// fixed-action reservation. Leave an extra content gap above the action bar.
+.fill-ready-page .page-shell__content--with-action.fill-ready-scroll {
+  padding-bottom: calc(@bottom-action-min-height + @safe-area-bottom + @space-6);
+}

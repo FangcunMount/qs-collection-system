@@ -36,6 +36,7 @@ describe("Qlume shared UI", () => {
 
     expect(disabled.props).toMatchObject({ disabled: true, loading: false });
     expect(disabled.props.className).toContain("action-button--block");
+    expect(disabled.props.block).toBe(true);
     expect(disabled.props.hoverClass).toBe("none");
     expect(loading.props).toMatchObject({ disabled: true, loading: true });
     expect(loading.props.className).toContain("action-button--personality");
