@@ -21,43 +21,6 @@
   padding-bottom: 120rpx;
 }
 
-// Editorial report reading structure: one summary focus, then sections.
-.report-overview-card,
-.factor-chart-card,
-.factor-card,
-.trend-card,
-.suggestion-card {
-  border-radius: 0;
-  box-shadow: none;
-}
-
-.report-overview-card {
-  border: 0;
-  background: transparent;
-}
-
-.score-display-area {
-  border-radius: @radius-lg-token;
-  box-shadow: none;
-}
-
-.factor-chart-card,
-.factor-card {
-  padding-left: 0;
-  padding-right: 0;
-  border: 0;
-  border-bottom: 1rpx solid @border-color-base;
-  background: transparent;
-}
-
-.factor-card-body,
-.factor-section,
-.factor-content,
-.factor-suggestion {
-  border-radius: 0;
-  box-shadow: none;
-}
-
 // 报告概览卡片
 .report-overview-card {
   background: #FFFFFF;
@@ -1027,4 +990,41 @@
     padding-bottom: 30rpx;
     background-color: #fff;
   }
+}
+
+// Final specificity guard for the editorial report reading flow.
+.report-overview-card,
+.factor-chart-card,
+.factor-card,
+.trend-card,
+.suggestion-card {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.report-overview-card {
+  border: 0;
+  background: transparent;
+}
+
+.score-display-area {
+  border-radius: @radius-lg-token;
+  box-shadow: none;
+}
+
+.factor-chart-card,
+.factor-card {
+  padding-left: 0;
+  padding-right: 0;
+  border: 0;
+  border-bottom: 1rpx solid @border-color-base;
+  background: transparent;
+}
+
+.factor-card-body,
+.factor-section,
+.factor-content,
+.factor-suggestion {
+  border-radius: 0;
+  box-shadow: none;
 }

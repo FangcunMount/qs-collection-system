@@ -7,23 +7,6 @@
   box-sizing: border-box;
 }
 
-// Keep personality warmth while using an editorial, non-nested reading flow.
-.pr-dimension-card,
-.pr-advice-card {
-  padding-left: 0;
-  padding-right: 0;
-  border: 0;
-  border-bottom: 1rpx solid @border-color-base;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-}
-
-.pr-dimension-card__suggestion {
-  border-radius: @radius-md;
-  box-shadow: none;
-}
-
 .pr-meta {
   margin: 0 @space-3;
   padding: 0 @space-1;
@@ -169,4 +152,21 @@
 .pr-advice-card__content {
   margin-top: 0;
   line-height: 1.75;
+}
+
+// Keep the reading-flow overrides after the legacy card declarations.
+.pr-dimension-card,
+.pr-advice-card {
+  padding-left: 0;
+  padding-right: 0;
+  border: 0;
+  border-bottom: 1rpx solid @border-color-base;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.pr-dimension-card__suggestion {
+  border-radius: @radius-md;
+  box-shadow: none;
 }
