@@ -36,7 +36,7 @@ const homeTabStyle = read('src/modules/tab/pages/HomeTabPage.less');
 const homeProfileCard = read('src/modules/tab/components/home/HomeCurrentProfileCard.jsx');
 const personalityCatalog = read('src/modules/catalog/pages/PersonalityCatalogPage.tsx');
 const personalityCatalogService = read('src/modules/catalog/services/personalityCatalogService.js');
-const assessmentRecordsPage = read('src/modules/assessment/pages/AssessmentRecordsPage.jsx');
+const assessmentRecordsPage = read('src/modules/assessment/pages/AssessmentRecordsPage.tsx');
 const homeRecentAssessments = read('src/modules/assessment/services/loadRecentAssessments.js');
 
 assertContains(appConfig, /root:\s*['"]pages\/catalog-medical['"]/, 'app config must register catalog-medical subpackage');

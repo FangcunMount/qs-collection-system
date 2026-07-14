@@ -1,0 +1,42 @@
+@import "../../../styles/tokens.less";
+
+.questionnaire-progress {
+  flex-shrink: 0;
+}
+
+.questionnaire-progress__label {
+  display: flex;
+  align-items: flex-end;
+  margin-bottom: @space-4;
+}
+
+.questionnaire-progress__current {
+  color: @color-neutral-900;
+  font-size: @font-size-page-title;
+  font-weight: @font-weight-black;
+  line-height: 1;
+}
+
+.questionnaire-progress__total {
+  margin-left: @space-1;
+  padding-bottom: @space-1;
+  color: @color-neutral-600;
+  font-size: @font-size-body;
+  font-weight: @font-weight-bold;
+  line-height: 1;
+}
+
+.questionnaire-progress__track {
+  height: 12rpx;
+  margin-bottom: @space-7;
+  overflow: hidden;
+  border-radius: @radius-pill;
+  background: @color-neutral-100;
+}
+
+.questionnaire-progress__value {
+  height: 100%;
+  border-radius: @radius-pill;
+  background: @gradient-action-primary;
+  transition: width 0.28s ease;
+}

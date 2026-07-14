@@ -1,6 +1,8 @@
 import React from "react";
 import { Text, View } from "@tarojs/components";
 
+import "./QuestionnaireProgress.less";
+
 export interface QuestionnaireProgressProps {
   current: number;
   total: number;
@@ -12,7 +14,7 @@ const QuestionnaireProgress = ({
   total,
   percentage,
 }: QuestionnaireProgressProps) => (
-  <View className="questionnaire-progress" aria-label={`第${current}题，共${total}题`}>
+  <View className="questionnaire-progress">
     <View className="questionnaire-progress__label">
       <Text className="questionnaire-progress__current">{current}</Text>
       <Text className="questionnaire-progress__total">/{total}</Text>

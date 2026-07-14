@@ -5,6 +5,8 @@ import ActionButton from "@/shared/ui/ActionButton";
 import BottomActionBar from "@/shared/ui/BottomActionBar";
 import type { DomainTone } from "@/shared/ui/types";
 
+import "./QuestionnaireBottomActions.less";
+
 export interface QuestionnaireBottomActionsProps {
   tone?: DomainTone;
   previousLabel?: string;

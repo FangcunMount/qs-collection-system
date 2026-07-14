@@ -34,6 +34,7 @@ export async function waitAssessmentReportLifecycle({
   assessmentLookupOptions = {},
   tryWebSocket = true,
   allowLegacyListFallback = false,
+  onFallback,
 }) {
   let assessmentId = assessmentIdFromUrl ? String(assessmentIdFromUrl) : '';
   let resolvedAnswerSheetId = answerSheetId ? String(answerSheetId) : '';
@@ -113,6 +114,7 @@ export async function waitAssessmentReportLifecycle({
     shouldContinue,
     logger,
     tryWebSocket,
+    onFallback,
   });
 
   return {

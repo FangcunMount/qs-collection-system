@@ -1,57 +1,48 @@
-// 页面整体包装器
-@import "../../../styles/theme.less";
+@import "../../../styles/tokens.less";
 
-.answersheet-detail-wrapper {
-  min-height: 100vh;
-  background: @bg-section;
-  padding-bottom: 120rpx;
+.answersheet-page {
+  .page-shell__content {
+    background: transparent;
+  }
 }
 
-// 页面标题区域
 .answersheet-header {
-  background: @gradient-primary;
-  padding: 48rpx 32rpx;
-  color: @bg-card;
-  
-  .answersheet-header-title {
-    font-size: 44rpx;
-    font-weight: bold;
-    margin-bottom: 12rpx;
+  display: flex;
+  flex-direction: column;
+  gap: @space-2;
+  padding: @space-6 @page-gutter @space-5;
+
+  &__eyebrow {
+    color: @color-medical-600;
+    font-size: @font-size-caption;
+    font-weight: @font-weight-bold;
+    letter-spacing: 3rpx;
   }
-  
-  .answersheet-header-subtitle {
-    font-size: 26rpx;
-    opacity: 0.9;
+
+  &__title {
+    color: @text-color-primary;
+    font-size: @font-size-page-title;
+    font-weight: @font-weight-black;
+    line-height: 1.28;
+  }
+
+  &__description {
+    color: @text-color-secondary;
+    font-size: @font-size-description;
+    line-height: 1.6;
   }
 }
 
-// 内容区域
 .answersheet-content {
-  padding: 32rpx;
+  padding: 0 @page-gutter @space-6;
 }
 
-// 问题容器
-.as-question__container {
-  background: @bg-card;
-  border-radius: @radius-base;
-  padding: 32rpx;
-  margin-bottom: 24rpx;
-  box-shadow: @shadow-sm;
-}
-
-// 底部操作栏
-.answersheet-footer-actions {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 24rpx 32rpx;
-  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
-  background: @bg-card;
-  box-shadow: @shadow-sm;
-  z-index: 100;
-  
-  .footer-btn {
-    width: 100%;
-  }
+.answersheet-question {
+  margin-bottom: @space-3;
+  padding: @space-4;
+  overflow: hidden;
+  border: 1rpx solid @border-color-base;
+  border-radius: @radius-lg-token;
+  background: @surface-card;
+  box-shadow: @shadow-small;
 }

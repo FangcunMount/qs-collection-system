@@ -8,8 +8,8 @@ import { ABILITY_SPECIALIZED_ASSESSMENTS } from "@/shared/config/abilityAssessme
 import AppNavigationBar from "@/shared/ui/AppNavigationBar";
 import PageShell from "@/shared/ui/PageShell";
 import SectionHeader from "@/shared/ui/SectionHeader";
-import SurfaceCard from "@/shared/ui/SurfaceCard";
 import AssessmentKindReportSection from "@/modules/assessment/components/records/AssessmentKindReportSection";
+import SurfaceCard from "@/shared/ui/SurfaceCard";
 import { ASSESSMENT_KIND } from "@/shared/lib/assessmentKind";
 import {
   mapAbilityCatalogCard,

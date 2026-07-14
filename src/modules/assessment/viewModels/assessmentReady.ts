@@ -1,7 +1,7 @@
-import qlumePlaceholder from "@/assets/brand/qlume-lockup.png";
+import qlumePlaceholder from "@/assets/brand/qlume-assessment-placeholder.webp";
 import { getEstimatedTime, getValidQuestionCount } from "@/modules/questionnaire/lib/questionUtils";
 import type { QuestionnaireData } from "@/modules/questionnaire/types";
-import type { Testee } from "@/store/testeeStore";
+import type { Testee, TesteeInput } from "@/store/testeeStore";
 import type { EntryContext } from "@/store/entryContextStore";
 
 import type { AssessmentReadyViewModel } from "../types";
@@ -10,7 +10,7 @@ export interface BuildAssessmentReadyViewModelInput {
   questionnaire: QuestionnaireData | null;
   testees: Testee[];
   selectedTesteeId: string;
-  selectedTestee: Testee | null;
+  selectedTestee: TesteeInput | null;
   entryContext: EntryContext | null;
   entryStatusText: string;
   isPersonality: boolean;
@@ -70,9 +70,9 @@ export function buildAssessmentReadyViewModel({
     selectedTesteeId,
     selectedTesteeIndex: testees.findIndex((testee) => testee.id === selectedTesteeId),
     selectedTestee: selectedTestee ? {
-      name: selectedTestee.legalName || "未命名",
-      gender: resolveGender(selectedTestee.gender),
-      birthday: selectedTestee.dob || undefined,
+      name: selectedTestee.legalName || selectedTestee.name || selectedTestee.legal_name || "未命名",
+      gender: resolveGender(Number(selectedTestee.gender ?? selectedTestee.sex ?? 0)),
+      birthday: selectedTestee.dob || selectedTestee.birthday || undefined,
     } : undefined,
     entryContext: hasEntryContext ? {
       title: entryContext?.entry_title,

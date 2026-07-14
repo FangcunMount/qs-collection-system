@@ -8,7 +8,7 @@ import {
   refreshTesteeList,
   subscribeTesteeStore,
 } from "@/shared/stores/testees";
-import AssessmentRecordListContainer from "./AssessmentRecordListContainer";
+import AssessmentRecordListController from "./AssessmentRecordListController";
 import "./AssessmentKindReportSection.less";
 
 const resolveDisplayTestee = (testeeList = getStoredTesteeList(), selectedId = getSelectedTesteeId()) => {
@@ -68,7 +68,7 @@ const AssessmentKindReportSection = ({
       </View>
 
       {selectedTestee ? (
-        <AssessmentRecordListContainer
+        <AssessmentRecordListController
           testee={selectedTestee}
           assessmentKind={kind}
           statusFilter="done"

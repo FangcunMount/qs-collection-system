@@ -1,51 +1,50 @@
-@import "../../../styles/theme.less";
+@import "../../../styles/tokens.less";
 
-// 问卷填写表单包装器
+.questionnaire-form-scroll {
+  box-sizing: border-box;
+  padding-bottom: @space-6;
+}
+
 .questionnaire-fill-wrapper {
-  min-height: 100vh;
-  background: @bg-section;
-  padding-bottom: 120rpx;
+  min-height: 100%;
+  box-sizing: border-box;
 }
 
-// 问卷标题区域
 .qs-header__container {
-  background: @gradient-primary;
-  padding: 48rpx 32rpx;
-  color: @bg-card;
-
-  .qs-header__title {
-    font-size: 44rpx;
-    font-weight: bold;
-    margin-bottom: 16rpx;
-    line-height: 1.3;
-  }
-
-  .qs-header__tips {
-    font-size: 26rpx;
-    line-height: 1.6;
-    opacity: 0.9;
-    word-break: break-word;
-  }
+  padding: @space-6 @page-gutter @space-5;
+  background: linear-gradient(135deg, @color-medical-500 0%, @color-medical-700 100%);
+  color: @color-white;
 }
 
-// 问题容器
+.qs-header__eyebrow,
+.qs-header__title {
+  display: block;
+}
+
+.qs-header__eyebrow {
+  margin-bottom: @space-2;
+  font-size: @font-size-caption;
+  font-weight: @font-weight-semibold;
+  letter-spacing: 3rpx;
+  opacity: 0.82;
+}
+
+.qs-header__title {
+  font-size: @font-size-page-title;
+  font-weight: @font-weight-black;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
 .qs-question__container {
-  background: @bg-card;
-  border-radius: @radius-base;
-  padding: 32rpx;
-  margin: 24rpx 32rpx;
-  box-shadow: @shadow-sm;
+  margin: @space-3 @page-gutter;
+  padding: @space-4;
+  border: 1rpx solid @border-color-base;
+  border-radius: @radius-card;
+  background: @surface-card-98;
+  box-shadow: @shadow-small;
 }
 
-// 底部提交按钮
-.qs-bottom {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 24rpx 32rpx;
-  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
-  background: @bg-card;
-  box-shadow: @shadow-sm;
-  z-index: 100;
+.questionnaire-form-shell.page-shell--personality .qs-header__container {
+  background: linear-gradient(135deg, @color-personality-500 0%, @color-personality-700 100%);
 }

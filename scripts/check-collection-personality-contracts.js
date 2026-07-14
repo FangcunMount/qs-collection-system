@@ -49,16 +49,16 @@ const waitTypologyAssessmentId = read('src/modules/assessment/services/waitTypol
 const waitAssessmentReportLifecycle = read('src/modules/assessment/services/waitAssessmentReportLifecycle.js');
 const reportEventsClient = read('src/modules/assessment/services/reportEventsClient.js');
 const waitForReportReady = read('src/modules/assessment/services/waitForReportReady.js');
-const personalityReportPage = read('src/modules/assessment/pages/PersonalityReportPage.jsx');
+const personalityReportPage = read('src/modules/assessment/pages/PersonalityReportPage.tsx');
 const loadPersonalityReportService = read('src/modules/assessment/services/loadPersonalityReport.js');
 const homeTabPage = read('src/modules/tab/pages/HomeTabPage.tsx');
 const loadRecentAssessmentsService = read('src/modules/assessment/services/loadRecentAssessments.js');
 const loadMedicalRecordsService = read('src/modules/assessment/services/loadMedicalAssessmentRecords.js');
-const assessmentRecordsPage = read('src/modules/assessment/pages/AssessmentRecordsPage.jsx');
-const medicalReportPage = read('src/modules/assessment/pages/AssessmentReportPage.jsx');
+const assessmentRecordsPage = read('src/modules/assessment/pages/AssessmentRecordsPage.tsx');
+const medicalReportPage = read('src/modules/assessment/pages/AssessmentReportPage.tsx');
 const loadMedicalReportService = read('src/modules/assessment/services/loadMedicalReport.js');
 const reportReadiness = read('src/modules/assessment/lib/reportReadiness.js');
-const assessmentFillPage = read('src/modules/assessment/pages/AssessmentFillPage.jsx');
+const assessmentFillPage = read('src/modules/assessment/pages/AssessmentFillPage.tsx');
 const assessmentFillEntry = read('src/modules/assessment/lib/assessmentFillEntry.js');
 const assessmentSubmitNavigation = read('src/modules/assessment/lib/assessmentSubmitNavigation.js');
 const medicalAssessmentApi = read('src/services/api/assessmentApi.js');
@@ -105,7 +105,7 @@ assertContains(waitAssessmentReportLifecycle, /allowLegacyListFallback/, 'lifecy
 assertContains(waitAssessmentReportLifecycle, /waitMedicalAssessmentId/, 'lifecycle must fall back to medical list when available');
 assertContains(waitAssessmentReportLifecycle, /waitForReportReady/, 'lifecycle must delegate report waiting to waitForReportReady');
 assertContains(read('src/services/api/answersheetApi.js'), /waitForSubmitAssessmentId/, 'answersheet API must poll submit-status for assessment_id');
-assertContains(read('src/modules/assessment/pages/AssessmentReportPendingPage.jsx'), /request_id/, 'pending page must pass request_id into lifecycle');
+assertContains(read('src/modules/assessment/pages/AssessmentReportPendingPage.tsx'), /request_id/, 'pending page must pass request_id into lifecycle');
 assertContains(submitFlow, /idempotencyKey/, 'submit flow must preserve request_id for submit-status polling');
 assertContains(submitFlow, /waitForCompletion/, 'submit flow must allow accepted assessment submissions to return before polling');
 assertContains(questionnaireSubmissionApi, /resolveSubmissionAttempt/, 'questionnaire submit must resolve a reusable submission attempt');
@@ -118,7 +118,7 @@ assertNotContains(reportEventsClient, /answer_sheet_id/, 'report-events subscrib
 assertContains(reportEventsClient, /assessment_id:\s*String\(assessmentId\)/, 'report-events subscribe must include assessment_id per doc 12');
 assertContains(reportEventsClient, /startFirstStatusTimer/, 'report-events first-status timeout must start after subscription');
 assertContains(reportEventsClient, /REPORT_EVENTS_CAPABILITY/, 'report-events must keep runtime capability state');
-assertContains(read('src/modules/assessment/pages/AssessmentReportPendingPage.jsx'), /waitAssessmentReportLifecycle/, 'pending page must use unified report lifecycle waiter');
+assertContains(read('src/modules/assessment/pages/AssessmentReportPendingPage.tsx'), /waitAssessmentReportLifecycle/, 'pending page must use unified report lifecycle waiter');
 assertNotContains(personalityReportPage, /getAssessmentByAnswersheetId/, 'personality report page must not call deprecated answersheets assessment endpoint');
 assertContains(loadPersonalityReportService, /loadPersonalityReportByAssessmentId/, 'personality report loader must expose assessment-id entry');
 assertContains(loadPersonalityReportService, /getPersonalityReportStatus/, 'assessment-id report loader must gate report read by report-status');

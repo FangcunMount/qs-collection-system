@@ -37,6 +37,7 @@ export async function waitForReportReady({
   logger,
   tryWebSocket = true,
   watchReport = watchReportViaWebSocket,
+  onFallback,
 }) {
   const wsAvailable = getReportEventsCapability() !== REPORT_EVENTS_CAPABILITY.UNAVAILABLE;
   if (tryWebSocket && wsAvailable) {
@@ -64,6 +65,7 @@ export async function waitForReportReady({
     logger?.RUN?.('[waitForReportReady] WebSocket 未达终态，切换 report-status 短轮询', {
       reason: wsResult.reason,
     });
+    onFallback?.(wsResult.reason || 'websocket_unavailable');
   }
 
   while (shouldContinue()) {

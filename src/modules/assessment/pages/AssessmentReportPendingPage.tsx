@@ -1,0 +1,420 @@
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Canvas, Text, View } from "@tarojs/components";
+import Taro from "@tarojs/taro";
+import lottie from "lottie-miniprogram";
+
+import carLoadingData from "@/assets/lotties/car-loading-data.json";
+import { buildReportWaitViewModel } from "@/modules/assessment/lib/reportWaitViewState";
+import { resolveTesteeIdForAnswerSheet } from "@/modules/assessment/lib/resolveTesteeId";
+import { createReportWaitStrategy } from "@/modules/assessment/services/reportWaitStrategy";
+import {
+  clearSubmissionContext,
+  getSubmissionContext,
+  saveSubmissionContext,
+} from "@/modules/assessment/services/submissionContextStore";
+import { waitAssessmentReportLifecycle } from "@/modules/assessment/services/waitAssessmentReportLifecycle";
+import type { ReportWaitPhase } from "@/modules/assessment/types";
+import { routes } from "@/shared/config/routes";
+import { ASSESSMENT_KIND, isPersonalityAssessmentKind } from "@/shared/lib/assessmentKind";
+import { getLogger } from "@/shared/lib/logger";
+import ActionButton from "@/shared/ui/ActionButton";
+import PageShell from "@/shared/ui/PageShell";
+import { PrivacyAuthorization } from "@/shared/ui/PrivacyAuthorization";
+import StatePanel from "@/shared/ui/StatePanel";
+import SurfaceCard from "@/shared/ui/SurfaceCard";
+import "./AssessmentReportPendingPage.less";
+
+const PAGE_NAME = "analysis_wait";
+const logger = getLogger(PAGE_NAME);
+const MAX_ASSESSMENT_LOOKUP_COUNT = 30;
+const MIN_WAIT_TIME = 2000;
+
+interface WaitFlowParams {
+  assessmentId: string;
+  answerSheetId: string;
+  testeeId: string;
+  requestId: string;
+  taskId: string;
+  assessmentKind: string;
+}
+
+interface WaitStatusData {
+  status?: string;
+  stage?: string;
+  message?: string;
+  reason?: string;
+}
+
+interface WaitLifecycleResult {
+  cancelled?: boolean;
+  source?: string;
+  statusData?: WaitStatusData;
+  assessmentId?: string;
+  answerSheetId?: string;
+}
+
+interface LottieAnimationInstance {
+  destroy: () => void;
+}
+
+interface LottieCanvasNode {
+  width: number;
+  height: number;
+  getContext: (type: "2d") => CanvasRenderingContext2D;
+}
+
+interface CanvasQueryResult {
+  node?: LottieCanvasNode;
+  width?: number;
+  height?: number;
+}
+
+const toText = (value: unknown): string => (
+  value === undefined || value === null ? "" : String(value)
+);
+
+const getErrorMessage = (error: unknown): string => (
+  error instanceof Error ? error.message : "加载测评状态失败，请稍后重试"
+);
+
+const AssessmentReportPendingPage = () => {
+  const [phase, setPhase] = useState<ReportWaitPhase>("processing");
+  const [message, setMessage] = useState("正在生成测评记录，请稍候...");
+  const [stage, setStage] = useState("");
+  const [dots, setDots] = useState("");
+  const isPollingRef = useRef(false);
+  const runIdRef = useRef(0);
+  const flowParamsRef = useRef<WaitFlowParams | null>(null);
+  const lottieInstanceRef = useRef<LottieAnimationInstance | null>(null);
+  const startTimeRef = useRef(Date.now());
+
+  const viewModel = useMemo(
+    () => buildReportWaitViewModel({ phase, message, stage }),
+    [message, phase, stage],
+  );
+
+  const startWaitFlow = useCallback(async (flowParams: WaitFlowParams) => {
+    const runId = runIdRef.current + 1;
+    runIdRef.current = runId;
+    flowParamsRef.current = flowParams;
+    isPollingRef.current = true;
+    startTimeRef.current = Date.now();
+    setPhase("processing");
+    setStage("queued");
+    setMessage("正在生成测评记录，请稍候...");
+
+    const isActive = () => isPollingRef.current && runIdRef.current === runId;
+
+    const {
+      assessmentId,
+      answerSheetId,
+      testeeId: testeeIdFromUrl,
+      requestId,
+      taskId,
+      assessmentKind,
+    } = flowParams;
+
+    try {
+      let testeeId = testeeIdFromUrl;
+      if (!testeeId) {
+        testeeId = toText(await resolveTesteeIdForAnswerSheet({
+          testeeIdFromUrl,
+          answersheetId: answerSheetId,
+          logger,
+        }));
+      }
+      if (!testeeId) {
+        throw new Error("未找到受试者信息，请稍后重试");
+      }
+
+      const strategy = createReportWaitStrategy(assessmentKind);
+      const applyStatus = (statusData: WaitStatusData) => {
+        if (!isActive()) return;
+        if (statusData.stage) setStage(statusData.stage);
+        setMessage(strategy.formatStageMessage(statusData.stage, statusData.message));
+        setPhase((current) => current === "degraded" ? "degraded" : "processing");
+      };
+
+      logger.RUN("[AnalysisWait] 开始等待（submit-status → WS/report-status）", {
+        answersheetId: answerSheetId,
+        assessmentId: assessmentId || null,
+        requestId: requestId || null,
+        testeeId,
+        assessmentKind,
+      });
+
+      const result = await waitAssessmentReportLifecycle({
+        strategy,
+        assessmentKind,
+        assessmentId,
+        answerSheetId,
+        requestId,
+        testeeId,
+        onStatus: applyStatus,
+        onFallback: () => {
+          if (!isActive()) return;
+          setPhase("degraded");
+          setMessage("实时连接暂不可用，正在通过安全轮询继续生成报告...");
+        },
+        onSubmissionReady: (submission: {
+          requestId: string;
+          answersheetId: string;
+          assessmentId: string;
+        }) => {
+          saveSubmissionContext({
+            requestId: submission.requestId,
+            testeeId,
+            assessmentKind: strategy.kind,
+            answersheetId: submission.answersheetId,
+            assessmentId: submission.assessmentId,
+            phase: "assessment_ready",
+          });
+        },
+        shouldContinue: isActive,
+        logger,
+        assessmentLookupOptions: {
+          maxAttempts: MAX_ASSESSMENT_LOOKUP_COUNT,
+          onAttempt: () => {
+            if (isActive()) setMessage("正在关联测评记录，请稍候...");
+          },
+        },
+        allowLegacyListFallback: !requestId,
+      }) as WaitLifecycleResult;
+
+      if (result.cancelled || !isActive()) return;
+
+      const statusData = result.statusData || {};
+      const resolvedAssessmentId = toText(result.assessmentId);
+      const resolvedAnswerSheetId = toText(result.answerSheetId || answerSheetId);
+
+      saveSubmissionContext({
+        requestId,
+        testeeId,
+        assessmentKind: strategy.kind,
+        answersheetId: resolvedAnswerSheetId,
+        assessmentId: resolvedAssessmentId,
+        phase: "report_processing",
+      });
+
+      logger.RUN("[AnalysisWait] 等待结束", {
+        source: result.source,
+        assessmentId: resolvedAssessmentId,
+        status: statusData.status,
+        stage: statusData.stage,
+      });
+
+      if (strategy.isFailed(statusData.status)) {
+        setPhase("failure");
+        setMessage(statusData.reason || statusData.message || "报告生成失败，请稍后重试");
+        isPollingRef.current = false;
+        return;
+      }
+
+      if (strategy.isCompleted(statusData.status) && resolvedAssessmentId) {
+        setPhase("success");
+        setMessage("报告已生成，即将为你打开报告");
+        isPollingRef.current = false;
+        const elapsedTime = Date.now() - startTimeRef.current;
+        const remainingTime = Math.max(0, MIN_WAIT_TIME - elapsedTime);
+
+        setTimeout(() => {
+          if (runIdRef.current !== runId) return;
+          Taro.redirectTo({
+            url: strategy.reportRoute({
+              a: resolvedAnswerSheetId,
+              aid: resolvedAssessmentId,
+              t: testeeId,
+              kind: strategy.kind === ASSESSMENT_KIND.PERSONALITY
+                ? ASSESSMENT_KIND.PERSONALITY
+                : undefined,
+              task_id: taskId || undefined,
+            }),
+          });
+          clearSubmissionContext();
+        }, remainingTime);
+        return;
+      }
+
+      setPhase("failure");
+      setMessage("报告生成状态异常，请稍后重试");
+      isPollingRef.current = false;
+    } catch (error: unknown) {
+      if (!isActive()) return;
+      logger.ERROR("[AnalysisWait] 等待流程失败", error);
+      saveSubmissionContext({
+        requestId,
+        testeeId: testeeIdFromUrl,
+        assessmentKind,
+        phase: "failed",
+      });
+      setPhase("failure");
+      setMessage(getErrorMessage(error));
+      isPollingRef.current = false;
+    }
+  }, []);
+
+  useEffect(() => {
+    const params = Taro.getCurrentInstance().router?.params || {};
+    const storedContext = getSubmissionContext();
+    const flowParams: WaitFlowParams = {
+      assessmentId: toText(params.aid || storedContext.assessmentId),
+      answerSheetId: toText(params.a || storedContext.answersheetId),
+      testeeId: toText(params.t || storedContext.testeeId),
+      requestId: toText(params.request_id || storedContext.requestId),
+      taskId: toText(params.task_id),
+      assessmentKind: toText(params.kind || storedContext.assessmentKind),
+    };
+    flowParamsRef.current = flowParams;
+
+    logger.RUN("等待解析页面初始化", {
+      assessmentId: flowParams.assessmentId,
+      answersheetId: flowParams.answerSheetId,
+      testeeId: flowParams.testeeId,
+      requestId: flowParams.requestId,
+    });
+
+    if (!flowParams.answerSheetId && !flowParams.requestId) {
+      setPhase("failure");
+      setMessage("提交状态已失效，请重新提交或查看历史记录");
+      return undefined;
+    }
+
+    void startWaitFlow(flowParams);
+    return () => {
+      isPollingRef.current = false;
+      runIdRef.current += 1;
+    };
+  }, [startWaitFlow]);
+
+  useEffect(() => {
+    if (phase !== "processing" && phase !== "degraded") {
+      setDots("");
+      return undefined;
+    }
+    const interval = setInterval(() => {
+      setDots((current) => current.length >= 3 ? "" : `${current}.`);
+    }, 500);
+    return () => clearInterval(interval);
+  }, [phase]);
+
+  useEffect(() => {
+    if (!viewModel.showAnimation) {
+      lottieInstanceRef.current?.destroy();
+      lottieInstanceRef.current = null;
+      return undefined;
+    }
+    if (lottieInstanceRef.current) return undefined;
+
+    const initLottie = () => {
+      try {
+        Taro.createSelectorQuery()
+          .select("#lottie-canvas")
+          .fields({ node: true, size: true })
+          .exec((results: CanvasQueryResult[]) => {
+            const result = results[0];
+            if (!result?.node) return;
+            const canvas = result.node;
+            const dpr = Taro.getSystemInfoSync().pixelRatio;
+            canvas.width = Number(result.width || 0) * dpr;
+            canvas.height = Number(result.height || 0) * dpr;
+            lottie.setup(canvas);
+            lottieInstanceRef.current = lottie.loadAnimation({
+              loop: true,
+              autoplay: true,
+              animationData: carLoadingData,
+              rendererSettings: {
+                context: canvas.getContext("2d"),
+                clearCanvas: true,
+              },
+            }) as LottieAnimationInstance;
+          });
+      } catch (error: unknown) {
+        logger.WARN("Lottie 初始化失败", error);
+      }
+    };
+
+    const timer = setTimeout(initLottie, 100);
+    return () => {
+      clearTimeout(timer);
+      lottieInstanceRef.current?.destroy();
+      lottieInstanceRef.current = null;
+    };
+  }, [viewModel.showAnimation]);
+
+  const retry = () => {
+    if (flowParamsRef.current) void startWaitFlow(flowParamsRef.current);
+  };
+
+  const openReport = () => {
+    const params = flowParamsRef.current;
+    if (!params?.assessmentId) {
+      Taro.showToast({ title: "报告仍在生成中，请稍后再试", icon: "none" });
+      return;
+    }
+    const reportRoute = isPersonalityAssessmentKind(params.assessmentKind)
+      ? routes.personalityReport
+      : routes.assessmentReport;
+    Taro.redirectTo({
+      url: reportRoute({
+        a: params.answerSheetId,
+        aid: params.assessmentId,
+        t: params.testeeId,
+        kind: params.assessmentKind,
+        task_id: params.taskId || undefined,
+      }),
+    });
+  };
+
+  return (
+    <>
+      <PrivacyAuthorization />
+      <PageShell tone="medical" scroll={false} contentClassName="analysis-wait-page">
+        <SurfaceCard className="wait-container">
+          {viewModel.showAnimation ? (
+            <View className="loading-wrapper">
+              <Canvas id="lottie-canvas" type="2d" className="lottie-animation" />
+            </View>
+          ) : null}
+
+          {phase === "failure" ? (
+            <StatePanel
+              state="error"
+              tone="medical"
+              title={viewModel.title}
+              description={viewModel.description}
+              actionText={viewModel.canRetry ? "重新等待" : undefined}
+              onAction={viewModel.canRetry ? retry : undefined}
+              compact
+            />
+          ) : (
+            <View className="wait-status">
+              <Text className="wait-status__title">{viewModel.title}</Text>
+              <Text className="wait-status__description">
+                {viewModel.description}{phase === "success" ? "" : dots}
+              </Text>
+              {viewModel.stageLabel ? (
+                <Text className="wait-status__stage">{viewModel.stageLabel}</Text>
+              ) : null}
+              {phase === "degraded" ? (
+                <Text className="wait-status__notice">连接方式已自动切换，不影响报告生成结果。</Text>
+              ) : null}
+            </View>
+          )}
+
+          {phase === "failure" ? (
+            <View className="wait-actions">
+              <ActionButton variant="secondary" tone="medical" block onClick={openReport}>
+                查看报告
+              </ActionButton>
+              <ActionButton variant="ghost" tone="neutral" block onClick={() => Taro.navigateBack()}>
+                返回
+              </ActionButton>
+            </View>
+          ) : null}
+        </SurfaceCard>
+      </PageShell>
+    </>
+  );
+};
+
+export default AssessmentReportPendingPage;
