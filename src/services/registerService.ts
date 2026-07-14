@@ -72,8 +72,11 @@ export async function registerTesteeComplete(testeeData: TesteeRegisterData): Pr
     };
 
     console.log('[RegisterService] Collection 请求 payload:', collectionPayload);
-    const testeeResponse = await createTestee(collectionPayload);
-    const testee = testeeResponse?.data || testeeResponse;
+    const testeeResponse = await createTestee(collectionPayload as never) as unknown;
+    const responseSource = testeeResponse && typeof testeeResponse === 'object'
+      ? testeeResponse as Record<string, any>
+      : {};
+    const testee = responseSource.data || responseSource;
     const testeeId = String(testee?.id || testee?.testee_id || '');
     const iamProfileId = testee?.iam_profile_id ? String(testee.iam_profile_id) : undefined;
 

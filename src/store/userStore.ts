@@ -170,10 +170,11 @@ const put = ({ type, payload }: { type: string; payload?: any }): void => {
 const effects: Record<string, Effect> = {
   async getUserInfo(_: any, helpers: EffectHelpers = { call, put }): Promise<UserInfo | null> {
     // 使用新的 IAM Identity API
-    const response = await helpers.call(getAccountProfile);
-    if (!response) {
+    const rawResponse = await helpers.call(getAccountProfile);
+    if (!rawResponse) {
       return null;
     }
+    const response = rawResponse as Record<string, any>;
     
     // 转换 IAM 用户数据格式
     const userInfo: UserInfo = {

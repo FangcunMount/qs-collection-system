@@ -1,32 +1,17 @@
-.register-container {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  background: linear-gradient(135deg, #1890FF 0%, #096DD9 100%);
+@import "../../../styles/tokens.less";
 
-  .register-header {
-    padding: 60rpx 32rpx 40rpx;
-    text-align: center;
-
-    .register-title {
-      font-size: 48rpx;
-      font-weight: bold;
-      color: #fff;
-      margin-bottom: 16rpx;
-    }
-
-    .register-subtitle {
-      font-size: 28rpx;
-      color: rgba(255, 255, 255, 0.85);
-    }
-  }
-
-  .register-card {
-    flex: 1;
-    background: #fff;
-    border-radius: 32rpx 32rpx 0 0;
-    padding: 48rpx 32rpx 32rpx;
-    box-shadow: 0 -4rpx 32rpx rgba(0, 0, 0, 0.1);
-    overflow-y: auto;
-  }
+.register-container { padding: @space-6 @space-4 @space-7; box-sizing: border-box; }
+.register-header { margin-bottom: @space-4; text-align: center; }
+.register-title, .register-subtitle { display: block; }
+.register-title { color: @text-color-primary; font-size: @font-size-page-title; font-weight: @font-weight-black; }
+.register-subtitle { margin-top: @space-2; color: @text-color-secondary; font-size: @font-size-action; }
+.register-card { padding: @space-5 @space-4 @space-2; }
+.gender-options { display: flex; gap: @space-3; }
+.gender-option {
+  min-height: @touch-target-min; margin: 0; padding: @space-2; flex: 1; display: flex; align-items: center; justify-content: center; gap: @space-2;
+  border: 2rpx solid transparent; border-radius: @radius-md; color: @text-color-primary; background: @surface-subtle; font-size: @font-size-action;
+  &::after { border: 0; }
+  &--selected { color: @color-medical-700; border-color: @color-medical-500; background: @color-medical-50; }
+  &__image { width: 64rpx; }
 }
+.form-picker-arrow { color: @text-color-disabled; font-size: @font-size-section-title; }

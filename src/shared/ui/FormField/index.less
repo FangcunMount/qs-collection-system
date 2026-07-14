@@ -1,0 +1,62 @@
+@import "../../../styles/tokens.less";
+
+.form-field {
+  margin-bottom: @space-4;
+
+  &__label-row {
+    margin-bottom: @space-2;
+    display: flex;
+    align-items: center;
+    gap: @space-1;
+  }
+
+  &__label {
+    color: @text-color-primary;
+    font-size: @font-size-action;
+    font-weight: @font-weight-medium;
+  }
+
+  &__required {
+    color: @color-danger-500;
+    font-size: @font-size-action;
+  }
+
+  &__control {
+    width: 100%;
+  }
+
+  &__message {
+    display: block;
+    margin-top: @space-1;
+    color: @text-color-tertiary;
+    font-size: @font-size-caption;
+    line-height: 1.6;
+
+    &--error {
+      color: @color-danger-700;
+    }
+  }
+}
+
+.form-control {
+  width: 100%;
+  min-height: @touch-target-min;
+  padding: @space-3;
+  border: 2rpx solid transparent;
+  border-radius: @radius-md;
+  color: @text-color-primary;
+  background: @surface-subtle;
+  font-size: @font-size-action;
+  box-sizing: border-box;
+}
+
+.form-control--picker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.form-field--error .form-control {
+  border-color: @color-danger-500;
+  background: @color-danger-50;
+}
