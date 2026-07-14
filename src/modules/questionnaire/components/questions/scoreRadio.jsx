@@ -1,41 +1,32 @@
 import React, { useEffect, useState } from "react";
 import { View, Text } from "@tarojs/components";
-import { AtRate } from "taro-ui";
-import { SiSeparator } from "taro-ui-fc";
+import { Rate } from "@/shared/ui";
 
 import ShowContainer from "./widget/showContainer";
 import { isQuestionRequired } from "../../lib/questionValidation";
+import { getRatingForScoreCode, getScoreCodeForRating, getScoreRange } from "../../lib/questionValueAdapters";
 
 const Radio = props => {
   const { index, item, disabled } = props;
   const { onChangeValue } = props;
 
-  const [contentStart, setContentStart] = useState(0);
   const [maxCnt, setMaxCnt] = useState(0);
   const [curStar, setCurStar] = useState(null);
 
   useEffect(() => {
-    const contents = item.options.map(v => v.content);
-
-    const minScore = Math.min(...contents);
-    const maxScore = Math.max(...contents);
-    setMaxCnt(maxScore - minScore + 1);
-    setContentStart(minScore);
+    const { count } = getScoreRange(item.options);
+    setMaxCnt(count);
 
     // answer sheet show, init star number
-    const selectOptionIndex = item.options.findIndex(v => v.code == item.value);
-    if (selectOptionIndex > -1) {
-      setCurStar(item.options[selectOptionIndex].content - minScore + 1);
-    }
+    setCurStar(getRatingForScoreCode(item.options, item.value));
   }, [item, item.options]);
 
   const handleSelect = e => {
     if (disabled) return;
 
     setCurStar(e);
-    const curCnt = e + contentStart - 1;
-    const code = item.options.filter(v => curCnt == v.content)[0].code;
-    onChangeValue(code, index);
+    const code = getScoreCodeForRating(item.options, e);
+    if (code !== undefined) onChangeValue(code, index);
   };
 
   return (
@@ -52,11 +43,11 @@ const Radio = props => {
           <Text className='s-text-tips s-text-body3'>{item.right_desc}</Text>
         </View>
 
-        <SiSeparator className='s-mt-xs s-mb-xs'></SiSeparator>
+        <View className='question-score__separator' />
 
         <View className='s-row-center'>
-          <AtRate
-            max={maxCnt}
+          <Rate
+            count={maxCnt}
             value={curStar}
             disabled={disabled ?? false}
             onChange={handleSelect}

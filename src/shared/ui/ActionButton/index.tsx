@@ -1,7 +1,8 @@
 import React from "react";
-import { Button, Text, View } from "@tarojs/components";
+import { Text, View } from "@tarojs/components";
 
 import type { ActionButtonProps } from "../types";
+import { TaroifyButton } from "../internal/taroify";
 import "./index.less";
 
 const ActionButton = ({
@@ -18,7 +19,7 @@ const ActionButton = ({
 }: ActionButtonProps) => {
   const unavailable = disabled || loading;
   return (
-    <Button
+    <TaroifyButton
       className={[
         "action-button",
         `action-button--${variant}`,
@@ -32,12 +33,14 @@ const ActionButton = ({
       formType={formType}
       openType={openType as never}
       hoverClass={unavailable ? "none" : "action-button--pressed"}
+      variant="contained"
+      size="medium"
       onClick={onClick}
     >
       <View className="action-button__content">
         <Text className="action-button__label">{children}</Text>
       </View>
-    </Button>
+    </TaroifyButton>
   );
 };
 

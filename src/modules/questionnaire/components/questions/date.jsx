@@ -1,13 +1,16 @@
 import React from "react";
 import { View } from "@tarojs/components";
-import { SiDatePicker } from "taro-ui-fc";
+import { DatePickerField } from "@/shared/ui";
 
 import ShowContainer from "./widget/showContainer";
 import { isQuestionRequired } from "../../lib/questionValidation";
+import { formatQuestionDate, parseQuestionDate } from "../../lib/questionValueAdapters";
 
 const QsDate = props => {
   const { item, index, disabled } = props;
   const { onChangeValue } = props;
+
+  const formatDate = date => formatQuestionDate(date, item.format || "YYYY-MM-DD");
 
   return (
     <ShowContainer
@@ -18,14 +21,14 @@ const QsDate = props => {
       required={isQuestionRequired(item)}
     >
       <View>
-        <SiDatePicker
-          value={item.value}
-          format={item.format}
+        <DatePickerField
+          value={parseQuestionDate(item.value)}
+          formatValue={formatDate}
           disabled={disabled}
-          onChange={v => {
-            onChangeValue(v, index);
+          onChange={date => {
+            onChangeValue(formatDate(date), index);
           }}
-        ></SiDatePicker>
+        />
       </View>
     </ShowContainer>
   );

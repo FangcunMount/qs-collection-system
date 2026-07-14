@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, Image } from "@tarojs/components";
-import { AtIcon } from "taro-ui";
+import Icon from "@/shared/ui/Icon";
 import checklistImage from "@/assets/home/home-current-record-checklist.png";
 
 const getTesteeDisplayName = (testee) => {
@@ -41,7 +41,7 @@ const HomeCurrentProfileCard = ({
             }}
           >
             <Text>{actionText}</Text>
-            <AtIcon value="chevron-right" size="15" color="#FFFFFF" />
+            <Icon name="arrow-right" size={15} color="#FFFFFF" />
           </View>
         </View>
       </View>

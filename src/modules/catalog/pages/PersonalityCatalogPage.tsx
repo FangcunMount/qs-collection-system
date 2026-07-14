@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Taro from "@tarojs/taro";
 import { View, Text, Image } from "@tarojs/components";
-import { AtIcon } from "taro-ui";
+import Icon from "@/shared/ui/Icon";
 
 import { PrivacyAuthorization } from "@/shared/ui/PrivacyAuthorization";
 import AppNavigationBar from "@/shared/ui/AppNavigationBar";
@@ -177,7 +177,7 @@ const PersonalityCatalogPage = () => {
               <Image className="personality-feature-card__image" src={typeBasicImage} mode="aspectFit" />
             </View>
             <View className="personality-feature-card__arrow">
-              <AtIcon value="chevron-right" size="20" color="#FFFFFF" />
+              <Icon name="arrow-right" size={20} color="#FFFFFF" />
             </View>
           </SurfaceCard>
         ) : null}
@@ -197,7 +197,7 @@ const PersonalityCatalogPage = () => {
                 <Text className="personality-mini-card__desc">{item.description}</Text>
                 <View className="personality-mini-card__button">
                   <Text>{item.cta || "开始测试"}</Text>
-                  <AtIcon value="arrow-right" size="13" color={resolveMiniCardButtonColor(item.theme)} />
+                  <Icon name="arrow-right" size={13} color={resolveMiniCardButtonColor(item.theme)} />
                 </View>
                 {item.theme === "fun" ? (
                   <Image className="personality-mini-card__image" src={funTestImage} mode="aspectFit" />
@@ -218,8 +218,8 @@ const PersonalityCatalogPage = () => {
                     <Text className="personality-mini-card__desc">{item.description}</Text>
                     <View className="personality-mini-card__button">
                       <Text>{item.cta || "开始测试"}</Text>
-                      <AtIcon
-                        value="arrow-right"
+                      <Icon
+                        name="arrow-right"
                         size="13"
                         color={resolveMiniCardButtonColor(item.theme)}
                       />

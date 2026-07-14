@@ -6,7 +6,7 @@ const root = path.resolve(__dirname, '..');
 const outputRoot = path.join(root, 'dist');
 const appConfigPath = path.join(outputRoot, 'app.json');
 const limitKiB = Number(process.env.MAIN_PACKAGE_LIMIT_KIB || 1800);
-const baselineKiB = 1576;
+const baselineKiB = Number(process.env.PRE_REFACTOR_MAIN_KIB || 1224.74);
 
 if (!fs.existsSync(appConfigPath)) {
   console.error('[package-size] dist/app.json 不存在，请先运行 npm run build:weapp');

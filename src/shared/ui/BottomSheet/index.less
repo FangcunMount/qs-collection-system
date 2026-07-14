@@ -1,0 +1,46 @@
+@import "../../../styles/tokens.less";
+
+.bottom-sheet {
+  width: 100%;
+  box-sizing: border-box;
+  background: @surface-card;
+
+  &__safe {
+    padding-bottom: calc(@space-4 + env(safe-area-inset-bottom));
+  }
+
+  &__handle {
+    width: 72rpx;
+    height: 8rpx;
+    margin: @space-2 auto;
+    border-radius: @radius-pill;
+    background: @border-color-strong;
+  }
+
+  &__header {
+    min-height: @touch-target-min;
+    padding: 0 @space-4;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 2rpx solid @border-color-base;
+  }
+
+  &__title {
+    color: @text-color-primary;
+    font-size: @font-size-card-title;
+    font-weight: @font-weight-semibold;
+  }
+
+  &__close {
+    width: @touch-target-min;
+    height: @touch-target-min;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+  }
+
+  &__content {
+    padding: @space-4;
+  }
+}

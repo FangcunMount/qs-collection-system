@@ -1,12 +1,12 @@
 import React from "react";
 import { View, Text } from "@tarojs/components";
-import { AtFloatLayout } from "taro-ui";
+import { ActionButton, BottomSheet as QlBottomSheet } from "@/shared/ui";
 import "./BottomSheet.less";
 
 const BottomSheet = ({ isOpened, onClose, title, children, height = "60vh", showConfirm = false, onConfirm }) => {
   return (
-    <AtFloatLayout
-      isOpened={isOpened}
+    <QlBottomSheet
+      open={isOpened}
       title={title}
       onClose={onClose}
       className="bottom-sheet-float-layout"
@@ -20,19 +20,17 @@ const BottomSheet = ({ isOpened, onClose, title, children, height = "60vh", show
         {/* 确认按钮 */}
         {showConfirm && (
           <View className="bottom-sheet-footer">
-            <View className="bottom-sheet-btn bottom-sheet-btn-cancel" onClick={onClose}>
-              <Text className="bottom-sheet-btn-text">取消</Text>
-            </View>
-            <View className="bottom-sheet-btn bottom-sheet-btn-confirm" onClick={() => {
+            <ActionButton variant="secondary" className="bottom-sheet-btn" onClick={onClose}>取消</ActionButton>
+            <ActionButton className="bottom-sheet-btn" onClick={() => {
               onConfirm && onConfirm();
               onClose();
             }}>
-              <Text className="bottom-sheet-btn-text">完成</Text>
-            </View>
+              完成
+            </ActionButton>
           </View>
         )}
       </View>
-    </AtFloatLayout>
+    </QlBottomSheet>
   );
 };
 

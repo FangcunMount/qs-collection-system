@@ -1,6 +1,6 @@
 import React from "react";
 import { View } from "@tarojs/components";
-import { AtTextarea } from "taro-ui";
+import { TextareaField } from "@/shared/ui";
 
 import ShowContainer from "./widget/showContainer";
 import { getQuestionPlaceholder, isQuestionRequired } from "../../lib/questionValidation";
@@ -27,15 +27,13 @@ const QsTextarea = props => {
       required={isQuestionRequired(item)}
     >
       <View>
-        <AtTextarea
-          style={{ flexGrow: 1 }}
+        <TextareaField
           value={item.value}
-          count={!disabled}
           maxLength={item.validate_rules?.max_words ?? 3000}
           placeholder={getQuestionPlaceholder(item)}
-          onChange={handleChange}
+          onValueChange={handleChange}
           disabled={disabled}
-        ></AtTextarea>
+        />
       </View>
     </ShowContainer>
   );

@@ -7,8 +7,9 @@ module.exports = {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@tarojs/components$': '<rootDir>/scripts/test/stubs/taro-components.cjs',
     '^@tarojs/taro$': '<rootDir>/scripts/test/stubs/taro.cjs',
-    '^taro-ui$': '<rootDir>/scripts/test/stubs/taro-ui.cjs',
-    '^taro-ui-fc$': '<rootDir>/scripts/test/stubs/taro-ui.cjs'
+    '^@taroify/core/button$': '<rootDir>/scripts/test/stubs/taroify-button.cjs',
+    '^@taroify/core/(.*)$': '<rootDir>/scripts/test/stubs/taroify.cjs',
+    '^@taroify/icons$': '<rootDir>/scripts/test/stubs/taroify.cjs'
   },
   roots: ['<rootDir>/src', '<rootDir>/scripts/test'],
   testEnvironment: 'node',

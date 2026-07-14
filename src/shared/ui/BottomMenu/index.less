@@ -12,8 +12,8 @@
   justify-content: space-between;
   background: @surface-card-94;
   border-top: 1rpx solid fade(@color-neutral-200, 80%);
-  border-radius: 40rpx 40rpx 0 0;
-  box-shadow: @shadow-bottom-menu;
+  border-radius: 0;
+  box-shadow: 0 -8rpx 24rpx @overlay-ink-08;
   z-index: 50;
   box-sizing: content-box;
 }
@@ -58,8 +58,8 @@
 }
 
 .menu-item.active .menu-item__label {
-  color: @color-medical-500;
-  font-weight: @font-weight-black;
+  color: @color-brand-primary;
+  font-weight: @font-weight-bold;
 }
 
 .menu-item--center {
@@ -68,13 +68,13 @@
 }
 
 .menu-item__cta {
-  width: 104rpx;
-  height: 104rpx;
-  margin-top: -52rpx;
-  border-radius: 50%;
-  background: linear-gradient(135deg, @color-action-primary-bright 0%, @color-medical-500 100%);
-  border: 6rpx solid @color-white;
-  box-shadow: @shadow-medical-fab;
+  width: 76rpx;
+  height: 76rpx;
+  margin-top: 0;
+  border-radius: 24rpx;
+  background: @color-brand-primary;
+  border: 0;
+  box-shadow: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -144,6 +144,6 @@
 }
 
 .menu-item__label--center {
-  color: @color-medical-500;
-  font-weight: @font-weight-black;
+  color: @color-brand-primary;
+  font-weight: @font-weight-bold;
 }

@@ -51,7 +51,7 @@
     "src/modules/assessment/viewModels/**/*.ts",
     "src/modules/assessment/views/*.tsx",
     "src/modules/questionnaire/types.ts",
-    "src/modules/questionnaire/lib/questionnaireFlow.ts",
+    "src/modules/questionnaire/lib/**/*.ts",
     "src/modules/questionnaire/components/QuestionRenderer.tsx",
     "src/modules/questionnaire/components/QuestionnaireForm.tsx",
     "src/modules/questionnaire/components/SinglePageQuestionnaire.tsx",
@@ -86,6 +86,7 @@
     "src/pages/testees/edit/index.tsx",
     "src/pages/testees/list/index.tsx",
     "src/pages/system/error/index.tsx",
+    "src/pages/system/ui-lab/index.tsx",
     "src/store/tokenStore.ts",
     "src/store/testeeStore.ts",
     "src/store/entryContextStore.ts"

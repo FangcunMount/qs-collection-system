@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Taro from "@tarojs/taro";
 import { View, Button, Canvas } from "@tarojs/components";
-import { AtModal, AtModalHeader, AtModalAction, AtModalContent } from "taro-ui";
+import { Dialog } from "@/shared/ui";
 
 import QuestionToCanvas from "./QuestionToCanvas";
 
@@ -43,9 +43,19 @@ const ExportImageDialog = ({ questions, flag, onClose, onOk }) => {
   };
 
   return (
-    <AtModal isOpened={flag} closeOnClickOverlay={false}>
-      <AtModalHeader>导出原始答卷</AtModalHeader>
-      <AtModalContent className='s-row-center'>
+    <Dialog
+      open={flag}
+      title="导出原始答卷"
+      closeOnBackdrop={false}
+      onClose={onClose}
+      footer={(
+        <>
+          <Button onClick={onClose}>取消</Button>
+          <Button onClick={exportImage}>保存到相册</Button>
+        </>
+      )}
+    >
+      <View className='s-row-center'>
         <View>
           <View style={{ textAlign: "center", width: "100%", color: "#999" }}>
             预览不影响导出效果
@@ -59,12 +69,8 @@ const ExportImageDialog = ({ questions, flag, onClose, onOk }) => {
             }}
           ></Canvas>
         </View>
-      </AtModalContent>
-      <AtModalAction>
-        <Button onClick={onClose}>取消</Button>
-        <Button onClick={exportImage}>保存到相册</Button>
-      </AtModalAction>
-    </AtModal>
+      </View>
+    </Dialog>
   );
 };
 

@@ -4,7 +4,7 @@
   "private": true,
   "description": "问卷收集系统",
   "templateInfo": {
-    "name": "taro-ui",
+    "name": "qlume-taroify",
     "typescript": false,
     "css": "less"
   },
@@ -24,7 +24,9 @@
     "test:ui:watch": "jest --watch",
     "typecheck:strict": "tsc -p tsconfig.strict.json --noEmit",
     "check:package-size": "node scripts/check-package-size.cjs",
-    "verify:frontend": "npm run typecheck:strict && npm run test:ui && npm run test:contracts && npm run build:weapp && npm run check:package-size && git diff --check"
+    "check:ui-boundaries": "node scripts/check-ui-boundaries.cjs",
+    "check:ui-assets": "node scripts/check-ui-assets.cjs",
+    "verify:frontend": "npm run typecheck:strict && npm run test:ui && npm run test:contracts && npm run check:ui-boundaries && npm run check:ui-assets && npm run build:weapp && npm run check:package-size && git diff --check"
   },
   "browserslist": [
     "last 3 versions",
@@ -38,6 +40,8 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.23.9",
+    "@taroify/core": "0.9.2",
+    "@taroify/icons": "0.9.2",
     "@tarojs/components": "3.6.25",
     "@tarojs/plugin-platform-weapp": "3.6.25",
     "@tarojs/react": "3.6.25",
@@ -45,18 +49,16 @@
     "lodash": "^4.17.21",
     "lottie-miniprogram": "^1.0.12",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "taro-ui": "^3.3.0",
-    "taro-ui-fc": "0.0.1"
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@babel/core": "^7.23.9",
     "@babel/preset-env": "^7.23.9",
-    "@types/jest": "29.5.14",
     "@tarojs/cli": "3.6.25",
     "@tarojs/mini-runner": "3.6.25",
     "@tarojs/plugin-framework-react": "^3.6.25",
     "@tarojs/webpack-runner": "3.6.25",
+    "@types/jest": "29.5.14",
     "@types/react": "^19.2.4",
     "@types/react-dom": "^19.2.3",
     "babel-jest": "29.7.0",

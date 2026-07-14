@@ -187,6 +187,16 @@
   box-sizing: border-box;
 }
 
+// SurfaceCard owns width:100%; counteract it when page gutters are margins.
+.personality-feature-card,
+.personality-section,
+.personality-deep-section,
+.personality-service-section {
+  width: auto;
+  max-width: calc(100% - (2 * @personality-x));
+  box-sizing: border-box;
+}
+
 .personality-feature-card__content {
   position: relative;
   z-index: 2;

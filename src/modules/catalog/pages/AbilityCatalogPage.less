@@ -609,3 +609,49 @@
 .ability-home__bottom-spacer {
   height: calc(96rpx + env(safe-area-inset-bottom));
 }
+
+// Ability catalog: family observation, not an AI/tech marketing template.
+.ability-home { background: @surface-page; }
+.ability-hero {
+  min-height: 360rpx;
+  margin: 20rpx @ability-x @qlume-section-gap;
+  padding: 0;
+  border-radius: 24rpx;
+  box-shadow: @shadow-medium;
+}
+.ability-hero__background { position: absolute; inset: 0; width: 100%; height: 100%; }
+.ability-hero__content {
+  position: relative;
+  z-index: 2;
+  width: 54%;
+  height: 360rpx;
+  padding: 38rpx 0 32rpx 30rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  box-sizing: border-box;
+}
+.ability-hero__title { margin-top: 0; font-size: 40rpx; line-height: 1.2; font-weight: 700; }
+.ability-hero__subtitle { margin-top: 14rpx; font-size: 23rpx; line-height: 1.5; font-weight: 500; color: @text-color-secondary; }
+.ability-hero__action { min-width: 150rpx; min-height: 68rpx; margin-top: auto; padding: 0 22rpx; }
+.ability-hero__action .action-button__content { min-height: 68rpx; }
+
+.ability-assessment-card,
+.ability-assessment-card--executive,
+.ability-assessment-card--sensory {
+  min-height: 230rpx;
+  padding: 28rpx 84rpx 26rpx 28rpx;
+  border-color: @border-color-base;
+  border-radius: @radius-lg-token;
+  background: @surface-card;
+  box-shadow: none;
+}
+.ability-assessment-card__content { margin-top: 0; }
+.ability-assessment-card__kicker { color: @color-ability-700; font-weight: 600; }
+.ability-assessment-card__title { font-weight: 700; }
+.ability-assessment-card__desc { font-weight: 400; }
+.ability-assessment-card__arrow { right: 24rpx; bottom: 24rpx; background: @color-ability-600; box-shadow: none; }
+.ability-observation-card { border-radius: @radius-md; box-shadow: none; }
+.ability-observation-card__icon { background: @surface-subtle; box-shadow: none; }
+.ability-flow__track { border-radius: @radius-lg-token; box-shadow: none; }
+.ability-flow__index { background: @color-ability-600; box-shadow: none; }

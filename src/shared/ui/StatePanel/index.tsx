@@ -1,8 +1,8 @@
 import React from "react";
 import { Text, View } from "@tarojs/components";
-import { AtActivityIndicator } from "taro-ui";
 
 import ActionButton from "../ActionButton";
+import Loading from "../Loading";
 import type { StatePanelProps } from "../types";
 import "./index.less";
 
@@ -48,7 +48,7 @@ const StatePanel = ({
     >
       <View className="state-panel__visual">
         {illustration || (state === "loading" ? (
-          <AtActivityIndicator mode="center" size={36} />
+          <Loading size={36} />
         ) : (
           <Text className="state-panel__symbol">{copy.symbol}</Text>
         ))}

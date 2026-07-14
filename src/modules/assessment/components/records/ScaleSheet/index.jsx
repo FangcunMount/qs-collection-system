@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text } from "@tarojs/components";
-import { AtIcon } from "taro-ui";
+import Icon from "@/shared/ui/Icon";
 import BottomSheet from "../BottomSheet";
 import "./index.less";
 
@@ -43,7 +43,7 @@ const ScaleSheet = ({
                   >
                     <Text className="scale-sheet-item-name">{scale.name}</Text>
                     {isSelected && (
-                      <AtIcon value="check" size="20" color="#1890FF" />
+                      <Icon name="check" size={20} color="#6657D9" />
                     )}
                   </View>
                 );

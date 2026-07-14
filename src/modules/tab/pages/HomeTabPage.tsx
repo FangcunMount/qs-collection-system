@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import Taro, { usePullDownRefresh, useReady, useRouter } from "@tarojs/taro";
 import { View, Text, Image } from "@tarojs/components";
-import { AtIcon } from "taro-ui";
+import Icon from "@/shared/ui/Icon";
 
 import BottomMenu from "@/shared/ui/BottomMenu";
 import AppNavigationBar from "@/shared/ui/AppNavigationBar";
@@ -9,6 +9,7 @@ import PageShell from "@/shared/ui/PageShell";
 import SectionHeader from "@/shared/ui/SectionHeader";
 import StatePanel from "@/shared/ui/StatePanel";
 import SurfaceCard from "@/shared/ui/SurfaceCard";
+import ActionButton from "@/shared/ui/ActionButton";
 import { routes } from "@/shared/config/routes";
 import { ASSESSMENT_PORTALS } from "@/shared/config/assessmentPortals";
 import { loadRecentAssessments as fetchRecentAssessments } from "@/modules/assessment/services/loadRecentAssessments";
@@ -18,7 +19,7 @@ import { getAssessmentEntryContext, subscribeAssessmentEntryContext } from "@/sh
 import { findTesteeById, getSelectedTesteeId, subscribeTesteeStore } from "@/shared/stores/testees";
 import { mapMedicalCatalogCard, type CatalogCardViewModel } from "@/modules/catalog/viewModels/catalogCard";
 import { mapRecentAssessment, type RecentAssessmentViewModel } from "@/modules/tab/viewModels/home";
-import qlumeHeroBanner from "@/assets/banner/banner_3.webp";
+import qlumeHeroBanner from "@/assets/hero/qlume-home-v2.webp";
 import anxietyIcon from "@/assets/icon/icon-anxiety-screening.png";
 import sleepQualityIcon from "@/assets/icon/icon-sleep-quality.png";
 import attentionIcon from "@/assets/icon/icon-attention-screening.png";
@@ -224,7 +225,7 @@ const HomeIndex = () => {
         key: "ability",
         title: "行为能力",
         desc: "执行功能 · 行为潜能",
-        icon: "analytics",
+        icon: "chart",
         image: portalMap.ability?.image,
         tone: "ability",
         onClick: () => handleOpenPortal(portalMap.ability),
@@ -280,8 +281,13 @@ const HomeIndex = () => {
           <Text className="home-welcome__subtitle">科学测评 · 专业解读 · 成长陪伴</Text>
         </View>
 
-        <View className="home-hero" onClick={handleStartExplore}>
+        <View className="home-hero">
           <Image className="home-hero__banner" src={qlumeHeroBanner} mode="aspectFill" />
+          <View className="home-hero__content">
+            <Text className="home-hero__title">持续关注，更好的自己</Text>
+            <Text className="home-hero__subtitle">记录变化，理解当下，也看见成长</Text>
+            <ActionButton className="home-hero__action" onClick={handleStartExplore}>开始测评</ActionButton>
+          </View>
         </View>
 
         {hasEntryTask && (
@@ -290,7 +296,7 @@ const HomeIndex = () => {
               <Text className="home-task-strip__title">继续机构测评任务</Text>
               <Text className="home-task-strip__meta">已识别到可继续的扫码入口</Text>
             </View>
-            <AtIcon value="chevron-right" size="16" color="#3F5DFF" />
+            <Icon name="arrow-right" size={16} color="#6657D9" />
           </View>
         )}
 
@@ -302,7 +308,7 @@ const HomeIndex = () => {
               onClick={entry.onClick}
             >
               <View className="home-portal-card__icon">
-                <AtIcon value={entry.icon} size="28" color="#FFFFFF" />
+                <Icon name={entry.icon as "star" | "chart"} size={28} color="#FFFFFF" />
               </View>
               <View className="home-portal-card__body">
                 <Text className="home-portal-card__title">{entry.title}</Text>
@@ -365,7 +371,7 @@ const HomeIndex = () => {
                     )}
                     <Text className="home-report-row__risk">{assessment.riskLabel}</Text>
                   </View>
-                  <AtIcon value="chevron-right" size="18" color="#B4BED0" />
+                  <Icon name="arrow-right" size={18} color="#8A96AA" />
                 </SurfaceCard>
               ))
             ) : (

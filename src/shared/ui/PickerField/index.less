@@ -1,0 +1,42 @@
+@import "../../../styles/tokens.less";
+
+.picker-field {
+  display: flex;
+  flex-direction: column;
+  gap: @space-2;
+  width: 100%;
+
+  &__label {
+    color: @text-color-primary;
+    font-size: @font-size-body;
+    font-weight: @font-weight-semibold;
+  }
+
+  &__control {
+    min-height: @touch-target-min;
+    padding: 0 @space-3;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-sizing: border-box;
+    border: 2rpx solid @border-color-base;
+    border-radius: @radius-md;
+    background: @surface-card;
+
+    &--disabled {
+      color: @text-color-disabled;
+      background: @surface-disabled;
+    }
+  }
+
+  &__value,
+  &__placeholder {
+    font-size: @font-size-body;
+  }
+
+  &__value { color: @text-color-primary; }
+  &__placeholder { color: @text-color-disabled; }
+
+  &--error &__control { border-color: @color-danger-500; }
+  &__error { color: @color-danger-700; font-size: @font-size-caption; }
+}

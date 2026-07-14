@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from "react";
 import Taro from "@tarojs/taro";
 import { View, Text, Image } from "@tarojs/components";
-import { AtIcon } from "taro-ui";
+import Icon from "@/shared/ui/Icon";
 
 import { routes } from "@/shared/config/routes";
 import { ABILITY_SPECIALIZED_ASSESSMENTS } from "@/shared/config/abilityAssessments";
@@ -10,30 +10,18 @@ import PageShell from "@/shared/ui/PageShell";
 import SectionHeader from "@/shared/ui/SectionHeader";
 import AssessmentKindReportSection from "@/modules/assessment/components/records/AssessmentKindReportSection";
 import SurfaceCard from "@/shared/ui/SurfaceCard";
+import ActionButton from "@/shared/ui/ActionButton";
 import { ASSESSMENT_KIND } from "@/shared/lib/assessmentKind";
 import {
   mapAbilityCatalogCard,
   type CatalogCardViewModel,
 } from "@/modules/catalog/viewModels/catalogCard";
-import behaviorHeroImage from "@/pages/catalog-ability/assets/home/home-entry-behavior.webp";
+import behaviorHeroImage from "@/pages/catalog-ability/assets/hero/ability-catalog-v2.webp";
 import executiveImage from "@/pages/catalog-ability/assets/icon/icon-executive-function.png";
 import abilityImage from "@/pages/catalog-ability/assets/icon/icon-behavior-ability.png";
 import workingMemoryImage from "@/pages/catalog-ability/assets/icon/icon-working-memory.png";
 import sensoryImage from "@/pages/catalog-ability/assets/home/category-sensory.png";
 import "./AbilityCatalogPage.less";
-
-const ASSESSMENT_IMAGES: Record<string, string> = {
-  executive: executiveImage,
-  sensory: sensoryImage,
-};
-
-const HERO_TAGS = Object.freeze(["科学评估", "专业解读", "成长支持"]);
-
-const HERO_STATS = Object.freeze([
-  { value: "2", label: "核心测评" },
-  { value: "家庭", label: "日常观察" },
-  { value: "成长", label: "支持建议" },
-]);
 
 const OBSERVATION_ITEMS = Object.freeze([
   {
@@ -122,38 +110,12 @@ const AbilityCatalogPage = () => {
     >
 
         <View className="ability-hero">
+          <Image className="ability-hero__background" src={behaviorHeroImage} mode="aspectFill" />
           <View className="ability-hero__content">
-            <Text className="ability-hero__label">BEHAVIOR ABILITY</Text>
             <Text className="ability-hero__title">看见行为背后的能力线索</Text>
-            <Text className="ability-hero__subtitle">关注儿童大脑发育与行为成长，帮助家庭找到更清晰的支持方向。</Text>
-            <View className="ability-hero__tag-row">
-              {HERO_TAGS.map((tag) => (
-                <Text key={tag} className="ability-hero__tag">{tag}</Text>
-              ))}
-            </View>
-            <View className="ability-hero__action" onClick={handleViewAssessments}>
-              <Text>查看测评</Text>
-              <AtIcon value="arrow-right" size="13" color="#FFFFFF" />
-            </View>
+            <Text className="ability-hero__subtitle">从家庭日常观察出发，理解孩子如何计划、调节与回应环境。</Text>
+            <ActionButton tone="ability" className="ability-hero__action" onClick={handleViewAssessments}>查看测评</ActionButton>
           </View>
-          <View className="ability-hero__visual">
-            <Image className="ability-hero__brain" src={behaviorHeroImage} mode="aspectFit" />
-            <View className="ability-hero__chip ability-hero__chip--top">
-              <Image className="ability-hero__chip-image" src={workingMemoryImage} mode="aspectFit" />
-            </View>
-            <View className="ability-hero__chip ability-hero__chip--bottom">
-              <Image className="ability-hero__chip-image" src={sensoryImage} mode="aspectFit" />
-            </View>
-          </View>
-        </View>
-
-        <View className="ability-stat-strip">
-          {HERO_STATS.map((item) => (
-            <View key={item.label} className="ability-stat">
-              <Text className="ability-stat__value">{item.value}</Text>
-              <Text className="ability-stat__label">{item.label}</Text>
-            </View>
-          ))}
         </View>
 
         <View id="ability-specialized" className="ability-section ability-specialized">
@@ -166,22 +128,12 @@ const AbilityCatalogPage = () => {
           />
 
           <View className="ability-assessment-grid">
-            {ASSESSMENT_CARDS.map((item, index) => (
+            {ASSESSMENT_CARDS.map((item) => (
               <SurfaceCard
                 key={item.key}
                 className={`ability-assessment-card ability-assessment-card--${item.iconKey} ${item.disabled ? "is-disabled" : ""}`}
                 onClick={() => handleOpenAssessment(item)}
               >
-                <View className="ability-assessment-card__rank">
-                  <Text>{String(index + 1).padStart(2, "0")}</Text>
-                </View>
-                <View className="ability-assessment-card__icon">
-                  <Image
-                    className="ability-assessment-card__image"
-                    src={ASSESSMENT_IMAGES[item.iconKey] || abilityImage}
-                    mode="aspectFit"
-                  />
-                </View>
                 <View className="ability-assessment-card__content">
                   <Text className="ability-assessment-card__kicker">
                     {item.iconKey === "sensory" ? "感觉处理 · 家庭观察" : "执行功能 · 日常表现"}
@@ -197,7 +149,7 @@ const AbilityCatalogPage = () => {
                   </View>
                 </View>
                 <View className="ability-assessment-card__arrow">
-                  <AtIcon value="chevron-right" size="18" color="#FFFFFF" />
+                  <Icon name="arrow-right" size={18} color="#FFFFFF" />
                 </View>
               </SurfaceCard>
             ))}

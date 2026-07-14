@@ -1,8 +1,7 @@
 import React from 'react';
 import renderer from 'react-test-renderer';
 
-import EmptyState from '@/shared/ui/EmptyState';
-import LoadingState from '@/shared/ui/LoadingState';
+import { ActionButton, Empty, Loading } from '@/shared/ui';
 import RiskTag from '@/shared/ui/RiskTag';
 import StatusTag from '@/shared/ui/StatusTag';
 
@@ -32,26 +31,28 @@ describe('shared state components', () => {
     expect(collectText(tree)).toContain('高风险');
   });
 
-  test('EmptyState exposes its optional action', () => {
+  test('Empty composes with a Qlume action', () => {
     const onClick = jest.fn();
     const component = renderer.create(
-      <EmptyState text="暂无报告" buttonText="重新加载" onButtonClick={onClick} />
+      <Empty description="暂无报告">
+        <ActionButton onClick={onClick}>重新加载</ActionButton>
+      </Empty>
     );
 
-    const action = component.root.findByProps({ className: 'empty-state__button' });
+    const action = component.root.findByType('taro-button');
     action.props.onClick();
 
     expect(onClick).toHaveBeenCalledTimes(1);
     expect(collectText(component.toJSON())).toContain('暂无报告重新加载');
   });
 
-  test('LoadingState forwards visual state props', () => {
+  test('Loading forwards visual state props', () => {
     const tree = renderer.create(
-      <LoadingState content="正在同步" mode="normal" size={32} className="inline-loading" />
+      <Loading size={32} className="inline-loading">正在同步</Loading>
     ).toJSON();
-    const indicator = tree.children[0];
 
     expect(tree.props.className).toContain('inline-loading');
-    expect(indicator.props).toMatchObject({ content: '正在同步', mode: 'normal', size: 32 });
+    expect(tree.props).toMatchObject({ direction: 'horizontal', size: 32 });
+    expect(collectText(tree)).toContain('正在同步');
   });
 });

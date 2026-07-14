@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Button, Image, OpenData, Text, View } from "@tarojs/components";
 import Taro from "@tarojs/taro";
-import { AtIcon } from "taro-ui";
+import Icon from "@/shared/ui/Icon";
+import type { IconName } from "@/shared/ui/Icon";
 
 import { routes } from "@/shared/config/routes";
 import { getAccountStoreState, initAccountStore, subscribeAccountStore } from "@/shared/stores/account";
@@ -96,7 +97,7 @@ const MeTabPage = () => {
             <View className="login-info">
               <View className="login-title-row">
                 <Text className="login-title">登录/注册</Text>
-                <AtIcon value="chevron-right" size="20" color="#8A96AA" />
+                <Icon name="arrow-right" size={20} color="#8A96AA" />
               </View>
               <Text className="login-subtitle">点击登录，享受完整服务</Text>
             </View>
@@ -108,7 +109,7 @@ const MeTabPage = () => {
         {menuItems.map((item) => (
           <SurfaceCard key={item.id} interactive className="profile-menu-item" onClick={() => handleMenuItemClick(item.id)}>
             <View className={`profile-menu-icon profile-menu-icon--${item.tone}`}>
-              <AtIcon value={item.icon} size="28" color="#2F80ED" />
+              <Icon name={item.icon as IconName} size={28} color="#6657D9" />
             </View>
             <Text className="profile-menu-name">{item.name}</Text>
           </SurfaceCard>

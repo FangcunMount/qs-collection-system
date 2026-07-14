@@ -1,6 +1,6 @@
 import React from "react";
 import { View } from "@tarojs/components";
-import { SiInputNumber } from "taro-ui-fc";
+import { Stepper } from "@/shared/ui";
 
 import ShowContainer from "./widget/showContainer";
 import { isQuestionRequired, getValidationRule } from "../../lib/questionValidation";
@@ -25,13 +25,13 @@ const QsNumber = props => {
       required={isQuestionRequired(item)}
     >
       <View>
-        <SiInputNumber
-          defaultValue={item.value}
-          minValue={minValue ? Number(minValue) : undefined}
-          maxValue={maxValue ? Number(maxValue) : undefined}
+        <Stepper
+          value={item.value}
+          min={minValue ? Number(minValue) : undefined}
+          max={maxValue ? Number(maxValue) : undefined}
           disabled={disabled}
           onChange={handleChange}
-        ></SiInputNumber>
+        />
       </View>
     </ShowContainer>
   );

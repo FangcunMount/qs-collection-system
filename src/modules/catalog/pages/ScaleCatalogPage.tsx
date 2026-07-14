@@ -1,7 +1,8 @@
 import React, { useState, useCallback } from "react";
 import Taro, { usePullDownRefresh } from "@tarojs/taro";
 import { View, Text, Image } from "@tarojs/components";
-import { AtIcon } from "taro-ui";
+import Icon from "@/shared/ui/Icon";
+import type { IconName } from "@/shared/ui/Icon";
 import BottomMenu from "@/shared/ui/BottomMenu";
 import AppNavigationBar from "@/shared/ui/AppNavigationBar";
 import PageShell from "@/shared/ui/PageShell";
@@ -17,14 +18,8 @@ import {
   mapMedicalCatalogCard,
   type CatalogCardViewModel,
 } from "@/modules/catalog/viewModels/catalogCard";
-import medicalHeroBanner from "@/pages/catalog-medical/assets/banner/banner_2.png";
+import medicalHeroBanner from "@/pages/catalog-medical/assets/hero/medical-catalog-v2.webp";
 import medicalTrustImage from "@/pages/catalog-medical/assets/home/home-current-record-checklist.png";
-import categorySleepImage from "@/pages/catalog-medical/assets/home/category-sleep.png";
-import categoryMoodImage from "@/pages/catalog-medical/assets/home/category-mood.png";
-import categoryPressureImage from "@/pages/catalog-medical/assets/home/category-pressure.png";
-import categoryAttentionImage from "@/pages/catalog-medical/assets/home/category-attention.png";
-import categoryChildImage from "@/pages/catalog-medical/assets/home/category-child.png";
-import categorySensoryImage from "@/pages/catalog-medical/assets/home/category-sensory.png";
 import "./ScaleCatalogPage.less";
 
 const PAGE_NAME = "questionnaire_list";
@@ -37,33 +32,7 @@ const QUICK_ACTIONS = Object.freeze([
   { key: "profile", title: "健康档案", subtitle: "综合管理", icon: "user", color: "#FF8A3A" },
 ]);
 
-const CATEGORY_IMAGE_MAP: Record<string, string> = {
-  sleep: categorySleepImage,
-  mood: categoryMoodImage,
-  pressure: categoryPressureImage,
-  attention: categoryAttentionImage,
-  child: categoryChildImage,
-  sensory: categorySensoryImage,
-};
-
 const FEATURED_CATEGORIES = SCALE_COMMON_CATEGORIES.slice(0, 4);
-
-const resolveScaleImage = (scale: CatalogCardViewModel) => {
-  const marker = [
-    scale.title,
-    scale?.description,
-    scale?.category,
-    ...(scale?.tags || []),
-  ].join(" ");
-
-  if (/睡眠|入睡|失眠|sleep/i.test(marker)) return categorySleepImage;
-  if (/儿童|行为|家长|child|parent/i.test(marker)) return categoryChildImage;
-  if (/压力|压力量表|PSS|stress/i.test(marker)) return categoryPressureImage;
-  if (/执行|注意|专注|ADHD|SNAP|attention/i.test(marker)) return categoryAttentionImage;
-  if (/感觉|统合|sensory/i.test(marker)) return categorySensoryImage;
-  if (/情绪|焦虑|抑郁|GAD|PHQ|mood|anxiety/i.test(marker)) return categoryMoodImage;
-  return categorySleepImage;
-};
 
 const ScaleCatalogPage = () => {
   const [hotScales, setHotScales] = useState<CatalogCardViewModel[]>([]);
@@ -168,23 +137,38 @@ const ScaleCatalogPage = () => {
             </Text>
           </View>
 
-          <View className="scale-hero" onClick={() => handleOpenScaleList()}>
+          <View className="scale-hero">
             <Image className="scale-hero__banner" src={medicalHeroBanner} mode="aspectFill" />
+            <View className="scale-hero__content">
+              <Text className="scale-hero__title">从可靠量表开始了解当下</Text>
+              <Text className="scale-hero__desc">结果用于自我观察与专业沟通参考</Text>
+              <View className="scale-hero__action" onClick={() => handleOpenScaleList()}>查找量表</View>
+            </View>
           </View>
 
-          <View className="scale-quick-panel">
-            {QUICK_ACTIONS.map((action, index) => (
+          <View className="scale-primary-actions">
+            {QUICK_ACTIONS.slice(0, 2).map((action) => (
               <View
                 key={action.key}
-                className="scale-quick-item"
+                className="scale-primary-action"
                 onClick={() => handleQuickAction(action.key)}
               >
-                <View className={`scale-quick-item__icon scale-quick-item__icon--${action.key}`}>
-                  <AtIcon value={action.icon} size="24" color={action.color} />
+                <View className="scale-primary-action__icon">
+                  <Icon name={action.icon as IconName} size={24} color={action.color} />
                 </View>
-                <Text className="scale-quick-item__title">{action.title}</Text>
-                <Text className="scale-quick-item__subtitle">{action.subtitle}</Text>
-                {index < QUICK_ACTIONS.length - 1 && <View className="scale-quick-item__divider" />}
+                <View className="scale-primary-action__text">
+                  <Text className="scale-primary-action__title">{action.title}</Text>
+                  <Text className="scale-primary-action__subtitle">{action.subtitle}</Text>
+                </View>
+                <Icon name="arrow-right" size={18} color="#66738E" />
+              </View>
+            ))}
+          </View>
+          <View className="scale-service-links">
+            {QUICK_ACTIONS.slice(2).map((action) => (
+              <View key={action.key} className="scale-service-link" onClick={() => handleQuickAction(action.key)}>
+                <Icon name={action.icon as IconName} size={18} color="#327BAF" />
+                <Text>{action.title}</Text>
               </View>
             ))}
           </View>
@@ -194,7 +178,7 @@ const ScaleCatalogPage = () => {
               <Text className="scale-section__title">量表分类</Text>
               <View className="scale-section__more" onClick={() => handleOpenScaleList()}>
                 <Text>全部分类</Text>
-                <AtIcon value="chevron-right" size="14" color="#8A96AA" />
+                <Icon name="arrow-right" size={14} color="#8A96AA" />
               </View>
             </View>
             <View className="scale-cat-grid">
@@ -204,17 +188,11 @@ const ScaleCatalogPage = () => {
                   className={`scale-cat-card scale-cat-card--${category.key}`}
                   onClick={() => handleOpenScaleList({ category: category.value })}
                 >
-                  <View className="scale-cat-card__icon">
-                    <Image
-                      className="scale-cat-card__image"
-                      src={CATEGORY_IMAGE_MAP[category.key]}
-                      mode="aspectFit"
-                    />
-                  </View>
                   <View className="scale-cat-card__text">
                     <Text className="scale-cat-card__title">{category.title}</Text>
                     <Text className="scale-cat-card__subtitle">{category.subtitle}</Text>
                   </View>
+                  <Icon name="arrow-right" size={18} color="#8A96AA" />
                 </SurfaceCard>
               ))}
             </View>
@@ -248,9 +226,6 @@ const ScaleCatalogPage = () => {
                     className="scale-hot-row"
                     onClick={() => handleScaleClick(scale)}
                   >
-                    <View className="scale-hot-row__icon">
-                      <Image className="scale-hot-row__image" src={resolveScaleImage(scale)} mode="aspectFit" />
-                    </View>
                     <View className="scale-hot-row__content">
                       <View className="scale-hot-row__title-line">
                         <Text className="scale-hot-row__title">{scale.title}</Text>
@@ -259,8 +234,11 @@ const ScaleCatalogPage = () => {
                         </Text>
                       </View>
                       <Text className="scale-hot-row__desc">{scale.description}</Text>
+                      <Text className="scale-hot-row__meta">
+                        {[scale.tags[0] || "适合自评", scale.durationLabel].filter(Boolean).join(" · ")}
+                      </Text>
                     </View>
-                    <AtIcon value="chevron-right" size="18" color="#9AA6B8" />
+                    <Icon name="arrow-right" size={18} color="#8A96AA" />
                   </SurfaceCard>
                 ))
               ) : (

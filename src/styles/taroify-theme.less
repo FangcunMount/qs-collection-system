@@ -1,0 +1,48 @@
+@import "./tokens.less";
+
+// Taroify reads CSS variables from the page root in mini-program builds.
+// Values are mapped from Qlume tokens; Taroify is never the visual source.
+page {
+  --primary-color: @color-brand-primary;
+  --success-color: @color-success-500;
+  --warning-color: @color-warning-500;
+  --danger-color: @color-danger-500;
+  --text-color: @text-color-primary;
+  --text-link-color: @color-brand-primary;
+  --border-color: @border-color-base;
+  --background-color: @surface-page;
+  --background-color-light: @surface-card;
+  --active-color: @surface-subtle;
+  --disabled-opacity: 1;
+  --font-weight-bold: @font-weight-semibold;
+  --button-border-radius: @radius-button;
+  --button-height-medium: @touch-target-min;
+  --button-height-large: 100rpx;
+  --dialog-border-radius: @radius-lg-token;
+  --popup-rounded-border-radius: @radius-lg-token;
+  --toast-border-radius: @radius-md;
+  --loading-color: @color-brand-primary;
+  --radio-checked-icon-background-color: @color-brand-primary;
+  --radio-checked-icon-border-color: @color-brand-primary;
+  --checkbox-checked-icon-background-color: @color-brand-primary;
+  --checkbox-checked-icon-border-color: @color-brand-primary;
+  --rate-icon-full-color: @color-personality-500;
+}
+
+.page-shell--medical {
+  --primary-color: @color-medical-500;
+  --text-link-color: @color-medical-600;
+  --loading-color: @color-medical-500;
+}
+
+.page-shell--personality {
+  --primary-color: @color-personality-500;
+  --text-link-color: @color-personality-600;
+  --loading-color: @color-personality-500;
+}
+
+.page-shell--ability {
+  --primary-color: @color-ability-500;
+  --text-link-color: @color-ability-600;
+  --loading-color: @color-ability-500;
+}

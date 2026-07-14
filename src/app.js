@@ -1,9 +1,9 @@
 import { Component } from 'react'
 
 // 统一在最顶部导入所有第三方样式，避免在各个页面/组件中分散导入
-import './styles/taro-ui.scss'               // taro-ui 按需样式
-import './styles/taro-ui-fc.less'            // taro-ui-fc 按需样式
+import './styles/taroify.scss'                // Taroify 已采用组件样式清单
 import './app.less'                           // 项目自定义全局样式
+import './styles/taroify-theme.less'          // Qlume token -> Taroify CSS variables
 
 import { initAccountStore } from '@/shared/stores/account'
 import { initSessionStore } from '@/shared/stores/session'

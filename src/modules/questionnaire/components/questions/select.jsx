@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { View } from "@tarojs/components";
-import { SiSelect } from "taro-ui-fc";
+import { PickerField } from "@/shared/ui";
 
 import ShowContainer from "./widget/showContainer";
 import { isQuestionRequired } from "../../lib/questionValidation";
@@ -9,16 +9,7 @@ const Select = props => {
   const { item, index, disabled } = props;
   const { onChangeValue } = props;
 
-  const [selectedIndex, setSelectedIndex] = useState(-1);
-
-  useEffect(() => {
-    const matchedIndex = item.options.findIndex((option) => option.code === item.value);
-    setSelectedIndex(matchedIndex);
-  }, [item.code, item.value, item.options]);
-
-  const handleSelect = option => {
-    onChangeValue(option.code, index);
-  };
+  const options = item.options.map(option => ({ label: option.content, value: option.code }));
 
   return (
     <ShowContainer
@@ -29,13 +20,13 @@ const Select = props => {
       required={isQuestionRequired(item)}
     >
       <View>
-        <SiSelect
-          options={item.options}
-          defaultSelected={selectedIndex}
-          labelKey="content"
+        <PickerField
+          value={item.value}
+          options={options}
+          placeholder={item.placeholder || "请选择"}
           disabled={disabled}
-          onChange={handleSelect}
-        ></SiSelect>
+          onChange={value => onChangeValue(value, index)}
+        />
       </View>
     </ShowContainer>
   );

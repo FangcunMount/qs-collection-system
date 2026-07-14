@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { View, Image } from "@tarojs/components";
-import { SiInput, SiCheckBox } from "taro-ui-fc";
+import { Checkbox, CheckboxGroup, Field } from "@/shared/ui";
 
 import ShowContainer from "./widget/showContainer";
 import { isQuestionRequired } from "../../lib/questionValidation";
+import { normalizeCheckboxValues } from "../../lib/questionValueAdapters";
 
 const ImageRadio = props => {
   const { item, index, disabled } = props;
@@ -12,12 +13,7 @@ const ImageRadio = props => {
   const [selectedValues, setSelectedValues] = useState([]);
 
   useEffect(() => {
-    if (Array.isArray(item.value) && item.value.length > 0) {
-      setSelectedValues(item.value);
-      return;
-    }
-    const selected = item.options.filter((option) => option.is_select === "1");
-    setSelectedValues(selected.length > 0 ? selected.map((option) => option.code) : []);
+    setSelectedValues(normalizeCheckboxValues(item.options, item.value));
   }, [item.code, item.value, item.options]);
 
   const handleSelect = e => {
@@ -37,41 +33,41 @@ const ImageRadio = props => {
       required={isQuestionRequired(item)}
     >
       <View>
-        <SiCheckBox
-          defaultSelectedValues={selectedValues}
-          options={item.options}
-          labelKey="content"
-          valueKey="code"
+        <CheckboxGroup
+          value={selectedValues}
           disabled={disabled ?? false}
           onChange={handleSelect}
         >
-          {(option, i, isSelected) => {
+          {item.options.map((option, i) => {
+            const isSelected = selectedValues.includes(option.code);
             return (
-              <>
-                <View key={i}>
+              <Checkbox key={option.code} value={option.code} className={`question-choice question-choice--image ${isSelected ? "is-selected" : ""}`}>
+                <View>
                   <View>{option.content}</View>
                   <View className="s-mt-sm">
                     <Image
                       lazyLoad
-                      style={{ width: '0', height: "100px" }}
-                      mode="heightFix"
+                      className="question-choice__image"
+                      mode="aspectFill"
                       src={option.img_url}
                     />
                   </View>
                 </View>
                 {option.allow_extend_text === "1" && isSelected ? (
-                  <SiInput
-                    style={{ flexGrow: 1 }}
+                  <View onClick={e => e.stopPropagation()}>
+                  <Field
+                    className="question-choice__extend"
                     defaultValue={option.extend_content}
                     placeholder={option.extend_placeholder}
-                    onChange={v => changeExtend(i, v)}
+                    onValueChange={v => changeExtend(i, v)}
                     disabled={disabled ?? false}
-                  ></SiInput>
+                  />
+                  </View>
                 ) : null}
-              </>
+              </Checkbox>
             );
-          }}
-        </SiCheckBox>
+          })}
+        </CheckboxGroup>
       </View>
     </ShowContainer>
   );

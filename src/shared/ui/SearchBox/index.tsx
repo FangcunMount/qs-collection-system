@@ -1,7 +1,7 @@
 import React from "react";
 import type { ComponentProps } from "react";
 import { Input, View } from "@tarojs/components";
-import { AtIcon } from "taro-ui";
+import Icon from "../Icon";
 
 import "./index.less";
 
@@ -31,7 +31,7 @@ const SearchBox = ({
   disabled = false,
 }: SearchBoxProps) => (
   <View className={`search-box ${disabled ? "search-box--disabled" : ""} ${className}`.trim()}>
-    <AtIcon value="search" size={iconSize} color={iconColor} />
+    <Icon name="search" size={iconSize} color={iconColor} />
     <Input
       className="search-input"
       placeholder={placeholder}

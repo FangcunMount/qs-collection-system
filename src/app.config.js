@@ -1,9 +1,15 @@
-export default {
-  pages: [
+const pages = [
     'pages/tab/home/index',
     'pages/tab/me/index',
     'pages/system/error/index',
-  ],
+];
+
+if (process.env.NODE_ENV === 'development') {
+  pages.push('pages/system/ui-lab/index');
+}
+
+export default {
+  pages,
   subPackages: [
     {
       root: 'pages/catalog-medical',

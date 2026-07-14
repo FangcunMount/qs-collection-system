@@ -1,0 +1,18 @@
+// Centralized Taroify style manifest. Add a component here only after a Qlume
+// adapter adopts it; importing @taroify/core/index.css is intentionally banned.
+@use "@taroify/icons/index.scss" as icons;
+@use "@taroify/core/button/index.scss" as button;
+@use "@taroify/core/checkbox/index.scss" as checkbox;
+@use "@taroify/core/dialog/index.scss" as dialog;
+@use "@taroify/core/empty/index.scss" as empty;
+@use "@taroify/core/cell/index.scss" as cell;
+@use "@taroify/core/form/index.scss" as form;
+@use "@taroify/core/input/index.scss" as input;
+@use "@taroify/core/loading/index.scss" as loading;
+@use "@taroify/core/picker/index.scss" as picker;
+@use "@taroify/core/popup/index.scss" as popup;
+@use "@taroify/core/radio/index.scss" as radio;
+@use "@taroify/core/rate/index.scss" as rate;
+@use "@taroify/core/skeleton/index.scss" as skeleton;
+@use "@taroify/core/stepper/index.scss" as stepper;
+@use "@taroify/core/toast/index.scss" as toast;

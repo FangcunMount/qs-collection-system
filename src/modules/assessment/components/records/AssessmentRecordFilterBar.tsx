@@ -1,6 +1,6 @@
 import React from "react";
 import { Text, View } from "@tarojs/components";
-import { AtIcon } from "taro-ui";
+import Icon from "@/shared/ui/Icon";
 
 import FilterChip from "@/shared/ui/FilterChip";
 import type { DomainTone } from "@/shared/ui/types";
@@ -91,7 +91,7 @@ const AssessmentRecordFilterBar = ({
         aria-label="打开高级筛选"
         onClick={onOpenAdvanced}
       >
-        <AtIcon value="filter" size="18" />
+        <Icon name="filter" size={18} />
       </View>
     </View>
     <View className="record-filter__statuses">

@@ -1,7 +1,8 @@
 import React from "react";
 import { Text, View } from "@tarojs/components";
 import Taro from "@tarojs/taro";
-import { AtIcon } from "taro-ui";
+import Icon from "../Icon";
+import type { IconName } from "../Icon";
 
 import { ROUTES, routes } from "../../config/routes";
 import { ASSESSMENT_KIND } from "../../lib/assessmentKind";
@@ -14,7 +15,7 @@ export interface BottomMenuProps {
 
 interface BottomMenuItem {
   label: string;
-  icon: string;
+  icon: IconName;
   url: string;
 }
 
@@ -23,7 +24,7 @@ const bottomMenu: BottomMenuItem[] = [
   { label: "量表", icon: "list", url: ROUTES.tabScales },
   {
     label: "报告",
-    icon: "file-generic",
+    icon: "file",
     url: routes.assessmentRecords({ kind: ASSESSMENT_KIND.MEDICAL }),
   },
   { label: "我的", icon: "user", url: ROUTES.tabMe },
@@ -68,10 +69,10 @@ const BottomMenu = ({ activeKey }: BottomMenuProps) => {
         onClick={() => handleMenuClick(item)}
       >
         <View className="menu-item__icon-wrap">
-          <AtIcon
-            value={item.icon}
-            size="24"
-            color={isActive ? "#2F80ED" : "#8A96AA"}
+          <Icon
+            name={item.icon}
+            size={24}
+            color={isActive ? "#6657D9" : "#8A96AA"}
             className="menu-item__icon"
           />
         </View>

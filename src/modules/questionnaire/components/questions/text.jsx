@@ -1,6 +1,6 @@
 import React from "react";
 import { View } from "@tarojs/components";
-import { SiInput } from "taro-ui-fc";
+import { Field } from "@/shared/ui";
 
 import ShowContainer from "./widget/showContainer";
 import { getQuestionPlaceholder, isQuestionRequired } from "../../lib/questionValidation";
@@ -18,13 +18,12 @@ const QsText = props => {
       required={isQuestionRequired(item)}
     >
       <View>
-        <SiInput
-          style={{ flexGrow: 1 }}
+        <Field
           defaultValue={item.value}
           placeholder={getQuestionPlaceholder(item)}
           disabled={disabled}
-          onChange={v => onChangeValue(v, index)}
-        ></SiInput>
+          onValueChange={v => onChangeValue(v, index)}
+        />
       </View>
     </ShowContainer>
   );

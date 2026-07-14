@@ -13,6 +13,7 @@ import QsImageRadio from "./questions/imageRadio";
 import QsImageCheckbox from "./questions/imageCheckBox";
 
 import type { QuestionnaireQuestion } from "../types";
+import "./questionControls.less";
 
 export interface QuestionRendererProps {
   question: QuestionnaireQuestion;

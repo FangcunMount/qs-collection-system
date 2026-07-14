@@ -1,0 +1,47 @@
+@import "../../../styles/tokens.less";
+
+.ql-field {
+  display: flex;
+  flex-direction: column;
+  gap: @space-2;
+  width: 100%;
+
+  &__label {
+    color: @text-color-primary;
+    font-size: @font-size-body;
+    font-weight: @font-weight-semibold;
+  }
+
+  &__required,
+  &--error &__feedback {
+    color: @color-danger-700;
+  }
+
+  &__control {
+    min-height: @touch-target-min;
+    padding: 0 @space-3;
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    border: 2rpx solid @border-color-base;
+    border-radius: @radius-md;
+    background: @surface-card;
+  }
+
+  &--error &__control {
+    border-color: @color-danger-500;
+  }
+
+  &__feedback {
+    color: @text-color-tertiary;
+    font-size: @font-size-caption;
+    line-height: 1.5;
+  }
+
+  &--textarea &__control {
+    min-height: 220rpx;
+    padding-top: @space-3;
+    padding-bottom: @space-3;
+    align-items: stretch;
+  }
+}

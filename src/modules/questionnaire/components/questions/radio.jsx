@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { View } from "@tarojs/components";
-import { SiInput, SiRadio } from "taro-ui-fc";
+import { Field, Radio as QlRadio, RadioGroup } from "@/shared/ui";
 
 import ShowContainer from "./widget/showContainer";
 import { isQuestionRequired } from "../../lib/questionValidation";
+import { normalizeRadioValue } from "../../lib/questionValueAdapters";
 
 const Radio = props => {
   const { item, index, disabled } = props;
@@ -12,8 +13,7 @@ const Radio = props => {
   const [selected, setSelected] = useState('');
 
   useEffect(() => {
-    const matched = item.options.find((option) => option.code === item.value);
-    setSelected(matched ? matched.code : "");
+    setSelected(normalizeRadioValue(item.options, item.value));
   }, [item.code, item.value, item.options]);
 
   const handleSelect = e => {
@@ -33,33 +33,35 @@ const Radio = props => {
       required={isQuestionRequired(item)}
     >
       <View>
-        <SiRadio
-          defaultSelected={selected}
-          options={item.options}
-          labelKey="content"
-          valueKey="code"
+        <RadioGroup
+          value={selected}
           disabled={disabled ?? false}
           onChange={handleSelect}
         >
-          {(option, i, isSelected) => {
+          {item.options.map((option, i) => {
+            const isSelected = selected === option.code;
             return (
-              <View className={`qs-choice-content ${isSelected ? "is-selected" : ""}`}>
+              <QlRadio key={option.code} value={option.code} className={`question-choice ${isSelected ? "is-selected" : ""}`}>
+                <View className="qs-choice-content">
                 {option.allow_extend_text === "1" && isSelected ? (
                   <View>
                     <View>{option.content}</View>
-                    <SiInput
-                      style={{ flexGrow: 1 }}
+                    <View onClick={e => e.stopPropagation()}>
+                    <Field
+                      className="question-choice__extend"
                       defaultValue={option.extend_content}
                       placeholder={option.extend_placeholder}
-                      onChange={v => changeExtend(i, v)}
+                      onValueChange={v => changeExtend(i, v)}
                       disabled={disabled ?? false}
-                    ></SiInput>
+                    />
+                    </View>
                   </View>
                 ) : option.content}
-              </View>
+                </View>
+              </QlRadio>
             );
-          }}
-        </SiRadio>
+          })}
+        </RadioGroup>
       </View>
     </ShowContainer>
   );

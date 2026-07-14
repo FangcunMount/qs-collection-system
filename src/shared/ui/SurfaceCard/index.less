@@ -4,26 +4,26 @@
   width: 100%;
   padding: @space-4;
   border: 1rpx solid @border-color-base;
-  border-radius: @radius-card;
+  border-radius: @radius-lg-token;
   color: @text-color-primary;
   background: @surface-card-98;
-  box-shadow: @shadow-small;
+  box-shadow: none;
   box-sizing: border-box;
   transition: transform 0.16s ease, box-shadow 0.16s ease, opacity 0.16s ease;
 
   &--medical {
     border-color: @color-medical-200;
-    background: linear-gradient(135deg, @color-medical-50 0%, @color-white 72%);
+    background: @color-medical-50;
   }
 
   &--personality {
     border-color: @color-personality-200;
-    background: linear-gradient(135deg, @color-personality-50 0%, @color-white 72%);
+    background: @color-personality-50;
   }
 
   &--ability {
     border-color: @color-ability-200;
-    background: linear-gradient(135deg, @color-ability-50 0%, @color-white 72%);
+    background: @color-ability-50;
   }
 
   &--interactive {
