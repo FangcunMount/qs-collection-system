@@ -2,6 +2,7 @@ import React, { useMemo, useRef, useEffect } from 'react';
 import { View } from '@tarojs/components';
 import * as echarts from '@/pages/assessment/components/ec-canvas/echarts';
 import { getRiskConfig } from '@/shared/lib/statusFormatters';
+import { normalizeFactorChartData } from './factorChartData';
 
 /**
  * 因子阈值散点图（基于 echarts-for-weixin）
@@ -23,19 +24,10 @@ const FactorScatterChart = ({ data = [] }) => {
   };
 
   const processed = useMemo(() => {
-    const normalized = (data || []).map((item) => {
-      const score = Number(item.score) || 0;
-      const maxScore = Number(item.max_score);
-      const hasMax = maxScore > 0;
-      const percent = hasMax ? Math.min((score / maxScore) * 100, 100) : null;
-      return {
-        ...item,
-        score,
-        maxScore: hasMax ? maxScore : null,
-        percent,
-        risk_level: item.risk_level || 'normal',
-      };
-    });
+    const normalized = normalizeFactorChartData(data).map((item) => ({
+      ...item,
+      risk_level: item.riskLevel,
+    }));
 
     const usePercent = normalized.some((item) => item.maxScore);
     const fallbackMax = Math.max(1, ...normalized.map((item) => item.score || 0));
@@ -185,6 +177,7 @@ const FactorScatterChart = ({ data = [] }) => {
         id="factor-scatter"
         canvasId="factor-scatter"
         ec={ec}
+        forceUseOldCanvas={true}
         style="width: 100%; height: 100%;"
       />
     </View>

@@ -462,20 +462,34 @@
 .scale-service-link { flex: 1; min-height: 56rpx; display: flex; align-items: center; justify-content: center; gap: 10rpx; color: @text-color-secondary; font-size: 24rpx; }
 .scale-service-link + .scale-service-link { border-left: 1rpx solid @border-color-base; }
 
-.scale-cat-grid { grid-template-columns: 1fr; gap: 0; border-top: 1rpx solid @border-color-base; }
+.scale-cat-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16rpx;
+  border-top: 0;
+}
 .scale-cat-card {
-  min-height: 100rpx;
-  padding: 18rpx 4rpx;
-  border: 0;
-  border-bottom: 1rpx solid @border-color-base;
-  border-radius: 0;
-  background: transparent;
+  min-height: 124rpx;
+  padding: 22rpx 20rpx;
+  border: 1rpx solid @color-medical-100;
+  border-radius: @radius-lg-token;
+  background: @surface-card;
   box-shadow: none;
 }
+.scale-cat-card--sleep { background: #F7FAFF; }
+.scale-cat-card--mood { background: #FFF9F7; }
+.scale-cat-card--pressure { background: #F7FBFF; }
+.scale-cat-card--attention { background: #F4FCF9; }
 .scale-cat-card__title { font-size: 28rpx; font-weight: 600; }
-.scale-cat-card__subtitle { font-size: 22rpx; font-weight: 400; }
-.scale-hot-list { gap: 0; border-top: 1rpx solid @border-color-base; }
-.scale-hot-row { min-height: 138rpx; padding: 24rpx 4rpx; border: 0; border-bottom: 1rpx solid @border-color-base; border-radius: 0; background: transparent; box-shadow: none; }
+.scale-cat-card__subtitle { font-size: 22rpx; font-weight: 400; line-height: 1.45; white-space: normal; }
+.scale-hot-list { gap: 16rpx; border-top: 0; }
+.scale-hot-row {
+  min-height: 150rpx;
+  padding: 24rpx;
+  border: 1rpx solid @border-color-base;
+  border-radius: @radius-lg-token;
+  background: @surface-card;
+  box-shadow: none;
+}
 .scale-hot-row__title { font-weight: 600; }
 .scale-hot-row__desc { font-weight: 400; }
 .scale-hot-row__meta { display: block; margin-top: 10rpx; color: @text-color-tertiary; font-size: 22rpx; }

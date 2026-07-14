@@ -31,7 +31,14 @@ export const partitionPersonalityCatalog = (catalogItems = []) => {
     null;
 
   const featuredKey = featuredItem?.key;
-  const rest = catalogItems.filter((item) => item.key !== featuredKey);
+  const featuredTitle = String(featuredItem?.title || '').trim().toLowerCase();
+  const rest = catalogItems.filter((item) => {
+    if (item.key === featuredKey) return false;
+    // Grouped API payloads can still contain a family head and a variant with
+    // different keys. Do not surface an identical featured title twice.
+    const itemTitle = String(item?.title || '').trim().toLowerCase();
+    return !featuredTitle || itemTitle !== featuredTitle;
+  });
 
   return {
     featuredItem,

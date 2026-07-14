@@ -523,5 +523,20 @@
   border-radius: 0;
   box-shadow: none;
 }
-.home-report-list { border-radius: 16rpx; box-shadow: none; border: 1rpx solid @border-color-base; }
+.home-report-list {
+  display: flex;
+  flex-direction: column;
+  gap: @space-2;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible;
+}
+.home-report-row {
+  min-height: 120rpx;
+  border: 1rpx solid @border-color-base;
+  border-radius: @radius-lg-token;
+  background: @surface-card;
+}
+.home-report-row + .home-report-row { border-top: 1rpx solid @border-color-base; }
 .home-report-row__icon { display: none; }

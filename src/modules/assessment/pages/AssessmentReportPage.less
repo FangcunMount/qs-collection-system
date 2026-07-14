@@ -1028,3 +1028,268 @@
   border-radius: 0;
   box-shadow: none;
 }
+
+// Standard-screen correction: reports read as one document, not cards nested
+// inside cards. These rules intentionally remain last in the file.
+.trend-summary-card {
+  margin: 0 40rpx 48rpx;
+  padding: 32rpx 0;
+  border: 0;
+  border-top: 1rpx solid @border-color-base;
+  border-bottom: 1rpx solid @border-color-base;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+
+  .trend-metric-card,
+  .trend-factor-card,
+  .trend-summary-empty {
+    padding: 20rpx 0;
+    border-bottom: 1rpx solid @border-color-base;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .trend-chart-panel {
+    border-top: 0;
+  }
+}
+
+.tab-controller {
+  position: static;
+  padding: 0 40rpx 24rpx;
+  border-bottom: 1rpx solid @border-color-base;
+  background: transparent;
+
+  .tab-buttons {
+    gap: 12rpx;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+}
+
+.tab-content-area {
+  padding: 32rpx 40rpx 48rpx;
+}
+
+.factor-analysis-content .factor-chart-card {
+  padding: 0;
+  border: 0;
+  background: transparent;
+
+  .chart-header {
+    align-items: flex-start;
+    margin-bottom: 16rpx;
+  }
+
+  .chart-toggle {
+    justify-content: flex-start;
+  }
+
+  .radar-chart-container,
+  .bar-chart-container,
+  .scatter-chart-container {
+    padding: 0;
+  }
+
+  .radar-chart-wrapper {
+    width: 100%;
+    min-width: 0;
+    height: 420rpx;
+    overflow: hidden;
+  }
+}
+
+.factor-chart-summary {
+  margin-top: 8rpx;
+  border-top: 1rpx solid @border-color-base;
+}
+
+.factor-chart-summary__row {
+  min-height: 72rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rpx;
+  border-bottom: 1rpx solid @border-color-base;
+}
+
+.factor-chart-summary__name {
+  min-width: 0;
+  flex: 1;
+  color: @text-color-secondary;
+  font-size: 24rpx;
+}
+
+.factor-chart-summary__value {
+  flex-shrink: 0;
+  color: @text-color-primary;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.factor-card {
+  margin-bottom: 0;
+  padding-top: 32rpx;
+  padding-bottom: 32rpx;
+
+  &::before {
+    display: none;
+  }
+}
+
+.factor-analysis-content .factor-cards-list,
+.factor-cards-list {
+  gap: 0;
+}
+
+// Runtime screenshot correction: retain an editorial reading flow while
+// keeping each report section visibly grouped and scannable.
+.trend-summary-card {
+  margin: 0 40rpx 40rpx;
+  padding: 30rpx;
+  border: 1rpx solid @border-color-base;
+  border-radius: @radius-lg-token;
+  background: @surface-card;
+  box-shadow: @shadow-small;
+
+  .trend-summary-metrics,
+  .trend-factor-grid {
+    gap: 16rpx;
+  }
+
+  .trend-metric-card,
+  .trend-factor-card,
+  .trend-summary-empty {
+    padding: 22rpx;
+    border: 0;
+    border-radius: @radius-md;
+    background: @surface-subtle;
+  }
+
+  .trend-chart-panel {
+    margin-top: 24rpx;
+    padding-top: 24rpx;
+    border-top: 1rpx solid @border-color-base;
+  }
+}
+
+.tab-controller {
+  margin: 0 40rpx 24rpx;
+  padding: 12rpx;
+  border: 1rpx solid @border-color-base;
+  border-radius: @radius-lg-token;
+  background: @surface-subtle;
+}
+
+.tab-content-area {
+  padding-top: 0;
+}
+
+.factor-analysis-content .factor-chart-card {
+  padding: 28rpx;
+  border: 1rpx solid @border-color-base;
+  border-radius: @radius-lg-token;
+  background: @surface-card;
+  box-shadow: @shadow-small;
+
+  .chart-header {
+    margin-bottom: 20rpx;
+  }
+
+  .radar-chart-container,
+  .bar-chart-container,
+  .scatter-chart-container {
+    margin-top: 20rpx;
+    padding: 16rpx 0 0;
+    border-top: 1rpx solid @border-color-base;
+  }
+
+  .radar-chart-wrapper {
+    height: 360rpx;
+  }
+}
+
+.factor-chart-summary {
+  margin-top: 0;
+  padding: 8rpx 18rpx;
+  border: 0;
+  border-radius: @radius-md;
+  background: @surface-subtle;
+}
+
+.factor-chart-summary__row:last-child {
+  border-bottom: 0;
+}
+
+.factor-overview-chart {
+  padding: 8rpx 18rpx;
+  border-radius: @radius-md;
+  background: @surface-subtle;
+}
+
+.factor-overview-chart__row {
+  padding: 18rpx 0;
+  border-bottom: 1rpx solid @border-color-base;
+}
+
+.factor-overview-chart__row:last-child {
+  border-bottom: 0;
+}
+
+.factor-overview-chart__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rpx;
+}
+
+.factor-overview-chart__name {
+  min-width: 0;
+  flex: 1;
+  color: @text-color-primary;
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+.factor-overview-chart__value {
+  flex-shrink: 0;
+  color: @text-color-secondary;
+  font-size: 23rpx;
+  font-weight: 600;
+}
+
+.factor-overview-chart__track {
+  height: 12rpx;
+  margin-top: 12rpx;
+  border-radius: 999rpx;
+  background: @color-neutral-100;
+  overflow: hidden;
+}
+
+.factor-overview-chart__bar {
+  min-width: 8rpx;
+  height: 100%;
+  border-radius: 999rpx;
+}
+
+.factor-cards-list {
+  gap: 18rpx;
+}
+
+.factor-card {
+  margin-bottom: 0;
+  padding: 28rpx;
+  border: 1rpx solid @border-color-base;
+  border-radius: @radius-lg-token;
+  background: @surface-card;
+  box-shadow: none;
+}
+
+.factor-card-body .factor-content,
+.factor-card-body .factor-suggestion {
+  padding: 20rpx;
+  border-radius: @radius-md;
+}

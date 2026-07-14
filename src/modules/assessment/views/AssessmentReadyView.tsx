@@ -44,7 +44,7 @@ const AssessmentReadyView = ({
     >
       <SurfaceCard tone={viewModel.tone} className="questionnaire-hero-card">
         <View className="questionnaire-cover">
-          <Image className="cover-image" src={viewModel.coverImage} mode="aspectFill" />
+          <Image className="cover-image" src={viewModel.coverImage} mode="aspectFit" />
         </View>
         <View className="questionnaire-header">
           <Text className="questionnaire-title">{viewModel.title}</Text>

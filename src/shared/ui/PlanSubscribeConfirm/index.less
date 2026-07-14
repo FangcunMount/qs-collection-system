@@ -3,15 +3,16 @@
 .plan-subscribe-launcher {
   position: fixed;
   right: 32rpx;
-  bottom: calc(32rpx + env(safe-area-inset-bottom));
+  bottom: calc(132rpx + env(safe-area-inset-bottom));
   z-index: 1200;
   display: inline-flex;
   align-items: center;
   gap: 10rpx;
   padding: 20rpx 24rpx;
-  border-radius: 999rpx;
-  background: @gradient-primary;
-  box-shadow: @shadow-subscribe;
+  border: 1rpx solid @color-medical-200;
+  border-radius: @radius-button;
+  background: @color-white;
+  box-shadow: @shadow-small;
 
   &__icon {
     font-size: 28rpx;
@@ -21,7 +22,7 @@
   &__text {
     font-size: 26rpx;
     font-weight: 700;
-    color: @color-white;
+    color: @color-medical-700;
     line-height: 1;
   }
 }
@@ -29,7 +30,7 @@
 .plan-subscribe-card {
   margin: 0 32rpx 24rpx;
   padding: 32rpx;
-  background: linear-gradient(180deg, fade(@color-action-primary, 8%) 0%, @color-white 100%);
+  background: @color-white;
   border: 2rpx solid fade(@color-action-primary, 14%);
   border-radius: @radius-base;
   box-shadow: @shadow-sm;
@@ -38,7 +39,7 @@
     position: fixed;
     left: 32rpx;
     right: 32rpx;
-    bottom: calc(32rpx + env(safe-area-inset-bottom));
+    bottom: calc(132rpx + env(safe-area-inset-bottom));
     margin: 0;
     z-index: 1250;
     box-shadow: @shadow-floating-card;
@@ -91,7 +92,7 @@
     align-items: center;
     justify-content: center;
     min-height: @touch-target-min;
-    border-radius: 999rpx;
+    border-radius: @radius-button;
   }
 
   &__ghost {
@@ -100,8 +101,8 @@
   }
 
   &__primary {
-    background: @gradient-primary;
-    box-shadow: @shadow-sm;
+    background: @color-medical-600;
+    box-shadow: none;
   }
 
   &__ghost-text,

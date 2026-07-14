@@ -2,6 +2,10 @@
 
 .record-card {
   padding: @space-4;
+  border: 0;
+  border-bottom: 1rpx solid @border-color-base;
+  border-radius: 0;
+  background: @surface-card;
 
   &__header,
   &__footer,
@@ -59,8 +63,8 @@
     align-items: center;
     justify-content: space-between;
     gap: @space-3;
-    margin-top: @space-4;
-    padding-top: @space-3;
+    margin-top: @space-3;
+    padding-top: @space-2;
     border-top: 1rpx solid @border-color-base;
   }
 
@@ -79,14 +83,21 @@
   &__actions {
     flex-wrap: wrap;
     justify-content: flex-end;
-    gap: @space-2;
+    gap: 0;
 
     .action-button {
       min-width: 144rpx;
       min-height: @touch-target-min;
       padding: 0 @space-2;
+      border: 0;
+      background: transparent;
       font-size: @font-size-caption;
     }
+  }
+
+  &__action--report {
+    color: @color-medical-700;
+    font-weight: @font-weight-bold;
   }
 }
 

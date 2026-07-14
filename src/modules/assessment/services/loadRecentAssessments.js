@@ -4,6 +4,7 @@ import {
   normalizePersonalityAssessmentRecord,
 } from '@/services/api/personality';
 import { loadMedicalAssessmentRecords } from './loadMedicalAssessmentRecords';
+import { normalizeMedicalAssessmentRecord } from './medicalAssessmentRecordMapper';
 import { isReportReadable } from '@/modules/assessment/lib/reportReadiness';
 
 const toTimestamp = (value) => {
@@ -53,7 +54,9 @@ export async function loadRecentAssessments(testeeId, { pageSize = 3 } = {}) {
   const typologyItems = extractPersonalityAssessmentList(typologyResult)
     .map(normalizePersonalityAssessmentRecord)
     .map(mapTypologyItemToSummary);
-  const medicalItems = medicalResult.unavailable ? [] : (medicalResult.items || []);
+  const medicalItems = medicalResult.unavailable
+    ? []
+    : (medicalResult.items || []).map(normalizeMedicalAssessmentRecord);
 
   return [...typologyItems, ...medicalItems]
     .filter((item) => isReportReadable(item.status))

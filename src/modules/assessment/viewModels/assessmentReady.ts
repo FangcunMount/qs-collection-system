@@ -1,4 +1,4 @@
-import qlumePlaceholder from "@/assets/brand/qlume-assessment-placeholder.webp";
+import assessmentPlaceholder from "@/assets/home/home-entry-medical-scale.png";
 import { getEstimatedTime, getValidQuestionCount } from "@/modules/questionnaire/lib/questionUtils";
 import type { QuestionnaireData } from "@/modules/questionnaire/types";
 import type { Testee, TesteeInput } from "@/store/testeeStore";
@@ -50,7 +50,7 @@ export function buildAssessmentReadyViewModel({
 
   return {
     tone: isPersonality ? "personality" : "medical",
-    coverImage: questionnaire?.thumbnail || qlumePlaceholder,
+    coverImage: questionnaire?.thumbnail || assessmentPlaceholder,
     title,
     subtitle: questionnaire?.subtitle,
     questionCount: hasQuestions

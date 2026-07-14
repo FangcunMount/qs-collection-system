@@ -26,5 +26,14 @@ describe("home view models", () => {
     expect(formatHomeDateTime("")).toBe("时间待同步");
     expect(resolveHomeRiskTone("critical")).toBe("high");
   });
-});
 
+  it("does not show the answer-sheet title when a questionnaire title is available", () => {
+    expect(mapRecentAssessment({
+      id: "assessment-2",
+      title: "3adyDE",
+      questionnaire_code: "SNAP-IV",
+    }, 0, [])).toMatchObject({
+      title: "SNAP-IV",
+    });
+  });
+});

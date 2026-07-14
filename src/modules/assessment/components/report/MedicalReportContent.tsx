@@ -8,18 +8,21 @@ import { getRiskConfig } from "@/shared/lib/statusFormatters";
 import type { MedicalReportFactorViewModel } from "../../types";
 import FactorBarChart from "./FactorBarChart";
 import FactorScatterChart from "./FactorScatterChart";
-import RadarChart from "./RadarChart";
 
 type ReportTab = "factor-analysis" | "pro-advice";
-type ChartType = "radar" | "bar" | "scatter";
+type ChartType = "overview" | "bar" | "scatter";
 
 interface MedicalReportContentProps {
   factors: MedicalReportFactorViewModel[];
 }
 
-const TypedRadarChart = RadarChart as React.ComponentType<{ data: MedicalReportFactorViewModel[] }>;
 const TypedFactorBarChart = FactorBarChart as React.ComponentType<{ data: MedicalReportFactorViewModel[] }>;
 const TypedFactorScatterChart = FactorScatterChart as React.ComponentType<{ data: MedicalReportFactorViewModel[] }>;
+
+const factorPercent = (factor: MedicalReportFactorViewModel): number => {
+  if (factor.score === null || factor.maxScore === null || factor.maxScore <= 0) return 0;
+  return Math.min(Math.max((Number(factor.score) / Number(factor.maxScore)) * 100, 0), 100);
+};
 
 const FactorCard = ({ factor }: { factor: MedicalReportFactorViewModel }) => {
   const risk = getRiskConfig(factor.riskLevel);
@@ -80,7 +83,7 @@ const FactorCard = ({ factor }: { factor: MedicalReportFactorViewModel }) => {
 
 const MedicalReportContent = ({ factors }: MedicalReportContentProps) => {
   const [activeTab, setActiveTab] = useState<ReportTab>("factor-analysis");
-  const [chartType, setChartType] = useState<ChartType>("radar");
+  const [chartType, setChartType] = useState<ChartType>("overview");
   return (
     <>
       <View className="tab-controller">
@@ -97,20 +100,53 @@ const MedicalReportContent = ({ factors }: MedicalReportContentProps) => {
                 <View className="chart-header">
                   <Text className="card-title">因子维度分布</Text>
                   <View className="chart-toggle">
-                    {(["radar", "bar", "scatter"] as ChartType[]).map((type) => (
+                    {(["overview", "bar", "scatter"] as ChartType[]).map((type) => (
                       <FilterChip key={type} tone="medical" selected={chartType === type} onClick={() => setChartType(type)}>
-                        {type === "radar" ? "雷达图" : type === "bar" ? "条形图" : "散点图"}
+                        {type === "overview" ? "概览" : type === "bar" ? "条形图" : "散点图"}
                       </FilterChip>
                     ))}
                   </View>
                 </View>
-                {chartType === "radar" ? (
-                  <View className="radar-chart-container"><TypedRadarChart data={factors} /></View>
-                ) : chartType === "bar" ? (
-                  <View className="bar-chart-container"><TypedFactorBarChart data={factors} /></View>
+                {chartType === "overview" ? (
+                  <View className="factor-overview-chart">
+                    {factors.map((factor, index) => {
+                      const risk = getRiskConfig(factor.riskLevel);
+                      const percent = factorPercent(factor);
+                      return (
+                        <View key={factor.factorCode || index} className="factor-overview-chart__row">
+                          <View className="factor-overview-chart__header">
+                            <Text className="factor-overview-chart__name">{factor.title}</Text>
+                            <Text className="factor-overview-chart__value">
+                              {factor.score ?? "--"}{factor.maxScore != null ? ` / ${factor.maxScore}` : ""}
+                            </Text>
+                          </View>
+                          <View className="factor-overview-chart__track">
+                            <View
+                              className="factor-overview-chart__bar"
+                              style={{ width: `${percent}%`, backgroundColor: risk.bgColor }}
+                            />
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </View>
                 ) : (
-                  <View className="scatter-chart-container"><TypedFactorScatterChart data={factors} /></View>
+                  <View className="factor-chart-summary">
+                    {factors.slice(0, 6).map((factor, index) => (
+                      <View key={factor.factorCode || index} className="factor-chart-summary__row">
+                        <Text className="factor-chart-summary__name">{factor.title}</Text>
+                        <Text className="factor-chart-summary__value">
+                          {factor.score ?? "--"}{factor.maxScore != null ? ` / ${factor.maxScore}` : ""}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
                 )}
+                {chartType === "bar" ? (
+                  <View className="bar-chart-container"><TypedFactorBarChart data={factors} /></View>
+                ) : chartType === "scatter" ? (
+                  <View className="scatter-chart-container"><TypedFactorScatterChart data={factors} /></View>
+                ) : null}
               </View>
             ) : (
               <StatePanel state="empty" tone="medical" compact title="暂无因子分析数据" />

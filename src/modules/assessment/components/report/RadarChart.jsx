@@ -2,6 +2,7 @@ import React, { useMemo, useRef, useEffect } from 'react';
 import { View } from '@tarojs/components';
 import * as echarts from '@/pages/assessment/components/ec-canvas/echarts';
 import { getRiskConfig } from '@/shared/lib/statusFormatters';
+import { normalizeFactorChartData } from './factorChartData';
 
 /**
  * Radar 图组件（基于 echarts-for-weixin）
@@ -36,10 +37,11 @@ const RadarChart = ({ data = [] }) => {
     let maxRisk = 'normal';
     let maxPriority = 0;
     data.forEach(item => {
-      const priority = riskPriority[item.risk_level] || 0;
+      const itemRiskLevel = item.riskLevel || item.risk_level || 'normal';
+      const priority = riskPriority[itemRiskLevel] || 0;
       if (priority > maxPriority) {
         maxPriority = priority;
-        maxRisk = item.risk_level || 'normal';
+        maxRisk = itemRiskLevel;
       }
     });
     return maxRisk;
@@ -91,12 +93,13 @@ const RadarChart = ({ data = [] }) => {
       };
     }
 
+    const normalizedData = normalizeFactorChartData(data);
     const riskPriority = { high: 3, medium: 2, low: 1, normal: 0 };
-    const ranked = data
+    const ranked = normalizedData
       .map((item, index) => ({ ...item, index }))
       .sort((a, b) => {
-        const pa = riskPriority[a.risk_level] ?? 0;
-        const pb = riskPriority[b.risk_level] ?? 0;
+        const pa = riskPriority[a.riskLevel] ?? 0;
+        const pb = riskPriority[b.riskLevel] ?? 0;
         if (pb !== pa) return pb - pa;
         const aScore = Number(a.score) || 0;
         const bScore = Number(b.score) || 0;
@@ -105,15 +108,15 @@ const RadarChart = ({ data = [] }) => {
     const visibleSet = new Set(ranked.slice(0, 6).map((item) => item.index));
 
     // 使用百分比绘制雷达图，所有因子的最大值统一为100
-    const indicator = data.map((item, index) => ({
+    const indicator = normalizedData.map((item, index) => ({
       name: visibleSet.has(index) ? (item.title || '') : '',
       max: 100,  // 统一使用100作为最大值，表示百分比
     }));
 
     // 计算每个因子的得分百分比
-    const values = data.map((item) => {
+    const values = normalizedData.map((item) => {
       const score = Number(item.score) || 0;
-      const maxScore = Number(item.max_score) || 1;
+      const maxScore = Number(item.maxScore) || 1;
       if (maxScore <= 0) return 0;
       // 计算百分比，限制在0-100之间
       const percent = Math.min(Math.max((score / maxScore) * 100, 0), 100);
@@ -157,17 +160,17 @@ const RadarChart = ({ data = [] }) => {
           if (params.data && params.data.value) {
             let tooltipContent = '因子维度得分\n';
             const percentValues = params.data.value; // 这是百分比值
-            data.forEach((item, index) => {
+            normalizedData.forEach((item, index) => {
               if (index < percentValues.length) {
                 const riskLabel = {
                   'high': '高风险',
                   'medium': '中风险',
                   'low': '低风险',
                   'normal': '正常',
-                }[item?.risk_level] || '正常';
+                }[item?.riskLevel] || '正常';
                 // 显示原始得分和百分比
                 const originalScore = Number(item.score) || 0;
-                const maxScore = Number(item.max_score) || 1;
+                const maxScore = Number(item.maxScore) || 1;
                 const percent = percentValues[index] || 0;
                 if (item?.title) {
                   tooltipContent += `${item.title}: ${originalScore}/${maxScore} ${percent.toFixed(0)}% ${riskLabel}\n`;
@@ -253,18 +256,7 @@ const RadarChart = ({ data = [] }) => {
             {
               value: values,
               name: '因子得分',
-              areaStyle: { 
-                color: {
-                  type: 'radial',
-                  x: 0.5,
-                  y: 0.5,
-                  r: 0.8,
-                  colorStops: [
-                    { offset: 0, color: colorConfig.gradient[0] },
-                    { offset: 1, color: colorConfig.gradient[1] },
-                  ],
-                },
-              },
+              areaStyle: { color: colorConfig.gradient[0] },
               // 线条样式
               lineStyle: { 
                 color: colorConfig.line, 

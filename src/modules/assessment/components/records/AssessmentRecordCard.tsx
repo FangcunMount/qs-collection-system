@@ -61,7 +61,7 @@ const AssessmentRecordCard = ({ record, testeeId = "" }: AssessmentRecordCardPro
   })();
 
   return (
-    <SurfaceCard tone={record.tone} className="record-card">
+    <SurfaceCard tone="neutral" className="record-card">
       <View className="record-card__header">
         <View className="record-card__heading">
           <Text className="record-card__title">{record.title}</Text>
@@ -80,15 +80,15 @@ const AssessmentRecordCard = ({ record, testeeId = "" }: AssessmentRecordCardPro
         <Text className={`record-card__score record-card__score--${record.status}`}>{scoreText}</Text>
         <View className="record-card__actions">
           {record.status === "generating" ? (
-            <ActionButton variant="secondary" tone={record.tone} disabled>报告生成中</ActionButton>
+            <ActionButton className="record-card__action" variant="ghost" tone={record.tone} disabled>报告生成中</ActionButton>
           ) : (
-            <ActionButton variant="secondary" tone={record.tone} onClick={openResponse}>查看详情</ActionButton>
+            <ActionButton className="record-card__action" variant="ghost" tone={record.tone} onClick={openResponse}>查看详情</ActionButton>
           )}
           {record.reportReadable && record.showTrendAction ? (
-            <ActionButton variant="ghost" tone={record.tone} onClick={openTrend}>查看趋势</ActionButton>
+            <ActionButton className="record-card__action" variant="ghost" tone={record.tone} onClick={openTrend}>查看趋势</ActionButton>
           ) : null}
           {record.reportReadable ? (
-            <ActionButton tone={record.tone} onClick={openReport}>查看报告</ActionButton>
+            <ActionButton className="record-card__action record-card__action--report" variant="ghost" tone={record.tone} onClick={openReport}>查看报告</ActionButton>
           ) : null}
         </View>
       </View>

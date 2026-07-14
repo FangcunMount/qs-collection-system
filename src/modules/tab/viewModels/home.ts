@@ -28,11 +28,14 @@ const asRecord = (value: unknown): Record<string, unknown> => (
 );
 
 const resolveRecentAssessmentTitle = (item: Record<string, unknown>): string => {
+  const model = asRecord(item.model);
   const rawTitle = normalizeCatalogLabel(
     item.scale_name
-    ?? item.title
+    ?? item.model_name
+    ?? model.title
     ?? item.questionnaire_title
-    ?? item.questionnaire_code,
+    ?? item.questionnaire_code
+    ?? item.title,
   ) || "测评记录";
   const marker = rawTitle.toUpperCase();
 
@@ -102,4 +105,3 @@ export const mapRecentAssessment = (
     raw: item,
   };
 };
-

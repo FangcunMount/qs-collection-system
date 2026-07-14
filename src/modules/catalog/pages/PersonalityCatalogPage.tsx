@@ -53,7 +53,10 @@ const PersonalityCatalogPage = () => {
     return {
       featuredItem: partitioned.featuredItem,
       secondaryItems: partitioned.secondaryItems,
-      deepExploreItems: buildDeepExploreDisplayItems(catalogItems),
+      // Build compact cards from the partitioned remainder. Using the full
+      // catalog here rendered the featured family twice when it also carried
+      // the deep-explore layout hint.
+      deepExploreItems: buildDeepExploreDisplayItems(partitioned.deepExploreItems),
     };
   }, [catalogItems]);
 

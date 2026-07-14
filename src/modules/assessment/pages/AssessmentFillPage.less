@@ -24,10 +24,10 @@
   z-index: 1;
   width: 288rpx;
   height: 288rpx;
-  border: 6rpx solid @color-white;
-  border-radius: @radius-card;
-  background: @color-white;
-  box-shadow: @shadow-medium;
+  border: 0;
+  border-radius: @radius-lg-token;
+  background: transparent;
+  box-shadow: none;
 }
 
 .questionnaire-header {
@@ -262,6 +262,12 @@
 
 .fill-ready-footer {
   position: static;
-  padding: 0;
-  box-shadow: none;
+  padding: @space-2 @page-gutter calc(@space-2 + @safe-area-bottom);
+}
+
+.fill-ready-footer .bottom-action-bar__content,
+.fill-ready-footer .action-button,
+.fill-ready-footer .action-button__content {
+  width: 100%;
+  justify-content: center;
 }

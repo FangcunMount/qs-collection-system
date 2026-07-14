@@ -1,8 +1,8 @@
 @import "../../../styles/tokens.less";
 
-.questionnaire-form-scroll {
+.questionnaire-form-shell .questionnaire-form-scroll {
   box-sizing: border-box;
-  padding-bottom: @space-6;
+  padding-bottom: calc(@bottom-action-min-height + @safe-area-bottom + @space-6);
 }
 
 .questionnaire-fill-wrapper {
@@ -37,8 +37,8 @@
 }
 
 .qs-question__container {
-  margin: @space-3 @page-gutter;
-  padding: @space-4;
+  margin: @space-2 @page-gutter;
+  padding: @space-3;
   border: 1rpx solid @border-color-base;
   border-radius: @radius-card;
   background: @surface-card-98;
