@@ -36,6 +36,7 @@ const homeTabStyle = read('src/modules/tab/pages/HomeTabPage.less');
 const homeProfileCard = read('src/modules/tab/components/home/HomeCurrentProfileCard.jsx');
 const personalityCatalog = read('src/modules/catalog/pages/PersonalityCatalogPage.tsx');
 const personalityCatalogService = read('src/modules/catalog/services/personalityCatalogService.js');
+const abilityCatalog = read('src/modules/catalog/pages/AbilityCatalogPage.tsx');
 const assessmentRecordsPage = read('src/modules/assessment/pages/AssessmentRecordsPage.tsx');
 const homeRecentAssessments = read('src/modules/assessment/services/loadRecentAssessments.js');
 
@@ -81,11 +82,22 @@ assertContains(homeRecentAssessments, /isReportReadable\(item\.status\)/, 'home 
 assertNotContains(homeTabPage, /HomeStatusPanel/, 'home page must not import old HomeStatusPanel');
 assertNotContains(homeTabStyle, /home-category-|home-scale-card-|home-recent-card-|home-status-panel|home-status-card/, 'home styles must not keep removed home modules');
 
-assertNotContains(personalityCatalog, /MBTI/, 'PersonalityCatalogPage must not expose MBTI to users');
+assertContains(personalityCatalog, /测测你是 N 人还是 I 人/, 'PersonalityCatalogPage must expose the MBTI family entry');
+assertContains(personalityCatalog, /SBTI 趣味人格测评/, 'PersonalityCatalogPage must expose the SBTI direct entry');
+assertContains(personalityCatalog, /大五人格测评/, 'PersonalityCatalogPage must expose the Big Five direct entry');
+assertContains(personalityCatalog, /九型人格测评/, 'PersonalityCatalogPage must expose the Enneagram direct entry');
+assertContains(personalityCatalog, /personality-mini-row/, 'PersonalityCatalogPage must place Big Five and Enneagram in a compact row');
+assertContains(personalityCatalog, /selectPersonalityLandingItems/, 'PersonalityCatalogPage must select product entries from normalized catalog data');
 assertContains(personalityCatalog, /loadGroupedPersonalityCatalog/, 'PersonalityCatalogPage must load catalog from API service');
+assertContains(personalityCatalog, /statusFilter=""/, 'PersonalityCatalogPage must render typology-assessments entries regardless of report stage');
 assertNotContains(personalityCatalog, /PERSONALITY_CATALOG_ITEMS|personalityModels/, 'PersonalityCatalogPage must not use hardcoded personality catalog');
 assertContains(personalityCatalogService, /listPublishedPersonalityModels/, 'personality catalog service must use published models API');
 assertNotContains(personalityCatalogService, /PERSONALITY_CATALOG_ITEMS|personalityModels/, 'personality catalog service must not use hardcoded catalog');
+assertContains(abilityCatalog, /listPublishedAssessmentModels/, 'AbilityCatalogPage must load published assessment models');
+assertContains(abilityCatalog, /ABILITY_CATALOG_KIND\s*=\s*["']behavioral_rating["']/, 'AbilityCatalogPage must use the behavioral_rating catalogue kind');
+assertContains(abilityCatalog, /kind:\s*ABILITY_CATALOG_KIND/, 'AbilityCatalogPage must request behavioral_rating models');
+assertContains(abilityCatalog, /mapAbilityCatalogCard/, 'AbilityCatalogPage must normalize ability catalog models');
+assertNotContains(abilityCatalog, /ABILITY_SPECIALIZED_ASSESSMENTS/, 'AbilityCatalogPage must not use hardcoded planned assessments');
 assertContains(assessmentRecordsPage, /useRouter/, 'AssessmentRecordsPage must read report kind from route params');
 assertContains(assessmentRecordsPage, /ASSESSMENT_KIND\.MEDICAL/, 'AssessmentRecordsPage must default the report tab to medical assessments');
 assertContains(assessmentRecordsPage, /assessmentKind=\{assessmentKind\}/, 'AssessmentRecordsPage must pass the resolved kind to the record loader');

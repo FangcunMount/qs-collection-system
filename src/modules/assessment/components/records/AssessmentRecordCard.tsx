@@ -82,13 +82,13 @@ const AssessmentRecordCard = ({ record, testeeId = "" }: AssessmentRecordCardPro
           {record.status === "generating" ? (
             <ActionButton className="record-card__action" variant="ghost" tone={record.tone} disabled>报告生成中</ActionButton>
           ) : (
-            <ActionButton className="record-card__action" variant="ghost" tone={record.tone} onClick={openResponse}>查看详情</ActionButton>
+            <ActionButton className="record-card__action" variant="ghost" tone={record.tone} onClick={openResponse}>详情</ActionButton>
           )}
           {record.reportReadable && record.showTrendAction ? (
-            <ActionButton className="record-card__action" variant="ghost" tone={record.tone} onClick={openTrend}>查看趋势</ActionButton>
+            <ActionButton className="record-card__action" variant="ghost" tone={record.tone} onClick={openTrend}>趋势</ActionButton>
           ) : null}
           {record.reportReadable ? (
-            <ActionButton className="record-card__action record-card__action--report" variant="ghost" tone={record.tone} onClick={openReport}>查看报告</ActionButton>
+            <ActionButton className="record-card__action record-card__action--report" variant="ghost" tone={record.tone} onClick={openReport}>报告</ActionButton>
           ) : null}
         </View>
       </View>

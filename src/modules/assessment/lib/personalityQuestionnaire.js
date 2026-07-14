@@ -27,19 +27,12 @@ export const prepareQuestionnaireFromSession = (sessionOrVm) => {
   questionnaire.introduction = questionnaire.introduction || model.description || questionnaire.description || '';
   questionnaire.thumbnail = questionnaire.thumbnail || model.thumbnail || '';
 
-  let currentQuestionIndex = 1;
   questionnaire.questions = (questionnaire.questions || []).map((question) => {
     const next = { ...question };
 
     if (next.type === 'Section') {
       return next;
     }
-
-    if (!String(next.title || '').match(/^\d+\.\s/)) {
-      const stem = String(next.title || next.placeholder || '').trim();
-      next.title = stem ? `${currentQuestionIndex}. ${stem}` : `${currentQuestionIndex}.`;
-    }
-    currentQuestionIndex += 1;
 
     switch (next.type) {
       case 'CheckBox':

@@ -48,3 +48,35 @@
 .questionnaire-form-shell.page-shell--personality .qs-header__container {
   background: linear-gradient(135deg, @color-personality-500 0%, @color-personality-700 100%);
 }
+
+.questionnaire-form-shell.page-shell--medical {
+  --radio-checked-icon-background-color: @color-medical-600;
+  --radio-checked-icon-border-color: @color-medical-600;
+  --checkbox-checked-icon-background-color: @color-medical-600;
+  --checkbox-checked-icon-border-color: @color-medical-600;
+}
+
+.questionnaire-form-shell.page-shell--medical .question-choice.is-selected {
+  border-color: @color-medical-500;
+  background: @color-medical-50;
+}
+
+.questionnaire-form-shell.page-shell--medical .question-number {
+  color: @color-medical-600;
+}
+
+.questionnaire-form-shell.page-shell--personality {
+  --radio-checked-icon-background-color: @color-personality-600;
+  --radio-checked-icon-border-color: @color-personality-600;
+  --checkbox-checked-icon-background-color: @color-personality-600;
+  --checkbox-checked-icon-border-color: @color-personality-600;
+}
+
+.questionnaire-form-shell.page-shell--personality .question-choice.is-selected {
+  border-color: @color-personality-500;
+  background: @color-personality-50;
+}
+
+.questionnaire-form-shell.page-shell--personality .question-number {
+  color: @color-personality-600;
+}

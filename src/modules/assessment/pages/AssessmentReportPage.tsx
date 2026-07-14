@@ -43,7 +43,7 @@ const AssessmentReportPage = () => {
   const params = (Taro.getCurrentInstance().router?.params || {}) as RouteParams;
   const planTaskId = params.task_id || "";
   const assessmentKind = params.kind || "";
-  const [answerSheetId, setAnswerSheetId] = useState<string | number>(-1);
+  const [answerSheetId, setAnswerSheetId] = useState<string | number>(params.a || "");
   const [assessmentContext, setAssessmentContext] = useState({ assessmentId: "", testeeId: "" });
   const [report, setReport] = useState<MedicalReportViewModel | null>(null);
   const [loading, setLoading] = useState(true);
@@ -97,6 +97,7 @@ const AssessmentReportPage = () => {
     setLoading(true);
     setError("");
     setReport(null);
+    setAnswerSheetId(params.a || "");
     try {
       if (params.aid || params.rid) {
         const assessmentId = params.aid || params.rid || "";
@@ -106,7 +107,6 @@ const AssessmentReportPage = () => {
         setAssessmentContext(context);
         if (applyReport(result.report)) void loadTrend(context.assessmentId, context.testeeId);
       } else {
-        setAnswerSheetId(params.a || -1);
         const result = await loadMedicalReportByAnswerSheet({
           answersheetId: params.a,
           testeeIdFromUrl: params.t,

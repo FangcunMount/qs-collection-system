@@ -191,7 +191,6 @@ const FactorBarChart = ({ data = [] }) => {
         id="factor-bar"
         canvasId="factor-bar"
         ec={ec}
-        forceUseOldCanvas={true}
         style="width: 100%; height: 100%;"
       />
     </View>

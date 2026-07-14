@@ -11,10 +11,7 @@ import StatePanel from "@/shared/ui/StatePanel";
 import SurfaceCard from "@/shared/ui/SurfaceCard";
 import { routes } from "@/shared/config/routes";
 import { loadGroupedPersonalityCatalog } from "@/modules/catalog/services/personalityCatalogService";
-import {
-  buildDeepExploreDisplayItems,
-  partitionPersonalityCatalog,
-} from "@/modules/catalog/lib/personalityCatalog";
+import { selectPersonalityLandingItems } from "@/modules/catalog/lib/personalityCatalog";
 import AssessmentKindReportSection from "@/modules/assessment/components/records/AssessmentKindReportSection";
 import { ASSESSMENT_KIND } from "@/shared/lib/assessmentKind";
 import {
@@ -22,6 +19,7 @@ import {
   type CatalogCardViewModel,
 } from "@/modules/catalog/viewModels/catalogCard";
 import heroImage from "@/assets/home/home-entry-personality.png";
+import ieTestImage from "@/pages/catalog-personality/assets/icon/icon-ie-test.png";
 import typeBasicImage from "@/pages/catalog-personality/assets/icon/icon-personality-basic.png";
 import funTestImage from "@/pages/catalog-personality/assets/icon/icon-sbti.png";
 import reportImage from "@/pages/catalog-personality/assets/icon/icon-learning-performance.png";
@@ -37,28 +35,15 @@ const INTERPRET_SERVICES = Object.freeze([
   { title: "成长建议", subtitle: "提供个性化建议", image: growthImage },
 ]);
 
-const resolveMiniCardButtonColor = (theme: string) => {
-  if (theme === "fun") return "#0CA66A";
-  if (theme === "ocean") return "#2B7DE9";
-  return "#7656D9";
-};
-
 const PersonalityCatalogPage = () => {
   const [catalogItems, setCatalogItems] = useState<CatalogCardViewModel[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
-  const { featuredItem, secondaryItems, deepExploreItems } = useMemo(() => {
-    const partitioned = partitionPersonalityCatalog(catalogItems);
-    return {
-      featuredItem: partitioned.featuredItem,
-      secondaryItems: partitioned.secondaryItems,
-      // Build compact cards from the partitioned remainder. Using the full
-      // catalog here rendered the featured family twice when it also carried
-      // the deep-explore layout hint.
-      deepExploreItems: buildDeepExploreDisplayItems(partitioned.deepExploreItems),
-    };
-  }, [catalogItems]);
+  const { mbtiItem, sbtiItem, bigFiveItem, enneagramItem } = useMemo(
+    () => selectPersonalityLandingItems(catalogItems),
+    [catalogItems],
+  );
 
   const loadCatalog = useCallback(async () => {
       setLoading(true);
@@ -71,7 +56,12 @@ const PersonalityCatalogPage = () => {
           category: "personality",
         });
 
-        const items: unknown[] = Array.isArray(result.catalogItems) ? result.catalogItems : [];
+        // `algorithm` is currently identical across typology models. Keep the
+        // published models flat here so the landing page can form its product
+        // entries from model code and status without merging unrelated models.
+        const items: unknown[] = Array.isArray(result.publishedModels)
+          ? result.publishedModels
+          : [];
         setCatalogItems(items.map(mapPersonalityCatalogCard));
       } catch (error) {
         console.warn("[PersonalityCatalogPage] 加载人格模型目录失败", error);
@@ -95,9 +85,32 @@ const PersonalityCatalogPage = () => {
     Taro.switchTab({ url: routes.tabHome() });
   };
 
-  const handleOpenModel = (item: CatalogCardViewModel) => {
-    if (!item?.modelCode) return;
-    Taro.navigateTo({ url: routes.personalityModel({ model: item.key, model_code: item.modelCode }) });
+  const handleOpenMbtiModels = (item: CatalogCardViewModel | null) => {
+    const familyCode = item?.familyCode || item?.key;
+    if (!familyCode) {
+      Taro.showToast({ title: "MBTI 测评暂未发布", icon: "none" });
+      return;
+    }
+    Taro.navigateTo({
+      url: routes.personalityModel({ model: "mbti", family_code: "mbti" }),
+    });
+  };
+
+  const handleStartPersonalityAssessment = (
+    item: CatalogCardViewModel | null,
+    unavailableText: string,
+  ) => {
+    if (!item?.modelCode) {
+      Taro.showToast({ title: unavailableText, icon: "none" });
+      return;
+    }
+    Taro.navigateTo({
+      url: routes.assessmentFill({
+        kind: "personality",
+        model_code: item.modelCode,
+        mc: item.modelCode,
+      }),
+    });
   };
 
   const handleComingSoon = () => {
@@ -153,31 +166,25 @@ const PersonalityCatalogPage = () => {
           />
         ) : null}
 
-        {!loading && featuredItem ? (
-          <SurfaceCard className="personality-feature-card" onClick={() => handleOpenModel(featuredItem)}>
+        {!loading && !loadError ? (
+          <SurfaceCard className="personality-feature-card" onClick={() => handleOpenMbtiModels(mbtiItem)}>
             <View className="personality-feature-card__content">
-              <Text className="personality-feature-card__kicker">
-                {featuredItem.hero?.kicker || featuredItem.badge || "人格探索"}
-              </Text>
-              <Text className="personality-feature-card__title">{featuredItem.title}</Text>
+              <Text className="personality-feature-card__kicker">16人格测评合集</Text>
+              <Text className="personality-feature-card__title">测测你是 N 人还是 I 人</Text>
               <Text className="personality-feature-card__desc">
-                {featuredItem.description || featuredItem.subtitle || ""}
+                进入全部 16 型人格测评，按题量与场景选择适合你的版本。
               </Text>
               <View className="personality-feature-card__meta-row">
-                {featuredItem.variantHint ? (
-                  <Text className="personality-feature-card__meta">{featuredItem.variantHint}</Text>
-                ) : null}
-                {featuredItem.questionCount ? (
-                  <Text className="personality-feature-card__meta">{featuredItem.questionCount} 道题</Text>
-                ) : null}
-                {featuredItem.durationMin ? (
-                  <Text className="personality-feature-card__meta">约 {featuredItem.durationMin} 分钟起</Text>
-                ) : null}
-                <Text className="personality-feature-card__meta">已发布</Text>
+                <Text className="personality-feature-card__meta">
+                  {mbtiItem?.variantHint || "多种题版可选"}
+                </Text>
+                <Text className="personality-feature-card__meta">
+                  {mbtiItem ? "查看全部测评" : "暂未发布"}
+                </Text>
               </View>
             </View>
             <View className="personality-feature-card__icon">
-              <Image className="personality-feature-card__image" src={typeBasicImage} mode="aspectFit" />
+              <Image className="personality-feature-card__image" src={ieTestImage} mode="aspectFit" />
             </View>
             <View className="personality-feature-card__arrow">
               <Icon name="arrow-right" size={20} color="#FFFFFF" />
@@ -185,61 +192,59 @@ const PersonalityCatalogPage = () => {
           </SurfaceCard>
         ) : null}
 
-        {!loading ? (
+        {!loading && !loadError ? (
           <View className="personality-mini-grid">
-            {secondaryItems.map((item) => (
-              <SurfaceCard
-                key={item.key}
-                className={`personality-mini-card personality-mini-card--${item.theme || "deep"}`}
-                onClick={() => handleOpenModel(item)}
-              >
-                <Text className="personality-mini-card__kicker">
-                  {item.badge || "人格探索"}
-                </Text>
-                <Text className="personality-mini-card__title">{item.title}</Text>
-                <Text className="personality-mini-card__desc">{item.description}</Text>
-                <View className="personality-mini-card__button">
-                  <Text>{item.cta || "开始测试"}</Text>
-                  <Icon name="arrow-right" size={13} color={resolveMiniCardButtonColor(item.theme)} />
-                </View>
-                {item.theme === "fun" ? (
-                  <Image className="personality-mini-card__image" src={funTestImage} mode="aspectFit" />
-                ) : null}
-              </SurfaceCard>
-            ))}
-
-            {deepExploreItems.length ? (
-              <View className="personality-mini-row">
-                {deepExploreItems.map((item) => (
-                  <SurfaceCard
-                    key={item.key}
-                    className={`personality-mini-card personality-mini-card--compact personality-mini-card--${item.theme}`}
-                    onClick={() => handleOpenModel(item)}
-                  >
-                    <Text className="personality-mini-card__kicker">{item.badge || "深度探索"}</Text>
-                    <Text className="personality-mini-card__title">{item.title}</Text>
-                    <Text className="personality-mini-card__desc">{item.description}</Text>
-                    <View className="personality-mini-card__button">
-                      <Text>{item.cta || "开始测试"}</Text>
-                      <Icon
-                        name="arrow-right"
-                        size="13"
-                        color={resolveMiniCardButtonColor(item.theme)}
-                      />
-                    </View>
-                  </SurfaceCard>
-                ))}
+            <SurfaceCard
+              className={`personality-mini-card personality-mini-card--fun ${sbtiItem ? "" : "personality-mini-card--unavailable"}`}
+              onClick={() => handleStartPersonalityAssessment(sbtiItem, "SBTI 测评暂未发布")}
+            >
+              <Text className="personality-mini-card__kicker">趣味探索</Text>
+              <Text className="personality-mini-card__title">SBTI 趣味人格测评</Text>
+              <Text className="personality-mini-card__desc">轻松生成趣味人格标签，适合娱乐与社交分享。</Text>
+              <View className="personality-mini-card__button">
+                <Text>{sbtiItem ? "开始 SBTI 测评" : "暂未发布"}</Text>
+                {sbtiItem ? <Icon name="arrow-right" size={13} color="#0CA66A" /> : null}
               </View>
-            ) : null}
+              <Image className="personality-mini-card__image" src={funTestImage} mode="aspectFit" />
+            </SurfaceCard>
+
+            <View className="personality-mini-row">
+              <SurfaceCard
+                className={`personality-mini-card personality-mini-card--compact personality-mini-card--ocean ${bigFiveItem ? "" : "personality-mini-card--unavailable"}`}
+                onClick={() => handleStartPersonalityAssessment(bigFiveItem, "大五人格测评暂未发布")}
+              >
+                <Text className="personality-mini-card__kicker">科学人格模型</Text>
+                <Text className="personality-mini-card__title">大五人格测评</Text>
+                <Text className="personality-mini-card__desc">从五个稳定维度认识你的性格倾向，了解你的人格核心要素。</Text>
+                <View className="personality-mini-card__button">
+                  <Text>{bigFiveItem ? "开始测评" : "暂未发布"}</Text>
+                  {bigFiveItem ? <Icon name="arrow-right" size={13} color="#2B7DE9" /> : null}
+                </View>
+              </SurfaceCard>
+
+              <SurfaceCard
+                className={`personality-mini-card personality-mini-card--compact personality-mini-card--deep ${enneagramItem ? "" : "personality-mini-card--unavailable"}`}
+                onClick={() => handleStartPersonalityAssessment(enneagramItem, "九型人格测评暂未发布")}
+              >
+                <Text className="personality-mini-card__kicker">深度探索</Text>
+                <Text className="personality-mini-card__title">九型人格测评</Text>
+                <Text className="personality-mini-card__desc">从核心动机理解自己的选择，探索深层次的人格动力。</Text>
+                <View className="personality-mini-card__button">
+                  <Text>{enneagramItem ? "开始测评" : "暂未发布"}</Text>
+                  {enneagramItem ? <Icon name="arrow-right" size={13} color="#7656D9" /> : null}
+                </View>
+              </SurfaceCard>
+            </View>
           </View>
         ) : null}
 
         <AssessmentKindReportSection
           kind={ASSESSMENT_KIND.PERSONALITY}
           title="人格测评报告"
-          subtitle="最近完成的人格探索结果"
+          subtitle="最近的人格探索记录"
           emptyText="暂无人格探索报告，完成测评后将在这里展示。"
           tone="personality"
+          statusFilter=""
         />
 
         <View className="personality-section personality-service-section">

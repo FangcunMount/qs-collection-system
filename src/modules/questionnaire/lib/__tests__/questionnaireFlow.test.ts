@@ -1,6 +1,7 @@
 import {
   buildQuestionnaireSubmission,
   getQuestionnaireProgress,
+  getVisibleQuestionEntries,
   getVisibleAnswerQuestions,
   hasAnyVisibleAnswer,
   isQuestionVisible,
@@ -68,5 +69,26 @@ describe("questionnaire flow", () => {
       total: 2,
       percentage: 100,
     });
+  });
+
+  test("builds visible entries with the same source position and display number", () => {
+    const entries = getVisibleQuestionEntries([
+      { code: "section", type: "Section" },
+      questions[0],
+      questions[1],
+      questions[2],
+      { code: "q4", type: "Radio" },
+    ]);
+
+    expect(entries.map(({ question, sourceIndex, displayIndex }) => ({
+      code: question.code,
+      sourceIndex,
+      displayIndex,
+    }))).toEqual([
+      { code: "section", sourceIndex: 0, displayIndex: 0 },
+      { code: "q1", sourceIndex: 1, displayIndex: 0 },
+      { code: "q2", sourceIndex: 2, displayIndex: 1 },
+      { code: "q4", sourceIndex: 4, displayIndex: 2 },
+    ]);
   });
 });

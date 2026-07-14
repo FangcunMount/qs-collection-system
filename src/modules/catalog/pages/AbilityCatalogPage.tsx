@@ -1,22 +1,23 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import Taro from "@tarojs/taro";
 import { View, Text, Image } from "@tarojs/components";
 import Icon from "@/shared/ui/Icon";
 
 import { routes } from "@/shared/config/routes";
-import { ABILITY_SPECIALIZED_ASSESSMENTS } from "@/shared/config/abilityAssessments";
 import AppNavigationBar from "@/shared/ui/AppNavigationBar";
 import PageShell from "@/shared/ui/PageShell";
 import SectionHeader from "@/shared/ui/SectionHeader";
+import StatePanel from "@/shared/ui/StatePanel";
 import AssessmentKindReportSection from "@/modules/assessment/components/records/AssessmentKindReportSection";
 import SurfaceCard from "@/shared/ui/SurfaceCard";
 import ActionButton from "@/shared/ui/ActionButton";
 import { ASSESSMENT_KIND } from "@/shared/lib/assessmentKind";
+import { listPublishedAssessmentModels } from "@/services/api/assessmentModelCatalogApi";
 import {
   mapAbilityCatalogCard,
   type CatalogCardViewModel,
 } from "@/modules/catalog/viewModels/catalogCard";
-import behaviorHeroImage from "@/pages/catalog-ability/assets/hero/ability-catalog-v2.webp";
+import behaviorHeroImage from "@/pages/catalog-ability/assets/hero/ability-catalog-v2.png";
 import executiveImage from "@/pages/catalog-ability/assets/icon/icon-executive-function.png";
 import abilityImage from "@/pages/catalog-ability/assets/icon/icon-behavior-ability.png";
 import workingMemoryImage from "@/pages/catalog-ability/assets/icon/icon-working-memory.png";
@@ -50,7 +51,7 @@ const FLOW_STEPS = Object.freeze([
   {
     step: "01",
     title: "选择测评",
-    desc: "先从执行功能或感觉处理两个方向开始观察。",
+    desc: "从已发布的行为能力测评中选择适合的方向。",
   },
   {
     step: "02",
@@ -64,11 +65,58 @@ const FLOW_STEPS = Object.freeze([
   },
 ]);
 
-const ASSESSMENT_CARDS: CatalogCardViewModel[] = ABILITY_SPECIALIZED_ASSESSMENTS
-  .map(mapAbilityCatalogCard);
+interface AbilityCatalogQuery {
+  kind: string;
+  page: number;
+  pageSize: number;
+}
+
+const loadPublishedAbilityModels = listPublishedAssessmentModels as unknown as (
+  query: AbilityCatalogQuery,
+) => Promise<Record<string, unknown>>;
+
+const ABILITY_CATALOG_KIND = "behavioral_rating";
+
+const resolveAbilityKicker = (item: CatalogCardViewModel) => {
+  const marker = `${item.code} ${item.title} ${item.description}`.toLowerCase();
+  if (/sensory|感觉|统合/.test(marker)) return "感觉处理 · 家庭观察";
+  if (/executive|执行|计划|工作记忆/.test(marker)) return "执行功能 · 日常表现";
+  return "行为能力 · 成长观察";
+};
 
 const AbilityCatalogPage = () => {
   const [scrollTarget, setScrollTarget] = useState("");
+  const [assessmentCards, setAssessmentCards] = useState<CatalogCardViewModel[]>([]);
+  const [catalogLoading, setCatalogLoading] = useState(true);
+  const [catalogError, setCatalogError] = useState("");
+
+  const loadAbilityCatalog = useCallback(async () => {
+    setCatalogLoading(true);
+    setCatalogError("");
+
+    try {
+      const result = await loadPublishedAbilityModels({
+        kind: ABILITY_CATALOG_KIND,
+        page: 1,
+        pageSize: 50,
+      });
+      const payload = (result.data || result) as Record<string, unknown>;
+      const models: unknown[] = Array.isArray(payload.models)
+        ? payload.models
+        : (Array.isArray(payload.items) ? payload.items : []);
+      setAssessmentCards(models.map(mapAbilityCatalogCard).filter((item) => !item.disabled));
+    } catch (error) {
+      console.warn("[AbilityCatalogPage] 加载行为能力模型目录失败", error);
+      setAssessmentCards([]);
+      setCatalogError("行为能力测评目录加载失败，请检查网络后重试。");
+    } finally {
+      setCatalogLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadAbilityCatalog();
+  }, [loadAbilityCatalog]);
 
   const handleBack = useCallback(() => {
     const pages = Taro.getCurrentPages?.() || [];
@@ -87,7 +135,7 @@ const AbilityCatalogPage = () => {
   const handleOpenAssessment = useCallback((item: CatalogCardViewModel) => {
     if (item.disabled) {
       Taro.showToast({
-        title: "即将开放",
+        title: "测评暂未发布",
         icon: "none",
       });
       return;
@@ -121,14 +169,32 @@ const AbilityCatalogPage = () => {
         <View id="ability-specialized" className="ability-section ability-specialized">
           <SectionHeader
             title="核心测评"
-            actionLabel="暂仅展示 2 项"
-            onAction={handleViewAssessments}
             tone="ability"
             className="ability-section__header"
           />
 
           <View className="ability-assessment-grid">
-            {ASSESSMENT_CARDS.map((item) => (
+            {catalogLoading ? (
+              <StatePanel state="loading" title="正在加载行为能力测评" tone="ability" compact />
+            ) : catalogError ? (
+              <StatePanel
+                state="error"
+                title="行为能力测评目录加载失败"
+                description={catalogError}
+                actionText="重新加载"
+                onAction={loadAbilityCatalog}
+                tone="ability"
+                compact
+              />
+            ) : assessmentCards.length === 0 ? (
+              <StatePanel
+                state="empty"
+                title="暂无已发布测评"
+                description="已发布的行为能力测评将在这里展示。"
+                tone="ability"
+                compact
+              />
+            ) : assessmentCards.map((item) => (
               <SurfaceCard
                 key={item.key}
                 className={`ability-assessment-card ability-assessment-card--${item.iconKey} ${item.disabled ? "is-disabled" : ""}`}
@@ -136,16 +202,20 @@ const AbilityCatalogPage = () => {
               >
                 <View className="ability-assessment-card__content">
                   <Text className="ability-assessment-card__kicker">
-                    {item.iconKey === "sensory" ? "感觉处理 · 家庭观察" : "执行功能 · 日常表现"}
+                    {resolveAbilityKicker(item)}
                   </Text>
                   <View className="ability-assessment-card__title-line">
                     <Text className="ability-assessment-card__title">{item.title}</Text>
-                    <Text className="ability-assessment-card__badge">{item.statusLabel}</Text>
+                    {item.statusLabel ? (
+                      <Text className="ability-assessment-card__badge">{item.statusLabel}</Text>
+                    ) : null}
                   </View>
                   <Text className="ability-assessment-card__desc">{item.description}</Text>
                   <View className="ability-assessment-card__meta">
                     <Text className="ability-assessment-card__duration">{item.durationLabel}</Text>
-                    <Text className="ability-assessment-card__tested">{item.testedLabel || "持续扩展中"}</Text>
+                    {item.testedLabel ? (
+                      <Text className="ability-assessment-card__tested">{item.testedLabel}</Text>
+                    ) : null}
                   </View>
                 </View>
                 <View className="ability-assessment-card__arrow">
@@ -167,7 +237,7 @@ const AbilityCatalogPage = () => {
         <View className="ability-section ability-observation">
           <SectionHeader
             title="观察重点"
-            description="围绕 2 项测评"
+            description="围绕已发布测评"
             tone="ability"
             className="ability-section__header"
           />

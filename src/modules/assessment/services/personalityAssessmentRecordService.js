@@ -29,11 +29,19 @@ export async function loadPersonalityAssessmentRecords({
   });
 
   const data = result?.items || result?.assessments ? result : (result.data || result);
+  // The typology endpoint is the source of truth for the personality home.
+  // Keep its non-terminal entries as well: they communicate "待解读" or
+  // "生成中" rather than making an existing assessment disappear.
   const filteredItems = extractPersonalityAssessmentList(data)
     .map(normalizePersonalityAssessmentRecord)
     .filter((record) => {
       if (statusFilter !== 'done') return true;
       return isPersonalityAssessmentDoneStatus(record.status);
+    })
+    .sort((left, right) => {
+      const leftTime = new Date(left.createtime || 0).getTime() || 0;
+      const rightTime = new Date(right.createtime || 0).getTime() || 0;
+      return rightTime - leftTime;
     });
 
   const total = filteredItems.length;

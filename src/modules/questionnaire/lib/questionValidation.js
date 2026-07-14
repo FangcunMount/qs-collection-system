@@ -38,11 +38,11 @@ export const resolveQuestionTitle = (question = {}) => {
 
 /**
  * 解析题目提示文案
- * @param {Object} question - 题目对象或包含 tips 的字段
+ * @param {Object} question - 题目对象或包含 tips/prompt/description 的字段
  * @returns {string}
  */
 export const resolveQuestionTips = (question = {}) => {
-  return String(question.tips ?? '').trim();
+  return String(question.tips ?? question.prompt ?? question.description ?? '').trim();
 };
 
 /**

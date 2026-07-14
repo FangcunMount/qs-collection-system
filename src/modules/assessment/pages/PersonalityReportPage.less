@@ -2,14 +2,14 @@
 
 .personality-report-page {
   min-height: 100%;
-  padding: 0 0 @space-6;
+  padding: 0 0 @space-4;
   background: transparent;
   box-sizing: border-box;
 }
 
 .pr-meta {
   margin: 0 @space-3;
-  padding: 0 @space-1;
+  padding: @space-2 @space-1 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -29,11 +29,11 @@
 }
 
 .pr-section {
-  margin: @space-4 @space-3 0;
+  margin: @space-6 @space-3 0;
 }
 
 .pr-section__header {
-  margin: 0 4rpx @space-3;
+  margin: 0 0 @space-2;
   display: flex;
   flex-direction: column;
   gap: @space-1;
@@ -57,16 +57,17 @@
 .pr-advice-list {
   display: flex;
   flex-direction: column;
-  gap: @space-3;
+  gap: 0;
 }
 
 .pr-dimension-card,
 .pr-advice-card {
-  padding: @space-4 @space-3;
-  border: 2rpx solid @color-personality-200;
-  border-radius: @radius-lg-token;
-  background: @surface-card;
-  box-shadow: @shadow-medium;
+  padding: @space-4 0;
+  border: 0;
+  border-bottom: 1rpx solid @border-color-base;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
   box-sizing: border-box;
 }
 
@@ -88,7 +89,7 @@
 
 .pr-dimension-card__score {
   color: @color-personality-700;
-  font-size: @font-size-card-title;
+  font-size: @font-size-section-title;
   line-height: 1;
   font-weight: @font-weight-black;
 }
@@ -100,7 +101,7 @@
 }
 
 .pr-dimension-card__track {
-  height: @space-2;
+  height: 12rpx;
   margin-top: @space-2;
   border-radius: @radius-pill;
   background: @color-personality-100;
@@ -110,7 +111,7 @@
 .pr-dimension-card__bar {
   height: 100%;
   border-radius: @radius-pill;
-  background: linear-gradient(90deg, @color-personality-500 0%, @color-personality-700 100%);
+  background: @color-personality-600;
 }
 
 .pr-dimension-card__desc,
@@ -122,9 +123,10 @@
 }
 
 .pr-dimension-card__suggestion {
-  margin-top: @space-3;
+  margin-top: @space-2;
   padding: @space-2 @space-3;
-  border-radius: @radius-md;
+  border-left: 4rpx solid @color-personality-200;
+  border-radius: 0 @radius-md @radius-md 0;
   background: @color-personality-50;
 }
 
@@ -152,21 +154,4 @@
 .pr-advice-card__content {
   margin-top: 0;
   line-height: 1.75;
-}
-
-// Keep the reading-flow overrides after the legacy card declarations.
-.pr-dimension-card,
-.pr-advice-card {
-  padding-left: 0;
-  padding-right: 0;
-  border: 0;
-  border-bottom: 1rpx solid @border-color-base;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-}
-
-.pr-dimension-card__suggestion {
-  border-radius: @radius-md;
-  box-shadow: none;
 }

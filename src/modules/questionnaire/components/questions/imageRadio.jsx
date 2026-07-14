@@ -17,6 +17,7 @@ const ImageRadio = props => {
   }, [item.code, item.value, item.options]);
 
   const handleSelect = e => {
+    setSelected(e);
     onChangeValue(e, index);
   };
 

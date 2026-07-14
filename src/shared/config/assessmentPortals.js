@@ -1,6 +1,6 @@
 import medicalScaleImage from "@/assets/home/home-entry-medical-scale.png";
 import personalityImage from "@/assets/home/home-entry-personality.png";
-import behaviorImage from "@/assets/home/home-child-behavior.webp";
+import behaviorImage from "@/assets/home/home-child-behavior.png";
 
 export const PORTAL_ROUTE_KEYS = Object.freeze({
   SCALES: 'tabScales',

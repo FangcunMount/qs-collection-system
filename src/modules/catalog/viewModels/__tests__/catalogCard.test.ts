@@ -42,12 +42,14 @@ describe("catalog card view models", () => {
     expect(mapPersonalityCatalogCard({
       key: "sixteen-types",
       modelCode: "personality-16",
+      algorithm: "mbti",
       title: "16 人格测评",
       durationMin: 12,
       hero: { kicker: "人格探索" },
     })).toMatchObject({
       key: "sixteen-types",
       modelCode: "personality-16",
+      algorithm: "mbti",
       durationLabel: "约 12 分钟",
       tone: "personality",
       hero: { kicker: "人格探索" },
@@ -70,6 +72,27 @@ describe("catalog card view models", () => {
       key: "executive",
       disabled: true,
       durationLabel: "约 10 分钟",
+      tone: "ability",
+    });
+  });
+
+  it("maps published ability models from the generic assessment catalogue", () => {
+    expect(mapAbilityCatalogCard({
+      code: "EXECUTIVE_FUNCTION_36",
+      questionnaire_code: "EXECUTIVE_FUNCTION_36",
+      title: "执行功能评估",
+      description: "了解日常计划与调节表现。",
+      kind: "ability",
+      status: "published",
+      question_count: 36,
+    })).toMatchObject({
+      code: "EXECUTIVE_FUNCTION_36",
+      modelCode: "EXECUTIVE_FUNCTION_36",
+      questionCount: 36,
+      durationLabel: "约 6 分钟",
+      iconKey: "executive",
+      testedLabel: "已发布",
+      disabled: false,
       tone: "ability",
     });
   });

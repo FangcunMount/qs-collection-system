@@ -42,6 +42,20 @@ describe("assessment record view models", () => {
     });
   });
 
+  test("normalizes behavioral rating records as ability assessments", () => {
+    expect(toAssessmentRecordViewModel({
+      id: "b1",
+      title: "执行功能评估",
+      status: "interpreted",
+      kind: "behavioral_rating",
+      questionnaire_code: "EXECUTIVE_FUNCTION_36",
+    })).toMatchObject({
+      assessmentKind: "ability",
+      tone: "ability",
+      showTrendAction: false,
+    });
+  });
+
   test("builds date and scale filters without losing the active scale", () => {
     expect(resolveRecordDateRange("7", new Date(2026, 6, 14))).toEqual({
       dateFrom: "2026-07-07",

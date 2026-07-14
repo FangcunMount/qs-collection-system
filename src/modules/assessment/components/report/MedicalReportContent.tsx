@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Text, View } from "@tarojs/components";
+import { Button, Text, View } from "@tarojs/components";
 
 import FilterChip from "@/shared/ui/FilterChip";
 import StatePanel from "@/shared/ui/StatePanel";
@@ -8,9 +8,10 @@ import { getRiskConfig } from "@/shared/lib/statusFormatters";
 import type { MedicalReportFactorViewModel } from "../../types";
 import FactorBarChart from "./FactorBarChart";
 import FactorScatterChart from "./FactorScatterChart";
+import RadarChart from "./RadarChart";
 
 type ReportTab = "factor-analysis" | "pro-advice";
-type ChartType = "overview" | "bar" | "scatter";
+type ChartType = "radar" | "overview" | "bar" | "scatter";
 
 interface MedicalReportContentProps {
   factors: MedicalReportFactorViewModel[];
@@ -18,6 +19,7 @@ interface MedicalReportContentProps {
 
 const TypedFactorBarChart = FactorBarChart as React.ComponentType<{ data: MedicalReportFactorViewModel[] }>;
 const TypedFactorScatterChart = FactorScatterChart as React.ComponentType<{ data: MedicalReportFactorViewModel[] }>;
+const TypedRadarChart = RadarChart as React.ComponentType<{ data: MedicalReportFactorViewModel[] }>;
 
 const factorPercent = (factor: MedicalReportFactorViewModel): number => {
   if (factor.score === null || factor.maxScore === null || factor.maxScore <= 0) return 0;
@@ -83,14 +85,24 @@ const FactorCard = ({ factor }: { factor: MedicalReportFactorViewModel }) => {
 
 const MedicalReportContent = ({ factors }: MedicalReportContentProps) => {
   const [activeTab, setActiveTab] = useState<ReportTab>("factor-analysis");
-  const [chartType, setChartType] = useState<ChartType>("overview");
+  const [chartType, setChartType] = useState<ChartType>("radar");
   return (
     <>
-      <View className="tab-controller">
-        <View className="tab-buttons">
-          <FilterChip tone="medical" selected={activeTab === "factor-analysis"} onClick={() => setActiveTab("factor-analysis")}>因子分析</FilterChip>
-          <FilterChip tone="medical" selected={activeTab === "pro-advice"} onClick={() => setActiveTab("pro-advice")}>详细建议</FilterChip>
-        </View>
+      <View className="report-section-tabs">
+        <Button
+          className={`report-section-tab ${activeTab === "factor-analysis" ? "report-section-tab--active" : ""}`}
+          hoverClass="report-section-tab--pressed"
+          onClick={() => setActiveTab("factor-analysis")}
+        >
+          <Text className="report-section-tab__label">因子分析</Text>
+        </Button>
+        <Button
+          className={`report-section-tab ${activeTab === "pro-advice" ? "report-section-tab--active" : ""}`}
+          hoverClass="report-section-tab--pressed"
+          onClick={() => setActiveTab("pro-advice")}
+        >
+          <Text className="report-section-tab__label">详细建议</Text>
+        </Button>
       </View>
       <View className="tab-content-area">
         {activeTab === "factor-analysis" ? (
@@ -100,14 +112,16 @@ const MedicalReportContent = ({ factors }: MedicalReportContentProps) => {
                 <View className="chart-header">
                   <Text className="card-title">因子维度分布</Text>
                   <View className="chart-toggle">
-                    {(["overview", "bar", "scatter"] as ChartType[]).map((type) => (
+                    {(["radar", "overview", "bar", "scatter"] as ChartType[]).map((type) => (
                       <FilterChip key={type} tone="medical" selected={chartType === type} onClick={() => setChartType(type)}>
-                        {type === "overview" ? "概览" : type === "bar" ? "条形图" : "散点图"}
+                        {type === "radar" ? "雷达图" : type === "overview" ? "概览" : type === "bar" ? "条形图" : "散点图"}
                       </FilterChip>
                     ))}
                   </View>
                 </View>
-                {chartType === "overview" ? (
+                {chartType === "radar" ? (
+                  <View className="radar-chart-container"><TypedRadarChart data={factors} /></View>
+                ) : chartType === "overview" ? (
                   <View className="factor-overview-chart">
                     {factors.map((factor, index) => {
                       const risk = getRiskConfig(factor.riskLevel);

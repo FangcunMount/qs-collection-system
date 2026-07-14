@@ -301,8 +301,7 @@
 }
 
 .personality-mini-row {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex;
   gap: 22rpx;
 }
 
@@ -316,19 +315,43 @@
 }
 
 .personality-mini-card--compact {
-  min-height: 280rpx;
-  padding: 28rpx 24rpx 28rpx 28rpx;
+  flex: 1;
+  min-width: 0;
+  min-height: 306rpx;
+  padding: 26rpx 22rpx;
+}
+
+.personality-mini-card--compact .personality-mini-card__title {
+  margin-top: 12rpx;
+  font-size: 30rpx;
+  line-height: 1.28;
 }
 
 .personality-mini-card--compact .personality-mini-card__desc {
   max-width: none;
-  font-size: 22rpx;
+  margin-top: 14rpx;
+  font-size: 21rpx;
+  line-height: 1.4;
+  .qlume-two-line-text();
 }
 
-.personality-mini-card--compact .personality-mini-card__number {
-  right: 18rpx;
-  bottom: 24rpx;
-  font-size: 88rpx;
+.personality-mini-card--compact .personality-mini-card__button {
+  min-width: 0;
+  padding: 0 14rpx;
+  font-size: 21rpx;
+  position: absolute;
+  right: 16rpx;
+  bottom: 32rpx;
+}
+
+.personality-mini-card--compact .personality-mini-card__image {
+  right: 12rpx;
+  bottom: 12rpx;
+  width: 72rpx;
+  min-width: 72rpx;
+  height: 72rpx;
+  min-height: 72rpx;
+  opacity: 0.38;
 }
 
 .personality-mini-card--fun {
@@ -344,6 +367,15 @@
 .personality-mini-card--ocean {
   background: linear-gradient(135deg, #EFF6FF 0%, #E4F0FF 100%);
   border: 1rpx solid #B9D6FA;
+}
+
+.personality-mini-card--unavailable {
+  opacity: 0.58;
+}
+
+.personality-mini-card--unavailable .personality-mini-card__button {
+  color: @personality-muted;
+  box-shadow: none;
 }
 
 .personality-mini-card__kicker {

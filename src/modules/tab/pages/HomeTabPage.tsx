@@ -19,7 +19,7 @@ import { getAssessmentEntryContext, subscribeAssessmentEntryContext } from "@/sh
 import { findTesteeById, getSelectedTesteeId, subscribeTesteeStore } from "@/shared/stores/testees";
 import { mapMedicalCatalogCard, type CatalogCardViewModel } from "@/modules/catalog/viewModels/catalogCard";
 import { mapRecentAssessment, type RecentAssessmentViewModel } from "@/modules/tab/viewModels/home";
-import qlumeHeroBanner from "@/assets/hero/qlume-home-v2.webp";
+import qlumeHeroBanner from "@/assets/hero/qlume-home-v2.png";
 import anxietyIcon from "@/assets/icon/icon-anxiety-screening.png";
 import sleepQualityIcon from "@/assets/icon/icon-sleep-quality.png";
 import attentionIcon from "@/assets/icon/icon-attention-screening.png";

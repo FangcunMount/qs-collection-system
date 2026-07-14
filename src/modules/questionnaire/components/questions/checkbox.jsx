@@ -17,6 +17,7 @@ const Checkbox = props => {
   }, [item.code, item.value, item.options]);
 
   const handleSelect = e => {
+    setSelectedValues(e);
     onChangeValue(e, index);
   };
 
@@ -40,10 +41,11 @@ const Checkbox = props => {
         >
           {item.options.map((option, i) => {
             const isSelected = selectedValues.includes(option.code);
+            const hasVisibleExtend = option.allow_extend_text === "1" && isSelected;
             return (
-              <QlCheckbox key={option.code} value={option.code} className={`question-choice ${isSelected ? "is-selected" : ""}`}>
+              <QlCheckbox key={option.code} value={option.code} className={`question-choice ${isSelected ? "is-selected" : ""} ${hasVisibleExtend ? "question-choice--with-extend" : ""}`}>
                 <View className="qs-choice-content">
-                {option.allow_extend_text === "1" && isSelected ? (
+                {hasVisibleExtend ? (
                   <View>
                     <View>{option.content}</View>
                     <View onClick={e => e.stopPropagation()}>

@@ -29,6 +29,7 @@ const AssessmentKindReportSection = ({
   subtitle,
   emptyText,
   tone = "default",
+  statusFilter = "done",
 }) => {
   const [selectedTestee, setSelectedTestee] = useState(() => resolveDisplayTestee());
 
@@ -71,7 +72,7 @@ const AssessmentKindReportSection = ({
         <AssessmentRecordListController
           testee={selectedTestee}
           assessmentKind={kind}
-          statusFilter="done"
+          statusFilter={statusFilter}
           pageSize={3}
           showFilterBar={false}
           showEmptyButton={false}

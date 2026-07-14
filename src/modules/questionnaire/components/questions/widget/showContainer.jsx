@@ -9,7 +9,7 @@ const ShowContainer = props => {
   const tips = resolveQuestionTips(props);
 
   return (
-    <View>
+    <View className={`question-content${tips ? ' question-content--with-tips' : ''}`}>
       <View className='question-title'>
         {props.index !== undefined && (
           <Text className='question-number'>{props.index + 1}. </Text>

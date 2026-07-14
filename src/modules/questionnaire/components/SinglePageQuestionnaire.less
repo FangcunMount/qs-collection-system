@@ -8,7 +8,9 @@
   overflow: hidden;
   background: linear-gradient(180deg, #f7fbff 0%, #ffffff 100%);
   color: #101010;
-  padding: 28rpx 30rpx calc(24rpx + env(safe-area-inset-bottom));
+  // QuestionnaireBottomActions owns the bottom safe-area. Reserving it here
+  // as well leaves an oversized blank strip below the navigation controls.
+  padding: 28rpx 30rpx 0;
   display: flex;
   flex-direction: column;
 
@@ -17,6 +19,15 @@
     min-height: 0;
     display: flex;
     flex-direction: column;
+  }
+
+  > .question-card > .questionnaire-bottom-actions {
+    flex-shrink: 0;
+    width: 100%;
+    position: fixed;
+    bottom: 0rpx;
+    left: 0rpx;
+    right: 0rpx;
   }
 
   .question-card__panel {
@@ -31,7 +42,7 @@
     flex: 1;
     min-height: 0;
     box-sizing: border-box;
-    padding: 46rpx 38rpx 24rpx;
+    padding: 0rpx 38rpx 250rpx;
     border-radius: 30rpx;
     background: #ffffff;
     box-shadow: 0 16rpx 42rpx rgba(31, 41, 55, 0.08);
@@ -108,6 +119,16 @@
       color: #667085;
       font-size: 24rpx;
       line-height: 1.6;
+    }
+
+    .question-content--with-tips {
+      .question-title {
+        margin-bottom: 20rpx;
+      }
+
+      .s-text-tips {
+        margin: 0 0 58rpx;
+      }
     }
 
     .si-radio,
@@ -430,6 +451,7 @@
   }
 
   .question-card__body {
+    padding-top: 30rpx;
     border-radius: 34rpx;
     box-shadow: 0 22rpx 48rpx rgba(48, 128, 145, 0.1);
   }

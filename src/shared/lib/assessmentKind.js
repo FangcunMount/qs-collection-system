@@ -29,6 +29,8 @@ const ABILITY_KIND_ALIASES = Object.freeze([
   'behaviorability',
   'behavior_assessment',
   'behaviorassessment',
+  'behavioral_rating',
+  'behavioralrating',
 ]);
 
 const MEDICAL_KIND_ALIASES = Object.freeze([

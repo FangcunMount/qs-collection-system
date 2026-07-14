@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Text, View } from "@tarojs/components";
 import Taro from "@tarojs/taro";
 
@@ -17,6 +17,7 @@ import { useSubmit } from "@/shared/hooks/useSubmit";
 import { getLogger } from "@/shared/lib/logger";
 import {
   buildQuestionnaireSubmission,
+  getVisibleQuestionEntries,
   hasAnyVisibleAnswer,
   isQuestionVisible,
   SUBMIT_NO_ANSWER_MESSAGE,
@@ -33,6 +34,36 @@ import type {
 
 const PAGE_NAME = "questionnaire_form";
 const logger = getLogger(PAGE_NAME);
+
+interface QuestionRowProps {
+  question: QuestionnaireQuestion;
+  sourceIndex: number;
+  displayIndex: number;
+  onChangeValue: (questionCode: string, value: unknown) => void;
+  onChangeExtend: (questionCode: string, optionIndex: number, value: unknown) => void;
+}
+
+const QuestionRow = memo(({
+  question,
+  sourceIndex,
+  displayIndex,
+  onChangeValue,
+  onChangeExtend,
+}: QuestionRowProps) => (
+  <View
+    className="qs-question__container"
+    id={`question-${sourceIndex}`}
+  >
+    <QuestionRenderer
+      question={question}
+      index={question.type === "Section" ? undefined : displayIndex}
+      onChangeValue={(value) => onChangeValue(question.code, value)}
+      onChangeExtend={(optionIndex, value) => onChangeExtend(question.code, optionIndex, value)}
+    />
+  </View>
+));
+
+QuestionRow.displayName = "QuestionRow";
 
 interface SubmissionError {
   submissionAttempt?: unknown;
@@ -136,16 +167,16 @@ export default function QuestionnaireForm({
    * @param {number} i current question index
    * @returns {JSX.Element}
    */
-  const updateQuestionValue = (questionCode: string, value: unknown): void => {
+  const updateQuestionValue = useCallback((questionCode: string, value: unknown): void => {
     setQuestionSheet(current => ({
       ...(current as QuestionnaireData),
       questions: (current?.questions ?? []).map((question) => (
         question.code === questionCode ? { ...question, value } : question
       )),
     }));
-  };
+  }, []);
 
-  const updateQuestionExtend = (questionCode: string, optionIndex: number, value: unknown): void => {
+  const updateQuestionExtend = useCallback((questionCode: string, optionIndex: number, value: unknown): void => {
     setQuestionSheet(current => ({
       ...(current as QuestionnaireData),
       questions: (current?.questions ?? []).map((question) => {
@@ -156,7 +187,12 @@ export default function QuestionnaireForm({
         return { ...question, options };
       }),
     }));
-  };
+  }, []);
+
+  const visibleQuestionEntries = useMemo(
+    () => getVisibleQuestionEntries(questionSheet?.questions ?? []),
+    [questionSheet?.questions],
+  );
 
   /**
    * @description Verify all questions
@@ -323,33 +359,16 @@ export default function QuestionnaireForm({
           />
         ) : null}
 
-        {questionSheet && questionSheet.questions
-          ? questionSheet.questions.map((v, i) => {
-              if (!getQuestionIsShow(v.show_controller)) {
-                return null;
-              }
-              // 计算实际题号（排除 Section 类型）
-              const questionNumber = questionSheet.questions
-                .slice(0, i)
-                .filter((question) => question.type !== "Section" && getQuestionIsShow(question.show_controller))
-                .length;
-              
-              return (
-                <View
-                  key={v.code}
-                  className="qs-question__container"
-                  id={`question-${i}`}
-                >
-                  <QuestionRenderer
-                    question={v}
-                    index={v.type === 'Section' ? undefined : questionNumber}
-                    onChangeValue={(value) => updateQuestionValue(v.code, value)}
-                    onChangeExtend={(optionIndex, value) => updateQuestionExtend(v.code, optionIndex, value)}
-                  />
-                </View>
-              );
-            })
-          : null}
+        {visibleQuestionEntries.map(({ question, sourceIndex, displayIndex }) => (
+          <QuestionRow
+            key={question.code}
+            question={question}
+            sourceIndex={sourceIndex}
+            displayIndex={displayIndex}
+            onChangeValue={updateQuestionValue}
+            onChangeExtend={updateQuestionExtend}
+          />
+        ))}
       </View>
     </PageShell>
   );

@@ -21,6 +21,7 @@ export interface CatalogCardViewModel {
   disabled: boolean;
   modelCode: string;
   familyCode: string;
+  algorithm: string;
   theme: string;
   variantHint: string;
   catalogLayout: string;
@@ -93,6 +94,7 @@ export const mapMedicalCatalogCard = (value: unknown): CatalogCardViewModel => {
     disabled: !code,
     modelCode: code,
     familyCode: normalizeCatalogLabel(item.family_code ?? item.familyCode),
+    algorithm: "",
     theme: "medical",
     variantHint: "",
     catalogLayout: normalizeCatalogLabel(item.catalog_layout ?? item.catalogLayout),
@@ -131,6 +133,7 @@ export const mapPersonalityCatalogCard = (value: unknown): CatalogCardViewModel 
     disabled: !modelCode,
     modelCode,
     familyCode: normalizeCatalogLabel(item.familyCode ?? item.family_code),
+    algorithm: normalizeCatalogLabel(item.algorithm ?? asRecord(item.raw).algorithm).toLowerCase(),
     theme: normalizeCatalogLabel(item.theme) || "deep",
     variantHint: normalizeCatalogLabel(item.variantHint ?? item.variant_hint),
     catalogLayout: normalizeCatalogLabel(item.catalogLayout ?? item.catalog_layout),
@@ -147,31 +150,45 @@ export const mapPersonalityCatalogCard = (value: unknown): CatalogCardViewModel 
 
 export const mapAbilityCatalogCard = (value: unknown): CatalogCardViewModel => {
   const item = asRecord(value);
-  const code = normalizeCatalogLabel(item.scaleCode ?? item.scale_code ?? item.code);
-  const available = normalizeCatalogLabel(item.status) === "available" && Boolean(code);
-  const durationLabel = normalizeCatalogLabel(item.duration) || "约 10 分钟";
+  // 行为能力模型来自通用 assessment-models 目录。填写入口需要问卷
+  // code，因此优先使用 questionnaire_code，并兼容早期 scaleCode 配置。
+  const code = normalizeCatalogLabel(
+    item.questionnaire_code ?? item.questionnaireCode ?? item.scaleCode ?? item.scale_code ?? item.code ?? item.model_code,
+  );
+  const modelCode = normalizeCatalogLabel(item.model_code ?? item.modelCode ?? item.code ?? code);
+  const status = normalizeCatalogLabel(item.status).toLowerCase();
+  const available = ["available", "published", "active"].includes(status) && Boolean(code);
+  const questionCount = toNumber(item.questionCount ?? item.question_count);
+  const durationMin = toNumber(item.durationMin ?? item.duration_min ?? item.estimated_duration);
+  const title = normalizeCatalogLabel(item.title ?? item.name) || "行为能力测评";
+  const marker = `${code} ${title} ${normalizeCatalogLabel(item.description)}`.toLowerCase();
+  const iconKey = normalizeCatalogLabel(item.iconKey ?? item.icon_key)
+    || (/sensory|感觉|统合/.test(marker) ? "sensory" : "executive");
+  const durationLabel = normalizeCatalogLabel(item.duration)
+    || formatCatalogDuration(questionCount, durationMin);
 
   return {
     key: normalizeCatalogLabel(item.key ?? code),
     code,
-    title: normalizeCatalogLabel(item.title) || "行为能力测评",
-    description: normalizeCatalogLabel(item.description),
+    title,
+    description: normalizeCatalogLabel(item.description) || "从日常表现中了解能力特点，为家庭支持提供参考。",
     subtitle: normalizeCatalogLabel(item.subtitle),
     category: "ability",
     tags: normalizeCatalogTags(item.filterTags ?? item.tags),
-    questionCount: toNumber(item.questionCount ?? item.question_count),
-    durationMin: toNumber(item.durationMin ?? item.duration_min),
+    questionCount,
+    durationMin,
     durationLabel,
     tone: "ability",
     image: normalizeCatalogLabel(item.image) || undefined,
     badge: normalizeCatalogLabel(item.badge),
     statusLabel: normalizeCatalogLabel(item.statusLabel ?? item.status_label),
-    testedLabel: normalizeCatalogLabel(item.testedLabel ?? item.tested_label),
-    iconKey: normalizeCatalogLabel(item.iconKey ?? item.icon_key),
+    testedLabel: normalizeCatalogLabel(item.testedLabel ?? item.tested_label) || (available ? "已发布" : ""),
+    iconKey,
     cta: normalizeCatalogLabel(item.cta) || "开始测评",
     disabled: !available,
-    modelCode: code,
+    modelCode,
     familyCode: "",
+    algorithm: "",
     theme: "ability",
     variantHint: "",
     catalogLayout: normalizeCatalogLabel(item.catalogLayout ?? item.catalog_layout),

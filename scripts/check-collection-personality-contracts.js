@@ -196,14 +196,17 @@ assertContains(mappers, /catalog_layout|catalogLayout/, 'model mapper must read 
 assertContains(submitFlow, /waitForSubmitCompletion/, 'submit flow must poll submit-status when queued');
 
 assertNotContains(personalityCatalogService, /PERSONALITY_CATALOG_ITEMS|personalityModels/, 'catalog service must not use hardcoded personality catalog');
-assertNotContains(personalityCatalog, /ENNEA|BIG_FIVE|九型|大五|resolveCatalogIdentity/, 'catalog layout must follow backend fields only');
+assertContains(personalityCatalog, /selectPersonalityLandingItems/, 'catalog landing entries must resolve from published model data');
+assertContains(personalityCatalog, /status[\s\S]*published/, 'catalog landing entries must only select published models');
+assertContains(personalityCatalog, /MBTI_|SBTI_|BIG5_|ENNEAGRAM_/, 'catalog landing entries must classify documented model-code families');
+assertNotContains(personalityCatalog, /MBTI_FC_93|MBTI_OEJTS|SBTI_FUN|BIG5_IPIP_50|ENNEAGRAM_45/, 'catalog landing entries must not pin a specific model version');
 assertNotContains(mbtiVariants, /MBTI_FALLBACK_VARIANTS|startsWith\(['"]MBTI/, 'variant grouping must use backend family_code only');
 
 if (!Array.isArray(modelsFixture.models) || modelsFixture.models.length < 5) {
   fail('personality-models-list fixture must include models array from collection-server');
 }
-if (!modelsFixture.models.some((item) => item.algorithm === 'mbti')) {
-  fail('personality-models-list fixture must include mbti algorithm models');
+if (!modelsFixture.models.some((item) => /^MBTI_/i.test(String(item.code || '')))) {
+  fail('personality-models-list fixture must include MBTI model-code families');
 }
 if (!modelsFixture.models.every((item) => item.kind === 'typology')) {
   fail('personality-models-list fixture models must use kind=typology');

@@ -2,6 +2,7 @@ import {
   CATALOG_LAYOUT,
   buildDeepExploreDisplayItems,
   partitionPersonalityCatalog,
+  selectPersonalityLandingItems,
 } from "../personalityCatalog";
 
 describe("personality catalog layout", () => {
@@ -18,5 +19,22 @@ describe("personality catalog layout", () => {
     expect(partitioned.featuredItem.key).toBe("family");
     expect(partitioned.secondaryItems.map((item) => item.key)).toEqual(["fun"]);
     expect(compact).toEqual([]);
+  });
+
+  test("selects landing entries from published model codes when algorithms are shared", () => {
+    const items = [
+      { key: "mbti", modelCode: "MBTI_PRIMARY", raw: { status: "published", algorithm: "personality_typology" } },
+      { key: "fun", modelCode: "SBTI_FUN", raw: { status: "published", algorithm: "personality_typology" } },
+      { key: "ocean", modelCode: "BIG5_50", raw: { status: "published", algorithm: "personality_typology" } },
+      { key: "enneagram", modelCode: "ENNEAGRAM_45", raw: { status: "published", algorithm: "personality_typology" } },
+      { key: "draft", modelCode: "SBTI_DRAFT", raw: { status: "draft" } },
+    ];
+
+    expect(selectPersonalityLandingItems(items)).toEqual({
+      mbtiItem: items[0],
+      sbtiItem: items[1],
+      bigFiveItem: items[2],
+      enneagramItem: items[3],
+    });
   });
 });

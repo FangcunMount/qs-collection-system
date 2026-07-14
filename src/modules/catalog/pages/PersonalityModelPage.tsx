@@ -229,9 +229,12 @@ const PersonalityModelPage = () => {
         models = result.items || [];
       }
 
-      const familyModels = models.filter(
-        (item) => String(item.familyCode || "").toLowerCase() === String(familyCode).toLowerCase()
-      );
+      const isMbtiCollection = String(familyCode).toLowerCase() === "mbti";
+      const familyModels = isMbtiCollection
+        ? models.filter((item) => /^MBTI_/i.test(String(item.code || "")))
+        : models.filter(
+          (item) => String(item.familyCode || "").toLowerCase() === String(familyCode).toLowerCase()
+        );
       const nextVariants = buildVariantsFromPublished(familyModels) as PersonalityVariantViewModel[];
       if (!nextVariants.length) {
         throw new Error("未找到已发布的题版");
@@ -277,14 +280,6 @@ const PersonalityModelPage = () => {
             (await loadPersonalityModelDetail(routeModelCode, { publishedModels }))
           ) as PersonalityModelViewModel;
           if (cancelled) return;
-
-          if (detail.familyCode) {
-            const groupedModel = await loadFamilyVariants(detail.familyCode, routeModelCode, publishedModels);
-            if (groupedModel) {
-              setModel(groupedModel);
-              return;
-            }
-          }
 
           setVariants([]);
           setModel(detail as PersonalityModelViewModel);

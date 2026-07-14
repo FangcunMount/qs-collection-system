@@ -90,7 +90,7 @@ const PersonalityReportPage = () => {
             entryTitle={entryContext?.entry_title || report.modelTitle}
             clinicianName={entryContext?.clinician_name}
             entryContext={entryContext}
-            variant="floating"
+            variant="inline"
           />
         </>
       ) : null}

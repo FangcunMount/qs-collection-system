@@ -47,6 +47,21 @@ export const partitionPersonalityCatalog = (catalogItems = []) => {
   };
 };
 
+export const selectPersonalityLandingItems = (catalogItems = []) => {
+  const codeOf = (item) => String(item?.modelCode || item?.code || item?.raw?.code || '').toUpperCase();
+  const isPublished = (item) => String(item?.raw?.status || item?.status || '').toLowerCase() === 'published';
+  const findPublishedByCode = (pattern) => catalogItems.find((item) => (
+    isPublished(item) && pattern.test(codeOf(item))
+  )) || null;
+
+  return {
+    mbtiItem: findPublishedByCode(/^MBTI_/),
+    sbtiItem: findPublishedByCode(/^SBTI_/),
+    bigFiveItem: findPublishedByCode(/^BIG5_/),
+    enneagramItem: findPublishedByCode(/^ENNEAGRAM_/),
+  };
+};
+
 export const findCatalogItem = (catalogItems = [], { key, modelCode, familyCode } = {}) => {
   if (modelCode) {
     const matchedByCode = catalogItems.find((item) => item.modelCode === modelCode);

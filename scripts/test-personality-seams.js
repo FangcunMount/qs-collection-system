@@ -190,8 +190,8 @@ const reportFailedFixture = readJson('src/modules/assessment/__fixtures__/person
   assert(models.length >= 5, 'models list length');
   assert(models.every((item) => item.kind === 'typology'), 'catalog models use kind=typology');
 
-  const mbti = normalizePersonalityModel(models.find((item) => item.algorithm === 'mbti'));
-  assert(mbti.algorithm === 'mbti', 'model algorithm');
+  const mbti = normalizePersonalityModel(models.find((item) => /^MBTI_/i.test(String(item.code || ''))));
+  assert(mbti.algorithm === 'personality_typology', 'shared typology algorithm');
   assert(mbti.productChannel === 'typology', 'model productChannel');
   assert(typeof mbti.id === 'string' || mbti.id === '', 'model id normalized to string when present');
 }
@@ -282,6 +282,14 @@ const reportFailedFixture = readJson('src/modules/assessment/__fixtures__/person
   assert(record.answer_sheet_id === '90010001', 'record answer_sheet_id string');
   assert(record.assessment_kind === 'personality', 'record assessment_kind personality at report layer');
   assert(record.kind === 'personality', 'record kind personality at report layer');
+
+  const pendingRecord = normalizePersonalityAssessmentRecord({
+    id: 8002,
+    answer_sheet_id: 90010002,
+    model: { kind: 'personality', code: 'SBTI_FUN', title: 'SBTI 趣味人格测评' },
+    status: 'submitted',
+  });
+  assert(pendingRecord.status === 'submitted', 'typology list keeps submitted records for home rendering');
 }
 
 // --- kind semantics ---

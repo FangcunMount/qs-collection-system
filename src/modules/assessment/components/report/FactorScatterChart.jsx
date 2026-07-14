@@ -177,7 +177,6 @@ const FactorScatterChart = ({ data = [] }) => {
         id="factor-scatter"
         canvasId="factor-scatter"
         ec={ec}
-        forceUseOldCanvas={true}
         style="width: 100%; height: 100%;"
       />
     </View>

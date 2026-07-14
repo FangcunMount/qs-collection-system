@@ -18,7 +18,7 @@ import {
   mapMedicalCatalogCard,
   type CatalogCardViewModel,
 } from "@/modules/catalog/viewModels/catalogCard";
-import medicalHeroBanner from "@/pages/catalog-medical/assets/hero/medical-catalog-v2.webp";
+import medicalHeroBanner from "@/pages/catalog-medical/assets/hero/medical-catalog-v2.png";
 import medicalTrustImage from "@/pages/catalog-medical/assets/home/home-current-record-checklist.png";
 import "./ScaleCatalogPage.less";
 

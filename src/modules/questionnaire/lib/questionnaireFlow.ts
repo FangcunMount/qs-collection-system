@@ -16,6 +16,12 @@ export interface QuestionValidationResult {
   message?: string;
 }
 
+export interface VisibleQuestionEntry {
+  question: QuestionnaireQuestion;
+  sourceIndex: number;
+  displayIndex: number;
+}
+
 const getRuleValue = (
   rules: ValidationRule[] | undefined,
   ruleType: string,
@@ -75,21 +81,21 @@ export function validateQuestion(
   return { valid: true };
 }
 
-export function isQuestionVisible(
-  questions: QuestionnaireQuestion[],
+const isQuestionVisibleByCode = (
+  questionsByCode: Map<string, QuestionnaireQuestion>,
   showController?: ShowController | "" | null,
   visiting = new Set<string>(),
-): boolean {
+): boolean => {
   if (!showController || !Array.isArray(showController.questions)) return true;
 
   const checks = showController.questions.map((condition) => {
     if (visiting.has(condition.code)) return false;
-    const question = questions.find((candidate) => candidate.code === condition.code);
+    const question = questionsByCode.get(condition.code);
     if (!question) return false;
 
     const nextVisiting = new Set(visiting);
     nextVisiting.add(condition.code);
-    if (!isQuestionVisible(questions, question.show_controller, nextVisiting)) return false;
+    if (!isQuestionVisibleByCode(questionsByCode, question.show_controller, nextVisiting)) return false;
 
     const selectedCodes = Array.isArray(question.value)
       ? question.value.map(String)
@@ -107,8 +113,34 @@ export function isQuestionVisible(
   return false;
 }
 
+export function isQuestionVisible(
+  questions: QuestionnaireQuestion[],
+  showController?: ShowController | "" | null,
+  visiting = new Set<string>(),
+): boolean {
+  const questionsByCode = new Map(questions.map((question) => [question.code, question]));
+  return isQuestionVisibleByCode(questionsByCode, showController, visiting);
+}
+
+export function getVisibleQuestionEntries(
+  questions: QuestionnaireQuestion[],
+): VisibleQuestionEntry[] {
+  const questionsByCode = new Map(questions.map((question) => [question.code, question]));
+  let displayIndex = 0;
+  const entries: VisibleQuestionEntry[] = [];
+
+  questions.forEach((question, sourceIndex) => {
+    if (!isQuestionVisibleByCode(questionsByCode, question.show_controller)) return;
+
+    entries.push({ question, sourceIndex, displayIndex });
+    if (question.type !== "Section") displayIndex++;
+  });
+
+  return entries;
+}
+
 export function getVisibleQuestions(questions: QuestionnaireQuestion[]): QuestionnaireQuestion[] {
-  return questions.filter((question) => isQuestionVisible(questions, question.show_controller));
+  return getVisibleQuestionEntries(questions).map(({ question }) => question);
 }
 
 export function getVisibleAnswerQuestions(questions: QuestionnaireQuestion[]): QuestionnaireQuestion[] {
