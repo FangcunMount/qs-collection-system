@@ -1,0 +1,47 @@
+@import "../../../styles/tokens.less";
+
+.page-shell {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  color: @text-color-primary;
+  background: @surface-page;
+  box-sizing: border-box;
+  overflow: hidden;
+
+  &--medical {
+    background: linear-gradient(180deg, @color-medical-50 0%, @surface-page 34%);
+  }
+
+  &--personality {
+    background: linear-gradient(180deg, @color-personality-50 0%, @surface-page 34%);
+  }
+
+  &--ability {
+    background: linear-gradient(180deg, @color-ability-50 0%, @surface-page 34%);
+  }
+
+  &__content {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  &__content--safe-bottom {
+    padding-bottom: @safe-area-bottom;
+  }
+
+  &__content--with-action {
+    padding-bottom: calc(@bottom-action-min-height + @safe-area-bottom);
+  }
+
+  &__fixed-action {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+  }
+}

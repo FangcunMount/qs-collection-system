@@ -1,0 +1,173 @@
+// Qlume design tokens.
+// This is the only file that owns literal design values. Legacy Less variables
+// in theme.less and qlume-home-layout.less must remain aliases only.
+
+// Neutral palette
+@color-white: #FFFFFF;
+@color-neutral-25: #FCFDFF;
+@color-neutral-50: #F8FAFF;
+@color-neutral-100: #F1F5FA;
+@color-neutral-200: #DDE8F6;
+@color-neutral-300: #C7D3E3;
+@color-neutral-400: #8A96AA;
+@color-neutral-500: #66738E;
+@color-neutral-600: #53627A;
+@color-neutral-700: #34435C;
+@color-neutral-900: #071735;
+
+// Domain palettes
+@color-medical-50: #EAF5FF;
+@color-medical-100: #D9ECFF;
+@color-medical-200: #C9DCF8;
+@color-medical-500: #2F80ED;
+@color-medical-600: #2468C8;
+@color-medical-700: #1D55A6;
+
+@color-personality-50: #FFF8E8;
+@color-personality-100: #FFF1D6;
+@color-personality-200: #F7D3A8;
+@color-personality-500: #FF8A00;
+@color-personality-600: #C96800;
+@color-personality-700: #A65300;
+
+@color-ability-50: #F3EEFF;
+@color-ability-100: #E9E1FF;
+@color-ability-200: #DAD0FB;
+@color-ability-500: #7A5AF8;
+@color-ability-600: #6545DD;
+@color-ability-700: #5235BE;
+
+// Brand and action colors retained for compatibility with the existing Qlume
+// home language and Taro UI overrides.
+@color-brand-blue: #3F5DFF;
+@color-brand-violet: #7B61FF;
+@color-brand-blue-soft: #EEF4FF;
+@color-personality-yellow-soft: #FFF8C9;
+@color-qlume-more: #7E8BA2;
+@color-action-primary: #1890FF;
+@color-action-primary-hover: #40A9FF;
+@color-action-primary-active: #096DD9;
+@color-action-primary-soft: #E6F7FF;
+@color-action-primary-softer: #BAE7FF;
+@color-action-primary-bright: #5BA6FF;
+
+// Status colors
+@color-success-50: #F0FDF4;
+@color-success-100: #DCFCE7;
+@color-success-500: #22C55E;
+@color-success-700: #16794A;
+@color-warning-50: #FFF8E6;
+@color-warning-100: #FEF3C7;
+@color-warning-500: #F59E0B;
+@color-warning-700: #8A5A00;
+@color-danger-50: #FEF2F2;
+@color-danger-100: #FEE2E2;
+@color-danger-500: #EF4444;
+@color-danger-700: #C92A2A;
+@color-info-100: #DBEAFE;
+@color-info-500: #3B82F6;
+
+// Legacy semantic palette kept here while older pages migrate.
+@legacy-success: #52C41A;
+@legacy-success-soft: #F6FFED;
+@legacy-success-softer: #D9F7BE;
+@legacy-warning: #FA8C16;
+@legacy-warning-soft: #FFF7E6;
+@legacy-danger: #F5222D;
+@legacy-danger-soft: #FFF1F0;
+@legacy-text-primary: #262626;
+@legacy-text-secondary: #595959;
+@legacy-text-tertiary: #8C8C8C;
+@legacy-text-disabled: #BFBFBF;
+@legacy-surface-page: #FAFAFA;
+@legacy-surface-section: #F5F7FA;
+@legacy-surface-hover: #F0F0F0;
+@legacy-surface-active: #E8E8E8;
+@legacy-border-base: #F0F0F0;
+@legacy-border-light: #E5E7EB;
+@legacy-border-dark: #D9D9D9;
+
+// Semantic colors
+@text-color-primary: @color-neutral-900;
+@text-color-secondary: @color-neutral-600;
+@text-color-tertiary: @color-neutral-500;
+@text-color-disabled: @color-neutral-400;
+@surface-page: @color-neutral-50;
+@surface-card: @color-white;
+@surface-subtle: @color-neutral-100;
+@surface-disabled: #F5F5F5;
+@border-color-base: @color-neutral-200;
+@border-color-strong: @color-neutral-300;
+@surface-card-94: rgba(255, 255, 255, 0.94);
+@surface-card-96: rgba(255, 255, 255, 0.96);
+@surface-card-98: rgba(255, 255, 255, 0.98);
+@overlay-ink-08: rgba(7, 23, 53, 0.08);
+@overlay-text-40: rgba(0, 0, 0, 0.4);
+@overlay-text-90: rgba(0, 0, 0, 0.9);
+
+// Typography. Supported font weights are intentionally restricted.
+@font-size-page-title: 46rpx;
+@font-size-section-title: 36rpx;
+@font-size-card-title: 32rpx;
+@font-size-card-title-sm: 28rpx;
+@font-size-body: 26rpx;
+@font-size-description: 25rpx;
+@font-size-caption: 23rpx;
+@font-size-action: 28rpx;
+@font-weight-regular: 400;
+@font-weight-medium: 500;
+@font-weight-semibold: 600;
+@font-weight-bold: 700;
+@font-weight-black: 900;
+
+// Spacing
+@space-1: 8rpx;
+@space-2: 16rpx;
+@space-3: 24rpx;
+@space-4: 32rpx;
+@space-5: 40rpx;
+@space-6: 48rpx;
+@space-7: 56rpx;
+@space-8: 64rpx;
+@page-gutter: 36rpx;
+@section-gap: 54rpx;
+@card-gap: 24rpx;
+
+// Radius
+@radius-xs: 8rpx;
+@radius-sm-token: 12rpx;
+@radius-md: 16rpx;
+@radius-lg-token: 24rpx;
+@radius-card: 32rpx;
+@radius-pill: 999rpx;
+
+// Shadows
+@shadow-small: 0 4rpx 8rpx rgba(20, 48, 88, 0.05);
+@shadow-medium: 0 8rpx 24rpx rgba(20, 48, 88, 0.08);
+@shadow-large: 0 14rpx 36rpx rgba(20, 48, 88, 0.10);
+@shadow-soft: 0 8rpx 24rpx rgba(20, 48, 88, 0.035);
+@legacy-shadow-small: 0 4rpx 8rpx rgba(0, 0, 0, 0.04);
+@legacy-shadow-medium: 0 8rpx 16rpx rgba(0, 0, 0, 0.08);
+@legacy-shadow-large: 0 12rpx 24rpx rgba(0, 0, 0, 0.12);
+@legacy-qlume-card-shadow: 0 14rpx 36rpx rgba(20, 48, 88, 0.055);
+@shadow-bottom-menu: 0 -14rpx 38rpx rgba(21, 47, 84, 0.09);
+@shadow-bottom-action: 0 -12rpx 32rpx rgba(20, 48, 88, 0.08);
+@shadow-medical-fab: 0 16rpx 30rpx rgba(47, 128, 237, 0.42);
+@shadow-medical-fab-pressed: 0 10rpx 22rpx rgba(47, 128, 237, 0.36);
+@shadow-subscribe: 0 16rpx 32rpx rgba(24, 144, 255, 0.24);
+@shadow-floating-card: 0 20rpx 40rpx rgba(15, 23, 42, 0.18);
+
+// Interaction and safe-area geometry
+@touch-target-min: 88rpx;
+@navigation-content-height: 88rpx;
+@bottom-action-min-height: 112rpx;
+@bottom-menu-spacer: calc(184rpx + env(safe-area-inset-bottom));
+@safe-area-bottom: env(safe-area-inset-bottom);
+@safe-area-left: env(safe-area-inset-left);
+@safe-area-right: env(safe-area-inset-right);
+
+// Gradients
+@gradient-action-primary: linear-gradient(135deg, @color-action-primary 0%, @color-action-primary-active 100%);
+@gradient-action-primary-pressed: linear-gradient(135deg, @color-action-primary-hover 0%, @color-action-primary 100%);
+@gradient-success-token: linear-gradient(135deg, @legacy-success 0%, #389E0D 100%);
+@gradient-header-token: linear-gradient(180deg, @color-white 0%, #F5F7FA 100%);

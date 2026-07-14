@@ -1,0 +1,104 @@
+@import "../../../styles/tokens.less";
+
+.action-button {
+  min-width: 176rpx;
+  min-height: @touch-target-min;
+  margin: 0;
+  padding: 0 @space-4;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2rpx solid transparent;
+  border-radius: @radius-pill;
+  color: @color-white;
+  background: @color-medical-500;
+  box-shadow: none;
+  box-sizing: border-box;
+  line-height: 1.2;
+  transition: transform 0.16s ease, opacity 0.16s ease, background 0.16s ease;
+
+  &::after {
+    display: none;
+  }
+
+  &--block {
+    width: 100%;
+    display: flex;
+  }
+
+  &--medical.action-button--primary {
+    background: @color-medical-600;
+  }
+
+  &--personality.action-button--primary {
+    background: @color-personality-600;
+  }
+
+  &--ability.action-button--primary {
+    background: @color-ability-600;
+  }
+
+  &--neutral.action-button--primary {
+    background: @color-neutral-900;
+  }
+
+  &--secondary {
+    color: @color-medical-700;
+    border-color: @color-medical-200;
+    background: @color-white;
+  }
+
+  &--personality.action-button--secondary {
+    color: @color-personality-700;
+    border-color: @color-personality-200;
+  }
+
+  &--ability.action-button--secondary {
+    color: @color-ability-700;
+    border-color: @color-ability-200;
+  }
+
+  &--neutral.action-button--secondary {
+    color: @text-color-primary;
+    border-color: @border-color-strong;
+  }
+
+  &--ghost {
+    color: @text-color-secondary;
+    background: transparent;
+  }
+
+  &--danger {
+    color: @color-white;
+    background: @color-danger-700;
+  }
+
+  &--disabled {
+    color: @text-color-disabled;
+    border-color: @border-color-base;
+    background: @surface-disabled;
+    opacity: 1;
+  }
+
+  &--pressed {
+    opacity: 0.84;
+    transform: scale(0.98);
+  }
+
+  &__content {
+    min-height: @touch-target-min;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__label {
+    color: inherit;
+    font-size: @font-size-action;
+    line-height: 1.35;
+    font-weight: @font-weight-bold;
+    text-align: center;
+    word-break: break-word;
+  }
+}
+

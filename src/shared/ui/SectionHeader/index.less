@@ -1,0 +1,76 @@
+@import "../../../styles/tokens.less";
+
+.section-header {
+  width: 100%;
+  min-height: @touch-target-min;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: @space-3;
+  box-sizing: border-box;
+
+  &__copy {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: @space-1;
+  }
+
+  &__title {
+    color: @text-color-primary;
+    font-size: @font-size-section-title;
+    line-height: 1.3;
+    font-weight: @font-weight-black;
+    word-break: break-word;
+  }
+
+  &__description {
+    color: @text-color-secondary;
+    font-size: @font-size-description;
+    line-height: 1.5;
+    font-weight: @font-weight-regular;
+    word-break: break-word;
+  }
+
+  &__action {
+    min-width: @touch-target-min;
+    min-height: @touch-target-min;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: @space-1;
+    color: @text-color-secondary;
+    border-radius: @radius-pill;
+  }
+
+  &__action--pressed {
+    opacity: 0.68;
+  }
+
+  &__action-label {
+    color: inherit;
+    font-size: 24rpx;
+    font-weight: @font-weight-bold;
+  }
+
+  &__action-arrow {
+    color: inherit;
+    font-size: 36rpx;
+    line-height: 1;
+  }
+
+  &--medical .section-header__action {
+    color: @color-medical-700;
+  }
+
+  &--personality .section-header__action {
+    color: @color-personality-700;
+  }
+
+  &--ability .section-header__action {
+    color: @color-ability-700;
+  }
+}
+

@@ -1,0 +1,63 @@
+@import "../../../styles/tokens.less";
+
+.filter-chip {
+  min-height: @touch-target-min;
+  margin: 0;
+  padding: 0 @space-3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: @text-color-secondary;
+  border: 2rpx solid @border-color-base;
+  border-radius: @radius-pill;
+  background: @color-white;
+  box-sizing: border-box;
+  line-height: 1;
+
+  &::after {
+    display: none;
+  }
+
+  &__label {
+    color: inherit;
+    font-size: @font-size-body;
+    line-height: 1.3;
+    font-weight: @font-weight-semibold;
+    word-break: break-word;
+  }
+
+  &--selected {
+    color: @color-medical-700;
+    border-color: @color-medical-200;
+    background: @color-medical-50;
+  }
+
+  &--personality.filter-chip--selected {
+    color: @color-personality-700;
+    border-color: @color-personality-200;
+    background: @color-personality-50;
+  }
+
+  &--ability.filter-chip--selected {
+    color: @color-ability-700;
+    border-color: @color-ability-200;
+    background: @color-ability-50;
+  }
+
+  &--neutral.filter-chip--selected {
+    color: @text-color-primary;
+    border-color: @border-color-strong;
+    background: @surface-subtle;
+  }
+
+  &--disabled {
+    color: @text-color-disabled;
+    border-color: @border-color-base;
+    background: @surface-disabled;
+  }
+
+  &--pressed {
+    opacity: 0.78;
+  }
+}
+

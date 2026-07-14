@@ -4,9 +4,17 @@
     "strict": true,
     "noImplicitAny": true,
     "isolatedModules": false,
-    "types": ["node", "react", "react-dom"]
+    "types": ["node", "react", "react-dom", "jest"]
   },
   "include": [
+    "src/types/**/*.d.ts",
+    "src/shared/ui/**/*.ts",
+    "src/shared/ui/**/*.tsx",
+    "src/modules/system/pages/SystemErrorPage.tsx",
+    "src/modules/catalog/viewModels/**/*.ts",
+    "src/modules/catalog/pages/ScaleCatalogPage.tsx",
+    "src/modules/catalog/pages/ScaleListPage.tsx",
+    "src/modules/catalog/pages/PersonalityCatalogPage.tsx",
     "src/store/tokenStore.ts",
     "src/store/testeeStore.ts",
     "src/store/entryContextStore.ts"

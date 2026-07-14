@@ -11,7 +11,7 @@
   padding: 20rpx 24rpx;
   border-radius: 999rpx;
   background: @gradient-primary;
-  box-shadow: 0 16rpx 32rpx rgba(24, 144, 255, 0.24);
+  box-shadow: @shadow-subscribe;
 
   &__icon {
     font-size: 28rpx;
@@ -21,7 +21,7 @@
   &__text {
     font-size: 26rpx;
     font-weight: 700;
-    color: #fff;
+    color: @color-white;
     line-height: 1;
   }
 }
@@ -29,8 +29,8 @@
 .plan-subscribe-card {
   margin: 0 32rpx 24rpx;
   padding: 32rpx;
-  background: linear-gradient(180deg, rgba(24, 144, 255, 0.08) 0%, #ffffff 100%);
-  border: 2rpx solid rgba(24, 144, 255, 0.14);
+  background: linear-gradient(180deg, fade(@color-action-primary, 8%) 0%, @color-white 100%);
+  border: 2rpx solid fade(@color-action-primary, 14%);
   border-radius: @radius-base;
   box-shadow: @shadow-sm;
 
@@ -41,7 +41,7 @@
     bottom: calc(32rpx + env(safe-area-inset-bottom));
     margin: 0;
     z-index: 1250;
-    box-shadow: 0 20rpx 40rpx rgba(15, 23, 42, 0.18);
+    box-shadow: @shadow-floating-card;
   }
 
   &__header {
@@ -90,12 +90,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 84rpx;
+    min-height: @touch-target-min;
     border-radius: 999rpx;
   }
 
   &__ghost {
-    background: #fff;
+    background: @color-white;
     border: 2rpx solid @border-base;
   }
 
@@ -115,6 +115,6 @@
   }
 
   &__primary-text {
-    color: #fff;
+    color: @color-white;
   }
 }

@@ -1,51 +1,54 @@
-@qlume-ink: #071735;
-@qlume-muted: #66738E;
-@qlume-soft-muted: #8A96AA;
-@qlume-line: #DDE8F6;
-@qlume-blue: #2F80ED;
-@qlume-primary: #3F5DFF;
-@qlume-primary-violet: #7B61FF;
-@qlume-primary-soft: #EEF4FF;
-@qlume-scale-primary: #2F80ED;
-@qlume-scale-soft: #EAF5FF;
-@qlume-scale-line: #C9DCF8;
-@qlume-personality-primary: #FF8A00;
-@qlume-personality-soft: #FFF8C9;
-@qlume-personality-line: #F7D3A8;
-@qlume-ability-primary: #7A5AF8;
-@qlume-ability-soft: #F3EEFF;
-@qlume-ability-line: #DAD0FB;
-@qlume-page-x: 36rpx;
-@qlume-section-gap: 54rpx;
-@qlume-card-gap: 24rpx;
-@qlume-card-radius: 32rpx;
-@qlume-card-shadow: 0 14rpx 36rpx rgba(20, 48, 88, 0.055);
-@qlume-soft-shadow: 0 8rpx 24rpx rgba(20, 48, 88, 0.035);
-@qlume-bottom-menu-spacer: calc(184rpx + env(safe-area-inset-bottom));
+@import "./tokens.less";
+
+// Qlume compatibility aliases. Literal values live in tokens.less.
+@qlume-ink: @color-neutral-900;
+@qlume-muted: @color-neutral-500;
+@qlume-soft-muted: @color-neutral-400;
+@qlume-line: @color-neutral-200;
+@qlume-blue: @color-medical-500;
+@qlume-primary: @color-brand-blue;
+@qlume-primary-violet: @color-brand-violet;
+@qlume-primary-soft: @color-brand-blue-soft;
+@qlume-scale-primary: @color-medical-500;
+@qlume-scale-soft: @color-medical-50;
+@qlume-scale-line: @color-medical-200;
+@qlume-personality-primary: @color-personality-500;
+@qlume-personality-soft: @color-personality-yellow-soft;
+@qlume-personality-line: @color-personality-200;
+@qlume-ability-primary: @color-ability-500;
+@qlume-ability-soft: @color-ability-50;
+@qlume-ability-line: @color-ability-200;
+@qlume-page-x: @page-gutter;
+@qlume-section-gap: @section-gap;
+@qlume-card-gap: @card-gap;
+@qlume-card-radius: @radius-card;
+@qlume-card-shadow: @legacy-qlume-card-shadow;
+@qlume-soft-shadow: @shadow-soft;
+@qlume-bottom-menu-spacer: @bottom-menu-spacer;
 
 // 统一字号阶梯（750 设计稿，rpx）
-@qlume-fs-page-title: 46rpx;
-@qlume-fs-section-title: 36rpx;
-@qlume-fs-card-title: 32rpx;
-@qlume-fs-card-title-sm: 28rpx;
-@qlume-fs-body: 26rpx;
-@qlume-fs-desc: 25rpx;
-@qlume-fs-tag: 23rpx;
-@qlume-fs-caption: 23rpx;
+@qlume-fs-page-title: @font-size-page-title;
+@qlume-fs-section-title: @font-size-section-title;
+@qlume-fs-card-title: @font-size-card-title;
+@qlume-fs-card-title-sm: @font-size-card-title-sm;
+@qlume-fs-body: @font-size-body;
+@qlume-fs-desc: @font-size-description;
+@qlume-fs-tag: @font-size-caption;
+@qlume-fs-caption: @font-size-caption;
 @qlume-fs-more: 24rpx;
 
 .qlume-card-surface() {
-  border: 1rpx solid rgba(221, 232, 246, 0.92);
+  border: 1rpx solid fade(@color-neutral-200, 92%);
   border-radius: @qlume-card-radius;
-  background: rgba(255, 255, 255, 0.96);
+  background: @surface-card-96;
   box-shadow: @qlume-card-shadow;
   box-sizing: border-box;
 }
 
 .qlume-soft-card() {
-  border: 1rpx solid rgba(221, 232, 246, 0.92);
+  border: 1rpx solid fade(@color-neutral-200, 92%);
   border-radius: 28rpx;
-  background: rgba(255, 255, 255, 0.98);
+  background: @surface-card-98;
   box-shadow: @qlume-soft-shadow;
   box-sizing: border-box;
 }
@@ -68,7 +71,7 @@
 
 .qlume-section-more() {
   flex-shrink: 0;
-  color: #7E8BA2;
+  color: @color-qlume-more;
   display: flex;
   align-items: center;
   gap: 6rpx;

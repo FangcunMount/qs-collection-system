@@ -1,12 +1,21 @@
 import React, { useEffect, useState, useCallback } from "react";
 import Taro, { usePullDownRefresh } from "@tarojs/taro";
 import { View, Text, ScrollView, Image } from "@tarojs/components";
-import { AtIcon } from "taro-ui";
 import SearchBox from "@/shared/ui/SearchBox";
+import AppNavigationBar from "@/shared/ui/AppNavigationBar";
+import FilterChip from "@/shared/ui/FilterChip";
+import PageShell from "@/shared/ui/PageShell";
+import StatePanel from "@/shared/ui/StatePanel";
+import SurfaceCard from "@/shared/ui/SurfaceCard";
 import { routes } from "@/shared/config/routes";
 import { SCALE_COMMON_CATEGORIES, isVisibleInMedicalScaleCatalog } from "@/shared/config/scaleCatalogHome";
 import { listPublishedAssessmentModels } from "@/services/api/assessmentModelCatalogApi";
 import { getLogger } from "@/shared/lib/logger";
+import {
+  mapMedicalCatalogCard,
+  matchesCatalogCardSearch,
+  type CatalogCardViewModel,
+} from "@/modules/catalog/viewModels/catalogCard";
 import categorySleepImage from "@/pages/catalog-medical/assets/home/category-sleep.png";
 import categoryMoodImage from "@/pages/catalog-medical/assets/home/category-mood.png";
 import categoryPressureImage from "@/pages/catalog-medical/assets/home/category-pressure.png";
@@ -22,48 +31,9 @@ const CATEGORY_CHIPS = [
   ...SCALE_COMMON_CATEGORIES.map((item) => ({ value: item.value, key: item.key, title: item.title })),
 ];
 
-const matchesScaleSearch = (scale, searchText) => {
-  const query = String(searchText || '').trim().toLowerCase();
-  const haystack = [scale.code, scale.name, scale.description, scale.category, ...(scale.tags || [])]
-    .map(value => String(value || '').toLowerCase())
-    .join(' ');
-  if (query && !haystack.includes(query)) return false;
-  return true;
-};
-
-const normalizeLabel = (value) => {
-  if (!value) return "";
-  if (typeof value === "string" || typeof value === "number") {
-    return String(value).trim();
-  }
-  return String(value.label || value.name || value.title || value.value || value.code || "").trim();
-};
-
-const normalizeTags = (tags) => {
-  if (!Array.isArray(tags)) return [];
-  return tags.map(normalizeLabel).filter(Boolean);
-};
-
-const normalizeScale = (item) => ({
-  code: normalizeLabel(item.code || item.scale_code || item.questionnaire_code),
-  name: normalizeLabel(item.title || item.name || item.scale_name) || "医学量表",
-  description: normalizeLabel(item.description) || "了解近期状态，辅助自我观察与沟通参考。",
-  category: normalizeLabel(item.category),
-  tags: normalizeTags(item.tags),
-  question_count: Number(item.question_count || item.questionCount || 0),
-  status: item.status,
-});
-
-const formatDuration = (scale) => {
-  if (scale?.question_count > 0) {
-    return `约 ${Math.max(3, Math.ceil(scale.question_count / 6))} 分钟`;
-  }
-  return "约 5 分钟";
-};
-
-const resolveScaleImage = (scale) => {
+const resolveScaleImage = (scale: CatalogCardViewModel) => {
   const marker = [
-    scale?.name,
+    scale.title,
     scale?.description,
     scale?.category,
     ...(scale?.tags || []),
@@ -78,25 +48,31 @@ const resolveScaleImage = (scale) => {
   return categorySleepImage;
 };
 
-const resolveHeaderMetrics = () => {
-  try {
-    const systemInfo = Taro.getSystemInfoSync?.() || {};
-    return {
-      statusBarHeight: systemInfo.statusBarHeight || 0,
-    };
-  } catch (error) {
-    console.warn("[ScaleListPage] 获取状态栏高度失败:", error);
-    return { statusBarHeight: 0 };
-  }
-};
+interface PaginationState {
+  page: number;
+  page_size: number;
+  total: number;
+  total_pages: number;
+}
+
+interface CatalogQuery {
+  kind: string;
+  category?: string;
+  page: number;
+  pageSize: number;
+}
+
+const loadPublishedModels = listPublishedAssessmentModels as unknown as (
+  query: CatalogQuery,
+) => Promise<Record<string, unknown>>;
 
 const ScaleListPage = () => {
-  const [scaleList, setScaleList] = useState([]);
+  const [scaleList, setScaleList] = useState<CatalogCardViewModel[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState("");
   const [searchText, setSearchText] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [navMetrics, setNavMetrics] = useState(() => resolveHeaderMetrics());
-  const [pagination, setPagination] = useState({
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [pagination, setPagination] = useState<PaginationState>({
     page: 1,
     page_size: 20,
     total: 0,
@@ -108,32 +84,35 @@ const ScaleListPage = () => {
   const loadScaleList = useCallback(async (page = 1, append = false) => {
     try {
       setLoading(true);
+      setLoadError("");
       const hasSearch = Boolean(String(searchText || '').trim());
       const loadAllPages = hasSearch || !selectedCategory;
       let currentPage = loadAllPages ? 1 : page;
       let totalPages = 1;
       let total = 0;
-      const collected = [];
+      const collected: CatalogCardViewModel[] = [];
 
       do {
-        const result = await listPublishedAssessmentModels({
+        const result = await loadPublishedModels({
           kind: 'scale',
           category: selectedCategory || undefined,
           page: currentPage,
           pageSize: 20,
         });
-        const payload = result.data || result;
-        collected.push(...(payload.models || []).map(normalizeScale).filter(
+        const payload = (result.data || result) as Record<string, unknown>;
+        const models: unknown[] = Array.isArray(payload.models) ? payload.models : [];
+        collected.push(...models.map(mapMedicalCatalogCard).filter(
           (scale) => isVisibleInMedicalScaleCatalog(scale.category)
         ));
         total = Number(payload.total || collected.length);
-        totalPages = Math.max(1, Number(payload.total_pages || Math.ceil(total / (payload.page_size || 20))));
+        const responsePageSize = Number(payload.page_size || 20);
+        totalPages = Math.max(1, Number(payload.total_pages || Math.ceil(total / responsePageSize)));
         if (!loadAllPages) break;
         currentPage += 1;
       } while (currentPage <= totalPages);
 
       const filtered = hasSearch
-        ? collected.filter(scale => matchesScaleSearch(scale, searchText))
+        ? collected.filter((scale) => matchesCatalogCardSearch(scale, searchText))
         : collected;
       setScaleList((prev) => (append ? [...prev, ...filtered] : filtered));
       setPagination({
@@ -144,6 +123,7 @@ const ScaleListPage = () => {
       });
     } catch (error) {
       console.error("加载量表列表失败:", error);
+      setLoadError("量表目录加载失败，请检查网络后重试。");
       Taro.showToast({ title: "加载失败，请重试", icon: "none", duration: 2000 });
     } finally {
       setLoading(false);
@@ -154,10 +134,6 @@ const ScaleListPage = () => {
     await loadScaleList(1, false);
     Taro.stopPullDownRefresh();
   });
-
-  useEffect(() => {
-    setNavMetrics(resolveHeaderMetrics());
-  }, []);
 
   useEffect(() => {
     const params = Taro.getCurrentInstance()?.router?.params || {};
@@ -190,13 +166,13 @@ const ScaleListPage = () => {
     setQueryToken((token) => token + 1);
   }, []);
 
-  const handleChipClick = useCallback((value) => {
+  const handleChipClick = useCallback((value: string | null) => {
     setSearchText("");
     setSelectedCategory(value);
     setQueryToken((token) => token + 1);
   }, []);
 
-  const handleScaleClick = useCallback((scale) => {
+  const handleScaleClick = useCallback((scale: CatalogCardViewModel) => {
     logger.RUN("点击量表", scale);
     if (!scale?.code) {
       Taro.showToast({ title: "量表暂不可用", icon: "none" });
@@ -214,18 +190,14 @@ const ScaleListPage = () => {
   };
 
   return (
-    <View className="scale-list-page">
-      <ScrollView scrollY className="scale-list-page__scroll" enhanced showScrollbar={false}>
-        <View
-          className="scale-list-nav"
-          style={{ paddingTop: `${navMetrics.statusBarHeight}px` }}
-        >
-          <View className="scale-list-nav__back" onClick={handleBack}>
-            <AtIcon value="chevron-left" size="26" color="#071735" />
-          </View>
-          <Text className="scale-list-nav__title">全部量表</Text>
-          <View className="scale-list-nav__spacer" />
-        </View>
+    <PageShell
+      tone="medical"
+      className="scale-list-page"
+      contentClassName="scale-list-page__scroll"
+      navigation={(
+        <AppNavigationBar title="全部量表" showBack onBack={handleBack} tone="medical" transparent />
+      )}
+    >
 
         <View className="scale-list-search">
           <SearchBox
@@ -242,13 +214,15 @@ const ScaleListPage = () => {
         <ScrollView scrollX className="scale-list-chip-scroll" enhanced showScrollbar={false}>
           <View className="scale-list-chip-track">
             {CATEGORY_CHIPS.map((chip) => (
-              <View
+              <FilterChip
                 key={chip.key}
-                className={`scale-list-chip ${selectedCategory === chip.value ? "is-active" : ""}`}
+                className="scale-list-chip"
+                selected={selectedCategory === chip.value}
+                tone="medical"
                 onClick={() => handleChipClick(chip.value)}
               >
-                <Text className="scale-list-chip__text">{chip.title}</Text>
-              </View>
+                {chip.title}
+              </FilterChip>
             ))}
           </View>
         </ScrollView>
@@ -259,14 +233,22 @@ const ScaleListPage = () => {
 
         <View className="scale-list">
           {loading && scaleList.length === 0 ? (
-            <View className="scale-list-placeholder">
-              <Text>正在加载量表...</Text>
-            </View>
+            <StatePanel state="loading" title="正在加载量表" tone="medical" compact />
+          ) : loadError && scaleList.length === 0 ? (
+            <StatePanel
+              state="error"
+              title="量表目录加载失败"
+              description={loadError}
+              actionText="重新加载"
+              onAction={() => loadScaleList(1, false)}
+              tone="medical"
+              compact
+            />
           ) : scaleList.length > 0 ? (
             <>
               {scaleList.map((scale) => (
-                <View
-                  key={scale.code || scale.name}
+                <SurfaceCard
+                  key={scale.code || scale.title}
                   className="scale-list-row"
                   onClick={() => handleScaleClick(scale)}
                 >
@@ -274,11 +256,11 @@ const ScaleListPage = () => {
                     <Image className="scale-list-row__image" src={resolveScaleImage(scale)} mode="aspectFit" />
                   </View>
                   <View className="scale-list-row__content">
-                    <Text className="scale-list-row__title">{scale.name}</Text>
+                    <Text className="scale-list-row__title">{scale.title}</Text>
                     <Text className="scale-list-row__desc">{scale.description}</Text>
                   </View>
-                  <Text className="scale-list-row__duration">{formatDuration(scale)}</Text>
-                </View>
+                  <Text className="scale-list-row__duration">{scale.durationLabel}</Text>
+                </SurfaceCard>
               ))}
               {pagination.page < pagination.total_pages && (
                 <View className="scale-list-load-more" onClick={handleLoadMore}>
@@ -287,15 +269,18 @@ const ScaleListPage = () => {
               )}
             </>
           ) : (
-            <View className="scale-list-placeholder">
-              <Text>暂无匹配量表，请换个关键词或分类试试。</Text>
-            </View>
+            <StatePanel
+              state="empty"
+              title="暂无匹配量表"
+              description="请换个关键词或分类试试。"
+              tone="medical"
+              compact
+            />
           )}
         </View>
 
         <View className="scale-list__bottom-spacer" />
-      </ScrollView>
-    </View>
+    </PageShell>
   );
 };
 

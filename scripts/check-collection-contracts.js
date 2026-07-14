@@ -214,7 +214,7 @@ assertContains(
   /category,\s*\n\s*page,/,
   'assessment model catalog must send the documented category query parameter'
 );
-const scaleListPage = read('src/modules/catalog/pages/ScaleListPage.jsx');
+const scaleListPage = read('src/modules/catalog/pages/ScaleListPage.tsx');
 assertContains(
   scaleListPage,
   /category:\s*selectedCategory\s*\|\|\s*undefined/,

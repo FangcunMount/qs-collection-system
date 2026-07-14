@@ -1,9 +1,14 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Taro from "@tarojs/taro";
-import { View, Text, ScrollView, Image } from "@tarojs/components";
+import { View, Text, Image } from "@tarojs/components";
 import { AtIcon } from "taro-ui";
 
 import { PrivacyAuthorization } from "@/shared/ui/PrivacyAuthorization";
+import AppNavigationBar from "@/shared/ui/AppNavigationBar";
+import PageShell from "@/shared/ui/PageShell";
+import SectionHeader from "@/shared/ui/SectionHeader";
+import StatePanel from "@/shared/ui/StatePanel";
+import SurfaceCard from "@/shared/ui/SurfaceCard";
 import { routes } from "@/shared/config/routes";
 import { loadGroupedPersonalityCatalog } from "@/modules/catalog/services/personalityCatalogService";
 import {
@@ -12,6 +17,10 @@ import {
 } from "@/modules/catalog/lib/personalityCatalog";
 import AssessmentKindReportSection from "@/modules/assessment/components/records/AssessmentKindReportSection";
 import { ASSESSMENT_KIND } from "@/shared/lib/assessmentKind";
+import {
+  mapPersonalityCatalogCard,
+  type CatalogCardViewModel,
+} from "@/modules/catalog/viewModels/catalogCard";
 import heroImage from "@/assets/home/home-entry-personality.png";
 import typeBasicImage from "@/pages/catalog-personality/assets/icon/icon-personality-basic.png";
 import funTestImage from "@/pages/catalog-personality/assets/icon/icon-sbti.png";
@@ -28,27 +37,14 @@ const INTERPRET_SERVICES = Object.freeze([
   { title: "成长建议", subtitle: "提供个性化建议", image: growthImage },
 ]);
 
-const resolveHeaderMetrics = () => {
-  try {
-    const systemInfo = Taro.getSystemInfoSync?.() || {};
-    return {
-      statusBarHeight: systemInfo.statusBarHeight || 0,
-    };
-  } catch (error) {
-    console.warn("[PersonalityCatalogPage] 获取状态栏高度失败:", error);
-    return { statusBarHeight: 0 };
-  }
-};
-
-const resolveMiniCardButtonColor = (theme) => {
+const resolveMiniCardButtonColor = (theme: string) => {
   if (theme === "fun") return "#0CA66A";
   if (theme === "ocean") return "#2B7DE9";
   return "#7656D9";
 };
 
 const PersonalityCatalogPage = () => {
-  const [navMetrics, setNavMetrics] = useState(() => resolveHeaderMetrics());
-  const [catalogItems, setCatalogItems] = useState([]);
+  const [catalogItems, setCatalogItems] = useState<CatalogCardViewModel[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
@@ -61,14 +57,7 @@ const PersonalityCatalogPage = () => {
     };
   }, [catalogItems]);
 
-  useEffect(() => {
-    setNavMetrics(resolveHeaderMetrics());
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadCatalog = async () => {
+  const loadCatalog = useCallback(async () => {
       setLoading(true);
       setLoadError("");
 
@@ -79,29 +68,20 @@ const PersonalityCatalogPage = () => {
           category: "personality",
         });
 
-        if (cancelled) return;
-
-        setCatalogItems(result.catalogItems || []);
-        if (!result.catalogItems?.length) {
-          setLoadError("暂无可用人格测评，请稍后再试");
-        }
+        const items: unknown[] = Array.isArray(result.catalogItems) ? result.catalogItems : [];
+        setCatalogItems(items.map(mapPersonalityCatalogCard));
       } catch (error) {
-        if (cancelled) return;
         console.warn("[PersonalityCatalogPage] 加载人格模型目录失败", error);
         setCatalogItems([]);
         setLoadError("人格测评目录加载失败，请检查网络后重试");
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
-    };
-
-    loadCatalog();
-    return () => {
-      cancelled = true;
-    };
   }, []);
+
+  useEffect(() => {
+    loadCatalog();
+  }, [loadCatalog]);
 
   const handleBack = () => {
     const pages = Taro.getCurrentPages?.() || [];
@@ -112,7 +92,7 @@ const PersonalityCatalogPage = () => {
     Taro.switchTab({ url: routes.tabHome() });
   };
 
-  const handleOpenModel = (item) => {
+  const handleOpenModel = (item: CatalogCardViewModel) => {
     if (!item?.modelCode) return;
     Taro.navigateTo({ url: routes.personalityModel({ model: item.key, model_code: item.modelCode }) });
   };
@@ -122,24 +102,14 @@ const PersonalityCatalogPage = () => {
   };
 
   return (
-    <View className="personality-home">
-      <ScrollView scrollY className="personality-home__scroll" enhanced showScrollbar={false}>
-        <View
-          className="personality-nav"
-          style={{ paddingTop: `${navMetrics.statusBarHeight}px` }}
-        >
-          <View className="personality-nav__back" onClick={handleBack}>
-            <AtIcon value="chevron-left" size="26" color="#071735" />
-          </View>
-          <Text className="personality-nav__title">人格探索</Text>
-          <View className="personality-nav__spacer" />
-        </View>
-
-        {loadError ? (
-          <View className="personality-home__notice">
-            <Text>{loadError}</Text>
-          </View>
-        ) : null}
+    <PageShell
+      tone="personality"
+      className="personality-home"
+      contentClassName="personality-home__scroll"
+      navigation={(
+        <AppNavigationBar title="人格探索" showBack onBack={handleBack} tone="personality" transparent />
+      )}
+    >
 
         <View className="personality-hero">
           <View className="personality-hero__content">
@@ -158,13 +128,29 @@ const PersonalityCatalogPage = () => {
         </View>
 
         {loading ? (
-          <View className="personality-home__notice">
-            <Text>正在加载人格测评目录...</Text>
-          </View>
+          <StatePanel state="loading" title="正在加载人格测评目录" tone="personality" compact />
+        ) : loadError ? (
+          <StatePanel
+            state="error"
+            title="人格测评目录加载失败"
+            description={loadError}
+            actionText="重新加载"
+            onAction={loadCatalog}
+            tone="personality"
+            compact
+          />
+        ) : !catalogItems.length ? (
+          <StatePanel
+            state="empty"
+            title="暂无可用人格测评"
+            description="已发布模型将在这里展示。"
+            tone="personality"
+            compact
+          />
         ) : null}
 
         {!loading && featuredItem ? (
-          <View className="personality-feature-card" onClick={() => handleOpenModel(featuredItem)}>
+          <SurfaceCard className="personality-feature-card" onClick={() => handleOpenModel(featuredItem)}>
             <View className="personality-feature-card__content">
               <Text className="personality-feature-card__kicker">
                 {featuredItem.hero?.kicker || featuredItem.badge || "人格探索"}
@@ -192,13 +178,13 @@ const PersonalityCatalogPage = () => {
             <View className="personality-feature-card__arrow">
               <AtIcon value="chevron-right" size="20" color="#FFFFFF" />
             </View>
-          </View>
+          </SurfaceCard>
         ) : null}
 
         {!loading ? (
           <View className="personality-mini-grid">
             {secondaryItems.map((item) => (
-              <View
+              <SurfaceCard
                 key={item.key}
                 className={`personality-mini-card personality-mini-card--${item.theme || "deep"}`}
                 onClick={() => handleOpenModel(item)}
@@ -215,13 +201,13 @@ const PersonalityCatalogPage = () => {
                 {item.theme === "fun" ? (
                   <Image className="personality-mini-card__image" src={funTestImage} mode="aspectFit" />
                 ) : null}
-              </View>
+              </SurfaceCard>
             ))}
 
             {deepExploreItems.length ? (
               <View className="personality-mini-row">
                 {deepExploreItems.map((item) => (
-                  <View
+                  <SurfaceCard
                     key={item.key}
                     className={`personality-mini-card personality-mini-card--compact personality-mini-card--${item.theme}`}
                     onClick={() => handleOpenModel(item)}
@@ -237,7 +223,7 @@ const PersonalityCatalogPage = () => {
                         color={resolveMiniCardButtonColor(item.theme)}
                       />
                     </View>
-                  </View>
+                  </SurfaceCard>
                 ))}
               </View>
             ) : null}
@@ -253,10 +239,10 @@ const PersonalityCatalogPage = () => {
         />
 
         <View className="personality-section personality-service-section">
-          <Text className="personality-section__title">个性化解读服务</Text>
+          <SectionHeader title="个性化解读服务" tone="personality" />
           <View className="personality-service-grid">
             {INTERPRET_SERVICES.map((service) => (
-              <View key={service.title} className="personality-service-card" onClick={handleComingSoon}>
+              <SurfaceCard key={service.title} className="personality-service-card" onClick={handleComingSoon}>
                 <View className="personality-service-card__icon">
                   <Image className="personality-service-card__image" src={service.image} mode="aspectFit" />
                 </View>
@@ -264,7 +250,7 @@ const PersonalityCatalogPage = () => {
                   <Text className="personality-service-card__title">{service.title}</Text>
                   <Text className="personality-service-card__subtitle">{service.subtitle}</Text>
                 </View>
-              </View>
+              </SurfaceCard>
             ))}
           </View>
         </View>
@@ -274,10 +260,8 @@ const PersonalityCatalogPage = () => {
         </View>
 
         <View className="personality-home__bottom-spacer" />
-      </ScrollView>
-
       <PrivacyAuthorization />
-    </View>
+    </PageShell>
   );
 };
 

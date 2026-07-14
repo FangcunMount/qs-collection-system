@@ -27,13 +27,13 @@ function assertNotContains(source, pattern, message) {
 
 const appConfig = read('src/app.config.js');
 const routes = read('src/shared/config/routes.js');
-const bottomMenu = read('src/shared/ui/BottomMenu/index.jsx');
+const bottomMenu = read('src/shared/ui/BottomMenu/index.tsx');
 const bottomMenuStyle = read('src/shared/ui/BottomMenu/index.less');
 const assessmentPortals = read('src/shared/config/assessmentPortals.js');
 const homeTabPage = read('src/modules/tab/pages/HomeTabPage.jsx');
 const homeTabStyle = read('src/modules/tab/pages/HomeTabPage.less');
 const homeProfileCard = read('src/modules/tab/components/home/HomeCurrentProfileCard.jsx');
-const personalityCatalog = read('src/modules/catalog/pages/PersonalityCatalogPage.jsx');
+const personalityCatalog = read('src/modules/catalog/pages/PersonalityCatalogPage.tsx');
 const personalityCatalogService = read('src/modules/catalog/services/personalityCatalogService.js');
 const assessmentRecordsPage = read('src/modules/assessment/pages/AssessmentRecordsPage.jsx');
 const homeRecentAssessments = read('src/modules/assessment/services/loadRecentAssessments.js');

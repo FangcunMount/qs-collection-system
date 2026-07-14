@@ -10,10 +10,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(255, 255, 255, 0.94);
-  border-top: 1rpx solid rgba(220, 229, 242, 0.8);
+  background: @surface-card-94;
+  border-top: 1rpx solid fade(@color-neutral-200, 80%);
   border-radius: 40rpx 40rpx 0 0;
-  box-shadow: 0 -14rpx 38rpx rgba(21, 47, 84, 0.09);
+  box-shadow: @shadow-bottom-menu;
   z-index: 50;
   box-sizing: content-box;
 }
@@ -49,7 +49,7 @@
 
 .menu-item__label {
   display: block;
-  color: #8A96AA;
+  color: @color-neutral-400;
   font-size: 22rpx;
   line-height: 1;
   font-weight: 700;
@@ -58,8 +58,8 @@
 }
 
 .menu-item.active .menu-item__label {
-  color: #2F80ED;
-  font-weight: 850;
+  color: @color-medical-500;
+  font-weight: @font-weight-black;
 }
 
 .menu-item--center {
@@ -72,9 +72,9 @@
   height: 104rpx;
   margin-top: -52rpx;
   border-radius: 50%;
-  background: linear-gradient(135deg, #5BA6FF 0%, #2F80ED 100%);
-  border: 6rpx solid #FFFFFF;
-  box-shadow: 0 16rpx 30rpx rgba(47, 128, 237, 0.42);
+  background: linear-gradient(135deg, @color-action-primary-bright 0%, @color-medical-500 100%);
+  border: 6rpx solid @color-white;
+  box-shadow: @shadow-medical-fab;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -84,7 +84,7 @@
 
 .menu-item--center:active .menu-item__cta {
   transform: scale(0.94);
-  box-shadow: 0 10rpx 22rpx rgba(47, 128, 237, 0.36);
+  box-shadow: @shadow-medical-fab-pressed;
 }
 
 .menu-item__qr {
@@ -97,7 +97,7 @@
   position: absolute;
   width: 16rpx;
   height: 16rpx;
-  border: 4rpx solid #FFFFFF;
+  border: 4rpx solid @color-white;
 }
 
 .menu-item__qr-corner--tl {
@@ -139,11 +139,11 @@
   right: 2rpx;
   height: 4rpx;
   margin-top: -2rpx;
-  background: #FFFFFF;
+  background: @color-white;
   border-radius: 2rpx;
 }
 
 .menu-item__label--center {
-  color: #2F80ED;
-  font-weight: 850;
+  color: @color-medical-500;
+  font-weight: @font-weight-black;
 }

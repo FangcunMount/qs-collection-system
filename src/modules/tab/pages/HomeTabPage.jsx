@@ -14,7 +14,7 @@ import { resolveAssessmentKind, isPersonalityAssessmentKind } from "@/shared/lib
 import { getAssessmentEntryContext, subscribeAssessmentEntryContext } from "@/shared/stores/assessmentEntry";
 import { findTesteeById, getSelectedTesteeId, subscribeTesteeStore } from "@/shared/stores/testees";
 import HomeHeader from "../components/home/HomeHeader";
-import qlumeHeroBanner from "@/assets/banner/banner_3.png";
+import qlumeHeroBanner from "@/assets/banner/banner_3.webp";
 import anxietyIcon from "@/assets/icon/icon-anxiety-screening.png";
 import sleepQualityIcon from "@/assets/icon/icon-sleep-quality.png";
 import attentionIcon from "@/assets/icon/icon-attention-screening.png";

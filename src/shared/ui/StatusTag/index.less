@@ -11,28 +11,29 @@
   }
 
   &.status-tag-abnormal {
-    background: #FEF2F2;
-    color: #EF4444;
+    background: @color-danger-50;
+    color: @color-danger-500;
   }
 
   &.status-tag-normal {
-    background: #F0FDF4;
-    color: #22C55E;
+    background: @color-success-50;
+    color: @color-success-500;
   }
 
   &.status-tag-pending {
-    background: #FEF3C7;
-    color: #F59E0B;
+    background: @color-warning-100;
+    color: @color-warning-500;
   }
 
   &.status-tag-generating {
-    background: #DBEAFE;
-    color: #3B82F6;
+    background: @color-info-100;
+    color: @color-info-500;
   }
 
   &.status-tag-failed {
-    background: #FEE2E2;
-    color: #DC2626;
+    background: @color-danger-100;
+    color: @color-danger-700;
   }
 }
+@import "../../../styles/tokens.less";
 

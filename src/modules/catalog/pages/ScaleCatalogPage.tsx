@@ -1,13 +1,22 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import Taro, { usePullDownRefresh } from "@tarojs/taro";
-import { View, Text, ScrollView, Image } from "@tarojs/components";
+import { View, Text, Image } from "@tarojs/components";
 import { AtIcon } from "taro-ui";
 import BottomMenu from "@/shared/ui/BottomMenu";
+import AppNavigationBar from "@/shared/ui/AppNavigationBar";
+import PageShell from "@/shared/ui/PageShell";
+import SectionHeader from "@/shared/ui/SectionHeader";
+import StatePanel from "@/shared/ui/StatePanel";
+import SurfaceCard from "@/shared/ui/SurfaceCard";
 import { routes } from "@/shared/config/routes";
 import { SCALE_COMMON_CATEGORIES, isVisibleInMedicalScaleCatalog } from "@/shared/config/scaleCatalogHome";
 import { buildAssessmentScanTargetUrl, isScanCancelError } from "@/shared/lib/entryScan";
 import { listHotPublishedAssessmentModels } from "@/services/api/assessmentModelCatalogApi";
 import { getLogger } from "@/shared/lib/logger";
+import {
+  mapMedicalCatalogCard,
+  type CatalogCardViewModel,
+} from "@/modules/catalog/viewModels/catalogCard";
 import medicalHeroBanner from "@/pages/catalog-medical/assets/banner/banner_2.png";
 import medicalTrustImage from "@/pages/catalog-medical/assets/home/home-current-record-checklist.png";
 import categorySleepImage from "@/pages/catalog-medical/assets/home/category-sleep.png";
@@ -28,7 +37,7 @@ const QUICK_ACTIONS = Object.freeze([
   { key: "profile", title: "健康档案", subtitle: "综合管理", icon: "user", color: "#FF8A3A" },
 ]);
 
-const CATEGORY_IMAGE_MAP = {
+const CATEGORY_IMAGE_MAP: Record<string, string> = {
   sleep: categorySleepImage,
   mood: categoryMoodImage,
   pressure: categoryPressureImage,
@@ -39,39 +48,9 @@ const CATEGORY_IMAGE_MAP = {
 
 const FEATURED_CATEGORIES = SCALE_COMMON_CATEGORIES.slice(0, 4);
 
-const normalizeLabel = (value) => {
-  if (!value) return "";
-  if (typeof value === "string" || typeof value === "number") {
-    return String(value).trim();
-  }
-  return String(value.label || value.name || value.title || value.value || value.code || "").trim();
-};
-
-const normalizeTags = (tags) => {
-  if (!Array.isArray(tags)) return [];
-  return tags.map(normalizeLabel).filter(Boolean);
-};
-
-const normalizeScale = (item) => ({
-  code: normalizeLabel(item.code || item.scale_code || item.questionnaire_code),
-  name: normalizeLabel(item.title || item.name || item.scale_name) || "医学量表",
-  description: normalizeLabel(item.description) || "了解近期状态，辅助自我观察与沟通参考。",
-  category: normalizeLabel(item.category),
-  tags: normalizeTags(item.tags),
-  question_count: Number(item.question_count || item.questionCount || 0),
-  status: item.status,
-});
-
-const formatDuration = (scale) => {
-  if (scale?.question_count > 0) {
-    return `约 ${Math.max(3, Math.ceil(scale.question_count / 6))} 分钟`;
-  }
-  return "约 5 分钟";
-};
-
-const resolveScaleImage = (scale) => {
+const resolveScaleImage = (scale: CatalogCardViewModel) => {
   const marker = [
-    scale?.name,
+    scale.title,
     scale?.description,
     scale?.category,
     ...(scale?.tags || []),
@@ -86,34 +65,25 @@ const resolveScaleImage = (scale) => {
   return categorySleepImage;
 };
 
-const resolveHeaderMetrics = () => {
-  try {
-    const systemInfo = Taro.getSystemInfoSync?.() || {};
-    return {
-      statusBarHeight: systemInfo.statusBarHeight || 0,
-    };
-  } catch (error) {
-    console.warn("[ScaleCatalogPage] 获取状态栏高度失败:", error);
-    return { statusBarHeight: 0 };
-  }
-};
-
 const ScaleCatalogPage = () => {
-  const [hotScales, setHotScales] = useState([]);
+  const [hotScales, setHotScales] = useState<CatalogCardViewModel[]>([]);
   const [hotLoading, setHotLoading] = useState(true);
-  const [navMetrics, setNavMetrics] = useState(() => resolveHeaderMetrics());
+  const [hotError, setHotError] = useState("");
 
   const loadHotScales = useCallback(async () => {
     try {
       setHotLoading(true);
+      setHotError("");
       const result = await listHotPublishedAssessmentModels();
 	  const payload = result.data || result;
-	  setHotScales((payload.models || []).map(normalizeScale).filter(
+	  const models: unknown[] = Array.isArray(payload.models) ? payload.models : [];
+	  setHotScales(models.map(mapMedicalCatalogCard).filter(
         (scale) => isVisibleInMedicalScaleCatalog(scale.category)
       ));
     } catch (error) {
       console.error("加载热门量表失败:", error);
       setHotScales([]);
+      setHotError("热门量表加载失败，请检查网络后重试。");
     } finally {
       setHotLoading(false);
     }
@@ -124,19 +94,15 @@ const ScaleCatalogPage = () => {
     Taro.stopPullDownRefresh();
   });
 
-  useEffect(() => {
-    setNavMetrics(resolveHeaderMetrics());
-  }, []);
-
-  useEffect(() => {
+  React.useEffect(() => {
     loadHotScales();
   }, [loadHotScales]);
 
-  const handleOpenScaleList = useCallback((params) => {
+  const handleOpenScaleList = useCallback((params?: Record<string, string>) => {
     Taro.navigateTo({ url: routes.scaleList(params) });
   }, []);
 
-  const handleScaleClick = useCallback((scale) => {
+  const handleScaleClick = useCallback((scale: CatalogCardViewModel) => {
     logger.RUN("点击量表", scale);
     if (!scale?.code) {
       Taro.showToast({ title: "量表暂不可用", icon: "none" });
@@ -166,7 +132,7 @@ const ScaleCatalogPage = () => {
     }
   }, []);
 
-  const handleQuickAction = useCallback((key) => {
+  const handleQuickAction = useCallback((key: string) => {
     if (key === "quick") {
       handleScanEntry();
       return;
@@ -188,12 +154,14 @@ const ScaleCatalogPage = () => {
 
   return (
     <>
-      <View className="scale-page">
-        <ScrollView scrollY className="scale-page__scroll" enhanced showScrollbar={false}>
-          <View
-            className="scale-page__header"
-            style={{ paddingTop: `${navMetrics.statusBarHeight}px` }}
-          >
+      <PageShell
+        tone="medical"
+        className="scale-page"
+        contentClassName="scale-page__scroll"
+        bottomInset={false}
+        navigation={<AppNavigationBar brandTitle="Qlume" tone="medical" transparent />}
+      >
+          <View className="scale-page__header">
             <Text className="scale-page__title">医学量表</Text>
             <Text className="scale-page__subtitle">
               科学评估身心健康，了解自己，从专业量表开始
@@ -231,7 +199,7 @@ const ScaleCatalogPage = () => {
             </View>
             <View className="scale-cat-grid">
               {FEATURED_CATEGORIES.map((category) => (
-                <View
+                <SurfaceCard
                   key={category.key}
                   className={`scale-cat-card scale-cat-card--${category.key}`}
                   onClick={() => handleOpenScaleList({ category: category.value })}
@@ -247,28 +215,36 @@ const ScaleCatalogPage = () => {
                     <Text className="scale-cat-card__title">{category.title}</Text>
                     <Text className="scale-cat-card__subtitle">{category.subtitle}</Text>
                   </View>
-                </View>
+                </SurfaceCard>
               ))}
             </View>
           </View>
 
           <View className="scale-section">
-            <View className="scale-section__header">
-              <Text className="scale-section__title">热门量表</Text>
-              <View className="scale-section__more" onClick={() => handleOpenScaleList()}>
-                <Text>查看更多</Text>
-                <AtIcon value="chevron-right" size="14" color="#8A96AA" />
-              </View>
-            </View>
+            <SectionHeader
+              title="热门量表"
+              actionLabel="查看更多"
+              onAction={() => handleOpenScaleList()}
+              tone="medical"
+              className="scale-section__header"
+            />
             <View className="scale-hot-list">
               {hotLoading ? (
-                <View className="scale-placeholder">
-                  <Text>正在加载热门量表...</Text>
-                </View>
+                <StatePanel state="loading" title="正在加载热门量表" tone="medical" compact />
+              ) : hotError ? (
+                <StatePanel
+                  state="error"
+                  title="热门量表加载失败"
+                  description={hotError}
+                  actionText="重新加载"
+                  onAction={loadHotScales}
+                  tone="medical"
+                  compact
+                />
               ) : hotScales.length > 0 ? (
                 hotScales.map((scale) => (
-                  <View
-                    key={scale.code || scale.name}
+                  <SurfaceCard
+                    key={scale.code || scale.title}
                     className="scale-hot-row"
                     onClick={() => handleScaleClick(scale)}
                   >
@@ -277,20 +253,26 @@ const ScaleCatalogPage = () => {
                     </View>
                     <View className="scale-hot-row__content">
                       <View className="scale-hot-row__title-line">
-                        <Text className="scale-hot-row__title">{scale.name}</Text>
+                        <Text className="scale-hot-row__title">{scale.title}</Text>
                         <Text className="scale-hot-row__tag">
-                          {scale.tags[0] || formatDuration(scale)}
+                          {scale.tags[0] || scale.durationLabel}
                         </Text>
                       </View>
                       <Text className="scale-hot-row__desc">{scale.description}</Text>
                     </View>
                     <AtIcon value="chevron-right" size="18" color="#9AA6B8" />
-                  </View>
+                  </SurfaceCard>
                 ))
               ) : (
-                <View className="scale-placeholder">
-                  <Text>暂无热门量表，可进入全部量表查看。</Text>
-                </View>
+                <StatePanel
+                  state="empty"
+                  title="暂无热门量表"
+                  description="可进入全部量表继续查找。"
+                  actionText="查看全部量表"
+                  onAction={() => handleOpenScaleList()}
+                  tone="medical"
+                  compact
+                />
               )}
             </View>
           </View>
@@ -306,8 +288,7 @@ const ScaleCatalogPage = () => {
           </View>
 
           <View className="scale-page__bottom-spacer" />
-        </ScrollView>
-      </View>
+      </PageShell>
 
       <BottomMenu activeKey="量表" />
     </>

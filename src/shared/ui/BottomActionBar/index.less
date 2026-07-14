@@ -1,0 +1,20 @@
+@import "../../../styles/tokens.less";
+
+.bottom-action-bar {
+  width: 100%;
+  padding: @space-2 @page-gutter calc(@space-2 + @safe-area-bottom);
+  border-top: 1rpx solid fade(@color-neutral-200, 90%);
+  background: @surface-card-96;
+  box-sizing: border-box;
+
+  &--elevated {
+    box-shadow: @shadow-bottom-action;
+  }
+
+  &__content {
+    min-height: @touch-target-min;
+    display: flex;
+    align-items: center;
+    gap: @space-2;
+  }
+}

@@ -1,0 +1,83 @@
+@import "../../../styles/tokens.less";
+
+.app-navigation-bar {
+  position: relative;
+  z-index: 90;
+  width: 100%;
+  color: @text-color-primary;
+  background: @surface-card-96;
+  box-sizing: border-box;
+
+  &--medical {
+    background: fade(@color-medical-50, 96%);
+  }
+
+  &--personality {
+    background: fade(@color-personality-50, 96%);
+  }
+
+  &--ability {
+    background: fade(@color-ability-50, 96%);
+  }
+
+  &--transparent {
+    background: transparent;
+  }
+
+  &__row {
+    position: relative;
+    min-height: @navigation-content-height;
+    padding-left: @space-3;
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+  }
+
+  &__leading {
+    min-width: 112rpx;
+    display: flex;
+    align-items: center;
+  }
+
+  &__brand {
+    color: @color-brand-blue;
+    font-size: @font-size-card-title;
+    font-weight: @font-weight-black;
+    letter-spacing: 1rpx;
+  }
+
+  &__back {
+    width: @touch-target-min;
+    height: @touch-target-min;
+    margin-left: -@space-2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: @radius-pill;
+  }
+
+  &__back--pressed {
+    background: @overlay-ink-08;
+  }
+
+  &__back-icon {
+    margin-top: -4rpx;
+    font-size: 64rpx;
+    line-height: 1;
+    font-weight: @font-weight-regular;
+  }
+
+  &__title {
+    position: absolute;
+    left: 50%;
+    max-width: 360rpx;
+    overflow: hidden;
+    color: @text-color-primary;
+    font-size: @font-size-card-title-sm;
+    line-height: 1.3;
+    font-weight: @font-weight-bold;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transform: translateX(-50%);
+  }
+}

@@ -1,13 +1,24 @@
 import React from "react";
-import { View, Text } from "@tarojs/components";
-import { AtIcon } from "taro-ui";
+import { Text, View } from "@tarojs/components";
 import Taro from "@tarojs/taro";
+import { AtIcon } from "taro-ui";
+
 import { ROUTES, routes } from "../../config/routes";
 import { ASSESSMENT_KIND } from "../../lib/assessmentKind";
 import { buildAssessmentScanTargetUrl, isScanCancelError } from "../../lib/entryScan";
 import "./index.less";
 
-const bottomMenu = [
+export interface BottomMenuProps {
+  activeKey: string;
+}
+
+interface BottomMenuItem {
+  label: string;
+  icon: string;
+  url: string;
+}
+
+const bottomMenu: BottomMenuItem[] = [
   { label: "首页", icon: "home", url: ROUTES.tabHome },
   { label: "量表", icon: "list", url: ROUTES.tabScales },
   {
@@ -20,13 +31,9 @@ const bottomMenu = [
 
 const CENTER_INSERT_AFTER_INDEX = 1;
 
-const BottomMenu = ({ activeKey }) => {
-  const handleMenuClick = (item) => {
-    if (!item.url) {
-      return;
-    }
-
-    const currentPath = Taro.getCurrentInstance().router.path;
+const BottomMenu = ({ activeKey }: BottomMenuProps) => {
+  const handleMenuClick = (item: BottomMenuItem) => {
+    const currentPath = Taro.getCurrentInstance().router?.path;
     const targetPath = item.url.split("?")[0];
     if (currentPath !== targetPath) {
       Taro.redirectTo({ url: item.url });
@@ -42,7 +49,7 @@ const BottomMenu = ({ activeKey }) => {
         return;
       }
       Taro.navigateTo({ url: targetUrl });
-    } catch (error) {
+    } catch (error: unknown) {
       if (isScanCancelError(error)) {
         return;
       }
@@ -51,12 +58,13 @@ const BottomMenu = ({ activeKey }) => {
     }
   };
 
-  const renderTab = (item) => {
+  const renderTab = (item: BottomMenuItem) => {
     const isActive = item.label === activeKey;
     return (
       <View
         key={item.label}
         className={`menu-item ${isActive ? "active" : ""}`}
+        hoverClass="menu-item--pressed"
         onClick={() => handleMenuClick(item)}
       >
         <View className="menu-item__icon-wrap">
@@ -79,7 +87,11 @@ const BottomMenu = ({ activeKey }) => {
           return (
             <React.Fragment key={item.label}>
               {renderTab(item)}
-              <View className="menu-item menu-item--center" onClick={handleScan}>
+              <View
+                className="menu-item menu-item--center"
+                hoverClass="menu-item--pressed"
+                onClick={handleScan}
+              >
                 <View className="menu-item__cta">
                   <View className="menu-item__qr">
                     <View className="menu-item__qr-corner menu-item__qr-corner--tl" />
