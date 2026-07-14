@@ -124,10 +124,6 @@ const forbiddenPatterns = [
     pattern: /request\(`\/assessments\/\$\{[^}]+\}`/,
     message: 'collection API must not call GET /assessments/{id} detail endpoint',
   },
-  {
-    pattern: /\/assessments\/\$\{[^}]+\}\/report[`'"]/,
-    message: 'collection API must not call GET /assessments/{id}/report (use GET /assessments/{id}/scores per collection.yaml)',
-  },
 ];
 
 forbiddenPatterns.forEach(({ pattern, message }) => {
@@ -186,7 +182,7 @@ const personalityModelApi = read('src/services/api/personality/modelApi.js');
 assertContains(assessmentApi, /COLLECTION_API_CAPABILITIES\.medicalAssessmentsList/, 'getAssessments must gate GET /assessments behind capability flag');
 assertNotContains(assessmentApi, /assessment_kind\s*:/, 'GET /assessments must not send undocumented assessment_kind query parameter');
 assertContains(collectionApiCapabilities, /medicalAssessmentsList:\s*true/, 'medical report menu requires the documented assessments list capability');
-assertContains(reportWaitGuide, /\/assessments\/\{id\}\/scores/, 'report wait guide must use collection medical scores endpoint');
+assertContains(reportWaitGuide, /\/assessments\/\{id\}\/report/, 'report wait guide must use collection medical report endpoint');
 assertNotContains(reportWaitGuide, /evaluations\/assessments\/\{id\}\/report/, 'report wait guide must not direct medical reports to apiserver');
 assertNotContains(reportWaitGuide, /\['interpreted', 'failed', 'completed'\]/, 'report wait guide must not treat completed as a current success terminal state');
 assertContains(miniProgramGuide, /优先订阅 WebSocket 报告状态/, 'mini-program guide must make WebSocket the default report waiter');
@@ -194,7 +190,7 @@ assertContains(miniProgramGuide, /关闭连接后降级到 `report-status`/, 'mi
 assertContains(miniProgramGuide, /kind=scale&category=<category>/, 'mini-program guide must document the scale category catalog query');
 assertContains(read('src/modules/assessment/services/medicalAssessmentIdResolver.js'), /pollAssessmentIdByAnswerSheet/, 'medical resolver must use assessments list matching when available');
 
-assertContains(assessmentApi, /getMedicalAssessmentReport|mapScoresToReportPayload/, 'assessment API must expose yaml-aligned medical report fetch via scores');
+assertContains(assessmentApi, /getMedicalAssessmentReport|mapMedicalReportPayload/, 'assessment API must expose yaml-aligned medical report fetch');
 assertNotContains(analysisApi, /host:\s*config\.collectionHost[\s\S]{0,200}request\(/, 'analysisApi must not duplicate collectionHost requests');
 assertNotContains(questionnaireSubmissionApi, /getQuestionnaireListLegacy|questionsheet/, 'questionnaire submission API must not keep legacy questionsheet paths');
 assertNotContains(testeeApi, /deleteTestee/, 'testee API must not expose DELETE /testees/{id}');
@@ -228,6 +224,19 @@ assertNotContains(
   scaleListPage,
   /matchesScale(?:Filters|Search)\(scale,\s*searchText,\s*selectedCategory\)/,
   'scale list must not locally discard category-filtered catalog results'
+);
+const scaleCatalogHome = read('src/shared/config/scaleCatalogHome.js');
+['adhd', 'td', 'asd', 'pressure', 'sii', 'efn', 'emt', 'slp'].forEach((category) => {
+  assertContains(
+    scaleCatalogHome,
+    new RegExp(`value:\\s*['\"]${category}['\"]`),
+    `scale catalogue must expose canonical ${category} category`
+  );
+});
+assertContains(
+  scaleListPage,
+  /isVisibleInMedicalScaleCatalog\(scale\.category\)/,
+  'scale list must exclude non-medical categories from the medical catalogue'
 );
 assertContains(
   assessmentModelCatalogApi,

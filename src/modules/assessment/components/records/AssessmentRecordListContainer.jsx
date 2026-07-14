@@ -6,12 +6,12 @@ import AssessmentRecordList from "./AssessmentRecordList";
 import BottomSheet from "./BottomSheet";
 import { loadMedicalAssessmentRecords } from '@/modules/assessment/services/loadMedicalAssessmentRecords';
 import { loadPersonalityAssessmentRecords } from "@/modules/assessment/services/personalityAssessmentRecordService";
+import { normalizeMedicalAssessmentRecord } from '@/modules/assessment/services/medicalAssessmentRecordMapper';
 import { buildAssessmentScanTargetUrl, isScanCancelError } from "@/shared/lib/entryScan";
 import {
   ASSESSMENT_KIND,
   matchesAssessmentKindFilter,
   normalizeAssessmentKind,
-  resolveAssessmentKind,
 } from "@/shared/lib/assessmentKind";
 import "../../pages/AssessmentRecordsPage.less";
 
@@ -79,33 +79,6 @@ const AssessmentRecordListContainer = ({
     () => normalizeAssessmentKind(assessmentKind),
     [assessmentKind]
   );
-
-  const mapAssessmentRecord = useCallback((item) => {
-    const recordKind = resolveAssessmentKind(item);
-
-    return {
-      id: item.id,
-      answer_sheet_id: item.answer_sheet_id,
-      title: item.scale_name || item.model_name || item.questionnaire_code || '未知量表',
-      description: item.scale_code || item.model_code || item.questionnaire_code || '',
-      createtime: item.submitted_at || item.created_at,
-      status: item.status,
-      score: item.total_score,
-      risk_level: item.risk_level || item.riskLevel || null,
-      questionnaire_code: item.questionnaire_code,
-      questionnaire_version: item.questionnaire_version,
-      questionnaire_type: item.questionnaire_type || item.questionnaireType,
-      scale_code: item.scale_code,
-      scale_name: item.scale_name,
-      model_code: item.model_code,
-      model_name: item.model_name,
-      interpreted_at: item.interpreted_at,
-      origin_type: item.origin_type,
-      assessment_kind: item.assessment_kind || item.assessmentKind || item.kind || recordKind,
-      kind: recordKind,
-      model_extra: item.model_extra || item.modelExtra,
-    };
-  }, []);
 
   const shouldKeepRecord = useCallback((record) => {
     return matchesAssessmentKindFilter(record, normalizedAssessmentKind);
@@ -183,7 +156,7 @@ const AssessmentRecordListContainer = ({
 
         items.push(
           ...(data.items || [])
-            .map(mapAssessmentRecord)
+            .map(normalizeMedicalAssessmentRecord)
             .filter(shouldKeepRecord)
         );
 
@@ -211,7 +184,6 @@ const AssessmentRecordListContainer = ({
       setLoading(false);
     }
   }, [
-    mapAssessmentRecord,
     normalizedAssessmentKind,
     pageSize,
     riskLevel,

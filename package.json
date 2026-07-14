@@ -16,7 +16,8 @@
     "test:iam-contracts": "node scripts/check-iam-contracts.js",
     "test:portal-contracts": "node scripts/check-portal-contracts.js",
     "test:collection-personality-contracts": "node scripts/check-collection-personality-contracts.js",
-    "test:collection-contracts": "node scripts/check-collection-contracts.js",
+    "test:collection-contracts": "node scripts/check-collection-contracts.js && node scripts/test-medical-report-mapper.cjs",
+    "test:medical-report-mapper": "node scripts/test-medical-report-mapper.cjs",
     "test:personality-seams": "node scripts/test-personality-seams.js"
   },
   "browserslist": [

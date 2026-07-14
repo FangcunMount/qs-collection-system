@@ -4,7 +4,7 @@ import { View, Text, ScrollView, Image } from "@tarojs/components";
 import { AtIcon } from "taro-ui";
 import SearchBox from "@/shared/ui/SearchBox";
 import { routes } from "@/shared/config/routes";
-import { SCALE_COMMON_CATEGORIES } from "@/shared/config/scaleCatalogHome";
+import { SCALE_COMMON_CATEGORIES, isVisibleInMedicalScaleCatalog } from "@/shared/config/scaleCatalogHome";
 import { listPublishedAssessmentModels } from "@/services/api/assessmentModelCatalogApi";
 import { getLogger } from "@/shared/lib/logger";
 import categorySleepImage from "@/pages/catalog-medical/assets/home/category-sleep.png";
@@ -109,7 +109,8 @@ const ScaleListPage = () => {
     try {
       setLoading(true);
       const hasSearch = Boolean(String(searchText || '').trim());
-      let currentPage = hasSearch ? 1 : page;
+      const loadAllPages = hasSearch || !selectedCategory;
+      let currentPage = loadAllPages ? 1 : page;
       let totalPages = 1;
       let total = 0;
       const collected = [];
@@ -122,10 +123,12 @@ const ScaleListPage = () => {
           pageSize: 20,
         });
         const payload = result.data || result;
-        collected.push(...(payload.models || []).map(normalizeScale));
+        collected.push(...(payload.models || []).map(normalizeScale).filter(
+          (scale) => isVisibleInMedicalScaleCatalog(scale.category)
+        ));
         total = Number(payload.total || collected.length);
         totalPages = Math.max(1, Number(payload.total_pages || Math.ceil(total / (payload.page_size || 20))));
-        if (!hasSearch) break;
+        if (!loadAllPages) break;
         currentPage += 1;
       } while (currentPage <= totalPages);
 
@@ -134,10 +137,10 @@ const ScaleListPage = () => {
         : collected;
       setScaleList((prev) => (append ? [...prev, ...filtered] : filtered));
       setPagination({
-        page: hasSearch ? 1 : page,
+        page: loadAllPages ? 1 : page,
         page_size: 20,
-        total: hasSearch ? filtered.length : total,
-        total_pages: hasSearch ? 1 : totalPages,
+        total: loadAllPages ? filtered.length : total,
+        total_pages: loadAllPages ? 1 : totalPages,
       });
     } catch (error) {
       console.error("加载量表列表失败:", error);

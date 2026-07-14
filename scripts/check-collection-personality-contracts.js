@@ -147,8 +147,8 @@ assertContains(assessmentSubmitNavigation, /ASSESSMENT_KIND\.PERSONALITY/, 'subm
 assertNotContains(medicalAssessmentApi, /\/answersheets\/\$\{String\(answersheetId\)\}\/assessment/, 'assessment API must not call deprecated answersheets assessment endpoint');
 assertNotContains(analysisApi, /\/answersheets\/\$\{aid\}\/assessment/, 'analysis API must not call deprecated answersheets assessment endpoint');
 assertContains(medicalAssessmentApi, /extractAssessmentList/, 'assessment API must extract list items for answer_sheet_id matching');
-assertNotContains(medicalAssessmentApi, /\/assessments\/\$\{[^}]+\}\/report[`'"]/, 'medical assessment API must not call undocumented GET /assessments/{id}/report');
-assertContains(medicalAssessmentApi, /getMedicalAssessmentReport|mapScoresToReportPayload/, 'medical assessment API must fetch report via GET /assessments/{id}/scores');
+assertContains(medicalAssessmentApi, /\/assessments\/\$\{[^}]+\}\/report/, 'medical assessment API must fetch report via GET /assessments/{id}/report');
+assertContains(medicalAssessmentApi, /getMedicalAssessmentReport|mapMedicalReportPayload/, 'medical assessment API must map the medical report response');
 assertNotContains(analysisApi, /config\.collectionHost/, 'analysis API must delegate collection requests to assessmentApi');
 
 const assessmentKind = read('src/shared/lib/assessmentKind.js');

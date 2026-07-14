@@ -93,41 +93,22 @@ export const normalizeAssessmentListItem = (raw = {}) => {
 };
 
 /**
- * 将 GET /assessments/{id}/scores 响应映射为报告页可消费结构。
- * collection.yaml 未定义医学 GET /assessments/{id}/report，以 scores 为正文来源。
+ * 将 GET /assessments/{id}/report 响应归一为医学报告页 ViewModel 输入。
+ * /scores 只承载得分事实，不能替代包含解读与建议的报告正文。
  */
-export const mapScoresToReportPayload = (scoresPayload = {}) => {
-  const data = scoresPayload?.data !== undefined ? scoresPayload.data : scoresPayload;
-  const scores = Array.isArray(data) ? data : [];
-
-  const totalFactor = scores.find((item) => item.is_total_score) || scores[0] || {};
-  const dimensions = scores
-    .filter((item) => !item.is_total_score)
-    .map((item) => ({
-      factor_code: item.factor_code,
-      factor_name: item.factor_name,
-      description: item.conclusion || '',
-      raw_score: item.raw_score,
-      max_score: item.max_score,
-      risk_level: item.risk_level,
-      suggestion: item.suggestion || '',
-    }));
-
-  const suggestions = dimensions
-    .filter((item) => item.suggestion)
-    .map((item) => ({
-      category: item.factor_name || item.factor_code || '',
-      content: item.suggestion,
-      factor_code: item.factor_code,
-    }));
+export const mapMedicalReportPayload = (reportPayload = {}) => {
+  const report = reportPayload?.data !== undefined ? reportPayload.data : reportPayload;
+  const primaryScore = report?.primary_score || {};
 
   return {
     data: {
-      conclusion: totalFactor.conclusion || '',
-      total_score: totalFactor.raw_score,
-      risk_level: totalFactor.risk_level || '',
-      dimensions,
-      suggestions,
+      ...report,
+      scale_name: report?.scale_name || report?.model_name || report?.model?.title || '',
+      scale_code: report?.scale_code || report?.model_code || report?.model?.code || '',
+      total_score: primaryScore.value ?? report?.total_score ?? null,
+      risk_level: report?.risk_level || report?.level?.code || '',
+      dimensions: Array.isArray(report?.dimensions) ? report.dimensions : [],
+      suggestions: Array.isArray(report?.suggestions) ? report.suggestions : [],
     },
   };
 };
@@ -178,11 +159,15 @@ export const getAssessmentScores = (id, testeeId) => {
 };
 
 /**
- * 获取医学测评报告正文（基于 collection.yaml 合法的 GET /assessments/{id}/scores）
+ * 获取医学测评报告正文（包含总分、因子解读和建议）。
  */
 export const getMedicalAssessmentReport = async (id, testeeId) => {
-  const result = await getAssessmentScores(id, testeeId);
-  return mapScoresToReportPayload(result);
+  const result = await request(`/assessments/${String(id)}/report`, {}, {
+    host: config.collectionHost,
+    params: { testee_id: String(testeeId) },
+    needToken: true,
+  });
+  return mapMedicalReportPayload(result);
 };
 
 /** @deprecated 请使用 getMedicalAssessmentReport */
@@ -308,7 +293,7 @@ export default {
   getAssessments,
   extractAssessmentList,
   normalizeAssessmentListItem,
-  mapScoresToReportPayload,
+  mapMedicalReportPayload,
   getAssessmentByAnswersheetId,
   getAssessmentScores,
   getMedicalAssessmentReport,

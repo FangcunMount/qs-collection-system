@@ -24,8 +24,8 @@ export const getAssessmentStatus = (assessment) => {
     return 'failed'; // 失败
   }
   
-  // interpreted 和 completed 都表示已完成
-  if (status === 'interpreted' || status === 'completed') {
+  // outcome 投影使用 evaluated；interpreted/completed 为兼容状态，均表示报告已可读取。
+  if (status === 'evaluated' || status === 'interpreted' || status === 'completed') {
     // 根据风险等级判断
     const riskLevel = assessment.risk_level?.toLowerCase?.() || assessment.risk_level;
     if (riskLevel === 'high' || riskLevel === 'medium') {

@@ -71,10 +71,9 @@ const AssessmentRecordCard = ({ record, testeeId = "" }) => {
       <View className="card-header">
         <View className="card-title-wrapper">
           <Text className="card-title">{record.title}</Text>
-          {(record.answer_sheet_id || record.scale_code) && (
-            <Text className="card-code">
-              {record.answer_sheet_id || record.scale_code}
-            </Text>
+          {record.description && <Text className="card-code">{record.description}</Text>}
+          {record.answer_sheet_id && (
+            <Text className="card-answer-sheet">答卷 ID · {record.answer_sheet_id}</Text>
           )}
         </View>
         <Text className="card-time">{formatWriteTime(record.createtime)}</Text>

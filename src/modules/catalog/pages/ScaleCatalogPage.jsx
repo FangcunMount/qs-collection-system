@@ -4,7 +4,7 @@ import { View, Text, ScrollView, Image } from "@tarojs/components";
 import { AtIcon } from "taro-ui";
 import BottomMenu from "@/shared/ui/BottomMenu";
 import { routes } from "@/shared/config/routes";
-import { SCALE_COMMON_CATEGORIES } from "@/shared/config/scaleCatalogHome";
+import { SCALE_COMMON_CATEGORIES, isVisibleInMedicalScaleCatalog } from "@/shared/config/scaleCatalogHome";
 import { buildAssessmentScanTargetUrl, isScanCancelError } from "@/shared/lib/entryScan";
 import { listHotPublishedAssessmentModels } from "@/services/api/assessmentModelCatalogApi";
 import { getLogger } from "@/shared/lib/logger";
@@ -108,7 +108,9 @@ const ScaleCatalogPage = () => {
       setHotLoading(true);
       const result = await listHotPublishedAssessmentModels();
 	  const payload = result.data || result;
-	  setHotScales((payload.models || []).map(normalizeScale));
+	  setHotScales((payload.models || []).map(normalizeScale).filter(
+        (scale) => isVisibleInMedicalScaleCatalog(scale.category)
+      ));
     } catch (error) {
       console.error("加载热门量表失败:", error);
       setHotScales([]);

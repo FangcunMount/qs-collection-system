@@ -124,9 +124,9 @@ const Analysis = () => {
     });
 
     // 映射总分数据
-    if (reportData.conclusion) {
+    if (reportData.total_score !== undefined && reportData.total_score !== null) {
       setTotal({
-        content: reportData.conclusion,
+        content: reportData.conclusion || '',
         score: reportData.total_score
       });
     } else {

@@ -1,6 +1,6 @@
-/** 当前 collection 契约中，仅 interpreted 报告允许读取正文。 */
+/** 已落库的报告可读取；列表 outcome 投影使用 evaluated，等待接口兼容 interpreted。 */
 export const isReportReadable = (status) => {
-  return String(status || '').toLowerCase() === 'interpreted';
+  return ['evaluated', 'interpreted'].includes(String(status || '').toLowerCase());
 };
 
 export function assertReportReadable(statusData = {}) {
