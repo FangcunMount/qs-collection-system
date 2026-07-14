@@ -18,7 +18,13 @@
     "test:collection-personality-contracts": "node scripts/check-collection-personality-contracts.js",
     "test:collection-contracts": "node scripts/check-collection-contracts.js && node scripts/test-medical-report-mapper.cjs",
     "test:medical-report-mapper": "node scripts/test-medical-report-mapper.cjs",
-    "test:personality-seams": "node scripts/test-personality-seams.js"
+    "test:personality-seams": "node scripts/test-personality-seams.js",
+    "test:contracts": "npm run test:iam-contracts && npm run test:portal-contracts && npm run test:collection-personality-contracts && npm run test:collection-contracts && npm run test:personality-seams",
+    "test:ui": "jest --runInBand",
+    "test:ui:watch": "jest --watch",
+    "typecheck:strict": "tsc -p tsconfig.strict.json --noEmit",
+    "check:package-size": "node scripts/check-package-size.cjs",
+    "verify:frontend": "npm run typecheck:strict && npm run test:ui && npm run test:contracts && npm run build:weapp && npm run check:package-size && git diff --check"
   },
   "browserslist": [
     "last 3 versions",
@@ -46,18 +52,22 @@
   "devDependencies": {
     "@babel/core": "^7.23.9",
     "@babel/preset-env": "^7.23.9",
+    "@types/jest": "29.5.14",
     "@tarojs/cli": "3.6.25",
     "@tarojs/mini-runner": "3.6.25",
     "@tarojs/plugin-framework-react": "^3.6.25",
     "@tarojs/webpack-runner": "3.6.25",
     "@types/react": "^19.2.4",
     "@types/react-dom": "^19.2.3",
+    "babel-jest": "29.7.0",
     "babel-preset-taro": "3.6.25",
     "eslint": "^8.56.0",
     "eslint-config-taro": "3.6.25",
     "eslint-plugin-import": "^2.12.0",
     "eslint-plugin-react": "^7.8.2",
     "eslint-plugin-react-hooks": "^4.6.0",
+    "jest": "29.7.0",
+    "react-test-renderer": "18.2.0",
     "stylelint": "14.16.1",
     "typescript": "^5.9.3"
   }

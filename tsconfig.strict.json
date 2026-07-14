@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "isolatedModules": false,
+    "types": ["node", "react", "react-dom"]
+  },
+  "include": [
+    "src/store/tokenStore.ts",
+    "src/store/testeeStore.ts",
+    "src/store/entryContextStore.ts"
+  ]
+}
