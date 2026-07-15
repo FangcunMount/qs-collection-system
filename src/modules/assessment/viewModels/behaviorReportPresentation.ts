@@ -14,13 +14,6 @@ export interface BehaviorFactorPresentation {
   statusLabel: string;
   scoreValue: number | null;
   scoreKind: "t_score" | "raw_score";
-  meterSegments: number;
-}
-
-export interface BehaviorPracticePresentation {
-  title: string;
-  content: string;
-  palette: BehaviorFactorPalette;
 }
 
 export interface BehaviorReportPresentation {
@@ -33,11 +26,7 @@ export interface BehaviorReportPresentation {
   summaryHeadline: string;
   chartFactors: BehaviorFactorPresentation[];
   portraitFactors: BehaviorFactorPresentation[];
-  strengthFactors: BehaviorFactorPresentation[];
-  supportFactors: BehaviorFactorPresentation[];
-  supportTitle: string;
   chartCallout: string;
-  practices: BehaviorPracticePresentation[];
 }
 
 interface FactorMeta {
@@ -118,15 +107,6 @@ const isStable = (factor: BehaviorReportFactorViewModel): boolean => {
   return /^(normal|none|typical|stable)$/i.test(factor.level?.code || factor.level?.severity || "");
 };
 
-const concernRank = (factor: BehaviorReportFactorViewModel): number => {
-  if (factor.tScore !== null) return factor.tScore;
-  const level = `${factor.level?.severity || ""} ${factor.level?.code || ""}`.toLowerCase();
-  if (/severe|critical|high/.test(level)) return 90;
-  if (/moderate|medium|elevated/.test(level)) return 70;
-  if (/mild|attention|watch|low/.test(level)) return 60;
-  return 0;
-};
-
 const growthStatusLabel = (factor: BehaviorReportFactorViewModel): string => {
   if (factor.tScore !== null) {
     if (factor.tScore < 60) return "常模范围";
@@ -139,14 +119,6 @@ const growthStatusLabel = (factor: BehaviorReportFactorViewModel): string => {
   if (/moderate|medium|elevated/.test(level)) return "建议重点练习";
   if (/mild|attention|watch|low/.test(level)) return "可继续练习";
   return "持续观察";
-};
-
-const meterSegments = (factor: BehaviorReportFactorViewModel): number => {
-  if (factor.tScore === null) return factor.rawScore === null ? 0 : 3;
-  if (factor.tScore < 50) return 2;
-  if (factor.tScore < 60) return 3;
-  if (factor.tScore < 70) return 4;
-  return 5;
 };
 
 const factorPresentation = (
@@ -162,7 +134,6 @@ const factorPresentation = (
     statusLabel: growthStatusLabel(factor),
     scoreValue: factor.tScore ?? factor.rawScore,
     scoreKind: factor.tScore === null ? "raw_score" : "t_score",
-    meterSegments: meterSegments(factor),
   };
 };
 
@@ -179,45 +150,6 @@ const summaryFor = (
     return { headline: "发现可继续练习的方向", hero: "看见优势，也发现可以继续练习的方向" };
   }
   return { headline: "整体表现处于常模范围", hero: "看见稳定表现，也保留持续成长的空间" };
-};
-
-const guidanceFor = (factor: BehaviorReportFactorViewModel): string => {
-  if (factor.suggestion) return factor.suggestion;
-  const title = factor.title;
-  const rules: Array<[RegExp, string]> = [
-    [/任务启动|启动/, "把任务拆成清晰的第一步，并使用固定的开始提示。"],
-    [/工作记忆|记忆/, "用清单、图片或关键词外化步骤，每次只保留少量信息。"],
-    [/情景转换|灵活|转换/, "提前预告任务切换，使用倒计时和一致的过渡提示。"],
-    [/抑制|冲动/, "通过规则游戏练习等待、停顿和轮流。"],
-    [/情绪控制|情绪调节/, "帮助孩子为情绪命名，先暂停，再选择下一步行动。"],
-    [/计划|组织|材料/, "把目标拆成可勾选的小步骤，并在完成后一起复盘。"],
-    [/视觉/, "减少环境中的视觉杂乱，用清晰位置和图示突出关键信息。"],
-    [/听觉/, "降低背景噪声，使用简短指令并确认孩子已经听到。"],
-    [/触觉/, "尊重孩子对触感的选择，从可接受、可预测的体验逐步尝试。"],
-    [/身体意识/, "在安全环境中安排推、拉、搬运等反馈明确的日常活动。"],
-    [/运动与平衡|平衡/, "从稳定、可预期的动作开始，并关注安全与孩子的接受程度。"],
-    [/社会参与|社交/, "先从熟悉的小组活动开始，明确轮流和互动规则。"],
-  ];
-  return rules.find(([pattern]) => pattern.test(title))?.[1] || "在日常情境中记录触发条件和有效支持方式，持续观察变化。";
-};
-
-const buildPractices = (
-  report: BehaviorReportViewModel,
-  candidates: BehaviorFactorPresentation[],
-): BehaviorPracticePresentation[] => {
-  const practices: BehaviorPracticePresentation[] = [];
-  const seen = new Set<string>();
-  const add = (title: string, content: string, palette: BehaviorFactorPalette) => {
-    const normalized = content.trim();
-    if (!normalized || seen.has(normalized) || practices.length >= 3) return;
-    seen.add(normalized);
-    practices.push({ title: title || "家庭练习", content: normalized, palette });
-  };
-  report.suggestions.forEach((suggestion, index) => {
-    add(suggestion.category || "家庭练习", suggestion.content, PALETTES[index % PALETTES.length]);
-  });
-  candidates.forEach((item) => add(item.factor.title || "维度练习", guidanceFor(item.factor), item.palette));
-  return practices;
 };
 
 export const buildBehaviorReportPresentation = (
@@ -238,11 +170,7 @@ export const buildBehaviorReportPresentation = (
     ? normOverviewFactors
     : normLeafFactors.length ? normLeafFactors : presentations.filter((item) => item.factor.tScore !== null);
   const stableFactors = leafFactors.filter((item) => isStable(item.factor));
-  const attentionFactors = leafFactors.filter((item) => !isStable(item.factor) && concernRank(item.factor) > 0);
-  const sortedAttention = [...attentionFactors].sort((a, b) => concernRank(b.factor) - concernRank(a.factor));
-  const supportFactors = (sortedAttention.length
-    ? sortedAttention
-    : [...leafFactors].sort((a, b) => concernRank(b.factor) - concernRank(a.factor))).slice(0, 2);
+  const attentionFactors = leafFactors.filter((item) => !isStable(item.factor));
   const totalTScore = totalFactor?.factor.tScore ?? null;
   const primaryTScore = report.primaryScore?.kind === "t_score" ? report.primaryScore.value : null;
   const summaryScore = totalTScore ?? report.primaryScore?.value ?? null;
@@ -265,12 +193,8 @@ export const buildBehaviorReportPresentation = (
     summaryHeadline: summary.headline,
     chartFactors,
     portraitFactors: leafFactors.length ? leafFactors : presentations,
-    strengthFactors: [...stableFactors].sort((a, b) => concernRank(a.factor) - concernRank(b.factor)).slice(0, 2),
-    supportFactors,
-    supportTitle: sortedAttention.length ? "优先支持方向" : "持续成长方向",
     chartCallout: attentionCount
       ? `${stableCount} 个维度处于常模范围，${attentionCount} 个维度建议结合日常情境重点观察`
       : "各维度整体处于常模范围，可继续保持稳定、清晰的日常支持",
-    practices: buildPractices(report, [...supportFactors, ...leafFactors]),
   };
 };

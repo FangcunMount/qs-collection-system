@@ -60,8 +60,7 @@ describe("behavior report presentation", () => {
       "行为调节", "情绪调节", "认知调节", "总分",
     ]);
     expect(presentation.portraitFactors.map((item) => item.factor.title)).toEqual(["抑制", "工作记忆"]);
-    expect(presentation.strengthFactors[0].factor.title).toBe("抑制");
-    expect(presentation.supportFactors[0].factor.title).toBe("工作记忆");
+    expect(presentation.portraitFactors.map((item) => item.statusLabel)).toEqual(["常模范围", "建议重点练习"]);
     expect(presentation.summaryScore).toBe(67);
   });
 
@@ -75,9 +74,9 @@ describe("behavior report presentation", () => {
 
     expect(presentation.family).toBe("spm");
     expect(presentation.chartFactors.map((item) => item.factor.title)).toEqual(["社会参与", "视觉", "听觉"]);
-    expect(presentation.supportFactors[0].factor.title).toBe("视觉");
-    expect(presentation.strengthFactors[0].factor.title).toBe("社会参与");
-    expect(presentation.practices[0].content).toContain("视觉");
+    expect(presentation.portraitFactors.map((item) => item.statusLabel)).toEqual([
+      "常模范围", "优先支持", "可继续练习",
+    ]);
     expect(presentation.summaryScore).toBe(69);
   });
 

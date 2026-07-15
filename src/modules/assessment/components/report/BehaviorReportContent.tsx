@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from "react";
-import { Button, Image, ScrollView, Text, View } from "@tarojs/components";
+import React, { useMemo } from "react";
+import { Image, Text, View } from "@tarojs/components";
 
 import behaviorHeroImage from "@/assets/home/home-child-behavior.png";
 import childAvatarImage from "@/assets/icon/icon_child.png";
@@ -63,80 +63,80 @@ const normCohortLabel = (reference: BehaviorReportNormReferenceViewModel): strin
   return labels.length ? labels.join(" · ") : "通用常模";
 };
 
-const PortraitCard = ({ item }: { item: BehaviorFactorPresentation }) => (
-  <View className={`behavior-portrait-card behavior-palette--${item.palette}`}>
-    <View className="behavior-portrait-card__header">
-      <Text className="behavior-factor-icon">{item.icon}</Text>
-      <Text className="behavior-portrait-card__title">{item.factor.title || "能力维度"}</Text>
-    </View>
-    <View className="behavior-portrait-card__score-row">
-      <Text className="behavior-portrait-card__score">{displayNumber(item.scoreValue)}</Text>
-      <Text className="behavior-portrait-card__score-kind">{item.scoreKind === "t_score" ? "T" : "原始分"}</Text>
-    </View>
-    <Text className="behavior-portrait-card__status">{item.statusLabel}</Text>
-    <View className="behavior-segment-meter">
-      {[1, 2, 3, 4, 5].map((segment) => (
-        <View
-          key={segment}
-          className={`behavior-segment-meter__item ${segment <= item.meterSegments ? "behavior-segment-meter__item--active" : ""}`}
-        />
-      ))}
-    </View>
-  </View>
-);
+const tScorePosition = (value: number): string => `${Math.max(0, Math.min(100, ((value - 30) / 50) * 100))}%`;
 
-const InsightCard = ({
-  item,
-  variant,
-}: {
-  item: BehaviorFactorPresentation;
-  variant: "strength" | "support";
-}) => (
-  <View className={`behavior-insight-card behavior-insight-card--${variant} behavior-palette--${item.palette}`}>
-    <Text className="behavior-insight-card__icon">{variant === "strength" ? "★" : item.icon}</Text>
-    <View className="behavior-insight-card__content">
-      <Text className="behavior-insight-card__title">{item.factor.title || "能力维度"}</Text>
-      <Text className="behavior-insight-card__text">
-        {variant === "support"
-          ? item.factor.suggestion || item.factor.description || "建议结合日常情境持续观察，并提供清晰、稳定的支持。"
-          : item.factor.description || "当前表现处于同龄常模范围，可继续保持已有支持方式。"}
-      </Text>
-    </View>
-  </View>
-);
-
-const FactorDetailCard = ({ item }: { item: BehaviorFactorPresentation }) => {
+const AbilityDimensionCard = ({ item }: { item: BehaviorFactorPresentation }) => {
   const factor = item.factor;
+  const hasNormScore = factor.tScore !== null && factor.normReference?.scoreKind === "t_score";
+  const benchmark = factor.normReference?.benchmark ?? 50;
   return (
-    <View className="behavior-detail-card">
-      <View className="behavior-detail-card__header">
-        <View className="behavior-detail-card__title-row">
+    <View className={`behavior-ability-card behavior-palette--${item.palette}`}>
+      <View className="behavior-ability-card__header">
+        <View className="behavior-ability-card__title-row">
           <Text className={`behavior-factor-icon behavior-palette--${item.palette}`}>{item.icon}</Text>
           <View>
-            <Text className="behavior-detail-card__title">{factor.title || factor.factorCode || "能力维度"}</Text>
+            <Text className="behavior-ability-card__title">{factor.title || factor.factorCode || "能力维度"}</Text>
             {factor.normReference ? (
-              <Text className="behavior-detail-card__norm">{normCohortLabel(factor.normReference)}</Text>
+              <Text className="behavior-ability-card__norm">{normCohortLabel(factor.normReference)}</Text>
             ) : null}
           </View>
         </View>
-        <Text className={`behavior-status-badge behavior-status-badge--${item.statusLabel === "常模范围" ? "stable" : "support"}`}>
-          {item.statusLabel}
-        </Text>
+        <View className="behavior-ability-card__result">
+          <View className="behavior-ability-card__score-row">
+            <Text className="behavior-ability-card__score">{displayNumber(item.scoreValue)}</Text>
+            <Text className="behavior-ability-card__score-kind">{item.scoreKind === "t_score" ? "T 分" : "原始分"}</Text>
+          </View>
+          <Text className={`behavior-status-badge behavior-status-badge--${item.statusLabel === "常模范围" ? "stable" : "support"}`}>
+            {item.statusLabel}
+          </Text>
+        </View>
       </View>
-      <View className="behavior-detail-card__scores">
-        <Text>原始分 {displayNumber(factor.rawScore)}</Text>
-        <Text>T 分 {displayNumber(factor.tScore)}</Text>
-        <Text>百分位 {factor.percentile === null ? "--" : `P${displayNumber(factor.percentile)}`}</Text>
+
+      {hasNormScore ? (
+        <View className="behavior-score-scale">
+          <View className="behavior-score-scale__track">
+            <View className="behavior-score-scale__range behavior-score-scale__range--stable" />
+            <View className="behavior-score-scale__range behavior-score-scale__range--watch" />
+            <View className="behavior-score-scale__range behavior-score-scale__range--support" />
+            <View className="behavior-score-scale__marker behavior-score-scale__marker--norm" style={{ left: tScorePosition(benchmark) }}>
+              <Text>常模 {displayNumber(benchmark)}</Text>
+            </View>
+            <View className="behavior-score-scale__marker behavior-score-scale__marker--score" style={{ left: tScorePosition(factor.tScore as number) }}>
+              <Text>{displayNumber(factor.tScore)}</Text>
+            </View>
+          </View>
+          <View className="behavior-score-scale__labels">
+            <Text className="behavior-score-scale__label behavior-score-scale__label--start">30</Text>
+            <Text className="behavior-score-scale__label behavior-score-scale__label--watch">60</Text>
+            <Text className="behavior-score-scale__label behavior-score-scale__label--support">70</Text>
+            <Text className="behavior-score-scale__label behavior-score-scale__label--end">80+</Text>
+          </View>
+          <Text className="behavior-score-scale__hint">T 分越高，表示该维度越需要结合日常表现给予关注和支持</Text>
+        </View>
+      ) : null}
+
+      <View className="behavior-ability-card__meta">
+        {factor.rawScore !== null ? <Text>原始分 {displayNumber(factor.rawScore)}</Text> : null}
+        {factor.percentile !== null ? <Text>百分位 P{displayNumber(factor.percentile)}</Text> : null}
+        {!hasNormScore ? <Text>暂无常模转换数据</Text> : null}
       </View>
-      {factor.description ? <Text className="behavior-detail-card__copy">{factor.description}</Text> : null}
-      {factor.suggestion ? <Text className="behavior-detail-card__suggestion">建议：{factor.suggestion}</Text> : null}
+      {factor.description ? <Text className="behavior-ability-card__copy">{factor.description}</Text> : null}
+      {factor.suggestion ? (
+        <View className="behavior-ability-card__suggestion">
+          <Text className="behavior-ability-card__suggestion-label">支持建议</Text>
+          <Text className="behavior-ability-card__suggestion-copy">{factor.suggestion}</Text>
+        </View>
+      ) : null}
     </View>
   );
 };
 
 const BehaviorReportContent = ({ report }: BehaviorReportContentProps) => {
-  const [showDetails, setShowDetails] = useState(false);
   const presentation = useMemo(() => buildBehaviorReportPresentation(report), [report]);
+  const overallSuggestions = useMemo(
+    () => report.suggestions.filter((suggestion) => suggestion.content.trim()),
+    [report.suggestions],
+  );
   const normPoints = presentation.chartFactors.reduce<NormChartPoint[]>((result, item) => {
     const reference = item.factor.normReference;
     if (item.factor.tScore !== null && reference?.scoreKind === "t_score") {
@@ -229,77 +229,47 @@ const BehaviorReportContent = ({ report }: BehaviorReportContentProps) => {
 
       {presentation.portraitFactors.length ? (
         <View className="behavior-section-card behavior-portrait-section">
-          <Text className="behavior-section-card__title">能力画像</Text>
-          <Text className="behavior-section-card__subtitle">左右滑动查看全部维度</Text>
-          <ScrollView
-            scrollX
-            enhanced
-            showScrollbar={false}
-            className="behavior-portrait-scroll"
-          >
-            <View className="behavior-portrait-track">
-              {presentation.portraitFactors.map((item, index) => (
-                <PortraitCard key={item.factor.factorCode || index} item={item} />
-              ))}
+          <View className="behavior-portrait-section__header">
+            <View>
+              <Text className="behavior-section-card__title">完整能力画像</Text>
+              <Text className="behavior-section-card__subtitle">全部维度已展开，可直接对照得分、常模与支持建议</Text>
             </View>
-          </ScrollView>
-        </View>
-      ) : null}
-
-      {presentation.strengthFactors.length ? (
-        <View className="behavior-section-card behavior-insight-section">
-          <Text className="behavior-section-card__title">相对稳定的能力表现</Text>
-          <View className="behavior-insight-grid">
-            {presentation.strengthFactors.map((item, index) => (
-              <InsightCard key={item.factor.factorCode || index} item={item} variant="strength" />
+            <Text className="behavior-portrait-section__count">{presentation.portraitFactors.length} 个维度</Text>
+          </View>
+          <View className="behavior-ability-list">
+            {presentation.portraitFactors.map((item, index) => (
+              <AbilityDimensionCard key={item.factor.factorCode || index} item={item} />
             ))}
           </View>
-        </View>
-      ) : null}
-
-      {presentation.supportFactors.length ? (
-        <View className="behavior-section-card behavior-insight-section">
-          <Text className="behavior-section-card__title">{presentation.supportTitle}</Text>
-          <View className="behavior-insight-grid">
-            {presentation.supportFactors.map((item, index) => (
-              <InsightCard key={item.factor.factorCode || index} item={item} variant="support" />
-            ))}
-          </View>
-        </View>
-      ) : null}
-
-      {presentation.practices.length ? (
-        <View className="behavior-section-card behavior-practice-section">
-          <Text className="behavior-section-card__title">家庭练习建议</Text>
-          <View className="behavior-practice-grid">
-            {presentation.practices.map((practice, index) => (
-              <View key={`${practice.title}-${index}`} className={`behavior-practice-card behavior-palette--${practice.palette}`}>
-                <Text className="behavior-practice-card__index">{index + 1}</Text>
-                <Text className="behavior-practice-card__title">{practice.title}</Text>
-                <Text className="behavior-practice-card__text">{practice.content}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-      ) : null}
-
-      {presentation.portraitFactors.length ? (
-        <View className="behavior-details-section">
-          <Button
-            className="behavior-details-toggle"
-            hoverClass="behavior-details-toggle--pressed"
-            onClick={() => setShowDetails((current) => !current)}
-          >
-            <Text>{showDetails ? "收起维度详情" : "查看全部维度详情"}</Text>
-            <Text className="behavior-details-toggle__arrow">{showDetails ? "⌃" : "⌄"}</Text>
-          </Button>
-          {showDetails ? (
-            <View className="behavior-detail-list">
-              {presentation.portraitFactors.map((item, index) => (
-                <FactorDetailCard key={item.factor.factorCode || index} item={item} />
+          {overallSuggestions.length ? (
+            <View className="behavior-overall-advice">
+              <Text className="behavior-overall-advice__title">整体支持建议</Text>
+              {overallSuggestions.map((suggestion, index) => (
+                <View key={`${suggestion.category}-${index}`} className="behavior-overall-advice__item">
+                  <Text className="behavior-overall-advice__index">{index + 1}</Text>
+                  <View className="behavior-overall-advice__content">
+                    {suggestion.category ? <Text className="behavior-overall-advice__category">{suggestion.category}</Text> : null}
+                    <Text className="behavior-overall-advice__copy">{suggestion.content}</Text>
+                  </View>
+                </View>
               ))}
             </View>
           ) : null}
+        </View>
+      ) : null}
+
+      {!presentation.portraitFactors.length && overallSuggestions.length ? (
+        <View className="behavior-section-card behavior-overall-advice">
+          <Text className="behavior-overall-advice__title">整体支持建议</Text>
+          {overallSuggestions.map((suggestion, index) => (
+            <View key={`${suggestion.category}-${index}`} className="behavior-overall-advice__item">
+              <Text className="behavior-overall-advice__index">{index + 1}</Text>
+              <View className="behavior-overall-advice__content">
+                {suggestion.category ? <Text className="behavior-overall-advice__category">{suggestion.category}</Text> : null}
+                <Text className="behavior-overall-advice__copy">{suggestion.content}</Text>
+              </View>
+            </View>
+          ))}
         </View>
       ) : null}
 

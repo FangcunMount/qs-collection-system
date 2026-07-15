@@ -76,8 +76,9 @@ assertContains(behaviorReportViewModel, /norm_reference/, 'behavior report view 
 assertContains(behaviorReportPresentation, /gxkk9w/, 'behavior report presentation must recognize BRIEF-2');
 assertContains(behaviorReportPresentation, /bjfki3/, 'behavior report presentation must recognize sensory SPM');
 assertContains(behaviorReportContent, /BehaviorNormComparisonChart/, 'behavior report must render the norm comparison chart');
-assertContains(behaviorReportContent, /能力画像/, 'behavior report must render the ability portrait');
-assertContains(behaviorReportContent, /家庭练习建议/, 'behavior report must render family practice guidance');
+assertContains(behaviorReportContent, /完整能力画像/, 'behavior report must render the expanded ability portrait');
+assertContains(behaviorReportContent, /整体支持建议/, 'behavior report must render real report suggestions when available');
+assertNotContains(behaviorReportContent, /scrollX/, 'behavior portrait must not hide dimensions behind horizontal scrolling');
 assertContains(reportWaitGuide, /kind=behavior/, 'report wait guide must document the behavior websocket kind');
 assertContains(reportWaitGuide, /\/behavior-assessments\/\{id\}\/report-status/, 'report wait guide must document behavior report-status');
 
