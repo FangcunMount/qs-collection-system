@@ -5,6 +5,7 @@ import {
   hasAnyAnsweredQuestion,
   SUBMIT_NO_ANSWER_MESSAGE,
 } from '@/modules/questionnaire/lib/questionUtils';
+import { isEmpty } from '@/shared/lib/type';
 import { submitAssessmentAndResolveAnswersheet } from '@/modules/assessment/services/submitAssessmentFlow';
 import { saveSubmissionContext } from '@/modules/assessment/services/submissionContextStore';
 import { resolveSubmissionAttempt } from '@/modules/assessment/services/submissionAttempt';
@@ -28,7 +29,7 @@ export const submitQuestionnaire = async (questionnaire, writer_role_code, signi
   }
 
   const answers = questionnaire.answers
-    .filter(v => v.type !== 'Section')
+    .filter(v => v.type !== 'Section' && !isEmpty(v.value))
     .map(v => ({
       question_code: v.code,
       question_type: v.type,

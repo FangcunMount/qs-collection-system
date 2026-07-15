@@ -36,7 +36,7 @@ describe("questionnaire flow", () => {
     },
   ];
 
-  test("keeps conditional visibility and filters hidden answers", () => {
+  test("keeps conditional visibility and omits hidden or unanswered optional answers", () => {
     expect(isQuestionVisible(questions, questions[1].show_controller)).toBe(true);
     expect(isQuestionVisible(questions, questions[2].show_controller)).toBe(false);
     expect(getVisibleAnswerQuestions(questions).map((item) => item.code)).toEqual(["q1", "q2"]);
@@ -44,9 +44,21 @@ describe("questionnaire flow", () => {
       expect.objectContaining({
         code: "scale",
         version: "1.0",
-        answers: [questions[0], questions[1]],
+        answers: [questions[0]],
       }),
     );
+  });
+
+  test("submits only completed answers when optional questions are left blank", () => {
+    const questions: QuestionnaireQuestion[] = Array.from({ length: 18 }, (_, index) => ({
+      code: `q${index + 1}`,
+      type: "Radio",
+      value: index < 4 ? `option-${index + 1}` : "",
+    }));
+
+    const submission = buildQuestionnaireSubmission({ code: "scale", questions }, null);
+
+    expect(submission.answers.map((question) => question.code)).toEqual(["q1", "q2", "q3", "q4"]);
   });
 
   test("requires at least one visible answer without changing optional-question semantics", () => {

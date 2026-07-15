@@ -147,8 +147,15 @@ export function getVisibleAnswerQuestions(questions: QuestionnaireQuestion[]): Q
   return getVisibleQuestions(questions).filter((question) => question.type !== "Section");
 }
 
+// Optional questions with no value are represented by an omitted answer entry,
+// not an empty option/text payload. This is the submission contract expected by
+// collection-server and the final questionnaire validator.
+export function getVisibleAnsweredQuestions(questions: QuestionnaireQuestion[]): QuestionnaireQuestion[] {
+  return getVisibleAnswerQuestions(questions).filter((question) => !isEmpty(question.value));
+}
+
 export function hasAnyVisibleAnswer(questions: QuestionnaireQuestion[]): boolean {
-  return getVisibleAnswerQuestions(questions).some((question) => !isEmpty(question.value));
+  return getVisibleAnsweredQuestions(questions).length > 0;
 }
 
 export function buildQuestionnaireSubmission(
@@ -160,7 +167,7 @@ export function buildQuestionnaireSubmission(
     title: questionnaire.title,
     code: submitContract?.questionnaire_code || questionnaire.code,
     version: submitContract?.questionnaire_version || questionnaire.version || "1.0",
-    answers: getVisibleQuestions(questionnaire.questions),
+    answers: getVisibleAnsweredQuestions(questionnaire.questions),
   };
 }
 
