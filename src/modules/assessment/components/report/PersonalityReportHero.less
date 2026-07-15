@@ -33,12 +33,24 @@
   gap: @space-2;
 }
 
+.personality-report-hero__heading {
+  display: flex;
+  align-items: center;
+  gap: @space-2;
+}
+
+.personality-report-hero__number {
+  color: @color-personality-500;
+  font-size: @font-size-card-title;
+  line-height: 1;
+  font-weight: @font-weight-black;
+}
+
 .personality-report-hero__eyebrow {
-  color: @color-personality-700;
-  font-size: @font-size-caption;
+  color: @text-color-primary;
+  font-size: @font-size-card-title;
   line-height: 1.2;
   font-weight: @font-weight-black;
-  letter-spacing: 4rpx;
 }
 
 .personality-report-hero__rarity {
@@ -66,16 +78,29 @@
   flex: 1;
 }
 
-.personality-report-hero__model {
+.personality-report-hero__field + .personality-report-hero__identity {
+  margin-top: @space-4;
+}
+
+.personality-report-hero__field-label {
   display: block;
-  color: @text-color-secondary;
+  margin-bottom: @space-1;
+  color: @text-color-tertiary;
   font-size: @font-size-caption;
-  line-height: 1.4;
+  line-height: 1.2;
   font-weight: @font-weight-semibold;
 }
 
+.personality-report-hero__model {
+  display: block;
+  color: @text-color-primary;
+  font-size: @font-size-body;
+  line-height: 1.4;
+  font-weight: @font-weight-bold;
+}
+
 .personality-report-hero__identity {
-  margin-top: @space-1;
+  margin-top: @space-3;
 }
 
 .personality-report-hero__type {
@@ -130,28 +155,6 @@
   width: 100%;
   height: 100%;
   border-radius: 50%;
-}
-
-.personality-report-hero__conclusion {
-  position: relative;
-  z-index: 1;
-  margin-top: @space-2;
-  padding: @space-3;
-  border-radius: @radius-md;
-  color: @text-color-secondary;
-  background: @surface-card-94;
-  font-size: @font-size-body;
-  line-height: 1.68;
-}
-
-.personality-report-hero__conclusion::before {
-  content: "总览";
-  display: block;
-  margin-bottom: @space-1;
-  color: @color-personality-700;
-  font-size: @font-size-caption;
-  line-height: 1.2;
-  font-weight: @font-weight-bold;
 }
 
 .personality-report-hero__meta {

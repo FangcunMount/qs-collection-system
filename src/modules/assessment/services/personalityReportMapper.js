@@ -18,6 +18,10 @@ const mapDimension = (dimension = {}) => ({
   description: dimension.description || dimension.summary || '',
   score: dimension.raw_score ?? dimension.score ?? null,
   max_score: dimension.max_score ?? dimension.maxScore ?? null,
+  left_pole: dimension.left_pole || dimension.leftPole || '',
+  right_pole: dimension.right_pole || dimension.rightPole || '',
+  preference: dimension.preference || dimension.preferred_pole || dimension.preferredPole || '',
+  strength: dimension.strength ?? dimension.preference_strength ?? dimension.preferenceStrength ?? null,
   risk_level: dimension.risk_level || dimension.riskLevel || '',
   suggestion: dimension.suggestion || '',
 });

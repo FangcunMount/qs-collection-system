@@ -11,20 +11,18 @@ const collectText = (node: renderer.ReactTestRendererJSON | renderer.ReactTestRe
 };
 
 describe("PersonalityReportHero", () => {
-  test("does not repeat an identity-only conclusion in the hero copy", () => {
+  test("renders the overview classification and personality name", () => {
     const component = renderer.create(
       <PersonalityReportHero
         modelTitle="16人格测评（基础版）"
         modelExtra={{ type_code: "ESFJ", type_name: "执政官" }}
-        conclusion="ESFJ 执政官"
       />,
     );
 
     const content = collectText(component.toJSON());
-    expect(content).toContain("人格报告总览");
-    expect(content).toContain("16人格测评（基础版）");
-    expect(content).toContain("ESFJ执政官");
-    expect(content).not.toContain("ESFJ 执政官ESFJ 执政官");
+    expect(content).toContain("01总览");
+    expect(content).toContain("人格分类16人格测评（基础版）");
+    expect(content).toContain("人格名称ESFJ执政官");
   });
 
   test("renders an optional overview image and hides it after load failure", () => {

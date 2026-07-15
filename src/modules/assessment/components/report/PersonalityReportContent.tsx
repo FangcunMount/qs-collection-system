@@ -3,114 +3,169 @@ import { Text, View } from "@tarojs/components";
 
 import StatePanel from "@/shared/ui/StatePanel";
 import { formatSimpleDate } from "@/shared/lib/dateFormatters";
+import { resolvePersonalityDimensionScale } from "../../lib/personalityDimensionScale";
 
 import type { PersonalityReportDimensionViewModel, PersonalityReportViewModel } from "../../types";
 import PersonalityReportHero from "./PersonalityReportHero";
 
-interface ReportBatchProps {
-  index: number;
+interface ReportRegionProps {
+  number: string;
   title: string;
-  subtitle?: string;
+  subtitle: string;
   children: React.ReactNode;
 }
 
-const ReportBatch = ({ index, title, subtitle, children }: ReportBatchProps) => (
-  <View className="pr-report-batch">
-    <View className="pr-report-batch__header">
-      <Text className="pr-report-batch__index">{String(index).padStart(2, "0")}</Text>
-      <View className="pr-report-batch__heading">
-        <Text className="pr-report-batch__title">{title}</Text>
-        {subtitle ? <Text className="pr-report-batch__subtitle">{subtitle}</Text> : null}
+const ReportRegion = ({ number, title, subtitle, children }: ReportRegionProps) => (
+  <View className="pr-report-region">
+    <View className="pr-report-region__header">
+      <Text className="pr-report-region__number">{number}</Text>
+      <View className="pr-report-region__heading">
+        <Text className="pr-report-region__title">{title}</Text>
+        <Text className="pr-report-region__subtitle">{subtitle}</Text>
       </View>
     </View>
-    <View className="pr-report-batch__content">{children}</View>
+    <View className="pr-report-region__content">{children}</View>
   </View>
 );
 
-const DimensionCard = ({ dimension }: { dimension: PersonalityReportDimensionViewModel }) => {
-  const hasScore = dimension.score !== null;
-  const hasMax = dimension.max_score !== null && dimension.max_score > 0;
-  const percent = hasScore && hasMax
-    ? Math.min(Math.round((Number(dimension.score) / Number(dimension.max_score)) * 100), 100)
-    : 0;
+const DimensionScale = ({
+  dimension,
+  outcomeCode,
+}: {
+  dimension: PersonalityReportDimensionViewModel;
+  outcomeCode: string;
+}) => {
+  const scale = resolvePersonalityDimensionScale(dimension, outcomeCode);
+  const fillStart = Math.min(scale.position, 50);
+  const fillWidth = Math.abs(scale.position - 50);
+  const leftActive = scale.hasValue && scale.leftPercent > scale.rightPercent;
+  const rightActive = scale.hasValue && scale.rightPercent > scale.leftPercent;
+
   return (
-    <View className="pr-dimension-card">
-      <View className="pr-dimension-card__header">
-        <Text className="pr-dimension-card__title">{dimension.title}</Text>
-        {hasScore ? (
-          <Text className="pr-dimension-card__score">
-            {dimension.score}{hasMax ? <Text className="pr-dimension-card__score-max"> / {dimension.max_score}</Text> : null}
-          </Text>
+    <View className="pr-dimension-scale">
+      {dimension.title ? <Text className="pr-dimension-scale__title">{dimension.title}</Text> : null}
+      <View className="pr-dimension-scale__poles">
+        <View className={`pr-dimension-pole pr-dimension-pole--left ${leftActive ? "pr-dimension-pole--active" : ""}`}>
+          <View className="pr-dimension-pole__identity">
+            <Text className="pr-dimension-pole__code">{scale.left.code}</Text>
+            <Text className="pr-dimension-pole__label">{scale.left.label}</Text>
+          </View>
+          {scale.hasValue ? <Text className="pr-dimension-pole__percent">{scale.leftPercent}%</Text> : null}
+        </View>
+        <View className={`pr-dimension-pole pr-dimension-pole--right ${rightActive ? "pr-dimension-pole--active" : ""}`}>
+          <View className="pr-dimension-pole__identity">
+            <Text className="pr-dimension-pole__code">{scale.right.code}</Text>
+            <Text className="pr-dimension-pole__label">{scale.right.label}</Text>
+          </View>
+          {scale.hasValue ? <Text className="pr-dimension-pole__percent">{scale.rightPercent}%</Text> : null}
+        </View>
+      </View>
+      <View className={`pr-dimension-scale__track ${scale.hasValue ? "" : "pr-dimension-scale__track--empty"}`}>
+        <View className="pr-dimension-scale__center" />
+        {scale.hasValue ? (
+          <>
+            <View
+              className="pr-dimension-scale__fill"
+              style={{ left: `${fillStart}%`, width: `${fillWidth}%` }}
+            />
+            <View className="pr-dimension-scale__marker" style={{ left: `${scale.position}%` }} />
+          </>
         ) : null}
       </View>
-      {hasScore && hasMax ? <View className="pr-dimension-card__track"><View className="pr-dimension-card__bar" style={{ width: `${percent}%` }} /></View> : null}
-      {dimension.description ? <View className="pr-dimension-card__desc">{dimension.description}</View> : null}
-      {dimension.suggestion ? (
-        <View className="pr-dimension-card__suggestion">
-          <Text className="pr-dimension-card__suggestion-label">建议</Text>
-          <View className="pr-dimension-card__suggestion-text">{dimension.suggestion}</View>
-        </View>
-      ) : null}
+      {dimension.description ? <View className="pr-dimension-scale__description">{dimension.description}</View> : null}
     </View>
   );
 };
 
+const comparableText = (value: string): string => value.replace(/\s+/g, "").toLowerCase();
+
 const PersonalityReportContent = ({ report }: { report: PersonalityReportViewModel }) => {
-  let batchIndex = 0;
+  const conclusionKey = comparableText(report.hero.conclusion);
+  const reportSections = report.sections.filter((section) => section.content);
+  const showConclusion = Boolean(
+    report.hero.conclusion
+    && !reportSections.some((section) => comparableText(section.content) === conclusionKey),
+  );
+  const growthSuggestions = [
+    ...report.suggestions,
+    ...report.dimensions
+      .filter((dimension) => dimension.suggestion)
+      .map((dimension) => ({ category: dimension.title, content: dimension.suggestion })),
+  ].filter((suggestion, index, list) => (
+    list.findIndex((item) => comparableText(item.content) === comparableText(suggestion.content)) === index
+  ));
+
   return (
     <View className="personality-report-page report-page-content">
       <PersonalityReportHero
         modelExtra={report.hero.modelExtra}
-        conclusion={report.hero.conclusion}
         modelTitle={report.modelTitle}
         imageUrl={report.hero.imageUrl}
         testeeName={report.testeeName}
         createdAtText={report.createdAt ? formatSimpleDate(report.createdAt) : ""}
       />
-      {report.sections.length ? (
-        <ReportBatch
-          index={++batchIndex}
-          title="详细解读"
-          subtitle="从多个侧面了解这份人格画像"
-        >
-          <View className="pr-advice-list">
-            {report.sections.map((section, index) => (
-              <View className="pr-advice-card" key={section.key || index}>
-                {section.title ? <Text className="pr-advice-card__category">{section.title}</Text> : null}
-                <View className="pr-advice-card__content">{section.content}</View>
-              </View>
-            ))}
-          </View>
-        </ReportBatch>
-      ) : null}
-      {report.dimensions.length ? (
-        <ReportBatch
-          index={++batchIndex}
-          title="维度观察"
-          subtitle="基于你的作答呈现出的维度倾向"
-        >
+
+      <ReportRegion
+        number="02"
+        title="维度观察"
+        subtitle="在两种倾向之间，查看你的自然偏好位置"
+      >
+        {report.dimensions.length ? (
           <View className="pr-dimension-list">
-            {report.dimensions.map((dimension, index) => <DimensionCard key={dimension.factor_code || index} dimension={dimension} />)}
+            {report.dimensions.map((dimension, index) => (
+              <DimensionScale
+                key={dimension.factor_code || index}
+                dimension={dimension}
+                outcomeCode={report.outcome.code}
+              />
+            ))}
           </View>
-        </ReportBatch>
-      ) : null}
-      {report.suggestions.length ? (
-        <ReportBatch
-          index={++batchIndex}
-          title="成长建议"
-          subtitle="把理解转化为日常可以尝试的行动"
-        >
-          <View className="pr-advice-list">
-            {report.suggestions.map((suggestion, index) => (
-              <View className="pr-advice-card" key={`${suggestion.category}-${index}`}>
-                {suggestion.category ? <Text className="pr-advice-card__category">{suggestion.category}</Text> : null}
-                <View className="pr-advice-card__content">{suggestion.content}</View>
+        ) : (
+          <StatePanel state="empty" tone="personality" compact title="暂无维度数据" />
+        )}
+      </ReportRegion>
+
+      <ReportRegion
+        number="03"
+        title="人格报告"
+        subtitle="从整体特征和具体表现理解你的人格画像"
+      >
+        {showConclusion || reportSections.length ? (
+          <View className="pr-report-copy">
+            {showConclusion ? <View className="pr-report-copy__lead">{report.hero.conclusion}</View> : null}
+            {reportSections.map((section, index) => (
+              <View className="pr-report-copy__section" key={section.key || index}>
+                {section.title ? <Text className="pr-report-copy__title">{section.title}</Text> : null}
+                <View className="pr-report-copy__content">{section.content}</View>
               </View>
             ))}
           </View>
-        </ReportBatch>
-      ) : null}
-      {!report.hasContent ? <StatePanel state="empty" tone="personality" title="暂无人格维度解读数据" /> : null}
+        ) : (
+          <StatePanel state="empty" tone="personality" compact title="暂无人格解读内容" />
+        )}
+      </ReportRegion>
+
+      <ReportRegion
+        number="04"
+        title="成长建议"
+        subtitle="把人格理解转化为日常可以尝试的行动"
+      >
+        {growthSuggestions.length ? (
+          <View className="pr-growth-list">
+            {growthSuggestions.map((suggestion, index) => (
+              <View className="pr-growth-card" key={`${suggestion.category}-${index}`}>
+                <Text className="pr-growth-card__number">{String(index + 1).padStart(2, "0")}</Text>
+                <View className="pr-growth-card__body">
+                  {suggestion.category ? <Text className="pr-growth-card__category">{suggestion.category}</Text> : null}
+                  <View className="pr-growth-card__content">{suggestion.content}</View>
+                </View>
+              </View>
+            ))}
+          </View>
+        ) : (
+          <StatePanel state="empty" tone="personality" compact title="暂无成长建议" />
+        )}
+      </ReportRegion>
     </View>
   );
 };

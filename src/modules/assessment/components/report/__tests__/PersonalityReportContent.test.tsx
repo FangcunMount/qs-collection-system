@@ -37,6 +37,10 @@ const report: PersonalityReportViewModel = {
     description: "偏向独处恢复能量",
     score: 7,
     max_score: 10,
+    left_pole: "",
+    right_pole: "",
+    preference: "I",
+    strength: 40,
     risk_level: "",
     suggestion: "保留独立空间",
   }],
@@ -45,17 +49,21 @@ const report: PersonalityReportViewModel = {
 };
 
 describe("PersonalityReportContent", () => {
-  test("shows all report content in numbered batches", () => {
+  test("shows the four report regions in order", () => {
     const content = collectText(renderer.create(
       <PersonalityReportContent report={report} />,
     ).toJSON());
 
-    expect(content).toContain("人格报告总览");
-    expect(content).toContain("01详细解读");
-    expect(content).toContain("系统思考");
+    expect(content).toContain("01总览");
+    expect(content).toContain("人格分类16 型人格测评");
     expect(content).toContain("02维度观察");
+    expect(content).toContain("E外向30%");
+    expect(content).toContain("I内向70%");
     expect(content).toContain("能量倾向");
-    expect(content).toContain("03成长建议");
+    expect(content).toContain("03人格报告");
+    expect(content).toContain("系统思考");
+    expect(content).toContain("04成长建议");
     expect(content).toContain("主动同步思路");
+    expect(content).toContain("保留独立空间");
   });
 });

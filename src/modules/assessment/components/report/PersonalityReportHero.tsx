@@ -7,7 +7,6 @@ type ModelExtra = Record<string, unknown>;
 
 interface PersonalityReportHeroProps {
   modelExtra?: ModelExtra;
-  conclusion?: string;
   modelTitle?: string;
   imageUrl?: string;
   testeeName?: string;
@@ -18,13 +17,8 @@ const text = (value: unknown): string => (
   value === undefined || value === null ? "" : String(value)
 );
 
-const comparableText = (value: string): string => value
-  .replace(/\s+/g, "")
-  .toLowerCase();
-
 const PersonalityReportHero = ({
   modelExtra = {},
-  conclusion = "",
   modelTitle = "",
   imageUrl = "",
   testeeName = "",
@@ -42,24 +36,25 @@ const PersonalityReportHero = ({
     : text(rarityValue);
   const nickname = text(modelExtra.nickname || modelExtra.type_name);
   const heroTitle = typeCode || nickname || "人格画像";
-  const identity = [typeCode, nickname].filter(Boolean).join(" ");
-  const showConclusion = Boolean(
-    conclusion
-      && comparableText(conclusion) !== comparableText(identity)
-      && comparableText(conclusion) !== comparableText(heroTitle),
-  );
   const showImage = Boolean(imageUrl && imageUrl !== failedImageUrl);
 
   return (
     <View className={`personality-report-hero ${showImage ? "personality-report-hero--with-image" : "personality-report-hero--text-only"}`}>
       <View className="personality-report-hero__topline">
-        <Text className="personality-report-hero__eyebrow">人格报告总览</Text>
+        <View className="personality-report-hero__heading">
+          <Text className="personality-report-hero__number">01</Text>
+          <Text className="personality-report-hero__eyebrow">总览</Text>
+        </View>
         {rarity ? <Text className="personality-report-hero__rarity">人群占比 {rarity}</Text> : null}
       </View>
       <View className="personality-report-hero__body">
         <View className="personality-report-hero__copy">
-          <Text className="personality-report-hero__model">{modelTitle || "人格类型"}</Text>
+          <View className="personality-report-hero__field">
+            <Text className="personality-report-hero__field-label">人格分类</Text>
+            <Text className="personality-report-hero__model">{modelTitle || "人格测评"}</Text>
+          </View>
           <View className="personality-report-hero__identity">
+            <Text className="personality-report-hero__field-label">人格名称</Text>
             <Text className="personality-report-hero__type">{heroTitle}</Text>
             {typeCode && nickname ? <Text className="personality-report-hero__nickname">{nickname}</Text> : null}
           </View>
@@ -77,7 +72,6 @@ const PersonalityReportHero = ({
           </View>
         ) : null}
       </View>
-      {showConclusion ? <View className="personality-report-hero__conclusion"><Text>{conclusion}</Text></View> : null}
       {testeeName || createdAtText ? (
         <View className="personality-report-hero__meta">
           {testeeName ? <Text className="personality-report-hero__testee">{testeeName}</Text> : null}

@@ -143,6 +143,10 @@ export interface PersonalityReportDimensionViewModel {
   description: string;
   score: number | null;
   max_score: number | null;
+  left_pole: string;
+  right_pole: string;
+  preference: string;
+  strength: number | null;
   risk_level: string;
   suggestion: string;
 }
