@@ -41,24 +41,41 @@ const DimensionScale = ({
   const fillWidth = Math.abs(scale.position - 50);
   const leftActive = scale.hasValue && scale.leftPercent > scale.rightPercent;
   const rightActive = scale.hasValue && scale.rightPercent > scale.leftPercent;
+  const balanced = scale.hasValue && scale.leftPercent === scale.rightPercent;
+  const preferredPole = leftActive ? scale.left : scale.right;
+  const preferredPercent = leftActive ? scale.leftPercent : scale.rightPercent;
+  const pairCode = `${scale.left.code}${scale.right.code}`;
+  const dimensionTitle = dimension.title && comparableText(dimension.title) !== comparableText(pairCode)
+    ? dimension.title
+    : "";
 
   return (
     <View className="pr-dimension-scale">
-      {dimension.title ? <Text className="pr-dimension-scale__title">{dimension.title}</Text> : null}
+      <View className="pr-dimension-scale__summary">
+        <View className="pr-dimension-scale__heading">
+          <Text className="pr-dimension-scale__pair">{pairCode}</Text>
+          {dimensionTitle ? <Text className="pr-dimension-scale__title">{dimensionTitle}</Text> : null}
+        </View>
+        {scale.hasValue ? (
+          <Text className="pr-dimension-scale__result">
+            {balanced ? "倾向均衡 · 50%" : `偏向 ${preferredPole.code} · ${preferredPercent}%`}
+          </Text>
+        ) : (
+          <Text className="pr-dimension-scale__result pr-dimension-scale__result--empty">暂无数据</Text>
+        )}
+      </View>
       <View className="pr-dimension-scale__poles">
         <View className={`pr-dimension-pole pr-dimension-pole--left ${leftActive ? "pr-dimension-pole--active" : ""}`}>
           <View className="pr-dimension-pole__identity">
             <Text className="pr-dimension-pole__code">{scale.left.code}</Text>
             <Text className="pr-dimension-pole__label">{scale.left.label}</Text>
           </View>
-          {scale.hasValue ? <Text className="pr-dimension-pole__percent">{scale.leftPercent}%</Text> : null}
         </View>
         <View className={`pr-dimension-pole pr-dimension-pole--right ${rightActive ? "pr-dimension-pole--active" : ""}`}>
           <View className="pr-dimension-pole__identity">
             <Text className="pr-dimension-pole__code">{scale.right.code}</Text>
             <Text className="pr-dimension-pole__label">{scale.right.label}</Text>
           </View>
-          {scale.hasValue ? <Text className="pr-dimension-pole__percent">{scale.rightPercent}%</Text> : null}
         </View>
       </View>
       <View className={`pr-dimension-scale__track ${scale.hasValue ? "" : "pr-dimension-scale__track--empty"}`}>
@@ -73,7 +90,6 @@ const DimensionScale = ({
           </>
         ) : null}
       </View>
-      {dimension.description ? <View className="pr-dimension-scale__description">{dimension.description}</View> : null}
     </View>
   );
 };
@@ -93,6 +109,56 @@ const suggestionPresentation = (suggestion: { category: string; content: string 
   return { category, content };
 };
 
+type GrowthGroupKey = "strength" | "attention" | "action";
+
+interface GrowthSuggestionPresentation {
+  category: string;
+  content: string;
+  source: "report" | "dimension";
+}
+
+const growthGroupDefinitions: Array<{
+  key: GrowthGroupKey;
+  eyebrow: string;
+  title: string;
+  description: string;
+}> = [
+  {
+    key: "strength",
+    eyebrow: "保持",
+    title: "可以发挥",
+    description: "这些特质是你自然拥有的能量",
+  },
+  {
+    key: "attention",
+    eyebrow: "觉察",
+    title: "需要留意",
+    description: "在压力或惯性中，给自己多一点空间",
+  },
+  {
+    key: "action",
+    eyebrow: "行动",
+    title: "可以尝试",
+    description: "从一个容易执行的小改变开始",
+  },
+];
+
+const growthGroupKey = (suggestion: GrowthSuggestionPresentation): GrowthGroupKey => {
+  const category = comparableText(suggestion.category);
+  const content = comparableText(suggestion.content);
+  if (/(优势|长处|特质|天赋)/.test(category)) return "strength";
+  if (/(注意|提醒|风险|挑战|警示)/.test(category)) return "attention";
+  if (/(建议|行动|成长|改善|练习|协作)/.test(category)) return "action";
+  if (!category && /^(可以|尝试|建议|保持|安排|设置|把|为自己)/.test(content)) return "action";
+  return suggestion.source === "dimension" || Boolean(category) ? "action" : "strength";
+};
+
+const visibleSuggestionContext = (category: string): string => (
+  /^(优势|长处|特质|天赋|注意|提醒|风险|挑战|警示|建议|行动|成长|改善|练习)$/i.test(category)
+    ? ""
+    : category
+);
+
 const PersonalityReportContent = ({ report }: { report: PersonalityReportViewModel }) => {
   const conclusionKey = comparableText(report.hero.conclusion);
   const reportSections = report.sections.filter((section) => section.content);
@@ -107,17 +173,27 @@ const PersonalityReportContent = ({ report }: { report: PersonalityReportViewMod
     String(report.hero.modelExtra.tagline || ""),
     ...reportSections.map((section) => section.content),
   ].map(comparableText).filter(Boolean);
-  const growthSuggestions = [
-    ...report.suggestions,
+  const growthSuggestions: GrowthSuggestionPresentation[] = [
+    ...report.suggestions.map((suggestion) => ({ ...suggestion, source: "report" as const })),
     ...report.dimensions
       .filter((dimension) => dimension.suggestion)
-      .map((dimension) => ({ category: dimension.title, content: dimension.suggestion })),
+      .map((dimension) => ({
+        category: dimension.title,
+        content: dimension.suggestion,
+        source: "dimension" as const,
+      })),
   ]
-    .map(suggestionPresentation)
+    .map((suggestion) => ({ ...suggestionPresentation(suggestion), source: suggestion.source }))
     .filter((suggestion) => suggestion.content && !occupiedReportCopy.includes(comparableText(suggestion.content)))
     .filter((suggestion, index, list) => (
       list.findIndex((item) => comparableText(item.content) === comparableText(suggestion.content)) === index
     ));
+  const growthGroups = growthGroupDefinitions
+    .map((definition) => ({
+      ...definition,
+      suggestions: growthSuggestions.filter((suggestion) => growthGroupKey(suggestion) === definition.key),
+    }))
+    .filter((group) => group.suggestions.length);
 
   return (
     <View className="personality-report-page report-page-content">
@@ -132,7 +208,7 @@ const PersonalityReportContent = ({ report }: { report: PersonalityReportViewMod
       <ReportRegion
         number="02"
         title="维度观察"
-        subtitle="在两种倾向之间，查看你的自然偏好位置"
+        subtitle="四组倾向没有好坏，只代表你更自然的位置"
         className="pr-report-region--dimensions"
       >
         {report.dimensions.length ? (
@@ -153,7 +229,8 @@ const PersonalityReportContent = ({ report }: { report: PersonalityReportViewMod
       <ReportRegion
         number="03"
         title="人格报告"
-        subtitle="从整体特征和具体表现理解你的人格画像"
+        subtitle="从整体特征到具体表现，理解你的行为方式"
+        className="pr-report-region--interpretation"
       >
         {showConclusion || reportSections.length ? (
           <View className="pr-report-copy">
@@ -173,17 +250,33 @@ const PersonalityReportContent = ({ report }: { report: PersonalityReportViewMod
       <ReportRegion
         number="04"
         title="成长建议"
-        subtitle="把人格理解转化为日常可以尝试的行动"
+        subtitle="看见优势，也为自己留出可以成长的空间"
         className="pr-report-region--growth"
       >
-        {growthSuggestions.length ? (
-          <View className="pr-growth-list">
-            {growthSuggestions.map((suggestion, index) => (
-              <View className="pr-growth-card" key={`${suggestion.category}-${index}`}>
-                <View className="pr-growth-card__marker" />
-                <View className="pr-growth-card__body">
-                  {suggestion.category ? <Text className="pr-growth-card__category">{suggestion.category}</Text> : null}
-                  <View className="pr-growth-card__content">{suggestion.content}</View>
+        {growthGroups.length ? (
+          <View className="pr-growth-groups">
+            {growthGroups.map((group) => (
+              <View className={`pr-growth-group pr-growth-group--${group.key}`} key={group.key}>
+                <View className="pr-growth-group__header">
+                  <Text className="pr-growth-group__eyebrow">{group.eyebrow}</Text>
+                  <View className="pr-growth-group__heading">
+                    <Text className="pr-growth-group__title">{group.title}</Text>
+                    <Text className="pr-growth-group__description">{group.description}</Text>
+                  </View>
+                </View>
+                <View className="pr-growth-group__items">
+                  {group.suggestions.map((suggestion, index) => {
+                    const context = visibleSuggestionContext(suggestion.category);
+                    return (
+                      <View className="pr-growth-item" key={`${suggestion.category}-${index}`}>
+                        <Text className="pr-growth-item__index">{String(index + 1).padStart(2, "0")}</Text>
+                        <View className="pr-growth-item__body">
+                          {context ? <Text className="pr-growth-item__context">{context}</Text> : null}
+                          <View className="pr-growth-item__content">{suggestion.content}</View>
+                        </View>
+                      </View>
+                    );
+                  })}
                 </View>
               </View>
             ))}

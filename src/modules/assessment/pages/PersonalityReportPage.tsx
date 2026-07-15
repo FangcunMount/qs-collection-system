@@ -68,17 +68,12 @@ const PersonalityReportPage = () => {
     void loadFromRoute();
   }, [loadFromRoute]);
 
-  const completionAction = report ? (
-    <ReportCompletionAction answerSheetId={answerSheetId} taskId={planTaskId} tone="personality" />
-  ) : undefined;
-
   return (
     <ReportPageShell
       tone="personality"
       loading={loading}
       error={error}
       onRetry={() => void loadFromRoute()}
-      fixedAction={completionAction}
       className="personality-report-shell"
     >
       {report ? (
@@ -90,6 +85,12 @@ const PersonalityReportPage = () => {
             entryTitle={entryContext?.entry_title || report.modelTitle}
             clinicianName={entryContext?.clinician_name}
             entryContext={entryContext}
+            variant="inline"
+          />
+          <ReportCompletionAction
+            answerSheetId={answerSheetId}
+            taskId={planTaskId}
+            tone="personality"
             variant="inline"
           />
         </>

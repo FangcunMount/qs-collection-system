@@ -10,14 +10,19 @@ interface ReportCompletionActionProps {
   answerSheetId: string | number;
   taskId?: string;
   tone: DomainTone;
+  variant?: "fixed" | "inline";
 }
 
 const ReportCompletionAction = ({
   answerSheetId,
   taskId = "",
   tone,
+  variant = "fixed",
 }: ReportCompletionActionProps) => (
-  <BottomActionBar>
+  <BottomActionBar
+    className={`report-completion-action report-completion-action--${variant}`}
+    elevated={variant === "fixed"}
+  >
     <ActionButton
       tone={tone}
       block

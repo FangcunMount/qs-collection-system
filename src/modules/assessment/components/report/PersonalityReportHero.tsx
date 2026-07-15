@@ -17,6 +17,15 @@ const text = (value: unknown): string => (
   value === undefined || value === null ? "" : String(value)
 );
 
+const briefText = (value: string, maxLength = 54): string => {
+  const normalized = value.replace(/\s+/g, " ").trim();
+  if (!normalized) return "";
+  const firstSentence = normalized.match(/^.*?[。！？!?](?:\s|$)/)?.[0]?.trim() || normalized;
+  return firstSentence.length > maxLength
+    ? `${firstSentence.slice(0, maxLength).trim()}…`
+    : firstSentence;
+};
+
 const PersonalityReportHero = ({
   modelExtra = {},
   modelTitle = "",
@@ -26,7 +35,7 @@ const PersonalityReportHero = ({
 }: PersonalityReportHeroProps) => {
   const [failedImageUrl, setFailedImageUrl] = useState("");
   const typeCode = text(modelExtra.type_code || modelExtra.typeCode);
-  const tagline = text(modelExtra.tagline || modelExtra.one_liner || modelExtra.summary);
+  const tagline = briefText(text(modelExtra.tagline || modelExtra.one_liner || modelExtra.summary));
   const rarityValue = modelExtra.rarity || modelExtra.rarity_label;
   const raritySource = rarityValue && typeof rarityValue === "object"
     ? rarityValue as Record<string, unknown>
@@ -49,7 +58,7 @@ const PersonalityReportHero = ({
       </View>
       <View className="personality-report-hero__body">
         <View className="personality-report-hero__copy">
-          <View className="personality-report-hero__field">
+          <View className="personality-report-hero__classification">
             <Text className="personality-report-hero__field-label">人格分类</Text>
             <Text className="personality-report-hero__model">{modelTitle || "人格测评"}</Text>
           </View>
@@ -58,7 +67,6 @@ const PersonalityReportHero = ({
             <Text className="personality-report-hero__type">{heroTitle}</Text>
             {typeCode && nickname ? <Text className="personality-report-hero__nickname">{nickname}</Text> : null}
           </View>
-          {tagline ? <Text className="personality-report-hero__tagline">{tagline}</Text> : null}
         </View>
         {showImage ? (
           <View className="personality-report-hero__visual">
@@ -72,6 +80,12 @@ const PersonalityReportHero = ({
           </View>
         ) : null}
       </View>
+      {tagline ? (
+        <View className="personality-report-hero__summary">
+          <View className="personality-report-hero__summary-mark" />
+          <Text className="personality-report-hero__tagline">{tagline}</Text>
+        </View>
+      ) : null}
       {testeeName || createdAtText ? (
         <View className="personality-report-hero__meta">
           {testeeName ? <Text className="personality-report-hero__testee">{testeeName}</Text> : null}
