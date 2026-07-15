@@ -1,12 +1,16 @@
-import { isPersonalityAssessmentKind } from '@/shared/lib/assessmentKind';
+import { isAbilityAssessmentKind, isPersonalityAssessmentKind } from '@/shared/lib/assessmentKind';
 import { waitForReportReady } from '@/modules/assessment/services/waitForReportReady';
 import { waitTypologyAssessmentId } from '@/modules/assessment/services/waitTypologyAssessmentId';
 import { waitMedicalAssessmentId } from '@/modules/assessment/services/waitMedicalAssessmentId';
+import { waitBehaviorAssessmentId } from '@/modules/assessment/services/waitBehaviorAssessmentId';
 import { waitSubmitStatusCompletion } from '@/modules/assessment/services/waitSubmitStatusAssessmentId';
 
 async function resolveAssessmentIdFallback(assessmentKind, testeeId, answerSheetId, options = {}) {
   if (isPersonalityAssessmentKind(assessmentKind)) {
     return waitTypologyAssessmentId(testeeId, answerSheetId, options);
+  }
+  if (isAbilityAssessmentKind(assessmentKind)) {
+    return waitBehaviorAssessmentId(testeeId, answerSheetId, options);
   }
   return waitMedicalAssessmentId(testeeId, answerSheetId, options);
 }

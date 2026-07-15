@@ -11,6 +11,7 @@ import {
 import {
   getPersonalityReportStatus,
 } from '@/services/api/personality';
+import { getBehaviorReportStatus } from '@/services/api/behavior';
 import { isReportReadable } from '@/modules/assessment/lib/reportReadiness';
 
 const PERSONALITY_STAGE_TEXT = Object.freeze({
@@ -49,6 +50,7 @@ export function createReportWaitStrategy(kind) {
   if (isPersonality) {
     return {
       kind: ASSESSMENT_KIND.PERSONALITY,
+      eventKind: 'personality',
       pollReportStatus: ({ assessmentId, testeeId }) =>
         getPersonalityReportStatus({ assessmentId, testeeId }),
       reportRoute: routes.personalityReport,
@@ -60,10 +62,24 @@ export function createReportWaitStrategy(kind) {
     };
   }
 
-  // 行为能力与医学量表共用报告状态 / 报告页契约，但保留 ability kind 供等待页与记录分流。
-  const resolvedKind = isAbility ? ASSESSMENT_KIND.ABILITY : ASSESSMENT_KIND.MEDICAL;
+  if (isAbility) {
+    return {
+      kind: ASSESSMENT_KIND.ABILITY,
+      eventKind: 'behavior',
+      pollReportStatus: ({ assessmentId, testeeId }) =>
+        getBehaviorReportStatus({ assessmentId, testeeId }),
+      reportRoute: routes.assessmentReport,
+      completedStatuses: ['interpreted'],
+      isCompleted: isInterpreted,
+      isFailed: (status) => isReportWaitFailed(status),
+      formatStageMessage: (stage, fallbackMessage) =>
+        formatReportWaitStageMessage(ASSESSMENT_KIND.ABILITY, stage, fallbackMessage),
+    };
+  }
+
   return {
-    kind: resolvedKind,
+    kind: ASSESSMENT_KIND.MEDICAL,
+    eventKind: 'medical',
     pollReportStatus: ({ assessmentId, testeeId }) =>
       getAssessmentReportStatus(assessmentId, testeeId),
     reportRoute: routes.assessmentReport,
@@ -71,6 +87,6 @@ export function createReportWaitStrategy(kind) {
     isCompleted: isInterpreted,
     isFailed: (status) => isReportWaitFailed(status),
     formatStageMessage: (stage, fallbackMessage) =>
-      formatReportWaitStageMessage(resolvedKind, stage, fallbackMessage),
+      formatReportWaitStageMessage(ASSESSMENT_KIND.MEDICAL, stage, fallbackMessage),
   };
 }

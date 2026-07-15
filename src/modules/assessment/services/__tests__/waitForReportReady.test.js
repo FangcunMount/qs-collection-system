@@ -29,4 +29,28 @@ describe("waitForReportReady fallback seam", () => {
     expect(onFallback).toHaveBeenCalledWith("socket_error");
     expect(strategy.pollReportStatus).toHaveBeenCalledTimes(1);
   });
+
+  test("uses the strategy event kind for behavior websocket subscriptions", async () => {
+    const watchReport = jest.fn().mockResolvedValue({
+      completed: true,
+      statusData: { status: "interpreted", stage: "interpreted" },
+    });
+    const strategy = {
+      kind: "ability",
+      eventKind: "behavior",
+      pollReportStatus: jest.fn(),
+      isCompleted: (status) => status === "interpreted",
+      isFailed: () => false,
+    };
+
+    await waitForReportReady({
+      strategy,
+      assessmentId: "a1",
+      testeeId: "t1",
+      watchReport,
+    });
+
+    expect(watchReport).toHaveBeenCalledWith(expect.objectContaining({ kind: "behavior" }));
+    expect(strategy.pollReportStatus).not.toHaveBeenCalled();
+  });
 });

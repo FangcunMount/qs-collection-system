@@ -62,9 +62,9 @@ describe("assessment record presentation", () => {
     const findButton = (label: string) => buttons.find((button) => button.findAllByType("taro-text")
       .some((textNode) => textNode.children.join("") === label));
 
-    findButton("查看详情")?.props.onClick();
-    findButton("查看趋势")?.props.onClick();
-    findButton("查看报告")?.props.onClick();
+    findButton("详情")?.props.onClick();
+    findButton("趋势")?.props.onClick();
+    findButton("报告")?.props.onClick();
 
     expect(navigateTo).toHaveBeenNthCalledWith(1, { url: expect.stringContaining("a=answer-1") });
     expect(navigateTo).toHaveBeenNthCalledWith(2, { url: expect.stringContaining("aid=assessment-1") });
@@ -80,7 +80,7 @@ describe("assessment record presentation", () => {
       />,
     ).toJSON();
 
-    expect(collectText(tree)).not.toContain("查看趋势");
-    expect(collectText(tree)).toContain("查看报告");
+    expect(collectText(tree)).not.toContain("趋势");
+    expect(collectText(tree)).toContain("报告");
   });
 });

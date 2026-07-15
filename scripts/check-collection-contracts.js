@@ -78,6 +78,11 @@ const yamlPaths = parseCollectionYamlPaths(yamlSource);
 const requiredYamlPaths = [
   '/answersheets',
   '/typology-assessments',
+  '/behavior-assessments',
+  '/behavior-assessments/{id}',
+  '/behavior-assessments/{id}/report',
+  '/behavior-assessments/{id}/report-status',
+  '/behavior-assessments/{id}/wait-report',
   '/typology-models',
   '/assessments/trend',
   '/assessment-models',

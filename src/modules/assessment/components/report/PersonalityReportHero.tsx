@@ -17,7 +17,7 @@ const text = (value: unknown): string => (
   value === undefined || value === null ? "" : String(value)
 );
 
-const briefText = (value: string, maxLength = 54): string => {
+const briefText = (value: string, maxLength = 44): string => {
   const normalized = value.replace(/\s+/g, " ").trim();
   if (!normalized) return "";
   const firstSentence = normalized.match(/^.*?[。！？!?](?:\s|$)/)?.[0]?.trim() || normalized;

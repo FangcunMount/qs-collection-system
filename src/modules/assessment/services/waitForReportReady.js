@@ -44,7 +44,7 @@ export async function waitForReportReady({
     const wsResult = await watchReport({
       assessmentId,
       testeeId,
-      kind: strategy.kind,
+      kind: strategy.eventKind || strategy.kind,
       onStatus,
       shouldContinue,
       logger,

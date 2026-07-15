@@ -3,7 +3,7 @@ import Taro from "@tarojs/taro";
 import { View } from "@tarojs/components";
 
 import { routes } from "@/shared/config/routes";
-import { isPersonalityAssessmentKind } from "@/shared/lib/assessmentKind";
+import { isAbilityAssessmentKind, isPersonalityAssessmentKind } from "@/shared/lib/assessmentKind";
 import { getLogger } from "@/shared/lib/logger";
 import { getAssessmentEntryContext } from "@/shared/stores/assessmentEntry";
 import { findTesteeById, getSelectedTesteeId } from "@/shared/stores/testees";
@@ -14,6 +14,10 @@ import {
   loadMedicalReportByAnswerSheet,
   loadMedicalReportByAssessmentId,
 } from "../services/loadMedicalReport";
+import {
+  loadBehaviorReportByAnswerSheet,
+  loadBehaviorReportByAssessmentId,
+} from "../services/loadBehaviorReport";
 import {
   buildMedicalReportViewModel,
   isPersonalityReportPayload,
@@ -43,6 +47,8 @@ const AssessmentReportPage = () => {
   const params = (Taro.getCurrentInstance().router?.params || {}) as RouteParams;
   const planTaskId = params.task_id || "";
   const assessmentKind = params.kind || "";
+  const isAbilityReport = isAbilityAssessmentKind(assessmentKind);
+  const reportTone = isAbilityReport ? "ability" : "medical";
   const [answerSheetId, setAnswerSheetId] = useState<string | number>(params.a || "");
   const [assessmentContext, setAssessmentContext] = useState({ assessmentId: "", testeeId: "" });
   const [report, setReport] = useState<MedicalReportViewModel | null>(null);
@@ -66,7 +72,7 @@ const AssessmentReportPage = () => {
   }, [assessmentKind, params.a, params.aid, params.rid, params.t, params.task_id]);
 
   const loadTrend = useCallback(async (assessmentId: string, testeeId: string) => {
-    if (!assessmentId || !testeeId) {
+    if (isAbilityReport || !assessmentId || !testeeId) {
       setTrendSummary(null);
       return;
     }
@@ -82,7 +88,7 @@ const AssessmentReportPage = () => {
     } finally {
       setTrendLoading(false);
     }
-  }, []);
+  }, [isAbilityReport]);
 
   const applyReport = useCallback((raw: unknown) => {
     logger.RUN("[Analysis] 原始报告数据:", raw);
@@ -102,16 +108,24 @@ const AssessmentReportPage = () => {
       if (params.aid || params.rid) {
         const assessmentId = params.aid || params.rid || "";
         if (!assessmentId || !params.t) throw new Error("参数不完整");
-        const result = await loadMedicalReportByAssessmentId({ assessmentId, testeeId: params.t });
+        const result = isAbilityReport
+          ? await loadBehaviorReportByAssessmentId({ assessmentId, testeeId: params.t })
+          : await loadMedicalReportByAssessmentId({ assessmentId, testeeId: params.t });
         const context = { assessmentId: String(result.assessmentId), testeeId: String(result.testeeId) };
         setAssessmentContext(context);
         if (applyReport(result.report)) void loadTrend(context.assessmentId, context.testeeId);
       } else {
-        const result = await loadMedicalReportByAnswerSheet({
-          answersheetId: params.a,
-          testeeIdFromUrl: params.t,
-          logger,
-        });
+        const result = isAbilityReport
+          ? await loadBehaviorReportByAnswerSheet({
+            answersheetId: params.a,
+            testeeIdFromUrl: params.t,
+            logger,
+          })
+          : await loadMedicalReportByAnswerSheet({
+            answersheetId: params.a,
+            testeeIdFromUrl: params.t,
+            logger,
+          });
         const context = { assessmentId: String(result.assessmentId), testeeId: String(result.testeeId) };
         setAssessmentContext(context);
         if (applyReport(result.report)) await loadTrend(context.assessmentId, context.testeeId);
@@ -122,7 +136,7 @@ const AssessmentReportPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [applyReport, loadTrend, params.a, params.aid, params.rid, params.t, redirectPersonality]);
+  }, [applyReport, isAbilityReport, loadTrend, params.a, params.aid, params.rid, params.t, redirectPersonality]);
 
   useEffect(() => {
     logger.RUN("did effect <RUN> | params: ", params);
@@ -130,12 +144,12 @@ const AssessmentReportPage = () => {
   }, [loadFromRoute]);
 
   const completionAction = report ? (
-    <ReportCompletionAction answerSheetId={answerSheetId} taskId={planTaskId} tone="medical" />
+    <ReportCompletionAction answerSheetId={answerSheetId} taskId={planTaskId} tone={reportTone} />
   ) : undefined;
 
   return (
     <ReportPageShell
-      tone="medical"
+      tone={reportTone}
       loading={loading}
       error={error}
       onRetry={() => void loadFromRoute()}

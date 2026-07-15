@@ -3,8 +3,9 @@ import Taro from "@tarojs/taro";
 
 import { loadMedicalAssessmentRecords } from "@/modules/assessment/services/loadMedicalAssessmentRecords";
 import { normalizeMedicalAssessmentRecord } from "@/modules/assessment/services/medicalAssessmentRecordMapper";
+import { loadBehaviorAssessmentRecords } from "@/modules/assessment/services/behaviorAssessmentRecordService";
 import { loadPersonalityAssessmentRecords } from "@/modules/assessment/services/personalityAssessmentRecordService";
-import { ASSESSMENT_KIND, matchesAssessmentKindFilter, normalizeAssessmentKind } from "@/shared/lib/assessmentKind";
+import { ASSESSMENT_KIND, normalizeAssessmentKind } from "@/shared/lib/assessmentKind";
 import { buildAssessmentScanTargetUrl, isScanCancelError } from "@/shared/lib/entryScan";
 import type { DomainTone } from "@/shared/ui/types";
 
@@ -26,6 +27,19 @@ import TesteeSheet from "./TesteeSheet";
 import type { RecordTesteeOption } from "./AssessmentRecordFilterBar";
 
 const loadPersonalityRecords = loadPersonalityAssessmentRecords as (params: {
+  testeeId: string;
+  statusFilter: string;
+  page: number;
+  pageSize: number;
+}) => Promise<{
+  items: Array<Record<string, unknown>>;
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}>;
+
+const loadBehaviorRecords = loadBehaviorAssessmentRecords as (params: {
   testeeId: string;
   statusFilter: string;
   page: number;
@@ -152,46 +166,53 @@ const AssessmentRecordListController = ({
         return;
       }
 
-      const { dateFrom, dateTo } = resolveRecordDateRange(timeRange);
-      const shouldFilterKind = Boolean(normalizedAssessmentKind);
-      const nextRecords: AssessmentRecordViewModel[] = [];
-      let currentPage = page;
-      let consumedPage = page - 1;
-      let totalPages = 0;
-      let total = 0;
-
-      while (currentPage) {
-        const result = await loadMedicalAssessmentRecords({
+      if (normalizedAssessmentKind === ASSESSMENT_KIND.ABILITY) {
+        setMedicalListUnavailable(false);
+        const result = await loadBehaviorRecords({
           testeeId: testee.id,
-          status: statusFilter,
-          scaleCode: selectedScaleCode,
-          riskLevel,
-          dateFrom,
-          dateTo,
-          assessmentKind: normalizedAssessmentKind || undefined,
-          page: currentPage,
+          statusFilter,
+          page,
           pageSize,
         });
-        if (result.unavailable) {
-          setMedicalListUnavailable(true);
-          break;
-        }
+        const nextRecords = result.items.map(toAssessmentRecordViewModel);
+        setRecords((previous) => append ? [...previous, ...nextRecords] : nextRecords);
+        setPagination({
+          page: result.page,
+          pageSize: result.pageSize,
+          total: result.total,
+          totalPages: result.totalPages,
+        });
+        return;
+      }
 
+      const { dateFrom, dateTo } = resolveRecordDateRange(timeRange);
+      const nextRecords: AssessmentRecordViewModel[] = [];
+      const result = await loadMedicalAssessmentRecords({
+        testeeId: testee.id,
+        status: statusFilter,
+        scaleCode: selectedScaleCode,
+        riskLevel,
+        dateFrom,
+        dateTo,
+        page,
+        pageSize,
+      });
+      if (result.unavailable) {
+        setMedicalListUnavailable(true);
+      } else {
         setMedicalListUnavailable(false);
-        consumedPage = Math.max(Number(result.page || currentPage), currentPage);
-        totalPages = Number(result.totalPages || 0);
-        total = Number(result.total || 0);
         nextRecords.push(...result.items
           .map(normalizeMedicalAssessmentRecord)
-          .filter((item: Record<string, unknown>) => matchesAssessmentKindFilter(item, normalizedAssessmentKind))
           .map(toAssessmentRecordViewModel));
-
-        if (!shouldFilterKind || nextRecords.length >= pageSize || consumedPage >= totalPages) break;
-        currentPage = consumedPage + 1;
       }
 
       setRecords((previous) => append ? [...previous, ...nextRecords] : nextRecords);
-      setPagination({ page: consumedPage, pageSize, total, totalPages });
+      setPagination({
+        page: Number(result.page || page),
+        pageSize: Number(result.pageSize || pageSize),
+        total: Number(result.total || 0),
+        totalPages: Number(result.totalPages || 0),
+      });
     } catch (caughtError) {
       console.error("获取测评记录失败：", caughtError);
       setError(errorMessage(caughtError));
