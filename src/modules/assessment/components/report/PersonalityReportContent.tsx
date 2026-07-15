@@ -13,10 +13,11 @@ interface ReportRegionProps {
   title: string;
   subtitle: string;
   children: React.ReactNode;
+  className?: string;
 }
 
-const ReportRegion = ({ number, title, subtitle, children }: ReportRegionProps) => (
-  <View className="pr-report-region">
+const ReportRegion = ({ number, title, subtitle, children, className = "" }: ReportRegionProps) => (
+  <View className={["pr-report-region", className].filter(Boolean).join(" ")}>
     <View className="pr-report-region__header">
       <Text className="pr-report-region__number">{number}</Text>
       <View className="pr-report-region__heading">
@@ -79,6 +80,19 @@ const DimensionScale = ({
 
 const comparableText = (value: string): string => value.replace(/\s+/g, "").toLowerCase();
 
+const suggestionPresentation = (suggestion: { category: string; content: string }) => {
+  let category = String(suggestion.category || "").trim();
+  let content = String(suggestion.content || "").trim();
+  const prefix = content.match(/^(优势|注意|提醒|建议)[：:]\s*/);
+  if (prefix) {
+    category = prefix[1] === "注意" ? "提醒" : prefix[1];
+    content = content.slice(prefix[0].length).trim();
+  } else if (/^(general|通用|一般)$/i.test(category)) {
+    category = "";
+  }
+  return { category, content };
+};
+
 const PersonalityReportContent = ({ report }: { report: PersonalityReportViewModel }) => {
   const conclusionKey = comparableText(report.hero.conclusion);
   const reportSections = report.sections.filter((section) => section.content);
@@ -86,14 +100,24 @@ const PersonalityReportContent = ({ report }: { report: PersonalityReportViewMod
     report.hero.conclusion
     && !reportSections.some((section) => comparableText(section.content) === conclusionKey),
   );
+  const occupiedReportCopy = [
+    report.hero.conclusion,
+    report.outcome.summary,
+    String(report.hero.modelExtra.one_liner || ""),
+    String(report.hero.modelExtra.tagline || ""),
+    ...reportSections.map((section) => section.content),
+  ].map(comparableText).filter(Boolean);
   const growthSuggestions = [
     ...report.suggestions,
     ...report.dimensions
       .filter((dimension) => dimension.suggestion)
       .map((dimension) => ({ category: dimension.title, content: dimension.suggestion })),
-  ].filter((suggestion, index, list) => (
-    list.findIndex((item) => comparableText(item.content) === comparableText(suggestion.content)) === index
-  ));
+  ]
+    .map(suggestionPresentation)
+    .filter((suggestion) => suggestion.content && !occupiedReportCopy.includes(comparableText(suggestion.content)))
+    .filter((suggestion, index, list) => (
+      list.findIndex((item) => comparableText(item.content) === comparableText(suggestion.content)) === index
+    ));
 
   return (
     <View className="personality-report-page report-page-content">
@@ -109,6 +133,7 @@ const PersonalityReportContent = ({ report }: { report: PersonalityReportViewMod
         number="02"
         title="维度观察"
         subtitle="在两种倾向之间，查看你的自然偏好位置"
+        className="pr-report-region--dimensions"
       >
         {report.dimensions.length ? (
           <View className="pr-dimension-list">
@@ -149,12 +174,13 @@ const PersonalityReportContent = ({ report }: { report: PersonalityReportViewMod
         number="04"
         title="成长建议"
         subtitle="把人格理解转化为日常可以尝试的行动"
+        className="pr-report-region--growth"
       >
         {growthSuggestions.length ? (
           <View className="pr-growth-list">
             {growthSuggestions.map((suggestion, index) => (
               <View className="pr-growth-card" key={`${suggestion.category}-${index}`}>
-                <Text className="pr-growth-card__number">{String(index + 1).padStart(2, "0")}</Text>
+                <View className="pr-growth-card__marker" />
                 <View className="pr-growth-card__body">
                   {suggestion.category ? <Text className="pr-growth-card__category">{suggestion.category}</Text> : null}
                   <View className="pr-growth-card__content">{suggestion.content}</View>

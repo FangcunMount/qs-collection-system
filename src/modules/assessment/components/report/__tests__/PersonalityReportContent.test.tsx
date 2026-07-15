@@ -44,7 +44,11 @@ const report: PersonalityReportViewModel = {
     risk_level: "",
     suggestion: "保留独立空间",
   }],
-  suggestions: [{ category: "协作", content: "主动同步思路" }],
+  suggestions: [
+    { category: "general", content: "优势：组织执行" },
+    { category: "general", content: "注意：过快定论可能压缩讨论空间" },
+    { category: "协作", content: "主动同步思路" },
+  ],
   hasContent: true,
 };
 
@@ -63,6 +67,9 @@ describe("PersonalityReportContent", () => {
     expect(content).toContain("03人格报告");
     expect(content).toContain("系统思考");
     expect(content).toContain("04成长建议");
+    expect(content).not.toContain("general");
+    expect(content).toContain("优势组织执行");
+    expect(content).toContain("提醒过快定论可能压缩讨论空间");
     expect(content).toContain("主动同步思路");
     expect(content).toContain("保留独立空间");
   });
