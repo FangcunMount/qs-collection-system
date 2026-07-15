@@ -22,7 +22,9 @@ import {
   buildMedicalReportViewModel,
   isPersonalityReportPayload,
 } from "../viewModels/medicalReport";
-import type { MedicalReportViewModel } from "../types";
+import { buildBehaviorReportViewModel } from "../viewModels/behaviorReport";
+import type { BehaviorReportViewModel, MedicalReportViewModel } from "../types";
+import BehaviorReportContent from "../components/report/BehaviorReportContent";
 import MedicalReportContent from "../components/report/MedicalReportContent";
 import MedicalReportOverview from "../components/report/MedicalReportOverview";
 import MedicalReportTrendSummary from "../components/report/MedicalReportTrendSummary";
@@ -51,7 +53,7 @@ const AssessmentReportPage = () => {
   const reportTone = isAbilityReport ? "ability" : "medical";
   const [answerSheetId, setAnswerSheetId] = useState<string | number>(params.a || "");
   const [assessmentContext, setAssessmentContext] = useState({ assessmentId: "", testeeId: "" });
-  const [report, setReport] = useState<MedicalReportViewModel | null>(null);
+  const [report, setReport] = useState<MedicalReportViewModel | BehaviorReportViewModel | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [trendSummary, setTrendSummary] = useState<TrendSummary | null>(null);
@@ -93,10 +95,12 @@ const AssessmentReportPage = () => {
   const applyReport = useCallback((raw: unknown) => {
     logger.RUN("[Analysis] 原始报告数据:", raw);
     if (redirectPersonality(raw)) return false;
-    const viewModel = buildMedicalReportViewModel(raw, currentFallbackTestee());
+    const viewModel = isAbilityReport
+      ? buildBehaviorReportViewModel(raw, currentFallbackTestee())
+      : buildMedicalReportViewModel(raw, currentFallbackTestee());
     setReport(viewModel);
     return true;
-  }, [redirectPersonality]);
+  }, [isAbilityReport, redirectPersonality]);
 
   const loadFromRoute = useCallback(async () => {
     if (redirectPersonality()) return;
@@ -154,28 +158,44 @@ const AssessmentReportPage = () => {
       error={error}
       onRetry={() => void loadFromRoute()}
       fixedAction={completionAction}
-      className="medical-report-shell"
+      className={isAbilityReport ? "behavior-report-shell" : "medical-report-shell"}
     >
       {report ? (
         <View className="analysis-report-page report-page-content">
-          <MedicalReportOverview report={report} />
-          <PlanSubscribeConfirm
-            taskId={planTaskId}
-            planName={entryContext?.plan_name}
-            entryTitle={entryContext?.entry_title || report.scaleName}
-            clinicianName={entryContext?.clinician_name}
-            entryContext={entryContext}
-            variant="floating"
-          />
-          <MedicalReportTrendSummary
-            summary={trendSummary}
-            loading={trendLoading}
-            assessmentId={assessmentContext.assessmentId}
-            testeeId={assessmentContext.testeeId}
-            factors={report.factors}
-            riskLevel={report.riskLevel}
-          />
-          <MedicalReportContent factors={report.factors} />
+          {report.tone === "ability" ? (
+            <>
+              <BehaviorReportContent report={report} />
+              <PlanSubscribeConfirm
+                taskId={planTaskId}
+                planName={entryContext?.plan_name}
+                entryTitle={entryContext?.entry_title || report.modelName}
+                clinicianName={entryContext?.clinician_name}
+                entryContext={entryContext}
+                variant="floating"
+              />
+            </>
+          ) : (
+            <>
+              <MedicalReportOverview report={report} />
+              <PlanSubscribeConfirm
+                taskId={planTaskId}
+                planName={entryContext?.plan_name}
+                entryTitle={entryContext?.entry_title || report.scaleName}
+                clinicianName={entryContext?.clinician_name}
+                entryContext={entryContext}
+                variant="floating"
+              />
+              <MedicalReportTrendSummary
+                summary={trendSummary}
+                loading={trendLoading}
+                assessmentId={assessmentContext.assessmentId}
+                testeeId={assessmentContext.testeeId}
+                factors={report.factors}
+                riskLevel={report.riskLevel}
+              />
+              <MedicalReportContent factors={report.factors} />
+            </>
+          )}
         </View>
       ) : null}
     </ReportPageShell>

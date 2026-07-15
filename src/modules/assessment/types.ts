@@ -137,6 +137,60 @@ export interface MedicalReportViewModel {
   hasContent: boolean;
 }
 
+export interface BehaviorReportScoreViewModel {
+  kind: string;
+  value: number;
+  label: string;
+  max: number | null;
+}
+
+export interface BehaviorReportLevelViewModel {
+  code: string;
+  label: string;
+  severity: string;
+}
+
+export interface BehaviorReportNormReferenceViewModel {
+  scoreKind: string;
+  benchmark: number;
+  tableVersion: string;
+  formVariant: string;
+  minAgeMonths: number | null;
+  maxAgeMonths: number | null;
+  gender: string;
+}
+
+export interface BehaviorReportFactorViewModel {
+  factorCode: string;
+  title: string;
+  description: string;
+  suggestion: string;
+  rawScore: number | null;
+  maxScore: number | null;
+  derivedScores: BehaviorReportScoreViewModel[];
+  tScore: number | null;
+  percentile: number | null;
+  standardScore: number | null;
+  level: BehaviorReportLevelViewModel | null;
+  normReference: BehaviorReportNormReferenceViewModel | null;
+}
+
+export interface BehaviorReportViewModel {
+  tone: "ability";
+  modelName: string;
+  modelCode: string;
+  createdAt: string;
+  testeeName: string;
+  testeeId: string;
+  conclusion: string;
+  primaryScore: BehaviorReportScoreViewModel | null;
+  level: BehaviorReportLevelViewModel | null;
+  factors: BehaviorReportFactorViewModel[];
+  suggestions: MedicalReportSuggestionViewModel[];
+  hasNormComparison: boolean;
+  hasContent: boolean;
+}
+
 export interface PersonalityReportDimensionViewModel {
   factor_code: string;
   title: string;

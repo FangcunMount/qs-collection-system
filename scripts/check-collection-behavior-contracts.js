@@ -30,6 +30,8 @@ const reportWaitStrategy = read('src/modules/assessment/services/reportWaitStrat
 const reportWaiter = read('src/modules/assessment/services/waitForReportReady.js');
 const lifecycle = read('src/modules/assessment/services/waitAssessmentReportLifecycle.js');
 const reportPage = read('src/modules/assessment/pages/AssessmentReportPage.tsx');
+const behaviorReportViewModel = read('src/modules/assessment/viewModels/behaviorReport.ts');
+const behaviorReportContent = read('src/modules/assessment/components/report/BehaviorReportContent.tsx');
 const behaviorSources = [
   behaviorAssessmentApi,
   behaviorReportApi,
@@ -63,7 +65,12 @@ assertContains(reportWaitStrategy, /getBehaviorReportStatus/, 'ability report po
 assertContains(reportWaiter, /strategy\.eventKind\s*\|\|\s*strategy\.kind/, 'report waiter must support API-specific websocket kinds');
 assertContains(lifecycle, /waitBehaviorAssessmentId/, 'ability lifecycle fallback must use behavior list');
 assertContains(reportPage, /loadBehaviorReportByAssessmentId/, 'ability report page must use behavior report loader');
+assertContains(reportPage, /buildBehaviorReportViewModel/, 'ability report page must use the dedicated behavior report view model');
+assertContains(reportPage, /BehaviorReportContent/, 'ability report page must render the dedicated behavior report content');
 assertContains(reportPage, /isAbilityReport\s*\|\|\s*!assessmentId/, 'ability report page must not request medical trends');
+assertContains(behaviorReportViewModel, /derived_scores/, 'behavior report view model must preserve derived scores');
+assertContains(behaviorReportViewModel, /norm_reference/, 'behavior report view model must preserve norm references');
+assertContains(behaviorReportContent, /BehaviorNormComparisonChart/, 'behavior report must render the norm comparison chart');
 assertContains(reportWaitGuide, /kind=behavior/, 'report wait guide must document the behavior websocket kind');
 assertContains(reportWaitGuide, /\/behavior-assessments\/\{id\}\/report-status/, 'report wait guide must document behavior report-status');
 

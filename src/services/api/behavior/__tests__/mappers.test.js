@@ -36,7 +36,13 @@ describe('behavior assessment API mappers', () => {
         model: { code: 'EFN_CHILD', title: '执行功能测评' },
         primary_score: { value: 23 },
         level: { code: 'normal' },
-        dimensions: [{ factor_code: 'inhibit', raw_score: 6 }],
+        dimensions: [{
+          factor_code: 'inhibit',
+          raw_score: 6,
+          derived_scores: [{ kind: 't_score', value: 65 }],
+          level: { code: 'elevated', label: '偏高' },
+          norm_reference: { score_kind: 't_score', benchmark: 50, table_version: '2026' },
+        }],
         suggestions: [{ category: 'practice', content: '继续练习' }],
       },
     });
@@ -49,6 +55,11 @@ describe('behavior assessment API mappers', () => {
       risk_level: 'normal',
     });
     expect(report.data.dimensions).toHaveLength(1);
+    expect(report.data.dimensions[0]).toMatchObject({
+      derived_scores: [{ kind: 't_score', value: 65 }],
+      level: { code: 'elevated', label: '偏高' },
+      norm_reference: { score_kind: 't_score', benchmark: 50, table_version: '2026' },
+    });
     expect(report.data.suggestions).toHaveLength(1);
   });
 
