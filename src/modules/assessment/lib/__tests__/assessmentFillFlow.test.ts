@@ -2,7 +2,10 @@ import {
   resolveQuestionnaireSinglePageMode,
   resolveTesteeBootstrap,
 } from "../assessmentFillFlow";
-import { resolvePostSubmitNavigationKind } from "../assessmentSubmitNavigation";
+import {
+  resolvePostSubmitNavigationKind,
+  resolveReportRedirectKind,
+} from "../assessmentSubmitNavigation";
 
 describe("assessment fill controller decisions", () => {
   const testees = [
@@ -69,5 +72,12 @@ describe("assessment fill controller decisions", () => {
       questionnaireType: "Survey",
       isPersonalityFlow: false,
     })).toBe("survey_response");
+  });
+
+  test("preserves ability kind when the pending page redirects to the report", () => {
+    expect(resolveReportRedirectKind("ability")).toBe("ability");
+    expect(resolveReportRedirectKind("behavioral_rating")).toBe("ability");
+    expect(resolveReportRedirectKind("personality")).toBe("personality");
+    expect(resolveReportRedirectKind("medical")).toBeUndefined();
   });
 });

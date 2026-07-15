@@ -110,3 +110,13 @@ export function resolvePostSubmitNavigationKind({
   if (questionnaireType === 'Survey') return 'survey_response';
   return 'survey_response_fallback';
 }
+
+/**
+ * 报告页共用路由通过 kind 区分医学与行为能力报告。
+ * 医学报告沿用无 kind 的历史链接；其他专用报告必须保留规范类型。
+ */
+export function resolveReportRedirectKind(assessmentKind) {
+  const kind = normalizeAssessmentKind(assessmentKind);
+  if (!kind || kind === ASSESSMENT_KIND.MEDICAL) return undefined;
+  return kind;
+}

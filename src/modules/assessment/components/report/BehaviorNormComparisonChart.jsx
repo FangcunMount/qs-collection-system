@@ -17,7 +17,7 @@ const BehaviorNormComparisonChart = ({ data = [] }) => {
     const allValues = [...measured, ...benchmark];
     const minValue = allValues.length ? Math.min(...allValues) : 20;
     const maxValue = allValues.length ? Math.max(...allValues) : 80;
-    const yMin = Math.min(20, Math.floor((minValue - 5) / 10) * 10);
+    const yMin = Math.min(30, Math.floor((minValue - 5) / 10) * 10);
     const yMax = Math.max(80, Math.ceil((maxValue + 5) / 10) * 10);
 
     return {
@@ -26,7 +26,7 @@ const BehaviorNormComparisonChart = ({ data = [] }) => {
       tooltip: {
         trigger: "axis",
         backgroundColor: "rgba(255, 255, 255, 0.98)",
-        borderColor: "#D8F3ED",
+        borderColor: "#AEE5D9",
         borderWidth: 1,
         padding: [10, 12],
         textStyle: { color: "#071735", fontSize: 12 },
@@ -70,18 +70,18 @@ const BehaviorNormComparisonChart = ({ data = [] }) => {
           smooth: 0.28,
           symbol: "circle",
           symbolSize: 8,
-          lineStyle: { width: 3, color: "#6657D9" },
-          itemStyle: { color: "#6657D9", borderColor: "#FFFFFF", borderWidth: 2 },
+          lineStyle: { width: 3, color: "#18A999" },
+          itemStyle: { color: "#18A999", borderColor: "#FFFFFF", borderWidth: 2 },
           areaStyle: {
             color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: "rgba(102, 87, 217, 0.20)" },
-              { offset: 1, color: "rgba(102, 87, 217, 0.02)" },
+              { offset: 0, color: "rgba(24, 169, 153, 0.16)" },
+              { offset: 1, color: "rgba(24, 169, 153, 0.01)" },
             ]),
           },
           label: {
             show: true,
             position: "top",
-            color: "#5144B8",
+            color: "#168C80",
             fontSize: 10,
           },
         },
@@ -90,7 +90,7 @@ const BehaviorNormComparisonChart = ({ data = [] }) => {
           type: "line",
           data: benchmark,
           symbol: "none",
-          lineStyle: { width: 2, color: "#39BFA8", type: "dashed" },
+          lineStyle: { width: 2, color: "#8B7CF6", type: "dashed" },
         },
       ],
     };

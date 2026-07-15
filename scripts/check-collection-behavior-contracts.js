@@ -29,8 +29,10 @@ const recordController = read('src/modules/assessment/components/records/Assessm
 const reportWaitStrategy = read('src/modules/assessment/services/reportWaitStrategy.js');
 const reportWaiter = read('src/modules/assessment/services/waitForReportReady.js');
 const lifecycle = read('src/modules/assessment/services/waitAssessmentReportLifecycle.js');
+const reportPendingPage = read('src/modules/assessment/pages/AssessmentReportPendingPage.tsx');
 const reportPage = read('src/modules/assessment/pages/AssessmentReportPage.tsx');
 const behaviorReportViewModel = read('src/modules/assessment/viewModels/behaviorReport.ts');
+const behaviorReportPresentation = read('src/modules/assessment/viewModels/behaviorReportPresentation.ts');
 const behaviorReportContent = read('src/modules/assessment/components/report/BehaviorReportContent.tsx');
 const behaviorSources = [
   behaviorAssessmentApi,
@@ -64,13 +66,18 @@ assertContains(reportWaitStrategy, /eventKind:\s*['"]behavior['"]/, 'ability web
 assertContains(reportWaitStrategy, /getBehaviorReportStatus/, 'ability report polling must use behavior report-status');
 assertContains(reportWaiter, /strategy\.eventKind\s*\|\|\s*strategy\.kind/, 'report waiter must support API-specific websocket kinds');
 assertContains(lifecycle, /waitBehaviorAssessmentId/, 'ability lifecycle fallback must use behavior list');
+assertContains(reportPendingPage, /kind:\s*resolveReportRedirectKind\(strategy\.kind\)/, 'ability pending success redirect must preserve kind=ability');
 assertContains(reportPage, /loadBehaviorReportByAssessmentId/, 'ability report page must use behavior report loader');
 assertContains(reportPage, /buildBehaviorReportViewModel/, 'ability report page must use the dedicated behavior report view model');
 assertContains(reportPage, /BehaviorReportContent/, 'ability report page must render the dedicated behavior report content');
 assertContains(reportPage, /isAbilityReport\s*\|\|\s*!assessmentId/, 'ability report page must not request medical trends');
 assertContains(behaviorReportViewModel, /derived_scores/, 'behavior report view model must preserve derived scores');
 assertContains(behaviorReportViewModel, /norm_reference/, 'behavior report view model must preserve norm references');
+assertContains(behaviorReportPresentation, /gxkk9w/, 'behavior report presentation must recognize BRIEF-2');
+assertContains(behaviorReportPresentation, /bjfki3/, 'behavior report presentation must recognize sensory SPM');
 assertContains(behaviorReportContent, /BehaviorNormComparisonChart/, 'behavior report must render the norm comparison chart');
+assertContains(behaviorReportContent, /能力画像/, 'behavior report must render the ability portrait');
+assertContains(behaviorReportContent, /家庭练习建议/, 'behavior report must render family practice guidance');
 assertContains(reportWaitGuide, /kind=behavior/, 'report wait guide must document the behavior websocket kind');
 assertContains(reportWaitGuide, /\/behavior-assessments\/\{id\}\/report-status/, 'report wait guide must document behavior report-status');
 

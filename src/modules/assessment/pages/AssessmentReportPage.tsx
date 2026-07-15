@@ -147,6 +147,11 @@ const AssessmentReportPage = () => {
     void loadFromRoute();
   }, [loadFromRoute]);
 
+  useEffect(() => {
+    if (!isAbilityReport) return;
+    void Taro.setNavigationBarTitle({ title: "行为能力报告" });
+  }, [isAbilityReport]);
+
   const completionAction = report ? (
     <ReportCompletionAction answerSheetId={answerSheetId} taskId={planTaskId} tone={reportTone} />
   ) : undefined;

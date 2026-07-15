@@ -5,6 +5,7 @@ import lottie from "lottie-miniprogram";
 
 import carLoadingData from "@/assets/lotties/car-loading-data.json";
 import { buildReportWaitViewModel } from "@/modules/assessment/lib/reportWaitViewState";
+import { resolveReportRedirectKind } from "@/modules/assessment/lib/assessmentSubmitNavigation";
 import { resolveTesteeIdForAnswerSheet } from "@/modules/assessment/lib/resolveTesteeId";
 import { createReportWaitStrategy } from "@/modules/assessment/services/reportWaitStrategy";
 import {
@@ -15,7 +16,7 @@ import {
 import { waitAssessmentReportLifecycle } from "@/modules/assessment/services/waitAssessmentReportLifecycle";
 import type { ReportWaitPhase } from "@/modules/assessment/types";
 import { routes } from "@/shared/config/routes";
-import { ASSESSMENT_KIND, isPersonalityAssessmentKind } from "@/shared/lib/assessmentKind";
+import { isPersonalityAssessmentKind } from "@/shared/lib/assessmentKind";
 import { getLogger } from "@/shared/lib/logger";
 import PageShell from "@/shared/ui/PageShell";
 import StatePanel from "@/shared/ui/StatePanel";
@@ -224,9 +225,7 @@ const AssessmentReportPendingPage = () => {
               a: resolvedAnswerSheetId,
               aid: resolvedAssessmentId,
               t: testeeId,
-              kind: strategy.kind === ASSESSMENT_KIND.PERSONALITY
-                ? ASSESSMENT_KIND.PERSONALITY
-                : undefined,
+              kind: resolveReportRedirectKind(strategy.kind),
               task_id: taskId || undefined,
             }),
           });
@@ -359,7 +358,7 @@ const AssessmentReportPendingPage = () => {
         a: params.answerSheetId,
         aid: params.assessmentId,
         t: params.testeeId,
-        kind: params.assessmentKind,
+        kind: resolveReportRedirectKind(params.assessmentKind),
         task_id: params.taskId || undefined,
       }),
     });
