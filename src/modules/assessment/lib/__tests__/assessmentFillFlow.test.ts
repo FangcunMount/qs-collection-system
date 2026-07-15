@@ -54,4 +54,20 @@ describe("assessment fill controller decisions", () => {
       isPersonalityFlow: true,
     })).toBe("personality_pending");
   });
+
+  test("routes ability assessments to report pending instead of answersheet", () => {
+    expect(resolvePostSubmitNavigationKind({
+      questionnaireType: "BehavioralRating",
+      isPersonalityFlow: false,
+    })).toBe("ability_pending");
+    expect(resolvePostSubmitNavigationKind({
+      questionnaireType: "Survey",
+      assessmentKind: "ability",
+      isPersonalityFlow: false,
+    })).toBe("ability_pending");
+    expect(resolvePostSubmitNavigationKind({
+      questionnaireType: "Survey",
+      isPersonalityFlow: false,
+    })).toBe("survey_response");
+  });
 });

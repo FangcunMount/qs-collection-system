@@ -336,6 +336,18 @@ const reportFailedFixture = readJson('src/modules/assessment/__fixtures__/person
   assert(/kind=personality|kind%3Dpersonality/.test(personalityUrl), 'personality submit navigates with kind=personality');
   assert(/request_id=req_1|request_id%3Dreq_1/.test(personalityUrl), 'personality submit passes request_id');
   assert(normalizeAssessmentKind('typology') === ASSESSMENT_KIND.PERSONALITY, 'typology maps to personality for navigation kind');
+
+  const abilityUrl = buildPostSubmitRedirectUrl({
+    questionnaireType: 'BehavioralRating',
+    assessmentKind: 'ability',
+    answersheetId: '',
+    assessmentId: '',
+    requestId: 'req_ability_1',
+    testeeId: '10001',
+  });
+  assert(/analysis|report|pending|wait/i.test(abilityUrl) || /request_id=req_ability_1|request_id%3Dreq_ability_1/.test(abilityUrl), 'ability submit navigates to report wait with request_id');
+  assert(/kind=ability|kind%3Dability/.test(abilityUrl), 'ability submit navigates with kind=ability');
+  assert(!/answersheet|response/i.test(abilityUrl.split('?')[0]), 'ability submit must not land on answersheet page');
 }
 
 // --- pollAssessmentIdByAnswerSheet ---

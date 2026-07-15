@@ -59,6 +59,12 @@ export function normalizePersonalityReport(raw) {
     outcome,
     hero: {
       conclusion: report.conclusion || outcome.summary || '',
+      imageUrl:
+        modelExtra?.image_url ||
+        modelExtra?.imageUrl ||
+        modelExtra?.illustration_url ||
+        modelExtra?.cover_url ||
+        '',
       modelExtra: modelExtra || {},
     },
     dimensions,

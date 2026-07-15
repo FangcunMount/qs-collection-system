@@ -168,7 +168,11 @@ export interface PersonalityReportViewModel {
     rarityLabel: string;
     percentile: number | null;
   };
-  hero: { conclusion: string; modelExtra: Record<string, unknown> };
+  hero: {
+    conclusion: string;
+    imageUrl: string;
+    modelExtra: Record<string, unknown>;
+  };
   dimensions: PersonalityReportDimensionViewModel[];
   suggestions: Array<{ category: string; content: string }>;
   sections: PersonalityReportSectionViewModel[];

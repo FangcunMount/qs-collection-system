@@ -6,9 +6,11 @@ import {
   SUBMIT_NO_ANSWER_MESSAGE,
 } from '@/modules/questionnaire/lib/questionUtils';
 import { isEmpty } from '@/shared/lib/type';
+import { resolveSubmitAssessmentKind } from '@/modules/assessment/lib/assessmentSubmitNavigation';
 import { submitAssessmentAndResolveAnswersheet } from '@/modules/assessment/services/submitAssessmentFlow';
 import { saveSubmissionContext } from '@/modules/assessment/services/submissionContextStore';
 import { resolveSubmissionAttempt } from '@/modules/assessment/services/submissionAttempt';
+import { ASSESSMENT_KIND } from '@/shared/lib/assessmentKind';
 import { getLogger } from '../../shared/lib/logger';
 
 const logger = getLogger('questionnaire_submission_api');
@@ -75,11 +77,18 @@ export const submitQuestionnaire = async (questionnaire, writer_role_code, signi
 
   let activeRequestId = '';
   let submitResult;
+  const submitAssessmentKind = resolveSubmitAssessmentKind({
+    questionnaireType: questionnaire.type,
+    assessmentKind: submitContract.assessment_kind,
+  });
+  // 普通 Survey 同步等 answersheet_id；测评类（含行为能力）走 request_id → 报告等待页。
+  const isPureSurvey = questionnaire.type === 'Survey' && !submitAssessmentKind;
+
   try {
     submitResult = await submitAssessmentAndResolveAnswersheet(requestData, {
       idempotencyKey,
       requestId: submissionAttempt.requestId,
-      waitForCompletion: questionnaire.type === 'Survey',
+      waitForCompletion: isPureSurvey,
       onProgress: (progress) => {
         activeRequestId = progress.requestId;
         logger.RUN('[submitQuestionnaire] 队列处理中', {
@@ -109,10 +118,15 @@ export const submitQuestionnaire = async (questionnaire, writer_role_code, signi
   const queued = Boolean(submitResult?.queued);
   const requestId = submitResult?.request_id;
 
-  if (questionnaire.type !== 'Survey') {
+  if (!isPureSurvey) {
     if (!requestId) {
       throw new Error('提交已受理但缺少 request_id，无法继续等待');
     }
+    const assessmentKind = submitAssessmentKind || (
+      questionnaire.type === 'PersonalityAssessment'
+        ? ASSESSMENT_KIND.PERSONALITY
+        : ASSESSMENT_KIND.MEDICAL
+    );
     saveSubmissionContext({
       fingerprint: submissionAttempt.fingerprint,
       requestId,
@@ -122,7 +136,7 @@ export const submitQuestionnaire = async (questionnaire, writer_role_code, signi
       modelCode: submitContract.model_code,
       questionnaireCode: requestData.questionnaire_code,
       questionnaireVersion: requestData.questionnaire_version,
-      assessmentKind: questionnaire.type === 'PersonalityAssessment' ? 'personality' : 'medical',
+      assessmentKind,
       answersheetId: submitResult?.answersheet_id,
       assessmentId: submitResult?.assessment_id,
       phase: submitResult?.assessment_id ? 'assessment_ready' : 'submit_queued',

@@ -7,7 +7,11 @@ describe("personality report view model", () => {
         model_name: "MBTI 人格类型",
         model_code: "MBTI",
         created_at: "2026-07-14T10:00:00Z",
-        model_extra: { type_code: "INTJ", type_name: "建筑师" },
+        model_extra: {
+          type_code: "INTJ",
+          type_name: "建筑师",
+          image_url: "https://example.com/intj.png",
+        },
         conclusion: "善于独立思考",
         dimensions: [{
           factor_code: "EI",
@@ -25,7 +29,10 @@ describe("personality report view model", () => {
       testeeName: "小明",
       testeeId: "testee-1",
       outcome: { code: "INTJ", title: "建筑师" },
-      hero: { conclusion: "善于独立思考" },
+      hero: {
+        conclusion: "善于独立思考",
+        imageUrl: "https://example.com/intj.png",
+      },
       dimensions: [{ factor_code: "EI", score: 7, max_score: 10 }],
       sections: [{ key: "strength", title: "优势", content: "系统思考" }],
       suggestions: [{ category: "协作", content: "主动同步思路" }],
@@ -40,6 +47,7 @@ describe("personality report view model", () => {
       dimensions: [],
       sections: [],
       suggestions: [],
+      hero: { imageUrl: "" },
       hasContent: false,
     });
   });

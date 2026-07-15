@@ -1,5 +1,9 @@
 import { routes } from '@/shared/config/routes';
-import { ASSESSMENT_KIND, isPersonalityAssessmentKind } from '@/shared/lib/assessmentKind';
+import {
+  ASSESSMENT_KIND,
+  isAbilityAssessmentKind,
+  isPersonalityAssessmentKind,
+} from '@/shared/lib/assessmentKind';
 import {
   getAssessmentReportStatus,
   isReportWaitFailed,
@@ -40,6 +44,7 @@ export function formatReportWaitStageMessage(kind, stage, fallbackMessage) {
 
 export function createReportWaitStrategy(kind) {
   const isPersonality = isPersonalityAssessmentKind(kind);
+  const isAbility = isAbilityAssessmentKind(kind);
 
   if (isPersonality) {
     return {
@@ -55,8 +60,10 @@ export function createReportWaitStrategy(kind) {
     };
   }
 
+  // 行为能力与医学量表共用报告状态 / 报告页契约，但保留 ability kind 供等待页与记录分流。
+  const resolvedKind = isAbility ? ASSESSMENT_KIND.ABILITY : ASSESSMENT_KIND.MEDICAL;
   return {
-    kind: ASSESSMENT_KIND.MEDICAL,
+    kind: resolvedKind,
     pollReportStatus: ({ assessmentId, testeeId }) =>
       getAssessmentReportStatus(assessmentId, testeeId),
     reportRoute: routes.assessmentReport,
@@ -64,6 +71,6 @@ export function createReportWaitStrategy(kind) {
     isCompleted: isInterpreted,
     isFailed: (status) => isReportWaitFailed(status),
     formatStageMessage: (stage, fallbackMessage) =>
-      formatReportWaitStageMessage(ASSESSMENT_KIND.MEDICAL, stage, fallbackMessage),
+      formatReportWaitStageMessage(resolvedKind, stage, fallbackMessage),
   };
 }

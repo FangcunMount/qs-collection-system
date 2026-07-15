@@ -96,6 +96,7 @@ assertNotContains(personalityCatalogService, /PERSONALITY_CATALOG_ITEMS|personal
 assertContains(abilityCatalog, /listPublishedAssessmentModels/, 'AbilityCatalogPage must load published assessment models');
 assertContains(abilityCatalog, /ABILITY_CATALOG_KIND\s*=\s*["']behavioral_rating["']/, 'AbilityCatalogPage must use the behavioral_rating catalogue kind');
 assertContains(abilityCatalog, /kind:\s*ABILITY_CATALOG_KIND/, 'AbilityCatalogPage must request behavioral_rating models');
+assertContains(abilityCatalog, /kind:\s*ASSESSMENT_KIND\.ABILITY/, 'AbilityCatalogPage must open fill with kind=ability');
 assertContains(abilityCatalog, /mapAbilityCatalogCard/, 'AbilityCatalogPage must normalize ability catalog models');
 assertNotContains(abilityCatalog, /ABILITY_SPECIALIZED_ASSESSMENTS/, 'AbilityCatalogPage must not use hardcoded planned assessments');
 assertContains(assessmentRecordsPage, /useRouter/, 'AssessmentRecordsPage must read report kind from route params');

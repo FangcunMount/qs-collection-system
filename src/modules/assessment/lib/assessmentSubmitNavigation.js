@@ -1,26 +1,58 @@
 import { routes } from '@/shared/config/routes';
-import { ASSESSMENT_KIND } from '@/shared/lib/assessmentKind';
+import {
+  ASSESSMENT_KIND,
+  normalizeAssessmentKind,
+} from '@/shared/lib/assessmentKind';
+
+/**
+ * 解析答卷提交后的测评类型（人格 / 行为能力 / 医学 / 普通问卷）。
+ */
+export function resolveSubmitAssessmentKind({
+  questionnaireType,
+  assessmentKind,
+  isPersonalityFlow,
+} = {}) {
+  const explicitKind = normalizeAssessmentKind(assessmentKind);
+  if (explicitKind) return explicitKind;
+
+  const typeKind = normalizeAssessmentKind(questionnaireType);
+  if (typeKind) return typeKind;
+
+  if (questionnaireType === 'PersonalityAssessment' || isPersonalityFlow) {
+    return ASSESSMENT_KIND.PERSONALITY;
+  }
+  if (questionnaireType === 'MedicalScale') {
+    return ASSESSMENT_KIND.MEDICAL;
+  }
+  if (questionnaireType === 'Survey') {
+    return '';
+  }
+  return '';
+}
 
 /**
  * 答卷提交成功后的导航目标（页面只负责 redirectTo）。
+ *
+ * 测评类（医学 / 人格 / 行为能力）在 HTTP 202 后通常还没有 answersheet_id，
+ * 需要带着 request_id 进入报告等待页继续轮询；普通 Survey 才进答卷详情。
  */
 export function buildPostSubmitRedirectUrl({
   questionnaireType,
   isPersonalityFlow,
+  assessmentKind,
   answersheetId,
   assessmentId,
   requestId,
   testeeId,
   planTaskId,
 }) {
-  if (questionnaireType === 'Survey') {
-    return routes.assessmentResponse({
-      a: answersheetId,
-      task_id: planTaskId || undefined,
-    });
-  }
+  const kind = resolveSubmitAssessmentKind({
+    questionnaireType,
+    assessmentKind,
+    isPersonalityFlow,
+  });
 
-  if (questionnaireType === 'PersonalityAssessment' || isPersonalityFlow) {
+  if (kind === ASSESSMENT_KIND.PERSONALITY) {
     return routes.assessmentReportPending({
       a: answersheetId,
       aid: assessmentId || undefined,
@@ -31,7 +63,18 @@ export function buildPostSubmitRedirectUrl({
     });
   }
 
-  if (questionnaireType === 'MedicalScale') {
+  if (kind === ASSESSMENT_KIND.ABILITY) {
+    return routes.assessmentReportPending({
+      a: answersheetId,
+      aid: assessmentId || undefined,
+      t: testeeId || undefined,
+      kind: ASSESSMENT_KIND.ABILITY,
+      request_id: requestId || undefined,
+      task_id: planTaskId || undefined,
+    });
+  }
+
+  if (kind === ASSESSMENT_KIND.MEDICAL || questionnaireType === 'MedicalScale') {
     return routes.assessmentReportPending({
       a: answersheetId,
       aid: assessmentId || undefined,
@@ -41,6 +84,7 @@ export function buildPostSubmitRedirectUrl({
     });
   }
 
+  // Survey 或无法识别的问卷类型：答卷详情
   return routes.assessmentResponse({
     a: answersheetId,
     task_id: planTaskId || undefined,
@@ -50,15 +94,19 @@ export function buildPostSubmitRedirectUrl({
 export function resolvePostSubmitNavigationKind({
   questionnaireType,
   isPersonalityFlow,
-}) {
-  if (questionnaireType === 'Survey') {
-    return 'survey_response';
-  }
-  if (questionnaireType === 'PersonalityAssessment' || isPersonalityFlow) {
-    return 'personality_pending';
-  }
-  if (questionnaireType === 'MedicalScale') {
+  assessmentKind,
+} = {}) {
+  const kind = resolveSubmitAssessmentKind({
+    questionnaireType,
+    assessmentKind,
+    isPersonalityFlow,
+  });
+
+  if (kind === ASSESSMENT_KIND.PERSONALITY) return 'personality_pending';
+  if (kind === ASSESSMENT_KIND.ABILITY) return 'ability_pending';
+  if (kind === ASSESSMENT_KIND.MEDICAL || questionnaireType === 'MedicalScale') {
     return 'medical_pending';
   }
+  if (questionnaireType === 'Survey') return 'survey_response';
   return 'survey_response_fallback';
 }

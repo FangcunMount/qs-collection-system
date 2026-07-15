@@ -7,68 +7,77 @@
   box-sizing: border-box;
 }
 
-.pr-meta {
-  margin: 0 @space-3;
-  padding: @space-2 @space-1 0;
+.pr-report-batch {
+  position: relative;
+  margin: @space-5 @space-3 0;
+  padding: @space-4;
+  border: 1rpx solid @border-color-base;
+  border-radius: @radius-card;
+  background: @surface-card;
+  box-shadow: @shadow-soft;
+  box-sizing: border-box;
+}
+
+.pr-report-batch__header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: @space-2;
+  align-items: flex-start;
+  gap: @space-3;
+  padding-bottom: @space-3;
+  border-bottom: 1rpx solid @border-color-base;
 }
 
-.pr-meta__name {
-  color: @text-color-primary;
-  font-size: @font-size-body;
-  font-weight: @font-weight-bold;
+.pr-report-batch__index {
+  flex: none;
+  color: @color-personality-500;
+  font-size: @font-size-card-title;
+  line-height: 1.2;
+  font-weight: @font-weight-black;
+  letter-spacing: 1rpx;
 }
 
-.pr-meta__time {
-  color: @text-color-secondary;
-  font-size: @font-size-caption;
-  font-weight: @font-weight-semibold;
+.pr-report-batch__heading {
+  min-width: 0;
+  flex: 1;
 }
 
-.pr-section {
-  margin: @space-6 @space-3 0;
-}
-
-.pr-section__header {
-  margin: 0 0 @space-2;
-  display: flex;
-  flex-direction: column;
-  gap: @space-1;
-}
-
-.pr-section__title {
+.pr-report-batch__title {
+  display: block;
   color: @text-color-primary;
   font-size: @font-size-card-title;
   line-height: 1.2;
   font-weight: @font-weight-black;
 }
 
-.pr-section__subtitle {
-  color: @text-color-secondary;
+.pr-report-batch__subtitle {
+  display: block;
+  margin-top: @space-1;
+  color: @text-color-tertiary;
   font-size: @font-size-caption;
-  line-height: 1.4;
+  line-height: 1.5;
   font-weight: @font-weight-semibold;
+}
+
+.pr-report-batch__content {
+  padding-top: @space-1;
 }
 
 .pr-dimension-list,
 .pr-advice-list {
   display: flex;
   flex-direction: column;
-  gap: 0;
 }
 
 .pr-dimension-card,
 .pr-advice-card {
   padding: @space-4 0;
-  border: 0;
   border-bottom: 1rpx solid @border-color-base;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
   box-sizing: border-box;
+}
+
+.pr-dimension-card:last-child,
+.pr-advice-card:last-child {
+  padding-bottom: @space-2;
+  border-bottom: 0;
 }
 
 .pr-dimension-card__header {
@@ -111,7 +120,7 @@
 .pr-dimension-card__bar {
   height: 100%;
   border-radius: @radius-pill;
-  background: @color-personality-600;
+  background: linear-gradient(90deg, @color-personality-500 0%, @color-personality-700 100%);
 }
 
 .pr-dimension-card__desc,
@@ -119,14 +128,13 @@
   margin-top: @space-2;
   color: @text-color-secondary;
   font-size: @font-size-body;
-  line-height: 1.7;
+  line-height: 1.75;
 }
 
 .pr-dimension-card__suggestion {
-  margin-top: @space-2;
-  padding: @space-2 @space-3;
-  border-left: 4rpx solid @color-personality-200;
-  border-radius: 0 @radius-md @radius-md 0;
+  margin-top: @space-3;
+  padding: @space-3;
+  border-radius: @radius-md;
   background: @color-personality-50;
 }
 
@@ -152,6 +160,5 @@
 }
 
 .pr-advice-card__content {
-  margin-top: 0;
-  line-height: 1.75;
+  margin-top: @space-1;
 }

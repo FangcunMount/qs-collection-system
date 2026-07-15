@@ -32,6 +32,7 @@ import {
 import {
   buildPostSubmitRedirectUrl,
   resolvePostSubmitNavigationKind,
+  resolveSubmitAssessmentKind,
 } from "../lib/assessmentSubmitNavigation";
 import {
   resolveQuestionnaireSinglePageMode,
@@ -91,6 +92,11 @@ export default function AssessmentFillController() {
   const paramData = useRouter().params as RouteParams;
   const entryParams = normalizeAssessmentEntryParams(paramData);
   const planTaskId = resolvePlanTaskId(paramData, entryContext);
+  const fillAssessmentKind = resolveSubmitAssessmentKind({
+    questionnaireType: questionnaire?.type,
+    assessmentKind: entryParams.kind || submitContract?.assessment_kind,
+    isPersonalityFlow,
+  });
   const shouldDirectStartPersonality = (nextModelCode: string | null) => {
     return Boolean(nextModelCode && entryParams.startImmediately);
   };
@@ -422,6 +428,20 @@ export default function AssessmentFillController() {
     // 根据问卷类型和题目数量决定是否使用单页单题模式
     const questionCount = questionnaire?.questions?.length || 0;
     const questionnaireType = questionnaire?.type;
+    const assessmentKind = resolveSubmitAssessmentKind({
+      questionnaireType,
+      assessmentKind: entryParams.kind || submitContract?.assessment_kind,
+      isPersonalityFlow,
+    });
+
+    setSubmitContract((current) => ({
+      ...(current || {}),
+      questionnaire_code: current?.questionnaire_code || questionnaire?.code,
+      questionnaire_version: current?.questionnaire_version || questionnaire?.version,
+      testee_id: selectedTesteeId,
+      model_code: current?.model_code || modelCode || undefined,
+      assessment_kind: assessmentKind || current?.assessment_kind,
+    }));
 
     setIsSinglePage(resolveQuestionnaireSinglePageMode({
       questionnaireType,
@@ -429,7 +449,7 @@ export default function AssessmentFillController() {
       requestedSinglePage: isSinglePage,
       isPersonalityFlow,
     }));
-    
+
     setCurrentStep('filling');
   };
 
@@ -451,17 +471,28 @@ export default function AssessmentFillController() {
   ): Promise<void> => {
     const questionnaireType = questionnaire?.type;
     const selectedTesteeId = getSelectedTesteeId();
+    const assessmentKind = resolveSubmitAssessmentKind({
+      questionnaireType,
+      assessmentKind: fillAssessmentKind || entryParams.kind || submitContract?.assessment_kind,
+      isPersonalityFlow,
+    });
 
     logger.RUN('[Fill] 答卷提交成功', {
       answersheetid,
       assessmentId,
       requestId,
       questionnaireType,
+      assessmentKind,
       testeeId: selectedTesteeId,
-      navigation: resolvePostSubmitNavigationKind({ questionnaireType, isPersonalityFlow }),
+      navigation: resolvePostSubmitNavigationKind({
+        questionnaireType,
+        isPersonalityFlow,
+        assessmentKind,
+      }),
     });
 
     if (
+      !assessmentKind &&
       questionnaireType !== 'Survey' &&
       questionnaireType !== 'PersonalityAssessment' &&
       questionnaireType !== 'MedicalScale' &&
@@ -474,6 +505,7 @@ export default function AssessmentFillController() {
       url: buildPostSubmitRedirectUrl({
         questionnaireType,
         isPersonalityFlow,
+        assessmentKind,
         answersheetId: answersheetid,
         assessmentId,
         requestId,

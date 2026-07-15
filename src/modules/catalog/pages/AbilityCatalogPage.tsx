@@ -142,7 +142,10 @@ const AbilityCatalogPage = () => {
     }
 
     Taro.navigateTo({
-      url: routes.assessmentFill({ q: item.code }),
+      url: routes.assessmentFill({
+        q: item.code,
+        kind: ASSESSMENT_KIND.ABILITY,
+      }),
     });
   }, []);
 

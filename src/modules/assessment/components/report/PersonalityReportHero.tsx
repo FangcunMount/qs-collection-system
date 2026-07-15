@@ -1,5 +1,5 @@
-import React from "react";
-import { Text, View } from "@tarojs/components";
+import React, { useState } from "react";
+import { Image, Text, View } from "@tarojs/components";
 
 import "./PersonalityReportHero.less";
 
@@ -9,6 +9,9 @@ interface PersonalityReportHeroProps {
   modelExtra?: ModelExtra;
   conclusion?: string;
   modelTitle?: string;
+  imageUrl?: string;
+  testeeName?: string;
+  createdAtText?: string;
 }
 
 const text = (value: unknown): string => (
@@ -23,7 +26,11 @@ const PersonalityReportHero = ({
   modelExtra = {},
   conclusion = "",
   modelTitle = "",
+  imageUrl = "",
+  testeeName = "",
+  createdAtText = "",
 }: PersonalityReportHeroProps) => {
+  const [failedImageUrl, setFailedImageUrl] = useState("");
   const typeCode = text(modelExtra.type_code || modelExtra.typeCode);
   const tagline = text(modelExtra.tagline || modelExtra.one_liner || modelExtra.summary);
   const rarityValue = modelExtra.rarity || modelExtra.rarity_label;
@@ -41,21 +48,42 @@ const PersonalityReportHero = ({
       && comparableText(conclusion) !== comparableText(identity)
       && comparableText(conclusion) !== comparableText(heroTitle),
   );
+  const showImage = Boolean(imageUrl && imageUrl !== failedImageUrl);
 
   return (
-    <View className="personality-report-hero">
+    <View className={`personality-report-hero ${showImage ? "personality-report-hero--with-image" : "personality-report-hero--text-only"}`}>
       <View className="personality-report-hero__topline">
-        <View className="personality-report-hero__badge">
-          <Text>{modelTitle || "人格类型"}</Text>
-        </View>
+        <Text className="personality-report-hero__eyebrow">人格报告总览</Text>
         {rarity ? <Text className="personality-report-hero__rarity">人群占比 {rarity}</Text> : null}
       </View>
-      <View className="personality-report-hero__identity">
-        <Text className="personality-report-hero__type">{heroTitle}</Text>
-        {typeCode && nickname ? <Text className="personality-report-hero__nickname">{nickname}</Text> : null}
+      <View className="personality-report-hero__body">
+        <View className="personality-report-hero__copy">
+          <Text className="personality-report-hero__model">{modelTitle || "人格类型"}</Text>
+          <View className="personality-report-hero__identity">
+            <Text className="personality-report-hero__type">{heroTitle}</Text>
+            {typeCode && nickname ? <Text className="personality-report-hero__nickname">{nickname}</Text> : null}
+          </View>
+          {tagline ? <Text className="personality-report-hero__tagline">{tagline}</Text> : null}
+        </View>
+        {showImage ? (
+          <View className="personality-report-hero__visual">
+            <Image
+              className="personality-report-hero__image"
+              src={imageUrl}
+              mode="aspectFit"
+              lazyLoad
+              onError={() => setFailedImageUrl(imageUrl)}
+            />
+          </View>
+        ) : null}
       </View>
-      {tagline ? <Text className="personality-report-hero__tagline">{tagline}</Text> : null}
       {showConclusion ? <View className="personality-report-hero__conclusion"><Text>{conclusion}</Text></View> : null}
+      {testeeName || createdAtText ? (
+        <View className="personality-report-hero__meta">
+          {testeeName ? <Text className="personality-report-hero__testee">{testeeName}</Text> : null}
+          {createdAtText ? <Text className="personality-report-hero__time">生成于 {createdAtText}</Text> : null}
+        </View>
+      ) : null}
     </View>
   );
 };
