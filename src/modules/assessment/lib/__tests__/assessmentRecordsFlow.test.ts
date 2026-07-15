@@ -1,6 +1,7 @@
 import {
   buildRecordScaleOptions,
   resolveRecordDateRange,
+  resolveRecordScore,
   toAssessmentRecordViewModel,
 } from "../assessmentRecordsFlow";
 import { normalizeMedicalAssessmentRecord } from "../../services/medicalAssessmentRecordMapper";
@@ -74,6 +75,20 @@ describe("assessment record view models", () => {
       title: "执行功能评估",
       tone: "ability",
     });
+  });
+
+  test("hides placeholder zero scores for ability assessments but keeps medical zero", () => {
+    expect(resolveRecordScore(0, "ability")).toBeNull();
+    expect(resolveRecordScore(63, "ability")).toBe(63);
+    expect(resolveRecordScore(0, "medical")).toBe(0);
+
+    expect(toAssessmentRecordViewModel({
+      id: "b3",
+      title: "执行功能评估",
+      status: "interpreted",
+      kind: "behavioral_rating",
+      score: 0,
+    }).score).toBeNull();
   });
 
   test("builds date and scale filters without losing the active scale", () => {

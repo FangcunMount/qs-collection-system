@@ -11,6 +11,27 @@ type RecordSource = Record<string, unknown>;
 
 const stringValue = (value: unknown): string => value == null ? "" : String(value);
 
+/**
+ * Ability list DTO often returns primary_score.value=0 as a placeholder.
+ * Treat that as “no total score” so the card does not show “总分 0”.
+ */
+export const resolveRecordScore = (
+  score: unknown,
+  assessmentKind: string,
+): string | number | null => {
+  if (score == null || score === "") return null;
+  const numeric = typeof score === "number" ? score : Number(score);
+  if (
+    assessmentKind === ASSESSMENT_KIND.ABILITY
+    && Number.isFinite(numeric)
+    && numeric === 0
+  ) {
+    return null;
+  }
+  if (typeof score === "number" || typeof score === "string") return score;
+  return Number.isFinite(numeric) ? numeric : null;
+};
+
 export const formatRecordDate = (value: Date): string => {
   const year = value.getFullYear();
   const month = `${value.getMonth() + 1}`.padStart(2, "0");
@@ -44,7 +65,7 @@ export const toAssessmentRecordViewModel = (record: RecordSource): AssessmentRec
     createdAt: stringValue(record.createtime) || undefined,
     status,
     sourceStatus,
-    score: record.score == null ? null : record.score as string | number,
+    score: resolveRecordScore(record.score, assessmentKind),
     riskLevel: stringValue(record.risk_level),
     assessmentKind,
     tone: assessmentKind,

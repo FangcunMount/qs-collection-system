@@ -56,8 +56,10 @@ const AssessmentRecordCard = ({ record, testeeId = "" }: AssessmentRecordCardPro
     if (record.status === "pending") return "待解读";
     if (record.status === "generating") return "分析中…";
     if (record.status === "failed") return "解读失败";
-    if (record.reportReadable && record.score != null) return `总分 ${record.score}`;
-    return record.reportReadable ? "已完成" : "";
+    if (record.reportReadable && record.score != null && record.score !== "") {
+      return `总分 ${record.score}`;
+    }
+    return "";
   })();
 
   return (
@@ -77,7 +79,11 @@ const AssessmentRecordCard = ({ record, testeeId = "" }: AssessmentRecordCardPro
         {record.riskLevel && record.reportReadable ? <RiskTag riskLevel={record.riskLevel} /> : null}
       </View>
       <View className="record-card__footer">
-        <Text className={`record-card__score record-card__score--${record.status}`}>{scoreText}</Text>
+        {scoreText ? (
+          <Text className={`record-card__score record-card__score--${record.status}`}>{scoreText}</Text>
+        ) : (
+          <View className="record-card__score-spacer" />
+        )}
         <View className="record-card__actions">
           {record.status === "generating" ? (
             <ActionButton className="record-card__action" variant="ghost" tone={record.tone} disabled>报告生成中</ActionButton>

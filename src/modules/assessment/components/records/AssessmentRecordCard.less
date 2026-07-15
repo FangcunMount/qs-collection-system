@@ -75,6 +75,11 @@
     font-weight: @font-weight-semibold;
   }
 
+  &__score-spacer {
+    flex: 1;
+    min-width: 0;
+  }
+
   &__score--abnormal,
   &__score--failed {
     color: @color-danger-700;
@@ -83,6 +88,7 @@
   &__actions {
     flex-wrap: wrap;
     justify-content: flex-end;
+    margin-left: auto;
     gap: 0;
 
     .action-button {
