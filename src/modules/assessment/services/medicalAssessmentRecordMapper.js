@@ -25,8 +25,18 @@ export const normalizeMedicalAssessmentRecord = (item = {}) => {
     model_name: item.model_name || model.title,
     interpreted_at: item.interpreted_at,
     origin_type: item.origin_type,
-    assessment_kind: item.assessment_kind || item.assessmentKind || item.kind || 'medical',
-    kind: item.assessment_kind || item.assessmentKind || item.kind || 'medical',
+    assessment_kind: item.assessment_kind
+      || item.assessmentKind
+      || item.kind
+      || model.kind
+      || item.origin_type
+      || 'medical',
+    kind: item.assessment_kind
+      || item.assessmentKind
+      || item.kind
+      || model.kind
+      || item.origin_type
+      || 'medical',
     model_extra: item.model_extra || item.modelExtra,
   };
 };

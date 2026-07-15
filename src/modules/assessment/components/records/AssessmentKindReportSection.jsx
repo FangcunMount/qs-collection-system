@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { View, Text } from "@tarojs/components";
+import Taro from "@tarojs/taro";
 
 import {
   findTesteeById,
@@ -8,6 +9,8 @@ import {
   refreshTesteeList,
   subscribeTesteeStore,
 } from "@/shared/stores/testees";
+import { routes } from "@/shared/config/routes";
+import { normalizeAssessmentKind } from "@/shared/lib/assessmentKind";
 import AssessmentRecordListController from "./AssessmentRecordListController";
 import "./AssessmentKindReportSection.less";
 
@@ -29,13 +32,22 @@ const AssessmentKindReportSection = ({
   subtitle,
   emptyText,
   tone = "default",
-  statusFilter = "done",
+  statusFilter = "",
+  pageSize = 3,
+  showViewAll = true,
 }) => {
   const [selectedTestee, setSelectedTestee] = useState(() => resolveDisplayTestee());
+  const normalizedKind = normalizeAssessmentKind(kind);
 
   const refreshSelectedTestee = useCallback(() => {
     setSelectedTestee(resolveDisplayTestee());
   }, []);
+
+  const handleViewAll = useCallback(() => {
+    Taro.navigateTo({
+      url: routes.assessmentRecords(normalizedKind ? { kind: normalizedKind } : {}),
+    });
+  }, [normalizedKind]);
 
   useEffect(() => {
     const unsubscribe = subscribeTesteeStore(({ testeeList, selectedTesteeId }) => {
@@ -61,11 +73,18 @@ const AssessmentKindReportSection = ({
             <Text className="assessment-kind-report__subtitle">{subtitle}</Text>
           ) : null}
         </View>
-        {selectedTestee ? (
-          <Text className="assessment-kind-report__testee">
-            {selectedTestee.legalName || selectedTestee.name || "当前档案"}
-          </Text>
-        ) : null}
+        <View className="assessment-kind-report__meta">
+          {selectedTestee ? (
+            <Text className="assessment-kind-report__testee">
+              {selectedTestee.legalName || selectedTestee.name || "当前档案"}
+            </Text>
+          ) : null}
+          {showViewAll && normalizedKind ? (
+            <Text className="assessment-kind-report__view-all" onClick={handleViewAll}>
+              查看全部
+            </Text>
+          ) : null}
+        </View>
       </View>
 
       {selectedTestee ? (
@@ -73,7 +92,7 @@ const AssessmentKindReportSection = ({
           testee={selectedTestee}
           assessmentKind={kind}
           statusFilter={statusFilter}
-          pageSize={3}
+          pageSize={pageSize}
           showFilterBar={false}
           showEmptyButton={false}
           showLoadMore={true}

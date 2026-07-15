@@ -18,6 +18,30 @@
   box-sizing: border-box;
 }
 
+.assessment-kind-report__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10rpx;
+  flex-shrink: 0;
+}
+
+.assessment-kind-report__view-all {
+  color: #157B70;
+  font-size: 22rpx;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.assessment-kind-report--personality .assessment-kind-report__view-all {
+  color: #B45309;
+}
+
+.assessment-kind-report--medical .assessment-kind-report__view-all,
+.assessment-kind-report--default .assessment-kind-report__view-all {
+  color: #327BAF;
+}
+
 .assessment-kind-report__title-group {
   min-width: 0;
   flex: 1;

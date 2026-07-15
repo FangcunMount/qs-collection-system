@@ -232,9 +232,10 @@ const AbilityCatalogPage = () => {
         <AssessmentKindReportSection
           kind={ASSESSMENT_KIND.ABILITY}
           title="行为能力报告"
-          subtitle="执行功能与感觉处理测评结果"
+          subtitle="最近完成的行为能力测评记录"
           emptyText="暂无行为能力报告，完成测评后将在这里展示。"
           tone="ability"
+          statusFilter=""
         />
 
         <View className="ability-section ability-observation">

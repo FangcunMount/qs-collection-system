@@ -117,3 +117,12 @@
   justify-content: center;
   text-align: center;
 }
+
+// Taroify injects a phantom space (`content: " "`) before the button content to
+// fix icon vertical align. As a flex sibling of the full-width text wrapper it
+// pushes the label off-center. Taroify itself removes it inside button groups;
+// mirror that here so every action button label is truly centered.
+.action-button > .taroify-button__content::before {
+  display: none;
+  content: none;
+}

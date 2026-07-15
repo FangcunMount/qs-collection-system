@@ -3,6 +3,7 @@ import {
   resolveRecordDateRange,
   toAssessmentRecordViewModel,
 } from "../assessmentRecordsFlow";
+import { normalizeMedicalAssessmentRecord } from "../../services/medicalAssessmentRecordMapper";
 
 describe("assessment record view models", () => {
   test("keeps medical report and trend semantics", () => {
@@ -53,6 +54,25 @@ describe("assessment record view models", () => {
       assessmentKind: "ability",
       tone: "ability",
       showTrendAction: false,
+    });
+  });
+
+  test("maps behavioral rating from model.kind in assessment list DTO", () => {
+    const normalized = normalizeMedicalAssessmentRecord({
+      id: "b2",
+      status: "evaluated",
+      questionnaire_code: "EXECUTIVE_FUNCTION_36",
+      model: {
+        code: "EXECUTIVE_FUNCTION_36",
+        title: "执行功能评估",
+        kind: "behavioral_rating",
+      },
+    });
+
+    expect(toAssessmentRecordViewModel(normalized)).toMatchObject({
+      assessmentKind: "ability",
+      title: "执行功能评估",
+      tone: "ability",
     });
   });
 
