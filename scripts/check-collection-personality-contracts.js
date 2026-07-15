@@ -126,7 +126,9 @@ assertContains(loadPersonalityReportService, /loadPersonalityReportByAnswerSheet
 assertContains(loadPersonalityReportService, /waitTypologyAssessmentId/, 'answersheet compat must resolve assessment_id via typology list');
 assertContains(personalityReportPage, /loadPersonalityReportByAssessmentId/, 'personality report page must load via report service');
 assertNotContains(personalityReportPage, /waitTypologyAssessmentId/, 'personality report page must not embed typology list fallback');
-assertContains(loadRecentAssessmentsService, /listPersonalityAssessments/, 'home recent assessments must use typology-assessments');
+assertContains(loadRecentAssessmentsService, /loadMedicalAssessmentRecords/, 'home recent assessments must load medical scale records');
+assertNotContains(loadRecentAssessmentsService, /listPersonalityAssessments/, 'home recent assessments must not load personality assessments');
+assertContains(loadRecentAssessmentsService, /isMedicalAssessmentKind\(item\.assessment_kind \|\| item\.kind\)/, 'home recent assessments must reject non-medical records');
 assertContains(homeTabPage, /fetchRecentAssessments/, 'home tab must call recent assessments service via alias to avoid shadowing');
 assertNotContains(homeTabPage, /await loadRecentAssessments\(testeeId/, 'home tab must not recursively call shadowed loadRecentAssessments');
 assertNotContains(homeTabPage, /getAssessments/, 'home tab must not call deprecated GET /assessments list');

@@ -12,9 +12,10 @@ import QuestionnaireProgress from "./QuestionnaireProgress";
 import WriterRoleDialog from "./WriterRoleDialog";
 import {
   buildQuestionnaireSubmission,
+  getAdjacentVisibleStep,
   getQuestionnaireProgress,
   hasAnyVisibleAnswer,
-  isQuestionVisible,
+  shouldAutoAdvanceOnSelect,
   SUBMIT_NO_ANSWER_MESSAGE,
   validateQuestion,
 } from "../lib/questionnaireFlow";
@@ -25,11 +26,11 @@ import type {
   QuestionnaireData,
   QuestionnaireSubmitResult,
   QuestionnaireVariant,
-  ShowController,
   WriterRoleOption,
 } from "../types";
 
 const PAGE_NAME = "single_page_questionnaire";
+const AUTO_ADVANCE_DELAY_MS = 250;
 const logger = getLogger(PAGE_NAME);
 
 interface SinglePageQuestionnaireProps extends QuestionnaireControllerProps {
@@ -60,6 +61,15 @@ export default function SinglePageQuestionnaire(props: SinglePageQuestionnairePr
   const [writerRoleCode, setWriterRoleCode] = useState<string | null>(null);
   const [needWriterRole, setNeedWriterRole] = useState(false);
   const submissionAttemptRef = useRef<unknown>(null);
+  const autoAdvanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearAutoAdvanceTimer = (): void => {
+    if (!autoAdvanceTimerRef.current) return;
+    clearTimeout(autoAdvanceTimerRef.current);
+    autoAdvanceTimerRef.current = null;
+  };
+
+  useEffect(() => () => clearAutoAdvanceTimer(), []);
 
   const applyQuestionnaire = (result: QuestionnaireData): void => {
     const questionnaire = result.questionnaire || result;
@@ -113,28 +123,14 @@ export default function SinglePageQuestionnaire(props: SinglePageQuestionnairePr
    */
   const getStepNum = (prevOrNext: "next" | "prev" = "next"): number => {
     if (!questionSheet) return 1;
-    let stepNum = 1;
-    while (true) {
-      let qi: number;
-      if (prevOrNext === "next") {
-        qi = curQuestionIndex + stepNum;
-      } else {
-        qi = curQuestionIndex - stepNum;
-      }
-      const curQ = questionSheet.questions[qi];
-      if (!curQ) break;
-      const isShow = getQuestionIsShow(curQ.show_controller);
-      if (isShow) break;
-      stepNum++;
-    }
-
-    return stepNum;
+    return getAdjacentVisibleStep(questionSheet.questions, curQuestionIndex, prevOrNext);
   };
 
   /**
    * @description go to prev question
    */
   const handleToPrevQuestion = () => {
+    clearAutoAdvanceTimer();
     setCurQuestionIndex(curQuestionIndex - getStepNum("prev"));
   };
 
@@ -143,6 +139,7 @@ export default function SinglePageQuestionnaire(props: SinglePageQuestionnairePr
    */
   const handleToNextQuestion = () => {
     if (!questionSheet) return;
+    clearAutoAdvanceTimer();
     const result = validateQuestion(questionSheet.questions[curQuestionIndex], curQuestionIndex);
     if (!result.valid) {
       Taro.showToast({ title: result.message || "请检查当前题目", icon: "none" });
@@ -152,29 +149,43 @@ export default function SinglePageQuestionnaire(props: SinglePageQuestionnairePr
     setCurQuestionIndex(curQuestionIndex + getStepNum("next"));
   };
 
-  /**
-   * @description Get whether the current question is displayed
-   * @param {object} showController The show and hidden controller for the current question
-   * @returns {boolean} Is the question displayed?
-   */
-  const getQuestionIsShow = (showController?: ShowController | "" | null): boolean => {
-    return !questionSheet?.questions
-      || isQuestionVisible(questionSheet.questions, showController);
+  const scheduleAutoAdvance = (
+    questionIndex: number,
+    updatedQuestions: QuestionnaireData["questions"],
+  ): void => {
+    clearAutoAdvanceTimer();
+    autoAdvanceTimerRef.current = setTimeout(() => {
+      autoAdvanceTimerRef.current = null;
+      setCurQuestionIndex((currentIndex) => {
+        if (currentIndex !== questionIndex) return currentIndex;
+        return currentIndex + getAdjacentVisibleStep(updatedQuestions, currentIndex, "next");
+      });
+    }, AUTO_ADVANCE_DELAY_MS);
   };
 
-  /**
-   * @description get question component
-   * @param {object} v question object
-   * @param {number} i current question index
-   * @returns {JSX.Element}
-   */
   const updateQuestionValue = (questionCode: string, value: unknown): void => {
-    setQuestionSheet(current => ({
-      ...(current as QuestionnaireData),
-      questions: (current?.questions ?? []).map((question) => (
-        question.code === questionCode ? { ...question, value } : question
-      )),
-    }));
+    if (!questionSheet) return;
+
+    const questionIndex = curQuestionIndex;
+    const currentQuestion = questionSheet.questions[questionIndex];
+    if (!currentQuestion || currentQuestion.code !== questionCode) return;
+
+    const updatedQuestion = { ...currentQuestion, value };
+    const updatedQuestions = questionSheet.questions.map((question) => (
+      question.code === questionCode ? updatedQuestion : question
+    ));
+
+    setQuestionSheet({
+      ...questionSheet,
+      questions: updatedQuestions,
+    });
+
+    if (!shouldAutoAdvanceOnSelect(updatedQuestion, value)) return;
+
+    const validation = validateQuestion(updatedQuestion, questionIndex);
+    if (!validation.valid) return;
+
+    scheduleAutoAdvance(questionIndex, updatedQuestions);
   };
 
   const updateQuestionExtend = (questionCode: string, optionIndex: number, value: unknown): void => {

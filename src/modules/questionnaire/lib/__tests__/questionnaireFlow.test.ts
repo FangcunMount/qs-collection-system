@@ -1,10 +1,12 @@
 import {
   buildQuestionnaireSubmission,
+  getAdjacentVisibleStep,
   getQuestionnaireProgress,
   getVisibleQuestionEntries,
   getVisibleAnswerQuestions,
   hasAnyVisibleAnswer,
   isQuestionVisible,
+  shouldAutoAdvanceOnSelect,
   SUBMIT_NO_ANSWER_MESSAGE,
   validateQuestion,
 } from "../questionnaireFlow";
@@ -102,5 +104,37 @@ describe("questionnaire flow", () => {
       { code: "q2", sourceIndex: 2, displayIndex: 1 },
       { code: "q4", sourceIndex: 4, displayIndex: 2 },
     ]);
+  });
+
+  test("auto-advances only for single-choice questions without extend text", () => {
+    const radioQuestion: QuestionnaireQuestion = {
+      code: "q1",
+      type: "Radio",
+      options: [{ code: "a" }, { code: "b", allow_extend_text: "1" }],
+    };
+
+    expect(shouldAutoAdvanceOnSelect(radioQuestion, "a")).toBe(true);
+    expect(shouldAutoAdvanceOnSelect(radioQuestion, "b")).toBe(false);
+    expect(shouldAutoAdvanceOnSelect({ code: "q2", type: "CheckBox" }, ["a"])).toBe(false);
+    expect(shouldAutoAdvanceOnSelect({ code: "q3", type: "Text" }, "hello")).toBe(false);
+    expect(shouldAutoAdvanceOnSelect(radioQuestion, "")).toBe(false);
+  });
+
+  test("skips hidden questions when calculating adjacent visible steps", () => {
+    const steppedQuestions: QuestionnaireQuestion[] = [
+      { code: "q1", type: "Radio", value: "yes" },
+      {
+        code: "q2",
+        type: "Radio",
+        show_controller: {
+          rule: "or",
+          questions: [{ code: "q1", select_option_codes: ["no"] }],
+        },
+      },
+      { code: "q3", type: "Radio" },
+    ];
+
+    expect(getAdjacentVisibleStep(steppedQuestions, 0, "next")).toBe(2);
+    expect(getAdjacentVisibleStep(steppedQuestions, 2, "prev")).toBe(2);
   });
 });

@@ -122,6 +122,46 @@ export function isQuestionVisible(
   return isQuestionVisibleByCode(questionsByCode, showController, visiting);
 }
 
+const SINGLE_CHOICE_AUTO_ADVANCE_TYPES = new Set([
+  "Radio",
+  "ImageRadio",
+  "ScoreRadio",
+  "Select",
+]);
+
+export function shouldAutoAdvanceOnSelect(
+  question: QuestionnaireQuestion,
+  value: unknown,
+): boolean {
+  if (!SINGLE_CHOICE_AUTO_ADVANCE_TYPES.has(question.type)) return false;
+  if (value == null || value === "") return false;
+
+  const selectedOption = question.options?.find((option) => option.code === value);
+  if (selectedOption?.allow_extend_text === "1") return false;
+
+  return true;
+}
+
+export function getAdjacentVisibleStep(
+  questions: QuestionnaireQuestion[],
+  currentIndex: number,
+  direction: "next" | "prev" = "next",
+): number {
+  let stepNum = 1;
+
+  while (true) {
+    const targetIndex = direction === "next"
+      ? currentIndex + stepNum
+      : currentIndex - stepNum;
+    const targetQuestion = questions[targetIndex];
+    if (!targetQuestion) break;
+    if (isQuestionVisible(questions, targetQuestion.show_controller)) break;
+    stepNum++;
+  }
+
+  return stepNum;
+}
+
 export function getVisibleQuestionEntries(
   questions: QuestionnaireQuestion[],
 ): VisibleQuestionEntry[] {

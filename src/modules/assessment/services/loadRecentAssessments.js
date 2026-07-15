@@ -1,11 +1,7 @@
-import {
-  listPersonalityAssessments,
-  extractPersonalityAssessmentList,
-  normalizePersonalityAssessmentRecord,
-} from '@/services/api/personality';
 import { loadMedicalAssessmentRecords } from './loadMedicalAssessmentRecords';
 import { normalizeMedicalAssessmentRecord } from './medicalAssessmentRecordMapper';
 import { isReportReadable } from '@/modules/assessment/lib/reportReadiness';
+import { isMedicalAssessmentKind } from '@/shared/lib/assessmentKind';
 
 const toTimestamp = (value) => {
   if (!value) return 0;
@@ -13,52 +9,25 @@ const toTimestamp = (value) => {
   return Number.isNaN(time) ? 0 : time;
 };
 
-const mapTypologyItemToSummary = (record) => ({
-  id: record.id,
-  answer_sheet_id: record.answer_sheet_id,
-  scale_name: record.title,
-  title: record.title,
-  questionnaire_code: record.questionnaire_code,
-  model_code: record.model_code,
-  submitted_at: record.createtime,
-  created_at: record.createtime,
-  status: record.status,
-  risk_level: record.risk_level,
-  total_score: record.score,
-  assessment_kind: 'personality',
-  testee_id: record.testee_id,
-  model: { kind: 'typology', code: record.model_code },
-});
-
 /**
- * 首页「最近测评报告」：仅展示正文可读取的已解释报告。
+ * 首页「最近测评报告」：仅展示正文可读取的医学量表报告。
  */
 export async function loadRecentAssessments(testeeId, { pageSize = 3 } = {}) {
   if (!testeeId) {
     return [];
   }
 
-  const [typologyResult, medicalResult] = await Promise.all([
-    listPersonalityAssessments({
-      testeeId,
-      page: 1,
-      pageSize,
-    }),
-    loadMedicalAssessmentRecords({
-      testeeId,
-      page: 1,
-      pageSize,
-    }),
-  ]);
-
-  const typologyItems = extractPersonalityAssessmentList(typologyResult)
-    .map(normalizePersonalityAssessmentRecord)
-    .map(mapTypologyItemToSummary);
+  const medicalResult = await loadMedicalAssessmentRecords({
+    testeeId,
+    page: 1,
+    pageSize,
+  });
   const medicalItems = medicalResult.unavailable
     ? []
     : (medicalResult.items || []).map(normalizeMedicalAssessmentRecord);
 
-  return [...typologyItems, ...medicalItems]
+  return medicalItems
+    .filter((item) => isMedicalAssessmentKind(item.assessment_kind || item.kind))
     .filter((item) => isReportReadable(item.status))
     .sort((a, b) => {
       return toTimestamp(b.submitted_at || b.created_at || b.updated_at)
