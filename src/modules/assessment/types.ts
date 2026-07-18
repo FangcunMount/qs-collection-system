@@ -237,7 +237,7 @@ export interface PersonalityReportViewModel {
   hasContent: boolean;
 }
 
-export type ReportWaitPhase = "processing" | "success" | "failure" | "degraded";
+export type ReportWaitPhase = "processing" | "delayed" | "success" | "failure" | "degraded";
 
 export interface ReportWaitViewModel {
   phase: ReportWaitPhase;

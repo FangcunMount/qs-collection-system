@@ -3,6 +3,7 @@ import { buildReportWaitViewModel } from "../reportWaitViewState";
 describe("report wait view state", () => {
   test.each([
     ["processing", true, false],
+    ["delayed", true, false],
     ["degraded", true, false],
     ["success", true, false],
     ["failure", false, true],

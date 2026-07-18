@@ -27,7 +27,6 @@ import "./AssessmentReportPendingPage.less";
 
 const PAGE_NAME = "analysis_wait";
 const logger = getLogger(PAGE_NAME);
-const MAX_ASSESSMENT_LOOKUP_COUNT = 31;
 const MIN_WAIT_TIME = 2000;
 
 interface WaitFlowParams {
@@ -133,6 +132,17 @@ const AssessmentReportPendingPage = () => {
         if (!isActive()) return;
         if (statusData.stage) setStage(statusData.stage);
         setMessage(strategy.formatStageMessage(statusData.stage, statusData.message));
+        if (statusData.stage === "assessment_delayed") {
+          setPhase("delayed");
+          saveSubmissionContext({
+            requestId,
+            testeeId,
+            assessmentKind: strategy.kind,
+            answersheetId: answerSheetId,
+            phase: "delayed",
+          });
+          return;
+        }
         setPhase((current) => current === "degraded" ? "degraded" : "processing");
       };
 
@@ -174,7 +184,6 @@ const AssessmentReportPendingPage = () => {
         shouldContinue: isActive,
         logger,
         assessmentLookupOptions: {
-          maxAttempts: MAX_ASSESSMENT_LOOKUP_COUNT,
           onAttempt: () => {
             if (isActive()) setMessage("正在关联测评记录，请稍候...");
           },
@@ -285,7 +294,7 @@ const AssessmentReportPendingPage = () => {
   }, [startWaitFlow]);
 
   useEffect(() => {
-    if (phase !== "processing" && phase !== "degraded") {
+    if (phase !== "processing" && phase !== "delayed" && phase !== "degraded") {
       setDots("");
       return undefined;
     }
@@ -395,6 +404,9 @@ const AssessmentReportPendingPage = () => {
               ) : null}
               {phase === "degraded" ? (
                 <Text className="wait-status__notice">连接方式已自动切换，不影响报告生成结果。</Text>
+              ) : null}
+              {phase === "delayed" ? (
+                <Text className="wait-status__notice">答卷已经可靠保存，无需重新提交。</Text>
               ) : null}
             </View>
           )}

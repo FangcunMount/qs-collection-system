@@ -46,6 +46,14 @@ export async function waitAssessmentReportLifecycle({
 					message: elapsedMs >= 60000 ? '答卷已接收，测评生成延迟' : '正在生成测评记录，请稍候...',
 				});
 			},
+			onDelayed: (elapsedMs, detail) => {
+				assessmentLookupOptions.onDelayed?.(elapsedMs, detail);
+				onStatus?.({
+					status: 'processing',
+					stage: 'assessment_delayed',
+					message: '答卷已接收，测评生成延迟',
+				});
+			},
 		});
 		if (readiness) {
 			assessmentId = String(readiness.assessment_id);

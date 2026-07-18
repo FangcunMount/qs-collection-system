@@ -1,0 +1,34 @@
+import { normalizeSubmissionContext } from '../submissionContextStore';
+
+jest.mock('@tarojs/taro', () => ({
+  __esModule: true,
+  default: {},
+}));
+
+describe('submission context compatibility', () => {
+  test('reads legacy request fields without confusing accepted and latest attempts', () => {
+    expect(normalizeSubmissionContext({
+      requestId: 'legacy-request',
+      clientRequestId: 'legacy-client',
+      idempotencyKey: 'idem-existing',
+    })).toMatchObject({
+      requestId: 'legacy-request',
+      lastRequestId: 'legacy-client',
+      acceptedRequestId: '',
+      clientRequestId: 'legacy-client',
+      idempotencyKey: 'idem-existing',
+    });
+  });
+
+  test('keeps the accepted response request ID separate from a later HTTP attempt', () => {
+    expect(normalizeSubmissionContext({
+      request_id: 'compat-request',
+      last_request_id: 'latest-attempt',
+      accepted_request_id: 'accepted-attempt',
+    })).toMatchObject({
+      requestId: 'compat-request',
+      lastRequestId: 'latest-attempt',
+      acceptedRequestId: 'accepted-attempt',
+    });
+  });
+});

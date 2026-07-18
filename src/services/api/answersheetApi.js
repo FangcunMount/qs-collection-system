@@ -42,8 +42,10 @@ export const submitAnswersheet = async (data, options = {}) => {
   });
 
   const maxAttempts = options.maxAttempts ?? 3;
+  const retryDelay = options.delay || delay;
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     const attemptRequestId = attempt === 1 ? requestId : createRequestId();
+    options.onAttemptPrepared?.({ attempt, requestId: attemptRequestId, idempotencyKey });
     try {
       const result = await request('/answersheets', payload, {
         host: config.collectionHost,
@@ -56,10 +58,10 @@ export const submitAnswersheet = async (data, options = {}) => {
       if (String(normalized?.status || '').toLowerCase() !== 'accepted' || !normalized?.answersheet_id) {
         throw new Error('答卷受理响应缺少 accepted 状态或 answersheet_id');
       }
-      return { ...normalized, client_request_id: requestId };
+      return { ...normalized, client_request_id: attemptRequestId };
     } catch (error) {
       if (attempt >= maxAttempts || !isRetryableSubmitError(error)) throw error;
-      await delay(Math.max(Number(error?.retryAfterMs || 0), 1000));
+      await retryDelay(Math.max(Number(error?.retryAfterMs || 0), 1000));
     }
   }
   throw new Error('答卷提交重试耗尽');
@@ -78,20 +80,30 @@ export const getAssessmentReadiness = (answerSheetId, testeeId) => {
 };
 
 export const waitForAssessmentReadiness = async (answerSheetId, testeeId, options = {}) => {
-  const maxAttempts = options.maxAttempts ?? 30;
   const startedAt = Date.now();
-  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+  const fetchReadiness = options.fetchReadiness || getAssessmentReadiness;
+  const wait = options.delay || delay;
+  for (let attempt = 1; ; attempt += 1) {
     if (options.shouldContinue?.() === false) return null;
-    const readiness = await getAssessmentReadiness(answerSheetId, testeeId);
+    let readiness;
+    try {
+      readiness = await fetchReadiness(answerSheetId, testeeId);
+    } catch (error) {
+      const code = Number(error?.statusCode || error?.code || 0);
+      if (code !== 429 && code !== 503 && code !== 0 && String(error?.code || '') !== '-1') throw error;
+      const elapsedMs = Date.now() - startedAt;
+      if (elapsedMs >= 60000) options.onDelayed?.(elapsedMs, error);
+      await wait(Math.max(Number(error?.retryAfterMs || 0), 1000));
+      continue;
+    }
     const status = String(readiness?.status || '').toLowerCase();
-    options.onAttempt?.(attempt, readiness, Date.now() - startedAt);
+    const elapsedMs = Date.now() - startedAt;
+    options.onAttempt?.(attempt, readiness, elapsedMs);
     if (status === 'ready' && readiness.assessment_id) return readiness;
     if (status !== 'pending') throw new Error('测评就绪状态异常，请稍后重试');
-    if (attempt < maxAttempts) {
-      await delay(Number(readiness.next_poll_after_ms) > 0 ? Number(readiness.next_poll_after_ms) : 2000);
-    }
+    if (elapsedMs >= 60000) options.onDelayed?.(elapsedMs, readiness);
+    await wait(Number(readiness.next_poll_after_ms) > 0 ? Number(readiness.next_poll_after_ms) : 2000);
   }
-  throw new Error('答卷已接收，测评生成延迟，请稍后在报告页继续等待');
 };
 
 /** 获取答卷详情（原始数据）。 */

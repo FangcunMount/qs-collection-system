@@ -154,7 +154,7 @@ const reportFailedFixture = readJson('src/modules/assessment/__fixtures__/person
   assert(context.phase === 'assessment_ready', 'submission context phase');
 }
 
-// --- submission attempt: retry uses the same idempotency/request IDs, changed answers rotate ---
+// --- submission attempt: retry reuses only the idempotency key; HTTP request IDs are per attempt ---
 {
   const payload = {
     questionnaire_code: 'MBTI_OEJTS_V1',
@@ -172,11 +172,9 @@ const reportFailedFixture = readJson('src/modules/assessment/__fixtures__/person
   const explicitlyNew = resolveSubmissionAttempt(payload, first, true);
 
   assert(retry.idempotencyKey === first.idempotencyKey, 'same answers reuse idempotency key');
-  assert(retry.requestId === first.requestId, 'same answers reuse request ID');
+  assert(!retry.requestId && !first.requestId, 'submission intent does not persist a reusable request ID');
   assert(changed.idempotencyKey !== first.idempotencyKey, 'changed answers rotate idempotency key');
-  assert(changed.requestId !== first.requestId, 'changed answers rotate request ID');
   assert(explicitlyNew.idempotencyKey !== first.idempotencyKey, 'explicit new submission rotates idempotency key');
-  assert(explicitlyNew.requestId !== first.requestId, 'explicit new submission rotates request ID');
   assert(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(createRequestId()), 'request ID is UUID v4');
 }
 

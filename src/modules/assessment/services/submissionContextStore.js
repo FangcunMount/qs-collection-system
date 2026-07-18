@@ -5,11 +5,15 @@ export const SUBMISSION_CONTEXT_STORAGE_KEY = 'collection_submission_context';
 const toId = (value) => (value === undefined || value === null || value === '' ? '' : String(value));
 
 export function normalizeSubmissionContext(value = {}) {
+	const legacyRequestId = toId(value.requestId || value.request_id);
+	const legacyClientRequestId = toId(value.clientRequestId || value.client_request_id);
   return {
     fingerprint: toId(value.fingerprint),
-    requestId: toId(value.requestId || value.request_id),
+		requestId: legacyRequestId || legacyClientRequestId,
+		lastRequestId: toId(value.lastRequestId || value.last_request_id || legacyClientRequestId || legacyRequestId),
+    acceptedRequestId: toId(value.acceptedRequestId || value.accepted_request_id),
     idempotencyKey: toId(value.idempotencyKey || value.idempotency_key),
-    clientRequestId: toId(value.clientRequestId || value.client_request_id),
+		clientRequestId: legacyClientRequestId,
     testeeId: toId(value.testeeId || value.testee_id),
     modelCode: toId(value.modelCode || value.model_code),
     questionnaireCode: toId(value.questionnaireCode || value.questionnaire_code),

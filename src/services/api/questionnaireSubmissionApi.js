@@ -10,6 +10,7 @@ import { resolveSubmitAssessmentKind } from '@/modules/assessment/lib/assessment
 import { submitAssessmentAndResolveAnswersheet } from '@/modules/assessment/services/submitAssessmentFlow';
 import { getSubmissionContext, saveSubmissionContext } from '@/modules/assessment/services/submissionContextStore';
 import { resolveSubmissionAttempt } from '@/modules/assessment/services/submissionAttempt';
+import { createRequestId } from '@/shared/lib/requestId';
 import { getLogger } from '../../shared/lib/logger';
 
 const logger = getLogger('questionnaire_submission_api');
@@ -51,11 +52,10 @@ export const submitQuestionnaire = async (questionnaire, writer_role_code, signi
     requestData.task_id = entryContext.task_id;
   }
 
-  const submissionAttempt = options.idempotencyKey && options.requestId
+  const submissionAttempt = options.idempotencyKey
     ? {
       fingerprint: options.submissionAttempt?.fingerprint || '',
       idempotencyKey: options.idempotencyKey,
-      requestId: options.requestId,
     }
     : resolveSubmissionAttempt(
       requestData,
@@ -63,13 +63,17 @@ export const submitQuestionnaire = async (questionnaire, writer_role_code, signi
       options.forceNewSubmission === true
     );
   const idempotencyKey = submissionAttempt.idempotencyKey;
+  const initialRequestId = options.requestId || createRequestId();
+  let lastRequestId = initialRequestId;
   requestData.idempotency_key = idempotencyKey;
 
-	// 必须先落盘再发出 HTTP 请求，确保响应丢失或进程重启后仍能用同一幂等键恢复。
+  // 必须先落盘再发出 HTTP 请求，确保响应丢失或进程重启后仍能用同一幂等键恢复。
   saveSubmissionContext({
     fingerprint: submissionAttempt.fingerprint,
-    requestId: submissionAttempt.requestId,
-    clientRequestId: submissionAttempt.requestId,
+    requestId: initialRequestId,
+    lastRequestId: initialRequestId,
+    acceptedRequestId: '',
+    clientRequestId: initialRequestId,
     idempotencyKey,
     testeeId: selectedTesteeId,
     modelCode: submitContract.model_code,
@@ -98,7 +102,17 @@ export const submitQuestionnaire = async (questionnaire, writer_role_code, signi
   try {
     submitResult = await submitAssessmentAndResolveAnswersheet(requestData, {
       idempotencyKey,
-      requestId: submissionAttempt.requestId,
+      requestId: initialRequestId,
+      onAttemptPrepared: ({ requestId: attemptRequestId, attempt }) => {
+        lastRequestId = attemptRequestId;
+        saveSubmissionContext({
+          requestId: attemptRequestId,
+          lastRequestId: attemptRequestId,
+          clientRequestId: attemptRequestId,
+          phase: 'submit_prepared',
+        }, { required: true });
+        options.onAttemptPrepared?.({ requestId: attemptRequestId, attempt, idempotencyKey });
+      },
     });
   } catch (error) {
     if (error && typeof error === 'object') {
@@ -108,16 +122,18 @@ export const submitQuestionnaire = async (questionnaire, writer_role_code, signi
   }
 
   const finalAnswersheetId = submitResult?.answersheet_id ?? submitResult?.id;
-  const requestId = submitResult?.request_id;
+  const requestId = submitResult?.request_id || lastRequestId;
   if (!finalAnswersheetId) {
     throw new Error('答卷已返回但缺少 answersheet_id');
   }
 
-	saveSubmissionContext({
+  saveSubmissionContext({
       fingerprint: submissionAttempt.fingerprint,
       requestId,
+      lastRequestId,
+      acceptedRequestId: requestId,
       idempotencyKey,
-      clientRequestId: submissionAttempt.requestId,
+      clientRequestId: lastRequestId,
       testeeId: selectedTesteeId,
       modelCode: submitContract.model_code,
       questionnaireCode: requestData.questionnaire_code,
@@ -138,7 +154,7 @@ export const submitQuestionnaire = async (questionnaire, writer_role_code, signi
     id: finalAnswersheetId ? String(finalAnswersheetId) : '',
     request_id: requestId,
     idempotency_key: idempotencyKey,
-    client_request_id: submissionAttempt.requestId,
+    client_request_id: lastRequestId,
     submission_attempt: submissionAttempt,
     submit_mode: 'accepted',
   };

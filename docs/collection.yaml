@@ -73,6 +73,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/core.ErrResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
         '409':
           description: Conflict
           content:
@@ -91,8 +97,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/core.ErrResponse'
-        '403':
-          description: 无权访问该资源
+        '500':
+          description: 服务内部错误
           content:
             application/json:
               schema:
@@ -159,8 +165,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/core.ErrResponse'
-        '403':
-          description: 无权访问该资源
+        '500':
+          description: 服务内部错误
           content:
             application/json:
               schema:
