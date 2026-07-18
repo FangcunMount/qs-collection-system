@@ -1,6 +1,16 @@
 import React from "react";
 import renderer, { act } from "react-test-renderer";
 
+jest.mock("../FactorBarChart", () => ({ __esModule: true, default: () => null }));
+jest.mock("../FactorScatterChart", () => ({ __esModule: true, default: () => null }));
+jest.mock("../RadarChart", () => ({
+  __esModule: true,
+  default: () => {
+    const ReactRuntime = require("react");
+    return ReactRuntime.createElement("taro-view", { id: "radar" });
+  },
+}));
+
 import MedicalReportContent from "../MedicalReportContent";
 
 const hasClass = (node: renderer.ReactTestInstance, className: string): boolean => (

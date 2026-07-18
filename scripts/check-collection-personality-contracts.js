@@ -49,6 +49,8 @@ const waitTypologyAssessmentId = read('src/modules/assessment/services/waitTypol
 const waitAssessmentReportLifecycle = read('src/modules/assessment/services/waitAssessmentReportLifecycle.js');
 const answersheetApi = read('src/services/api/answersheetApi.js');
 const assessmentReportPendingPage = read('src/modules/assessment/pages/AssessmentReportPendingPage.tsx');
+const assessmentWaitResume = read('src/modules/assessment/services/assessmentWaitResume.js');
+const submissionContextStore = read('src/modules/assessment/services/submissionContextStore.js');
 const reportEventsClient = read('src/modules/assessment/services/reportEventsClient.js');
 const waitForReportReady = read('src/modules/assessment/services/waitForReportReady.js');
 const personalityReportPage = read('src/modules/assessment/pages/PersonalityReportPage.tsx');
@@ -109,6 +111,11 @@ assertContains(answersheetApi, /for\s*\([^;]*;\s*;[^)]*\)/, 'answersheet readine
 assertNotContains(answersheetApi, /maxLookupCount|maxReadinessAttempts/, 'answersheet readiness must not fail after a fixed poll count');
 assertContains(assessmentReportPendingPage, /request_id/, 'pending page must pass request_id into lifecycle');
 assertContains(assessmentReportPendingPage, /phase:\s*["']delayed["']/, 'pending page must persist delayed instead of failed when assessment intake is slow');
+assertContains(assessmentReportPendingPage, /resolveAssessmentWaitResume/, 'pending page must hydrate persisted assessment wait state');
+assertContains(assessmentReportPendingPage, /startedAt:\s*assessmentWaitStartedAt/, 'pending page must preserve readiness elapsed time after restart');
+assertContains(assessmentReportPendingPage, /return \(\) => \{[\s\S]{0,160}isPollingRef\.current = false;[\s\S]{0,160}runIdRef\.current \+= 1;/, 'pending page cleanup must cancel active readiness and report waits');
+assertContains(assessmentWaitResume, /phase\s*===\s*['"]delayed['"]/, 'assessment wait recovery must restore delayed immediately');
+assertContains(assessmentWaitResume, /resolveAssessmentStatusPhase/, 'assessment pending updates must preserve sticky delayed state');
 assertContains(submitFlow, /answersheet_id/, 'submit flow must require the reliable answersheet id');
 assertContains(questionnaireSubmissionApi, /resolveSubmissionAttempt/, 'questionnaire submit must resolve a reusable submission attempt');
 assertContains(questionnaireSubmissionApi, /onAttemptPrepared/, 'questionnaire submit must persist each HTTP attempt request ID before sending');
@@ -116,7 +123,9 @@ assertContains(submissionAttempt, /v2:\$\{sha256/, 'submission fingerprint must 
 assertContains(submissionAttempt, /fingerprint/, 'submission attempt must use an answer snapshot fingerprint');
 assertContains(submissionAttempt, /forceNewAttempt/, 'submission attempt must support explicit new submissions');
 assertContains(requestId, /createUuidV4/, 'request IDs must be UUID v4 values');
-assertContains(read('src/modules/assessment/services/submissionContextStore.js'), /SUBMISSION_CONTEXT_STORAGE_KEY/, 'assessment submissions must persist recoverable context');
+assertContains(submissionContextStore, /SUBMISSION_CONTEXT_STORAGE_KEY/, 'assessment submissions must persist recoverable context');
+assertContains(submissionContextStore, /assessmentWaitStartedAt/, 'assessment submissions must persist the readiness wait start time');
+assertContains(questionnaireSubmissionApi, /assessmentWaitStartedAt:\s*Date\.now\(\)/, 'accepted answersheets must persist the readiness wait start time');
 assertNotContains(reportEventsClient, /answer_sheet_id/, 'report-events subscribe must not send undocumented answer_sheet_id');
 assertContains(reportEventsClient, /assessment_id:\s*String\(assessmentId\)/, 'report-events subscribe must include assessment_id per doc 12');
 assertContains(reportEventsClient, /startFirstStatusTimer/, 'report-events first-status timeout must start after subscription');
@@ -200,6 +209,8 @@ assertContains(mappers, /algorithm/, 'model mapper must read backend algorithm')
 assertContains(mappers, /family_code|familyCode/, 'model mapper must read backend family_code');
 assertContains(mappers, /catalog_layout|catalogLayout/, 'model mapper must read backend catalog_layout');
 assertNotContains(submitFlow, /waitForSubmitCompletion|queued|submit-status/, 'submit flow must not retain queue semantics');
+assertContains(assessmentSubmitNavigation, /202[\s\S]{0,120}answersheet_id/, 'submit navigation must document the accepted answersheet ID contract');
+assertNotContains(assessmentSubmitNavigation, /还没有 answersheet_id|submit-status/, 'submit navigation must not retain pre-durable-submit semantics');
 
 assertNotContains(personalityCatalogService, /PERSONALITY_CATALOG_ITEMS|personalityModels/, 'catalog service must not use hardcoded personality catalog');
 assertContains(personalityCatalog, /selectPersonalityLandingItems/, 'catalog landing entries must resolve from published model data');

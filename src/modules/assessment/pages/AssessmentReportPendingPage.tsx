@@ -9,6 +9,10 @@ import { resolveReportRedirectKind } from "@/modules/assessment/lib/assessmentSu
 import { resolveTesteeIdForAnswerSheet } from "@/modules/assessment/lib/resolveTesteeId";
 import { createReportWaitStrategy } from "@/modules/assessment/services/reportWaitStrategy";
 import {
+  resolveAssessmentStatusPhase,
+  resolveAssessmentWaitResume,
+} from "@/modules/assessment/services/assessmentWaitResume";
+import {
   clearSubmissionContext,
   getSubmissionContext,
   saveSubmissionContext,
@@ -36,6 +40,10 @@ interface WaitFlowParams {
   requestId: string;
   taskId: string;
   assessmentKind: string;
+  assessmentWaitStartedAt: number;
+  initialPhase: ReportWaitPhase;
+  initialStage: string;
+  initialMessage: string;
 }
 
 interface WaitStatusData {
@@ -98,10 +106,10 @@ const AssessmentReportPendingPage = () => {
     runIdRef.current = runId;
     flowParamsRef.current = flowParams;
     isPollingRef.current = true;
-    startTimeRef.current = Date.now();
-    setPhase("processing");
-		setStage("assessment_pending");
-    setMessage("正在生成测评记录，请稍候...");
+    startTimeRef.current = flowParams.assessmentWaitStartedAt;
+    setPhase(flowParams.initialPhase);
+    setStage(flowParams.initialStage);
+    setMessage(flowParams.initialMessage);
 
     const isActive = () => isPollingRef.current && runIdRef.current === runId;
 
@@ -112,6 +120,7 @@ const AssessmentReportPendingPage = () => {
       requestId,
       taskId,
       assessmentKind,
+      assessmentWaitStartedAt,
     } = flowParams;
 
     try {
@@ -139,14 +148,15 @@ const AssessmentReportPendingPage = () => {
             testeeId,
             assessmentKind: strategy.kind,
             answersheetId: answerSheetId,
+            assessmentWaitStartedAt,
             phase: "delayed",
           });
           return;
         }
-        setPhase((current) => current === "degraded" ? "degraded" : "processing");
+        setPhase((current) => resolveAssessmentStatusPhase(current, statusData.stage));
       };
 
-		logger.RUN("[AnalysisWait] 开始等待（assessment-readiness → WS/report-status）", {
+      logger.RUN("[AnalysisWait] 开始等待（assessment-readiness → WS/report-status）", {
         answersheetId: answerSheetId,
         assessmentId: assessmentId || null,
         requestId: requestId || null,
@@ -178,12 +188,14 @@ const AssessmentReportPendingPage = () => {
             assessmentKind: strategy.kind,
             answersheetId: submission.answersheetId,
             assessmentId: submission.assessmentId,
+            assessmentWaitStartedAt,
             phase: "assessment_ready",
           });
         },
         shouldContinue: isActive,
         logger,
         assessmentLookupOptions: {
+          startedAt: assessmentWaitStartedAt,
           onAttempt: () => {
             if (isActive()) setMessage("正在关联测评记录，请稍候...");
           },
@@ -202,6 +214,7 @@ const AssessmentReportPendingPage = () => {
         assessmentKind: strategy.kind,
         answersheetId: resolvedAnswerSheetId,
         assessmentId: resolvedAssessmentId,
+        assessmentWaitStartedAt,
         phase: "report_processing",
       });
 
@@ -263,13 +276,35 @@ const AssessmentReportPendingPage = () => {
   useEffect(() => {
     const params = Taro.getCurrentInstance().router?.params || {};
     const storedContext = getSubmissionContext();
+    const routeAnswerSheetId = toText(params.a);
+    const storedContextMatchesRoute = !routeAnswerSheetId
+      || !storedContext.answersheetId
+      || routeAnswerSheetId === storedContext.answersheetId;
+    const resumeContext = storedContextMatchesRoute ? storedContext : {
+      answersheetId: "",
+      assessmentId: "",
+      testeeId: "",
+      requestId: "",
+      assessmentKind: "",
+      assessmentWaitStartedAt: 0,
+      phase: "",
+    };
+    const routeAssessmentId = toText(params.aid || resumeContext.assessmentId);
+    const resume = resolveAssessmentWaitResume({
+      ...resumeContext,
+      phase: routeAssessmentId ? "assessment_ready" : resumeContext.phase,
+    });
     const flowParams: WaitFlowParams = {
-      assessmentId: toText(params.aid || storedContext.assessmentId),
-      answerSheetId: toText(params.a || storedContext.answersheetId),
-      testeeId: toText(params.t || storedContext.testeeId),
-      requestId: toText(params.request_id || storedContext.requestId),
+      assessmentId: routeAssessmentId,
+      answerSheetId: toText(params.a || resumeContext.answersheetId),
+      testeeId: toText(params.t || resumeContext.testeeId),
+      requestId: toText(params.request_id || resumeContext.requestId),
       taskId: toText(params.task_id),
-      assessmentKind: toText(params.kind || storedContext.assessmentKind),
+      assessmentKind: toText(params.kind || resumeContext.assessmentKind),
+      assessmentWaitStartedAt: resume.startedAt,
+      initialPhase: resume.phase as ReportWaitPhase,
+      initialStage: resume.stage,
+      initialMessage: resume.message,
     };
     flowParamsRef.current = flowParams;
 
@@ -280,7 +315,7 @@ const AssessmentReportPendingPage = () => {
       requestId: flowParams.requestId,
     });
 
-		if (!flowParams.answerSheetId) {
+    if (!flowParams.answerSheetId) {
       setPhase("failure");
       setMessage("提交状态已失效，请重新提交或查看历史记录");
       return undefined;

@@ -82,6 +82,7 @@ export const submitQuestionnaire = async (questionnaire, writer_role_code, signi
     assessmentKind: '',
     answersheetId: '',
     assessmentId: '',
+    assessmentWaitStartedAt: 0,
     phase: 'submit_prepared',
   }, { required: true });
 
@@ -128,18 +129,19 @@ export const submitQuestionnaire = async (questionnaire, writer_role_code, signi
   }
 
   saveSubmissionContext({
-      fingerprint: submissionAttempt.fingerprint,
-      requestId,
-      lastRequestId,
-      acceptedRequestId: requestId,
-      idempotencyKey,
-      clientRequestId: lastRequestId,
-      testeeId: selectedTesteeId,
-      modelCode: submitContract.model_code,
-      questionnaireCode: requestData.questionnaire_code,
-      questionnaireVersion: requestData.questionnaire_version,
+    fingerprint: submissionAttempt.fingerprint,
+    requestId,
+    lastRequestId,
+    acceptedRequestId: requestId,
+    idempotencyKey,
+    clientRequestId: lastRequestId,
+    testeeId: selectedTesteeId,
+    modelCode: submitContract.model_code,
+    questionnaireCode: requestData.questionnaire_code,
+    questionnaireVersion: requestData.questionnaire_version,
     assessmentKind: submitAssessmentKind,
     answersheetId: finalAnswersheetId,
+    assessmentWaitStartedAt: Date.now(),
     phase: 'answersheet_accepted',
   });
 

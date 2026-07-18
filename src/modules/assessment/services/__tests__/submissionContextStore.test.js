@@ -31,4 +31,13 @@ describe('submission context compatibility', () => {
       acceptedRequestId: 'accepted-attempt',
     });
   });
+
+  test('reads the optional assessment wait start timestamp compatibly', () => {
+    expect(normalizeSubmissionContext({
+      assessment_wait_started_at: 123456,
+    })).toMatchObject({
+      assessmentWaitStartedAt: 123456,
+    });
+    expect(normalizeSubmissionContext({}).assessmentWaitStartedAt).toBe(0);
+  });
 });

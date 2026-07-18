@@ -33,8 +33,8 @@ export function resolveSubmitAssessmentKind({
 /**
  * 答卷提交成功后的导航目标（页面只负责 redirectTo）。
  *
- * 测评类（医学 / 人格 / 行为能力）在 HTTP 202 后通常还没有 answersheet_id，
- * 需要带着 request_id 进入报告等待页继续轮询；普通 Survey 才进答卷详情。
+ * HTTP 202 必须直接包含可靠持久化的 answersheet_id。
+ * 测评类带着 answersheet_id 进入等待页，通过 readiness 获取 assessment_id；普通 Survey 进入答卷详情。
  */
 export function buildPostSubmitRedirectUrl({
   questionnaireType,

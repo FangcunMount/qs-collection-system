@@ -80,7 +80,13 @@ export const getAssessmentReadiness = (answerSheetId, testeeId) => {
 };
 
 export const waitForAssessmentReadiness = async (answerSheetId, testeeId, options = {}) => {
-  const startedAt = Date.now();
+  const currentTime = Date.now();
+  const configuredStartedAt = Number(options.startedAt || 0);
+  const startedAt = Number.isFinite(configuredStartedAt)
+    && configuredStartedAt > 0
+    && configuredStartedAt <= currentTime
+    ? configuredStartedAt
+    : currentTime;
   const fetchReadiness = options.fetchReadiness || getAssessmentReadiness;
   const wait = options.delay || delay;
   for (let attempt = 1; ; attempt += 1) {

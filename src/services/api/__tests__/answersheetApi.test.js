@@ -55,13 +55,35 @@ describe('answersheet reliable API', () => {
     expect(delayed).toHaveBeenCalled();
   });
 
-  test('recovers from a transient 503 and returns ready', async () => {
+  test('keeps elapsed readiness time across a restarted page', async () => {
+    const delayed = jest.fn();
+    let active = true;
+    const now = jest.spyOn(Date, 'now').mockReturnValue(70000);
+    const result = await waitForAssessmentReadiness('42', '7', {
+      startedAt: 1000,
+      fetchReadiness: async () => ({ status: 'pending', answersheet_id: '42', next_poll_after_ms: 2000 }),
+      delay: async () => { active = false; },
+      shouldContinue: () => active,
+      onDelayed: delayed,
+    });
+    now.mockRestore();
+    expect(result).toBeNull();
+    expect(delayed).toHaveBeenCalledWith(69000, expect.objectContaining({ status: 'pending' }));
+  });
+
+  test('keeps delayed elapsed time while recovering from a transient 503', async () => {
     const fetchReadiness = jest.fn()
       .mockRejectedValueOnce({ statusCode: 503, retryAfterMs: 1 })
       .mockResolvedValueOnce({ status: 'ready', answersheet_id: '42', assessment_id: '99' });
+    const delayed = jest.fn();
+    const now = jest.spyOn(Date, 'now').mockReturnValue(70000);
     await expect(waitForAssessmentReadiness('42', '7', {
+      startedAt: 1000,
       fetchReadiness,
       delay: async () => {},
+      onDelayed: delayed,
     })).resolves.toMatchObject({ status: 'ready', assessment_id: '99' });
+    now.mockRestore();
+    expect(delayed).toHaveBeenCalledWith(69000, expect.objectContaining({ statusCode: 503 }));
   });
 });
