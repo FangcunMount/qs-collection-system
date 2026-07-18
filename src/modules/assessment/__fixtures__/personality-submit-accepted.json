@@ -1,5 +1,6 @@
 {
-  "status": "queued",
-  "request_id": "req_personality_submit_001",
-  "message": "答卷已受理，正在处理"
+	"status": "accepted",
+	"request_id": "req_personality_submit_001",
+	"answersheet_id": "90010001",
+	"message": "答卷已可靠受理"
 }

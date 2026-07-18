@@ -59,13 +59,13 @@ assertContains(behaviorReportApi, /\/behavior-assessments\/\$\{[^}]+\}\/report/,
 assertNotContains(behaviorSources, /[`'"]\/assessments(?:[/?`'"])/, 'behavior services must not call medical /assessments');
 assertContains(recordController, /loadBehaviorAssessmentRecords/, 'ability records must use behavior assessment record service');
 assertContains(behaviorRecordService, /status:\s*statusFilter/, 'ability records must preserve the documented pending/done status filter');
-assertContains(behaviorIdResolver, /listBehaviorAssessments/, 'ability legacy links must resolve assessment_id from behavior list');
+assertContains(behaviorIdResolver, /waitForAssessmentReadiness/, 'ability links must resolve assessment_id from answersheet readiness');
 assertContains(behaviorReportLoader, /getBehaviorReportStatus/, 'behavior report loader must gate reads by dedicated report-status');
 assertContains(behaviorReportLoader, /getBehaviorReport/, 'behavior report loader must fetch the dedicated report');
 assertContains(reportWaitStrategy, /eventKind:\s*['"]behavior['"]/, 'ability websocket subscription must use kind=behavior');
 assertContains(reportWaitStrategy, /getBehaviorReportStatus/, 'ability report polling must use behavior report-status');
 assertContains(reportWaiter, /strategy\.eventKind\s*\|\|\s*strategy\.kind/, 'report waiter must support API-specific websocket kinds');
-assertContains(lifecycle, /waitBehaviorAssessmentId/, 'ability lifecycle fallback must use behavior list');
+assertContains(lifecycle, /waitForAssessmentReadiness/, 'ability lifecycle must use answersheet readiness');
 assertContains(reportPendingPage, /kind:\s*resolveReportRedirectKind\(strategy\.kind\)/, 'ability pending success redirect must preserve kind=ability');
 assertContains(reportPage, /loadBehaviorReportByAssessmentId/, 'ability report page must use behavior report loader');
 assertContains(reportPage, /buildBehaviorReportViewModel/, 'ability report page must use the dedicated behavior report view model');

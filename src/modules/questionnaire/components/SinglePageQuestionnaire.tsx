@@ -227,34 +227,14 @@ export default function SinglePageQuestionnaire(props: SinglePageQuestionnairePr
       mask: true
     });
 
-    submitQuestionnaire(submitData, writerRoleCode, subSignid, {
-      onQueued: ({ requestId }: { requestId: string }) => {
-        logger.WARN('[SinglePageQuestionnaire] 提交已进入队列', {
-          requestId,
-          questionnaireCode: submitData.code
-        });
-        Taro.showLoading({
-          title: "排队处理中",
-          mask: true
-        });
-      },
-      onQueueCompleted: ({ requestId, statusResult }: {
-        requestId: string;
-        statusResult?: { answersheet_id?: string };
-      }) => {
-        logger.RUN('[SinglePageQuestionnaire] 队列处理完成', {
-          requestId,
-          answersheetId: statusResult?.answersheet_id ?? null
-        });
-      }
-    }, { submitContract, submissionAttempt: submissionAttemptRef.current })
+    submitQuestionnaire(submitData, writerRoleCode, subSignid, {}, { submitContract, submissionAttempt: submissionAttemptRef.current })
       .then(async (result: QuestionnaireSubmitResult) => {
         submissionAttemptRef.current = result.submission_attempt || submissionAttemptRef.current;
         Taro.hideLoading();
         logger.RUN('[SinglePageQuestionnaire] 提交完成', {
           answersheetId: result.id,
           submitMode: result.submit_mode,
-          queued: result.queued
+			status: result.status
         });
         Taro.showToast({ title: "提交成功", icon: "success" });
         // 传递答卷 ID 和测评 ID（如果有）给回调函数

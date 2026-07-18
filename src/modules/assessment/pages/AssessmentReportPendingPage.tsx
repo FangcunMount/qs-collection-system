@@ -27,7 +27,7 @@ import "./AssessmentReportPendingPage.less";
 
 const PAGE_NAME = "analysis_wait";
 const logger = getLogger(PAGE_NAME);
-const MAX_ASSESSMENT_LOOKUP_COUNT = 30;
+const MAX_ASSESSMENT_LOOKUP_COUNT = 31;
 const MIN_WAIT_TIME = 2000;
 
 interface WaitFlowParams {
@@ -101,7 +101,7 @@ const AssessmentReportPendingPage = () => {
     isPollingRef.current = true;
     startTimeRef.current = Date.now();
     setPhase("processing");
-    setStage("queued");
+		setStage("assessment_pending");
     setMessage("正在生成测评记录，请稍候...");
 
     const isActive = () => isPollingRef.current && runIdRef.current === runId;
@@ -136,7 +136,7 @@ const AssessmentReportPendingPage = () => {
         setPhase((current) => current === "degraded" ? "degraded" : "processing");
       };
 
-      logger.RUN("[AnalysisWait] 开始等待（submit-status → WS/report-status）", {
+		logger.RUN("[AnalysisWait] 开始等待（assessment-readiness → WS/report-status）", {
         answersheetId: answerSheetId,
         assessmentId: assessmentId || null,
         requestId: requestId || null,
@@ -179,7 +179,6 @@ const AssessmentReportPendingPage = () => {
             if (isActive()) setMessage("正在关联测评记录，请稍候...");
           },
         },
-        allowLegacyListFallback: !requestId,
       }) as WaitLifecycleResult;
 
       if (result.cancelled || !isActive()) return;
@@ -272,7 +271,7 @@ const AssessmentReportPendingPage = () => {
       requestId: flowParams.requestId,
     });
 
-    if (!flowParams.answerSheetId && !flowParams.requestId) {
+		if (!flowParams.answerSheetId) {
       setPhase("failure");
       setMessage("提交状态已失效，请重新提交或查看历史记录");
       return undefined;

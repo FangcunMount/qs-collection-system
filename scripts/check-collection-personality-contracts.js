@@ -47,6 +47,7 @@ const submissionAttempt = read('src/modules/assessment/services/submissionAttemp
 const requestId = read('src/shared/lib/requestId.js');
 const waitTypologyAssessmentId = read('src/modules/assessment/services/waitTypologyAssessmentId.js');
 const waitAssessmentReportLifecycle = read('src/modules/assessment/services/waitAssessmentReportLifecycle.js');
+const answersheetApi = read('src/services/api/answersheetApi.js');
 const reportEventsClient = read('src/modules/assessment/services/reportEventsClient.js');
 const waitForReportReady = read('src/modules/assessment/services/waitForReportReady.js');
 const personalityReportPage = read('src/modules/assessment/pages/PersonalityReportPage.tsx');
@@ -67,7 +68,6 @@ const modelsFixture = readJson('src/modules/assessment/__fixtures__/personality-
 const sessionFixture = readJson('src/modules/assessment/__fixtures__/personality-session.json');
 const reportFixture = readJson('src/modules/assessment/__fixtures__/personality-report.json');
 const submitAcceptedFixture = readJson('src/modules/assessment/__fixtures__/personality-submit-accepted.json');
-const submitDoneFixture = readJson('src/modules/assessment/__fixtures__/personality-submit-status-done.json');
 
 assertContains(personalityApi, /listPublishedPersonalityModels/, 'personality adapter must export listPublishedPersonalityModels');
 assertContains(personalityApi, /listPersonalityAssessments/, 'personality adapter must export listPersonalityAssessments');
@@ -97,17 +97,14 @@ assertNotContains(modelApi, /\/personality-/, 'model API must not call legacy /p
 assertNotContains(personalityAssessmentApi, /\/personality-/, 'assessment API must not call legacy /personality-* paths');
 assertNotContains(reportApi, /\/personality-/, 'report API must not call legacy /personality-* paths');
 
-assertContains(waitTypologyAssessmentId, /listPersonalityAssessments/, 'waitTypologyAssessmentId must poll typology-assessments list');
-assertContains(waitTypologyAssessmentId, /pollAssessmentIdByAnswerSheet/, 'waitTypologyAssessmentId must use shared poll helper');
-assertContains(waitAssessmentReportLifecycle, /waitSubmitStatusCompletion/, 'lifecycle must resolve assessment_id via strict submit-status completion');
-assertContains(waitAssessmentReportLifecycle, /waitTypologyAssessmentId/, 'lifecycle must fall back to typology list for personality');
-assertContains(waitAssessmentReportLifecycle, /allowLegacyListFallback/, 'lifecycle must gate list fallback to legacy links');
-assertContains(waitAssessmentReportLifecycle, /waitMedicalAssessmentId/, 'lifecycle must fall back to medical list when available');
+assertContains(waitTypologyAssessmentId, /waitForAssessmentReadiness/, 'waitTypologyAssessmentId must use answersheet readiness');
+assertContains(waitAssessmentReportLifecycle, /waitForAssessmentReadiness/, 'lifecycle must resolve assessment_id via readiness');
+assertNotContains(waitAssessmentReportLifecycle, /submit-status|ListFallback|list fallback/i, 'lifecycle must not use removed submit-status or list fallback');
 assertContains(waitAssessmentReportLifecycle, /waitForReportReady/, 'lifecycle must delegate report waiting to waitForReportReady');
-assertContains(read('src/services/api/answersheetApi.js'), /waitForSubmitAssessmentId/, 'answersheet API must poll submit-status for assessment_id');
+assertContains(answersheetApi, /assessment-readiness/, 'answersheet API must query assessment readiness');
+assertNotContains(answersheetApi, /submit-status/, 'answersheet API must not call removed submit-status');
 assertContains(read('src/modules/assessment/pages/AssessmentReportPendingPage.tsx'), /request_id/, 'pending page must pass request_id into lifecycle');
-assertContains(submitFlow, /idempotencyKey/, 'submit flow must preserve request_id for submit-status polling');
-assertContains(submitFlow, /waitForCompletion/, 'submit flow must allow accepted assessment submissions to return before polling');
+assertContains(submitFlow, /answersheet_id/, 'submit flow must require the reliable answersheet id');
 assertContains(questionnaireSubmissionApi, /resolveSubmissionAttempt/, 'questionnaire submit must resolve a reusable submission attempt');
 assertContains(questionnaireSubmissionApi, /requestId:\s*submissionAttempt\.requestId/, 'questionnaire submit must pass the client request ID to answersheet submit');
 assertContains(submissionAttempt, /fingerprint/, 'submission attempt must use an answer snapshot fingerprint');
@@ -123,7 +120,7 @@ assertNotContains(personalityReportPage, /getAssessmentByAnswersheetId/, 'person
 assertContains(loadPersonalityReportService, /loadPersonalityReportByAssessmentId/, 'personality report loader must expose assessment-id entry');
 assertContains(loadPersonalityReportService, /getPersonalityReportStatus/, 'assessment-id report loader must gate report read by report-status');
 assertContains(loadPersonalityReportService, /loadPersonalityReportByAnswerSheet/, 'personality report loader must expose answersheet compat entry');
-assertContains(loadPersonalityReportService, /waitTypologyAssessmentId/, 'answersheet compat must resolve assessment_id via typology list');
+assertContains(loadPersonalityReportService, /waitTypologyAssessmentId/, 'answersheet compat must resolve assessment_id via readiness');
 assertContains(personalityReportPage, /loadPersonalityReportByAssessmentId/, 'personality report page must load via report service');
 assertNotContains(personalityReportPage, /waitTypologyAssessmentId/, 'personality report page must not embed typology list fallback');
 assertContains(loadRecentAssessmentsService, /loadMedicalAssessmentRecords/, 'home recent assessments must load medical scale records');
@@ -138,7 +135,7 @@ assertNotContains(medicalReportPage, /getAssessmentByAnswersheetId/, 'medical re
 assertContains(loadMedicalReportService, /loadMedicalReportByAssessmentId/, 'medical report loader must expose assessment-id entry');
 assertContains(loadMedicalReportService, /ensureMedicalReportReadable/, 'medical report loader must gate scores behind report-status');
 assertContains(loadMedicalReportService, /loadMedicalReportByAnswerSheet/, 'medical report loader must expose answersheet compat entry');
-assertContains(loadMedicalReportService, /waitMedicalAssessmentId/, 'answersheet compat must resolve assessment_id via medical list');
+assertContains(loadMedicalReportService, /waitMedicalAssessmentId/, 'answersheet compat must resolve assessment_id via readiness');
 assertContains(medicalReportPage, /loadMedicalReportByAssessmentId/, 'medical report page must load via report service');
 assertNotContains(medicalReportPage, /waitMedicalAssessmentId/, 'medical report page must not embed medical list fallback');
 assertContains(assessmentFillPage, /resolveAssessmentFillEntryParams/, 'fill page must resolve entry via assessmentFillEntry');
@@ -195,7 +192,7 @@ assertContains(mappers, /payload\.models|extractPublishedModelList/, 'model mapp
 assertContains(mappers, /algorithm/, 'model mapper must read backend algorithm');
 assertContains(mappers, /family_code|familyCode/, 'model mapper must read backend family_code');
 assertContains(mappers, /catalog_layout|catalogLayout/, 'model mapper must read backend catalog_layout');
-assertContains(submitFlow, /waitForSubmitCompletion/, 'submit flow must poll submit-status when queued');
+assertNotContains(submitFlow, /waitForSubmitCompletion|queued|submit-status/, 'submit flow must not retain queue semantics');
 
 assertNotContains(personalityCatalogService, /PERSONALITY_CATALOG_ITEMS|personalityModels/, 'catalog service must not use hardcoded personality catalog');
 assertContains(personalityCatalog, /selectPersonalityLandingItems/, 'catalog landing entries must resolve from published model data');
@@ -234,11 +231,8 @@ if (reportFixture.model?.kind !== 'personality') {
   fail('personality-report fixture model.kind must be personality at evaluation layer');
 }
 
-if (submitAcceptedFixture.status !== 'queued' || !submitAcceptedFixture.request_id) {
-  fail('personality-submit-accepted fixture must include queued status and request_id');
-}
-if (submitDoneFixture.status !== 'done' || !submitDoneFixture.answersheet_id || !submitDoneFixture.assessment_id) {
-  fail('personality-submit-status-done fixture must include done status, answersheet_id and assessment_id');
+if (submitAcceptedFixture.status !== 'accepted' || !submitAcceptedFixture.request_id || !submitAcceptedFixture.answersheet_id) {
+	fail('personality-submit-accepted fixture must include accepted status, request_id and answersheet_id');
 }
 
 if (process.exitCode) {

@@ -8,8 +8,7 @@ const root = path.resolve(__dirname, '..');
 const dependencyStubs = {
   '../servers': { request: () => Promise.resolve({}) },
   '../../config': {},
-  '@/modules/assessment/services/pollAssessmentIdByAnswerSheet': {},
-  '@/modules/assessment/services/medicalAssessmentIdResolver': {},
+	'./answersheetApi': { waitForAssessmentReadiness: async () => ({}) },
   '@/shared/config/collectionApiCapabilities': {},
 };
 

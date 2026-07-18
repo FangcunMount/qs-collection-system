@@ -1,318 +1,99 @@
-/**
- * 答卷 API
- */
-
+/** 答卷可靠受理与就绪查询 API */
 import { request } from '../servers';
 import config from '../../config';
 import { getLogger } from '../../shared/lib/logger';
 import { createIdempotencyKey, createRequestId } from '../../shared/lib/requestId';
-import {
-  assertSubmitStatusReady,
-  SubmissionContractViolation,
-} from '@/modules/assessment/services/submissionStatus';
 
-export { createIdempotencyKey };
-export { createRequestId };
-
-export { assertSubmitStatusReady, SubmissionContractViolation };
+export { createIdempotencyKey, createRequestId };
 
 const logger = getLogger('answersheet_api');
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-const normalizeSubmitResult = (result) => {
-  if (!result) {
-    return result;
-  }
-
+const normalizeIDs = (result) => {
+  if (!result) return result;
   const normalized = { ...result };
-  if (typeof normalized.id !== 'undefined') {
-    normalized.id = String(normalized.id);
+  for (const key of ['id', 'request_id', 'answersheet_id', 'assessment_id']) {
+    if (normalized[key] !== undefined && normalized[key] !== null) normalized[key] = String(normalized[key]);
   }
-  if (typeof normalized.answersheet_id !== 'undefined') {
-    normalized.answersheet_id = String(normalized.answersheet_id);
-  }
-  if (typeof normalized.assessment_id !== 'undefined') {
-    normalized.assessment_id = String(normalized.assessment_id);
-  }
-
   return normalized;
 };
 
+const isRetryableSubmitError = (error) => {
+  const statusCode = Number(error?.statusCode || error?.code || 0);
+  return statusCode === 429 || statusCode === 503 || statusCode === 0 || String(error?.code || '') === '-1';
+};
+
 /**
- * 提交答卷（新 API）
- * ⚠️ ID 精度保护：答卷 ID 已转换为字符串，避免 JavaScript 数字精度问题
- * @param {Object} data - 答卷数据
- * @param {Array} data.answers - 答案列表
- * @param {string} data.questionnaire_code - 问卷编码
- * @param {string} data.questionnaire_version - 问卷版本
- * @param {string} data.testee_id - 受试者ID（64 位 ID 以字符串传输）
- * @param {string} data.title - 答卷标题（可选）
- * @returns {Promise<{id: string, message: string}>} ID 已转换为字符串
+ * 提交答卷。所有自动重试复用同一 idempotency_key 与 X-Request-Id；409 不重试。
  */
-export const submitAnswersheet = (data, options = {}) => {
+export const submitAnswersheet = async (data, options = {}) => {
   const payload = { ...data };
   const idempotencyKey = payload.idempotency_key || options.idempotencyKey || createIdempotencyKey();
   const requestId = options.requestId || createRequestId();
+  payload.idempotency_key = idempotencyKey;
 
-  if (!payload.idempotency_key) {
-    payload.idempotency_key = idempotencyKey;
-  }
-
-  logger.RUN('[submitAnswersheet] 发起提交', {
-    host: config.collectionHost,
-    questionnaireCode: payload?.questionnaire_code,
-    questionnaireVersion: payload?.questionnaire_version,
-    testeeId: payload?.testee_id,
-    answerCount: payload?.answers?.length ?? 0,
-    hasTaskId: Boolean(payload?.task_id),
-    idempotencyKey
+  logger.RUN('[submitAnswersheet] 发起可靠提交', {
+    questionnaireCode: payload.questionnaire_code,
+    questionnaireVersion: payload.questionnaire_version,
+    testeeId: payload.testee_id,
+    answerCount: payload.answers?.length ?? 0,
+    idempotencyKey,
+    requestId,
   });
 
-  return request('/answersheets', payload, {
-    host: config.collectionHost,
-    method: 'POST',
-    needToken: true,
-    header: {
-      'X-Request-Id': requestId
-    }
-  }).then(result => {
-    const normalized = normalizeSubmitResult(result);
-
-    if (normalized?.request_id && !normalized?.answersheet_id && typeof normalized?.id === 'undefined') {
-      logger.WARN('[submitAnswersheet] collection 已受理，进入队列', {
-        requestId: normalized.request_id,
-        status: normalized.status ?? 'queued'
+  const maxAttempts = options.maxAttempts ?? 3;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      const result = await request('/answersheets', payload, {
+        host: config.collectionHost,
+        method: 'POST',
+        needToken: true,
+        suppressErrorToast: attempt < maxAttempts,
+        header: { 'X-Request-Id': requestId },
       });
+      const normalized = normalizeIDs(result);
+      if (String(normalized?.status || '').toLowerCase() !== 'accepted' || !normalized?.answersheet_id) {
+        throw new Error('答卷受理响应缺少 accepted 状态或 answersheet_id');
+      }
       return { ...normalized, client_request_id: requestId };
+    } catch (error) {
+      if (attempt >= maxAttempts || !isRetryableSubmitError(error)) throw error;
+      await delay(Math.max(Number(error?.retryAfterMs || 0), 1000));
     }
-
-    logger.RUN('[submitAnswersheet] collection 直接返回结果', {
-      answersheetId: normalized?.answersheet_id ?? normalized?.id ?? null,
-      assessmentId: normalized?.assessment_id ?? null
-    });
-
-    // ⚠️ ID 精度保护：将数字 ID 转换为字符串，避免 JavaScript 大数精度丢失
-    // 后端返回的 ID 可能是数字类型，但由于 JavaScript 整数精度限制（2^53），
-    // 大于此值的 ID 会丢失精度。统一转换为字符串可避免此问题。
-    return { ...normalized, client_request_id: requestId };
-  }).catch(error => {
-    logger.ERROR('[submitAnswersheet] 提交失败', {
-      questionnaireCode: data?.questionnaire_code,
-      testeeId: data?.testee_id,
-      error: error?.message ?? error?.errmsg ?? String(error)
-    });
-    throw error;
-  });
+  }
+  throw new Error('答卷提交重试耗尽');
 };
 
-const SUBMIT_STATUS_POLL_INTERVAL = 2000;
-const SUBMIT_STATUS_MAX_ATTEMPTS = 30;
-const SUBMIT_STATUS_FAILURES = new Set(['failed', 'error', 'rejected', 'cancelled', 'canceled']);
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-export const getSubmitStatus = (requestId) => {
-  if (!requestId) {
-    return Promise.reject(new Error('request_id 为空，无法查询提交状态'));
+export const getAssessmentReadiness = (answerSheetId, testeeId) => {
+  if (!answerSheetId || !testeeId) {
+    return Promise.reject(new Error('answersheet_id 或 testee_id 为空，无法查询测评就绪状态'));
   }
-
-  return request('/answersheets/submit-status', {}, {
+  return request(`/answersheets/${String(answerSheetId)}/assessment-readiness`, {}, {
     host: config.collectionHost,
     method: 'GET',
     needToken: true,
-    params: { request_id: requestId }
-  }).then(result => {
-    const normalized = normalizeSubmitResult(result);
-    logger.RUN('[getSubmitStatus] 查询提交状态', {
-      requestId,
-      status: normalized?.status ?? 'unknown',
-      answersheetId: normalized?.answersheet_id ?? null,
-      assessmentId: normalized?.assessment_id ?? null,
-    });
-    return normalized;
-  });
+    params: { testee_id: String(testeeId) },
+  }).then(normalizeIDs);
 };
 
-export const waitForSubmitCompletion = async (requestId, options = {}) => {
-  const interval = options.interval ?? SUBMIT_STATUS_POLL_INTERVAL;
-  const maxAttempts = options.maxAttempts ?? SUBMIT_STATUS_MAX_ATTEMPTS;
-  const onProgress = options.onProgress;
-  const onSuccess = options.onSuccess;
-
-  if (!requestId) {
-    throw new Error('缺少 request_id，无法等待提交结果');
-  }
-
-  let attempts = 0;
-  while (attempts < maxAttempts) {
-    const currentAttempt = attempts + 1;
-    const statusResult = await getSubmitStatus(requestId);
-    const normalizedStatus = (statusResult?.status || '').toLowerCase();
-
-    if (typeof onProgress === 'function') {
-      onProgress({
-        requestId,
-        attempt: currentAttempt,
-        maxAttempts,
-        status: normalizedStatus || 'unknown',
-        result: statusResult
-      });
-    }
-
-    if (statusResult && normalizedStatus === 'done') {
-      if (!statusResult.answersheet_id) {
-        logger.WARN('[waitForSubmitCompletion] status=done 但缺少 answersheet_id', {
-          requestId,
-          attempt: currentAttempt
-        });
-        throw new Error('答卷提交处理异常，请稍后重试');
-      }
-
-      logger.RUN('[waitForSubmitCompletion] 队列处理完成', {
-        requestId,
-        answersheetId: statusResult.answersheet_id,
-        attempt: currentAttempt,
-        status: normalizedStatus
-      });
-      if (typeof onSuccess === 'function') {
-        onSuccess(statusResult);
-      }
-      return statusResult;
-    }
-
-    if (statusResult && SUBMIT_STATUS_FAILURES.has(normalizedStatus)) {
-      logger.ERROR('[waitForSubmitCompletion] 队列处理失败', {
-        requestId,
-        status: normalizedStatus,
-        attempt: currentAttempt
-      });
-      throw new Error('答卷提交处理失败，请稍后重试');
-    }
-
-    attempts += 1;
-    if (attempts >= maxAttempts) {
-      break;
-    }
-
-    await delay(interval);
-  }
-
-  logger.WARN('[waitForSubmitCompletion] 等待提交结果超时', {
-    requestId,
-    maxAttempts,
-    interval
-  });
-  throw new Error('等待答卷提交结果超时，请稍后在答卷列表查看或重试');
-};
-
-/**
- * 轮询提交状态，只有 status=done 且同时拥有两个业务 ID 才算完成。
- */
-export const waitForSubmitReady = async (requestId, options = {}) => {
-  const interval = options.interval ?? SUBMIT_STATUS_POLL_INTERVAL;
-  const maxAttempts = options.maxAttempts ?? SUBMIT_STATUS_MAX_ATTEMPTS;
-  const onAttempt = options.onAttempt;
-  const shouldContinue = options.shouldContinue;
-
-  if (!requestId) {
-    throw new Error('缺少 request_id，无法等待提交完成');
-  }
-
+export const waitForAssessmentReadiness = async (answerSheetId, testeeId, options = {}) => {
+  const maxAttempts = options.maxAttempts ?? 30;
+  const startedAt = Date.now();
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-    if (typeof shouldContinue === 'function' && !shouldContinue()) {
-      return null;
-    }
-
-    const statusResult = await getSubmitStatus(String(requestId));
-    const status = String(statusResult?.status || '').toLowerCase();
-    onAttempt?.(attempt, statusResult);
-
-    if (SUBMIT_STATUS_FAILURES.has(status)) {
-      throw new Error(statusResult?.message || '答卷提交处理失败，请稍后重试');
-    }
-
-    if (status === 'done') {
-      return assertSubmitStatusReady(statusResult, requestId);
-    }
-
+    if (options.shouldContinue?.() === false) return null;
+    const readiness = await getAssessmentReadiness(answerSheetId, testeeId);
+    const status = String(readiness?.status || '').toLowerCase();
+    options.onAttempt?.(attempt, readiness, Date.now() - startedAt);
+    if (status === 'ready' && readiness.assessment_id) return readiness;
+    if (status !== 'pending') throw new Error('测评就绪状态异常，请稍后重试');
     if (attempt < maxAttempts) {
-      await delay(interval);
+      await delay(Number(readiness.next_poll_after_ms) > 0 ? Number(readiness.next_poll_after_ms) : 2000);
     }
   }
-
-  throw new Error('等待答卷提交完成超时，请稍后重试');
+  throw new Error('答卷已接收，测评生成延迟，请稍后在报告页继续等待');
 };
 
-/**
- * 兼容导出：严格轮询 submit-status，直至 status=done 且响应同时附带两个业务 ID。
- */
-export const waitForSubmitAssessmentId = async (requestId, options = {}) => {
-  const interval = options.interval ?? SUBMIT_STATUS_POLL_INTERVAL;
-  const maxAttempts = options.maxAttempts ?? SUBMIT_STATUS_MAX_ATTEMPTS;
-  const onAttempt = options.onAttempt;
-  const shouldContinue = options.shouldContinue;
-
-  if (!requestId) {
-    throw new Error('缺少 request_id，无法轮询 assessment_id');
-  }
-
-  let attempts = 0;
-  while (attempts < maxAttempts) {
-    if (typeof shouldContinue === 'function' && !shouldContinue()) {
-      return '';
-    }
-
-    const currentAttempt = attempts + 1;
-    const statusResult = await getSubmitStatus(requestId);
-    const normalizedStatus = (statusResult?.status || '').toLowerCase();
-
-    if (typeof onAttempt === 'function') {
-      onAttempt(currentAttempt, statusResult);
-    }
-
-    if (statusResult && SUBMIT_STATUS_FAILURES.has(normalizedStatus)) {
-      logger.ERROR('[waitForSubmitAssessmentId] 提交处理失败', {
-        requestId,
-        status: normalizedStatus,
-        attempt: currentAttempt,
-      });
-      throw new Error('答卷提交处理失败，请稍后重试');
-    }
-
-    if (normalizedStatus === 'done') {
-      const ready = assertSubmitStatusReady(statusResult, requestId);
-      logger.RUN('[waitForSubmitAssessmentId] 取得 assessment_id', {
-        requestId,
-        answersheetId: ready.answersheet_id,
-        assessmentId: ready.assessment_id,
-        attempt: currentAttempt,
-      });
-      return ready.assessment_id;
-    }
-
-    attempts += 1;
-    if (attempts >= maxAttempts) {
-      break;
-    }
-
-    await delay(interval);
-  }
-
-  logger.WARN('[waitForSubmitAssessmentId] 等待 assessment_id 超时', {
-    requestId,
-    maxAttempts,
-    interval,
-  });
-  throw new Error('等待测评记录超时，请稍后重试');
-};
-
-/**
- * 获取答卷详情（原始数据）
- * 在 answersheet 页面使用
- * 使用 collection.yaml 中的合法接口: GET /answersheets/{id}
- * ⚠️ ID 精度保护：所有 ID 已转换为字符串，避免 JavaScript 数字精度问题
- * @param {string|number} id - 答卷ID（自动转为字符串避免精度问题）
- * @param {object} [options]
- * @param {boolean} [options.showLoading=true] - 是否展示全局 loading
- */
+/** 获取答卷详情（原始数据）。 */
 export const getAnswersheet = (id, options = {}) => {
   const { showLoading = true } = options;
   return new Promise((resolve, reject) => {
@@ -323,61 +104,42 @@ export const getAnswersheet = (id, options = {}) => {
     })
       .then((result) => {
         let si = 1;
-        // 适配 collection.yaml 返回的数据结构
         const processedAnswers = (result.answers || []).map(v => {
-          if (v.type !== "Section") {
+          if (v.type !== 'Section') {
             v.title = `${si}. ${v.title}`;
-            si++;
+            si += 1;
           }
-
           switch (v.type) {
             case 'Radio':
-              const radioOptionIndex = v.options.findIndex(o => o.is_select == '1')
-              v.value = radioOptionIndex > -1 ? v.options[radioOptionIndex].code : ''
-              break;
             case 'ImageRadio':
-              const imageRadioOptionIndex = v.options.findIndex(o => o.is_select == '1')
-              v.value = imageRadioOptionIndex > -1 ? v.options[imageRadioOptionIndex].code : ''
-              break;
             case 'ScoreRadio':
-              const scoreOptionIndex = v.options.findIndex(o => o.is_select == '1')
-              v.value = scoreOptionIndex > -1 ? v.options[scoreOptionIndex].code : ''
+            case 'Select': {
+              const optionIndex = v.options.findIndex(o => o.is_select == '1');
+              v.value = optionIndex > -1 ? v.options[optionIndex].code : '';
               break;
+            }
             case 'CheckBox':
-              v.value = v.options.filter(o => (o.is_select == '1')).map(o => (o.code))
-              break;
             case 'ImageCheckBox':
-              v.value = v.options.filter(o => (o.is_select == '1')).map(o => (o.code))
-              break;
-            case 'Select':
-              const selectOptionIndex = v.options.findIndex(o => o.is_select == '1')
-              v.value = selectOptionIndex > -1 ? v.options[selectOptionIndex].code : ''
+              v.value = v.options.filter(o => o.is_select == '1').map(o => o.code);
               break;
             default:
               break;
           }
-
-          return v
-        })
-        
-        // ⚠️ ID 精度保护：确保所有 ID 都是字符串格式
-        const processedResult = {
+          return v;
+        });
+        resolve({
           ...result,
           id: String(result.id),
           testee_id: String(result.testee_id),
-          // 如果有 assessment_id，也转换为字符串
           ...(result.assessment_id && { assessment_id: String(result.assessment_id) }),
-          answers: processedAnswers
-        };
-        
-        resolve(processedResult)
-      }).catch((err) => {
-        reject(err)
-      });
-  })
-}
+          answers: processedAnswers,
+        });
+      })
+      .catch(reject);
+  });
+};
 
-/** 轮询用：仅取答卷元数据，不加工题目列表 */
+/** 轮询用：仅取答卷元数据，不加工题目列表。 */
 export const fetchAnswersheetRecord = async (id, { showLoading = false } = {}) => {
   const result = await request(`/answersheets/${String(id)}`, {}, {
     host: config.collectionHost,
@@ -396,10 +158,9 @@ export const extractAssessmentIdFromAnswersheet = (payload = {}) => {
 
 export default {
   submitAnswersheet,
+  getAssessmentReadiness,
+  waitForAssessmentReadiness,
   getAnswersheet,
   fetchAnswersheetRecord,
   extractAssessmentIdFromAnswersheet,
-  getSubmitStatus,
-  waitForSubmitCompletion,
-  waitForSubmitAssessmentId,
-}
+};

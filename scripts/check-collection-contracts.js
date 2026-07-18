@@ -121,7 +121,7 @@ const combinedSrcSource = collectionApiSources.map(({ source }) => source).join(
 const forbiddenPatterns = [
 	{ pattern: new RegExp("[`'\\\"]\\/" + 'scales' + "(?:[/?`'\\\"])") , message: 'collection API must not call retired scale paths' },
   { pattern: /\/personality-/, message: 'collection API must not call legacy /personality-* paths' },
-  { pattern: /\/answersheets\/\$\{[^}]+\}\/assessment/, message: 'collection API must not call deprecated /answersheets/{id}/assessment' },
+	{ pattern: /\/answersheets\/\$\{[^}]+\}\/assessment(?:[?`'"]|$)/, message: 'collection API must not call deprecated /answersheets/{id}/assessment' },
   { pattern: /\/questionsheet\//, message: 'collection API must not call legacy /questionsheet/* paths' },
   { pattern: /\/writeAnswerSheet\//, message: 'collection API must not call legacy /writeAnswerSheet/* paths' },
   { pattern: /method:\s*['"]DELETE['"][\s\S]{0,120}\/testees\//, message: 'collection API must not call DELETE /testees/{id}' },
@@ -193,7 +193,7 @@ assertNotContains(reportWaitGuide, /\['interpreted', 'failed', 'completed'\]/, '
 assertContains(miniProgramGuide, /优先订阅 WebSocket 报告状态/, 'mini-program guide must make WebSocket the default report waiter');
 assertContains(miniProgramGuide, /关闭连接后降级到 `report-status`/, 'mini-program guide must forbid concurrent WS and polling');
 assertContains(miniProgramGuide, /kind=scale&category=<category>/, 'mini-program guide must document the scale category catalog query');
-assertContains(read('src/modules/assessment/services/medicalAssessmentIdResolver.js'), /pollAssessmentIdByAnswerSheet/, 'medical resolver must use assessments list matching when available');
+assertContains(read('src/modules/assessment/services/waitMedicalAssessmentId.js'), /waitForAssessmentReadiness/, 'medical resolver must use answersheet readiness');
 
 assertContains(assessmentApi, /getMedicalAssessmentReport|mapMedicalReportPayload/, 'assessment API must expose yaml-aligned medical report fetch');
 assertNotContains(analysisApi, /host:\s*config\.collectionHost[\s\S]{0,200}request\(/, 'analysisApi must not duplicate collectionHost requests');

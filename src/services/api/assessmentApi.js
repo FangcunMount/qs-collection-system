@@ -1,7 +1,6 @@
 import { request } from '../servers';
 import config from '../../config';
-import { pollAssessmentIdByAnswerSheet } from '@/modules/assessment/services/pollAssessmentIdByAnswerSheet';
-import { createMedicalAssessmentFetchItems } from '@/modules/assessment/services/medicalAssessmentIdResolver';
+import { waitForAssessmentReadiness } from './answersheetApi';
 import {
   COLLECTION_API_CAPABILITIES,
   createAssessmentsListUnavailableError,
@@ -115,7 +114,7 @@ export const mapMedicalReportPayload = (reportPayload = {}) => {
 
 /**
  * @deprecated 请使用 waitMedicalAssessmentId + getAssessmentReport；保留兼容旧 import。
- * 通过答卷 ID 查询测评记录（走 GET /assessments 列表匹配，需 testee_id）
+ * 通过 AnswerSheet readiness 查询测评记录。
  */
 export const getAssessmentByAnswersheetId = async (answersheetId, options = {}) => {
   const { testeeId, maxAttempts = 1, onAttempt, ...requestOptions } = options;
@@ -125,21 +124,12 @@ export const getAssessmentByAnswersheetId = async (answersheetId, options = {}) 
     throw new Error('缺少 testee_id，无法通过答卷查询测评记录');
   }
 
-  const matched = await pollAssessmentIdByAnswerSheet({
-    testeeId: normalizedTesteeId,
-    answerSheetId: answersheetId,
-    maxAttempts,
-    onAttempt,
-    intervalMs: maxAttempts > 1 ? 2000 : 0,
-    returnMatchedItem: true,
-    fetchItems: createMedicalAssessmentFetchItems(answersheetId, normalizedTesteeId),
-  });
-
-  const payload = matched?.raw || { id: matched?.id, status: matched?.status };
+	const readiness = await waitForAssessmentReadiness(answersheetId, normalizedTesteeId, { maxAttempts, onAttempt });
+	const payload = { id: readiness?.assessment_id, status: readiness?.status };
 
   if (requestOptions.suppressErrorToast) {
     return payload;
-  }
+}
 
   return payload;
 };

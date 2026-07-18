@@ -1,26 +1,11 @@
-import { isAbilityAssessmentKind, isPersonalityAssessmentKind } from '@/shared/lib/assessmentKind';
 import { waitForReportReady } from '@/modules/assessment/services/waitForReportReady';
-import { waitTypologyAssessmentId } from '@/modules/assessment/services/waitTypologyAssessmentId';
-import { waitMedicalAssessmentId } from '@/modules/assessment/services/waitMedicalAssessmentId';
-import { waitBehaviorAssessmentId } from '@/modules/assessment/services/waitBehaviorAssessmentId';
-import { waitSubmitStatusCompletion } from '@/modules/assessment/services/waitSubmitStatusAssessmentId';
-
-async function resolveAssessmentIdFallback(assessmentKind, testeeId, answerSheetId, options = {}) {
-  if (isPersonalityAssessmentKind(assessmentKind)) {
-    return waitTypologyAssessmentId(testeeId, answerSheetId, options);
-  }
-  if (isAbilityAssessmentKind(assessmentKind)) {
-    return waitBehaviorAssessmentId(testeeId, answerSheetId, options);
-  }
-  return waitMedicalAssessmentId(testeeId, answerSheetId, options);
-}
+import { waitForAssessmentReadiness } from '@/services/api/answersheetApi';
 
 /**
  * 等待测评创建 + 报告终态（对齐文档 12/13）。
  *
  * 阶段①：无 assessment_id 时先解析
- *   - 新提交：轮询 GET /answersheets/submit-status，必须一次取得两个业务 ID
- *   - 历史链接：仅在没有 request_id 时允许按 answer_sheet_id 列表恢复
+ *   - 按 answersheet_id + testee_id 轮询 assessment-readiness
  *
  * 阶段②：WSS /report-events → report-status 短轮询
  */
@@ -37,66 +22,36 @@ export async function waitAssessmentReportLifecycle({
   onSubmissionReady,
   assessmentLookupOptions = {},
   tryWebSocket = true,
-  allowLegacyListFallback = false,
   onFallback,
 }) {
   let assessmentId = assessmentIdFromUrl ? String(assessmentIdFromUrl) : '';
   let resolvedAnswerSheetId = answerSheetId ? String(answerSheetId) : '';
 
-  if (!assessmentId && requestId) {
-    logger?.RUN?.('[waitAssessmentReportLifecycle] 阶段①：轮询 submit-status', {
-      requestId,
-      answerSheetId,
-    });
-
-    try {
-      const submission = await waitSubmitStatusCompletion(requestId, {
-        ...assessmentLookupOptions,
-        shouldContinue,
-        onAttempt: (attempt, statusResult) => {
-          assessmentLookupOptions.onAttempt?.(attempt, statusResult);
-          if (!statusResult?.assessment_id) {
-            onStatus?.({
-              status: 'processing',
-              stage: 'queued',
-              message: '正在关联测评记录，请稍候...',
-            });
-          }
-        },
-      });
-      if (submission) {
-        assessmentId = String(submission.assessment_id);
-        resolvedAnswerSheetId = String(submission.answersheet_id);
-        onSubmissionReady?.({
-          requestId: String(submission.request_id || requestId),
-          answersheetId: resolvedAnswerSheetId,
-          assessmentId,
-        });
-      }
-    } catch (error) {
-      if (!allowLegacyListFallback) {
-        throw error;
-      }
-      logger?.WARN?.('[waitAssessmentReportLifecycle] 历史链接 submit-status 不可用，尝试列表兜底', {
-        requestId,
-        message: error?.message,
-      });
-    }
-  }
-
-  if (!assessmentId && (allowLegacyListFallback || !requestId)) {
-    logger?.RUN?.('[waitAssessmentReportLifecycle] 阶段①：列表兜底解析 assessment_id', {
-      answerSheetId: resolvedAnswerSheetId,
-      testeeId,
-      assessmentKind,
-    });
-
-    assessmentId = await resolveAssessmentIdFallback(
-      assessmentKind,
-      testeeId,
-      resolvedAnswerSheetId,
-      assessmentLookupOptions
-    );
+	if (!assessmentId) {
+		if (!resolvedAnswerSheetId || !testeeId) {
+			throw new Error('缺少答卷或受试者编号，无法查询测评状态');
+		}
+		logger?.RUN?.('[waitAssessmentReportLifecycle] 阶段①：轮询 assessment-readiness', {
+			answerSheetId: resolvedAnswerSheetId,
+			testeeId,
+		});
+		const readiness = await waitForAssessmentReadiness(resolvedAnswerSheetId, testeeId, {
+			...assessmentLookupOptions,
+			shouldContinue,
+			onAttempt: (attempt, result, elapsedMs) => {
+				assessmentLookupOptions.onAttempt?.(attempt, result, elapsedMs);
+				onStatus?.({
+					status: 'processing',
+					stage: 'assessment_pending',
+					message: elapsedMs >= 60000 ? '答卷已接收，测评生成延迟' : '正在生成测评记录，请稍候...',
+				});
+			},
+		});
+		if (readiness) {
+			assessmentId = String(readiness.assessment_id);
+			resolvedAnswerSheetId = String(readiness.answersheet_id || resolvedAnswerSheetId);
+			onSubmissionReady?.({ requestId: String(requestId || ''), answersheetId: resolvedAnswerSheetId, assessmentId });
+		}
   }
 
   if (!assessmentId) {

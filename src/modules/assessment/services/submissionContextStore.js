@@ -17,7 +17,7 @@ export function normalizeSubmissionContext(value = {}) {
     assessmentKind: toId(value.assessmentKind || value.assessment_kind),
     answersheetId: toId(value.answersheetId || value.answersheet_id),
     assessmentId: toId(value.assessmentId || value.assessment_id),
-    phase: toId(value.phase) || 'submit_queued',
+    phase: toId(value.phase) || 'submit_prepared',
     updatedAt: Number(value.updatedAt || value.updated_at || Date.now()),
   };
 }
@@ -30,12 +30,14 @@ export function getSubmissionContext() {
   }
 }
 
-export function saveSubmissionContext(value = {}) {
+export function saveSubmissionContext(value = {}, options = {}) {
   const next = normalizeSubmissionContext({ ...getSubmissionContext(), ...value, updatedAt: Date.now() });
   try {
     Taro.setStorageSync(SUBMISSION_CONTEXT_STORAGE_KEY, next);
   } catch (_) {
-    // 本地存储失败不阻塞当前提交流程，路由参数仍可恢复主链路。
+	if (options.required) {
+		throw new Error('无法保存提交凭据，请释放存储空间后重试');
+	}
   }
   return next;
 }

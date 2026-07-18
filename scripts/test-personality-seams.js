@@ -93,13 +93,11 @@ const {
   normalizePersonalityAssessmentRecord,
   isPersonalityAssessmentDoneStatus,
 } = require('../src/services/api/personality/mappers');
-const { assertSubmitStatusReady, SubmissionContractViolation } = require('../src/modules/assessment/services/submissionStatus');
 const { normalizeSubmissionContext } = require('../src/modules/assessment/services/submissionContextStore');
 const { resolveSubmissionAttempt } = require('../src/modules/assessment/services/submissionAttempt');
 const { createRequestId } = require('../src/shared/lib/requestId');
 
 const { normalizePersonalityReport } = require('../src/modules/assessment/services/personalityReportMapper');
-const { pollAssessmentIdByAnswerSheet } = require('../src/modules/assessment/services/pollAssessmentIdByAnswerSheet');
 const {
   getReportEventsCapability,
   REPORT_EVENTS_CAPABILITY,
@@ -123,8 +121,6 @@ const sessionFixture = readJson('src/modules/assessment/__fixtures__/personality
 const modelsFixture = readJson('src/modules/assessment/__fixtures__/personality-models-list.json');
 const reportFixture = readJson('src/modules/assessment/__fixtures__/personality-report.json');
 const submitAcceptedFixture = readJson('src/modules/assessment/__fixtures__/personality-submit-accepted.json');
-const submitDoneFixture = readJson('src/modules/assessment/__fixtures__/personality-submit-status-done.json');
-const submitDoneMissingAssessmentFixture = readJson('src/modules/assessment/__fixtures__/personality-submit-status-done-missing-assessment.json');
 const reportProcessingFixture = readJson('src/modules/assessment/__fixtures__/personality-report-status-processing.json');
 const reportInterpretedFixture = readJson('src/modules/assessment/__fixtures__/personality-report-status-interpreted.json');
 const reportFailedFixture = readJson('src/modules/assessment/__fixtures__/personality-report-status-failed.json');
@@ -196,15 +192,15 @@ const reportFailedFixture = readJson('src/modules/assessment/__fixtures__/person
   assert(typeof mbti.id === 'string' || mbti.id === '', 'model id normalized to string when present');
 }
 
-// --- mapper: submit accepted / done ---
+// --- mapper: reliable submit accepted ---
 {
-  const accepted = normalizeSubmitDone(submitAcceptedFixture);
-  assertEqual(
-    {
-      answersheetId: '',
-      assessmentId: '',
-      requestId: 'req_personality_submit_001',
-      status: 'queued',
+	const accepted = normalizeSubmitDone(submitAcceptedFixture);
+	assertEqual(
+		{
+			answersheetId: '90010001',
+			assessmentId: '',
+			requestId: 'req_personality_submit_001',
+			status: 'accepted',
     },
     {
       answersheetId: accepted.answersheetId,
@@ -212,39 +208,8 @@ const reportFailedFixture = readJson('src/modules/assessment/__fixtures__/person
       requestId: accepted.requestId,
       status: accepted.status,
     },
-    'submit accepted normalization'
-  );
-
-  const done = normalizeSubmitDone(submitDoneFixture);
-  assertEqual(
-    {
-      answersheetId: '90010001',
-      assessmentId: '80020001',
-      requestId: 'req_personality_submit_001',
-      status: 'done',
-    },
-    {
-      answersheetId: done.answersheetId,
-      assessmentId: done.assessmentId,
-      requestId: done.requestId,
-      status: done.status,
-    },
-    'submit-status done normalization'
-  );
-
-  const incomplete = normalizeSubmitDone(submitDoneMissingAssessmentFixture);
-  assert(incomplete.answersheetId === '90010001', 'incomplete done keeps answersheet_id as string');
-  assert(incomplete.assessmentId === '', 'incomplete done exposes missing assessment_id');
-
-  const ready = assertSubmitStatusReady(submitDoneFixture, 'req_personality_submit_001');
-  assert(ready.answersheet_id === '90010001', 'strict submit ready answersheet_id');
-  assert(ready.assessment_id === '80020001', 'strict submit ready assessment_id');
-  try {
-    assertSubmitStatusReady(submitDoneMissingAssessmentFixture, 'req_personality_submit_001');
-    fail('strict submit ready should reject missing assessment_id');
-  } catch (error) {
-    assert(error instanceof SubmissionContractViolation, 'missing assessment_id uses contract violation');
-  }
+		'reliable submit accepted normalization'
+	);
 }
 
 // --- mapper: report status ---
@@ -350,7 +315,7 @@ const reportFailedFixture = readJson('src/modules/assessment/__fixtures__/person
   assert(!/answersheet|response/i.test(abilityUrl.split('?')[0]), 'ability submit must not land on answersheet page');
 }
 
-// --- pollAssessmentIdByAnswerSheet ---
+// --- report waiting seams ---
 (async () => {
   const createSocketTask = () => {
     const handlers = {};
@@ -474,36 +439,6 @@ const reportFailedFixture = readJson('src/modules/assessment/__fixtures__/person
     },
   });
   assert(websocketAttempts === 1 && httpAttempts === 2, 'cached unavailable WS skips the next connection attempt');
-
-  const found = await pollAssessmentIdByAnswerSheet({
-    testeeId: '10001',
-    answerSheetId: '90010001',
-    maxAttempts: 1,
-    intervalMs: 0,
-    fetchItems: async () => [
-      { id: '80020001', answer_sheet_id: '90010001' },
-      { id: '80020002', answer_sheet_id: '90010002' },
-    ],
-  });
-  assert(found === '80020001', 'poll helper returns matching assessment_id');
-
-  let attempts = 0;
-  try {
-    await pollAssessmentIdByAnswerSheet({
-      testeeId: '10001',
-      answerSheetId: 'missing',
-      maxAttempts: 2,
-      intervalMs: 0,
-      fetchItems: async () => {
-        attempts += 1;
-        return [{ id: '1', answer_sheet_id: 'other' }];
-      },
-    });
-    fail('poll helper should throw when no match');
-  } catch (error) {
-    assert(attempts === 2, 'poll helper retries until maxAttempts');
-    assert(/测评记录生成时间过长/.test(error.message), 'poll helper timeout message');
-  }
 
   if (process.exitCode) {
     process.exit(process.exitCode);

@@ -8,9 +8,8 @@ import {
 import { isEmpty } from '@/shared/lib/type';
 import { resolveSubmitAssessmentKind } from '@/modules/assessment/lib/assessmentSubmitNavigation';
 import { submitAssessmentAndResolveAnswersheet } from '@/modules/assessment/services/submitAssessmentFlow';
-import { saveSubmissionContext } from '@/modules/assessment/services/submissionContextStore';
+import { getSubmissionContext, saveSubmissionContext } from '@/modules/assessment/services/submissionContextStore';
 import { resolveSubmissionAttempt } from '@/modules/assessment/services/submissionAttempt';
-import { ASSESSMENT_KIND } from '@/shared/lib/assessmentKind';
 import { getLogger } from '../../shared/lib/logger';
 
 const logger = getLogger('questionnaire_submission_api');
@@ -60,11 +59,27 @@ export const submitQuestionnaire = async (questionnaire, writer_role_code, signi
     }
     : resolveSubmissionAttempt(
       requestData,
-      options.submissionAttempt,
+      options.submissionAttempt || getSubmissionContext(),
       options.forceNewSubmission === true
     );
   const idempotencyKey = submissionAttempt.idempotencyKey;
   requestData.idempotency_key = idempotencyKey;
+
+	// 必须先落盘再发出 HTTP 请求，确保响应丢失或进程重启后仍能用同一幂等键恢复。
+  saveSubmissionContext({
+    fingerprint: submissionAttempt.fingerprint,
+    requestId: submissionAttempt.requestId,
+    clientRequestId: submissionAttempt.requestId,
+    idempotencyKey,
+    testeeId: selectedTesteeId,
+    modelCode: submitContract.model_code,
+    questionnaireCode: requestData.questionnaire_code,
+    questionnaireVersion: requestData.questionnaire_version,
+    assessmentKind: '',
+    answersheetId: '',
+    assessmentId: '',
+    phase: 'submit_prepared',
+  }, { required: true });
 
   logger.RUN('[submitQuestionnaire] 开始提交', {
     questionnaireCode: requestData.questionnaire_code,
@@ -75,37 +90,15 @@ export const submitQuestionnaire = async (questionnaire, writer_role_code, signi
     idempotencyKey
   });
 
-  let activeRequestId = '';
   let submitResult;
   const submitAssessmentKind = resolveSubmitAssessmentKind({
     questionnaireType: questionnaire.type,
     assessmentKind: submitContract.assessment_kind,
   });
-  // 普通 Survey 同步等 answersheet_id；测评类（含行为能力）走 request_id → 报告等待页。
-  const isPureSurvey = questionnaire.type === 'Survey' && !submitAssessmentKind;
-
   try {
     submitResult = await submitAssessmentAndResolveAnswersheet(requestData, {
       idempotencyKey,
       requestId: submissionAttempt.requestId,
-      waitForCompletion: isPureSurvey,
-      onProgress: (progress) => {
-        activeRequestId = progress.requestId;
-        logger.RUN('[submitQuestionnaire] 队列处理中', {
-          requestId: progress.requestId,
-          attempt: progress.attempt,
-          maxAttempts: progress.maxAttempts,
-          status: progress.status,
-        });
-        if (typeof lifecycle?.onQueueProgress === 'function') {
-          lifecycle.onQueueProgress(progress);
-        }
-      },
-      onSuccess: (result) => {
-        if (typeof lifecycle?.onQueueCompleted === 'function') {
-          lifecycle.onQueueCompleted({ requestId: activeRequestId, statusResult: result });
-        }
-      },
     });
   } catch (error) {
     if (error && typeof error === 'object') {
@@ -115,19 +108,12 @@ export const submitQuestionnaire = async (questionnaire, writer_role_code, signi
   }
 
   const finalAnswersheetId = submitResult?.answersheet_id ?? submitResult?.id;
-  const queued = Boolean(submitResult?.queued);
   const requestId = submitResult?.request_id;
+  if (!finalAnswersheetId) {
+    throw new Error('答卷已返回但缺少 answersheet_id');
+  }
 
-  if (!isPureSurvey) {
-    if (!requestId) {
-      throw new Error('提交已受理但缺少 request_id，无法继续等待');
-    }
-    const assessmentKind = submitAssessmentKind || (
-      questionnaire.type === 'PersonalityAssessment'
-        ? ASSESSMENT_KIND.PERSONALITY
-        : ASSESSMENT_KIND.MEDICAL
-    );
-    saveSubmissionContext({
+	saveSubmissionContext({
       fingerprint: submissionAttempt.fingerprint,
       requestId,
       idempotencyKey,
@@ -136,32 +122,15 @@ export const submitQuestionnaire = async (questionnaire, writer_role_code, signi
       modelCode: submitContract.model_code,
       questionnaireCode: requestData.questionnaire_code,
       questionnaireVersion: requestData.questionnaire_version,
-      assessmentKind,
-      answersheetId: submitResult?.answersheet_id,
-      assessmentId: submitResult?.assessment_id,
-      phase: submitResult?.assessment_id ? 'assessment_ready' : 'submit_queued',
-    });
-  }
-
-  if (queued) {
-    logger.WARN('[submitQuestionnaire] 提交已入队，等待异步处理', {
-      requestId,
-      status: submitResult?.status ?? 'queued',
-    });
-    if (typeof lifecycle?.onQueued === 'function') {
-      lifecycle.onQueued({ requestId, submitResult });
-    }
-  } else {
-    logger.RUN('[submitQuestionnaire] 提交已直接完成', {
-      requestId,
-      answersheetId: finalAnswersheetId ?? null,
-    });
-  }
+    assessmentKind: submitAssessmentKind,
+    answersheetId: finalAnswersheetId,
+    phase: 'answersheet_accepted',
+  });
 
   logger.RUN('[submitQuestionnaire] 提交结束', {
     requestId,
     answersheetId: finalAnswersheetId,
-    mode: queued ? 'queued' : 'immediate',
+    mode: 'accepted',
   });
 
   return {
@@ -171,8 +140,7 @@ export const submitQuestionnaire = async (questionnaire, writer_role_code, signi
     idempotency_key: idempotencyKey,
     client_request_id: submissionAttempt.requestId,
     submission_attempt: submissionAttempt,
-    queued,
-    submit_mode: queued ? 'queued' : 'immediate',
+    submit_mode: 'accepted',
   };
 };
 

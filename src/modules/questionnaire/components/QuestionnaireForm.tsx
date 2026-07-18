@@ -280,27 +280,7 @@ export default function QuestionnaireForm({
           submitData,
           writerRoleCode,
           subSignid,
-          {
-            onQueued: ({ requestId }: { requestId: string }) => {
-              logger.WARN('[QuestionnaireForm] 提交已进入队列', {
-                requestId,
-                questionnaireCode: submitData.code
-              });
-              Taro.showLoading({
-                title: '排队处理中',
-                mask: true
-              });
-            },
-            onQueueCompleted: ({ requestId, statusResult }: {
-              requestId: string;
-              statusResult?: { answersheet_id?: string };
-            }) => {
-              logger.RUN('[QuestionnaireForm] 队列处理完成', {
-                requestId,
-                answersheetId: statusResult?.answersheet_id ?? null
-              });
-            }
-          },
+			{},
           { submitContract, submissionAttempt: submissionAttemptRef.current }
         );
       } catch (error: unknown) {
@@ -311,7 +291,7 @@ export default function QuestionnaireForm({
       logger.RUN('[QuestionnaireForm] 提交完成', {
         answersheetId: res.id,
         submitMode: res.submit_mode,
-        queued: res.queued
+		status: res.status
       });
       const submitResult = res as QuestionnaireSubmitResult;
       if (submitResult.id || submitResult.request_id) {

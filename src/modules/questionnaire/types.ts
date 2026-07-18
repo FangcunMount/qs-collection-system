@@ -80,9 +80,9 @@ export interface QuestionnaireSubmitResult {
   id?: string;
   answersheet_id?: string;
   assessment_id?: string;
-  request_id?: string;
-  submit_mode?: string;
-  queued?: boolean;
+	request_id?: string;
+	status?: string;
+	submit_mode?: string;
   submission_attempt?: unknown;
   [key: string]: unknown;
 }

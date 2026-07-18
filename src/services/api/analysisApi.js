@@ -1,6 +1,5 @@
 import { getAnswersheet } from './answersheetApi';
-import { pollAssessmentIdByAnswerSheet } from '@/modules/assessment/services/pollAssessmentIdByAnswerSheet';
-import { createMedicalAssessmentFetchItems } from '@/modules/assessment/services/medicalAssessmentIdResolver';
+import { waitMedicalAssessmentId } from '@/modules/assessment/services/waitMedicalAssessmentId';
 import { getMedicalAssessmentReport } from './assessmentApi';
 
 /**
@@ -29,13 +28,7 @@ export const getAssessmentReportByAnswersheetId = async (answersheetId, testeeId
     throw new Error('[analysisApi] 通过答卷ID获取测评详情失败，缺少 testeeId');
   }
 
-  const assessmentId = await pollAssessmentIdByAnswerSheet({
-    testeeId: resolvedTesteeId,
-    answerSheetId: aid,
-    maxAttempts: 1,
-    intervalMs: 0,
-    fetchItems: createMedicalAssessmentFetchItems(aid, resolvedTesteeId),
-  });
+	const assessmentId = await waitMedicalAssessmentId(resolvedTesteeId, aid, { maxAttempts: 1 });
 
   return getMedicalAssessmentReport(assessmentId, resolvedTesteeId);
 };
