@@ -1,14 +1,14 @@
 export {
   getAnswersheet,
   submitAnswersheet,
-  getSubmitStatus,
-  waitForSubmitCompletion,
+  getAssessmentReadiness,
+  waitForAssessmentReadiness,
   default,
 } from "./answersheetApi";
 
 export {
   getAnswersheet as getAssessmentResponse,
   submitAnswersheet as submitAssessmentResponse,
-  getSubmitStatus as getAssessmentResponseSubmissionStatus,
-  waitForSubmitCompletion as waitForAssessmentResponseSubmission,
+  getAssessmentReadiness as getAssessmentResponseReadiness,
+  waitForAssessmentReadiness as waitForAssessmentResponseReadiness,
 } from "./answersheetApi";

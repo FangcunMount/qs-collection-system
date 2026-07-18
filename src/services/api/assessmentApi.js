@@ -1,6 +1,5 @@
 import { request } from '../servers';
 import config from '../../config';
-import { waitForAssessmentReadiness } from './answersheetApi';
 import {
   COLLECTION_API_CAPABILITIES,
   createAssessmentsListUnavailableError,
@@ -110,28 +109,6 @@ export const mapMedicalReportPayload = (reportPayload = {}) => {
       suggestions: Array.isArray(report?.suggestions) ? report.suggestions : [],
     },
   };
-};
-
-/**
- * @deprecated 请使用 waitMedicalAssessmentId + getAssessmentReport；保留兼容旧 import。
- * 通过 AnswerSheet readiness 查询测评记录。
- */
-export const getAssessmentByAnswersheetId = async (answersheetId, options = {}) => {
-  const { testeeId, maxAttempts = 1, onAttempt, ...requestOptions } = options;
-  const normalizedTesteeId = testeeId ? String(testeeId) : '';
-
-  if (!normalizedTesteeId) {
-    throw new Error('缺少 testee_id，无法通过答卷查询测评记录');
-  }
-
-	const readiness = await waitForAssessmentReadiness(answersheetId, normalizedTesteeId, { maxAttempts, onAttempt });
-	const payload = { id: readiness?.assessment_id, status: readiness?.status };
-
-  if (requestOptions.suppressErrorToast) {
-    return payload;
-}
-
-  return payload;
 };
 
 /**
@@ -271,20 +248,11 @@ export const isReportWaitFailed = (status) => {
   return String(status || '').toLowerCase() === 'failed';
 };
 
-/** 通过答卷查测评：尚未创建时返回 pending，而非 404 */
-export const isAssessmentPending = (detail) => {
-  if (!detail || typeof detail !== 'object') {
-    return false;
-  }
-  return !detail.id && String(detail.status || '').toLowerCase() === 'pending';
-};
-
 export default {
   getAssessments,
   extractAssessmentList,
   normalizeAssessmentListItem,
   mapMedicalReportPayload,
-  getAssessmentByAnswersheetId,
   getAssessmentScores,
   getMedicalAssessmentReport,
   getAssessmentReport,
@@ -294,6 +262,5 @@ export default {
   getAssessmentReportStatus,
   waitAssessmentReport,
   isReportWaitCompleted,
-  isReportWaitFailed,
-  isAssessmentPending
+  isReportWaitFailed
 };

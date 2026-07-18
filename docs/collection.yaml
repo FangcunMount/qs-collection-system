@@ -73,14 +73,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/core.ErrResponse'
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
         '429':
           description: Too Many Requests
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/core.ErrResponse'
-        '500':
-          description: Internal Server Error
+        '503':
+          description: Service Unavailable
           content:
             application/json:
               schema:
@@ -91,20 +97,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/core.ErrResponse'
-  /api/v1/answersheets/submit-status:
+  /api/v1/answersheets/{id}/assessment-readiness:
     get:
       tags:
       - 答卷
-      summary: 查询提交状态
-      description: 根据 request_id 查询提交处理状态。只有 status=done 且同时返回 answersheet_id、assessment_id
-        才表示提交完成（人格/医学通用）；done 缺任一 ID 为契约异常，不能通过列表反查补全。
+      summary: 查询测评就绪状态
+      description: 校验答卷归属与 ProfileLink 后，返回 pending 或 ready。
       security:
       - BearerAuth: []
-      operationId: 查询提交状态
+      operationId: 查询测评就绪状态
       parameters:
+      - type: integer
+        description: 答卷ID
+        name: id
+        in: path
+        required: true
       - type: string
-        description: 请求ID
-        name: request_id
+        description: 受试者ID
+        name: testee_id
         in: query
         required: true
       responses:
@@ -118,9 +128,15 @@ paths:
                 - type: object
                   properties:
                     data:
-                      $ref: '#/components/schemas/answersheet.SubmitStatusResponse'
+                      $ref: '#/components/schemas/answersheet.AssessmentReadinessResponse'
         '400':
           description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/core.ErrResponse'
+        '403':
+          description: Forbidden
           content:
             application/json:
               schema:
@@ -131,14 +147,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/core.ErrResponse'
-        '429':
-          description: Too Many Requests
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/core.ErrResponse'
-        '500':
-          description: Internal Server Error
+        '503':
+          description: Service Unavailable
           content:
             application/json:
               schema:
@@ -1693,8 +1703,8 @@ paths:
       - 类型学测评
       summary: 开始类型学测评会话
       description: 小程序推荐入口。根据 model_code 聚合返回模型摘要、精确题版问卷、答卷提交契约与后续 URL 模板；不提前创建测评。推荐流程：session
-        → POST /answersheets → GET /answersheets/submit-status（done 时原子取得两个业务 ID）→ WSS /report-events
-        （subscribe.kind=personality，失败降级 GET .../report-status）→ GET .../report。模型目录 kind/product_channel
+        → POST /answersheets → GET /answersheets/{id}/assessment-readiness → GET .../report-status（或
+        WSS /report-events，subscribe.kind=personality）→ GET .../report。模型目录 kind/product_channel
         为 typology；报告 model.kind 仍为 personality。
       operationId: 开始类型学测评会话
       requestBody:
@@ -1750,8 +1760,7 @@ paths:
       tags:
       - 类型学测评
       summary: 查询类型学测评列表
-      description: 返回受试者人格测评列表。items[].answer_sheet_id 仅供历史链接恢复时匹配 assessment_id（id
-        字段）；新提交必须使用 submit-status=done 原子返回的 assessment_id，不能以列表匹配作为兜底。
+      description: 返回受试者人格测评列表。提交答卷后使用 answersheet assessment-readiness 取得 assessment_id；本列表用于历史测评浏览。
       operationId: 查询类型学测评列表
       parameters:
       - type: string
@@ -2249,9 +2258,22 @@ components:
           type: string
         writer_name:
           type: string
+    answersheet.AssessmentReadinessResponse:
+      type: object
+      properties:
+        answersheet_id:
+          type: string
+        assessment_id:
+          type: string
+        next_poll_after_ms:
+          type: integer
+        status:
+          type: string
     answersheet.SubmitAcceptedResponse:
       type: object
       properties:
+        answersheet_id:
+          type: string
         request_id:
           type: string
         status:
@@ -2260,6 +2282,7 @@ components:
       type: object
       required:
       - answers
+      - idempotency_key
       - questionnaire_code
       - questionnaire_version
       - testee_id
@@ -2270,6 +2293,8 @@ components:
             $ref: '#/components/schemas/github_com_FangcunMount_qs-server_internal_collection-server_application_answersheet.Answer'
         idempotency_key:
           type: string
+          maxLength: 128
+          minLength: 8
         questionnaire_code:
           type: string
         questionnaire_version:
@@ -2285,18 +2310,6 @@ components:
           example: '618855887087350318'
         title:
           type: string
-    answersheet.SubmitStatusResponse:
-      type: object
-      properties:
-        answersheet_id:
-          type: string
-        assessment_id:
-          description: AssessmentID 与 AnswerSheetID 共同构成 status=done 的完成不变量。
-          type: string
-        status:
-          type: string
-        updated_at:
-          type: integer
     behaviorassessment.AssessmentDetailResponse:
       type: object
       properties:
@@ -2550,7 +2563,7 @@ components:
       type: object
       properties:
         answer_sheet_id:
-          description: 关联答卷 ID；仅历史链接恢复可与 answersheet_id 匹配取得 assessment_id，新提交请使用 submit-status。
+          description: 关联答卷 ID；仅用于测评摘要展示与历史追溯。新提交通过 assessment-readiness 取得 assessment_id。
           type: string
         created_at:
           type: string
@@ -3509,9 +3522,7 @@ components:
     typologysession.SessionEndpointsResponse:
       type: object
       properties:
-        assessment_by_answer_sheet:
-          description: 已下线（R121）端点 URL 模板，勿调用。assessment_id 请用 GET /typology-assessments
-            列表按 answer_sheet_id 匹配。
+        assessment_readiness:
           type: string
         report:
           type: string

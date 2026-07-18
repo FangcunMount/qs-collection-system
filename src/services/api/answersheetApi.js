@@ -24,7 +24,7 @@ const isRetryableSubmitError = (error) => {
 };
 
 /**
- * 提交答卷。所有自动重试复用同一 idempotency_key 与 X-Request-Id；409 不重试。
+ * 提交答卷。所有自动重试复用同一 idempotency_key，每次 HTTP 尝试使用独立 X-Request-Id；409 不重试。
  */
 export const submitAnswersheet = async (data, options = {}) => {
   const payload = { ...data };
@@ -43,13 +43,14 @@ export const submitAnswersheet = async (data, options = {}) => {
 
   const maxAttempts = options.maxAttempts ?? 3;
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const attemptRequestId = attempt === 1 ? requestId : createRequestId();
     try {
       const result = await request('/answersheets', payload, {
         host: config.collectionHost,
         method: 'POST',
         needToken: true,
         suppressErrorToast: attempt < maxAttempts,
-        header: { 'X-Request-Id': requestId },
+        header: { 'X-Request-Id': attemptRequestId },
       });
       const normalized = normalizeIDs(result);
       if (String(normalized?.status || '').toLowerCase() !== 'accepted' || !normalized?.answersheet_id) {

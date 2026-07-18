@@ -143,9 +143,10 @@ assertContains(assessmentFillPage, /buildPostSubmitRedirectUrl/, 'fill page must
 assertNotContains(assessmentFillPage, /createPersonalitySession/, 'fill page must not call personality session API directly');
 assertContains(assessmentFillEntry, /resolveAssessmentEntry/, 'fill entry helper must resolve assessment entry tokens');
 assertContains(assessmentSubmitNavigation, /ASSESSMENT_KIND\.PERSONALITY/, 'submit navigation must pass personality kind to pending page');
-assertNotContains(medicalAssessmentApi, /\/answersheets\/\$\{String\(answersheetId\)\}\/assessment/, 'assessment API must not call deprecated answersheets assessment endpoint');
-assertNotContains(analysisApi, /\/answersheets\/\$\{aid\}\/assessment/, 'analysis API must not call deprecated answersheets assessment endpoint');
-assertContains(medicalAssessmentApi, /extractAssessmentList/, 'assessment API must extract list items for answer_sheet_id matching');
+assertNotContains(medicalAssessmentApi, /\/answersheets\/\$\{String\(answersheetId\)\}\/assessment(?:[?'"`]|$)/, 'assessment API must not call deprecated answersheets assessment endpoint');
+assertNotContains(analysisApi, /\/answersheets\/\$\{aid\}\/assessment(?:[?'"`]|$)/, 'analysis API must not call deprecated answersheets assessment endpoint');
+assertNotContains(medicalAssessmentApi, /getAssessmentByAnswersheetId|answer_sheet_id\s*===/, 'assessment API must not retain answersheet list-matching fallback');
+assertContains(medicalAssessmentApi, /extractAssessmentList/, 'assessment API must normalize the medical assessment records list');
 assertContains(medicalAssessmentApi, /\/assessments\/\$\{[^}]+\}\/report/, 'medical assessment API must fetch report via GET /assessments/{id}/report');
 assertContains(medicalAssessmentApi, /getMedicalAssessmentReport|mapMedicalReportPayload/, 'medical assessment API must map the medical report response');
 assertNotContains(analysisApi, /config\.collectionHost/, 'analysis API must delegate collection requests to assessmentApi');
