@@ -10,6 +10,15 @@ export function resolveAssessmentWaitResume(context = {}, now = Date.now()) {
   const persistedStartedAt = asTimestamp(context.assessmentWaitStartedAt);
   const phase = String(context.phase || '');
 
+  if (phase === 'assessment_failed') {
+    return {
+      phase: 'failure',
+      stage: 'assessment_failed',
+      message: String(context.statusMessage || '测评记录生成失败，请稍后重试'),
+      startedAt: persistedStartedAt || currentTime,
+    };
+  }
+
   if (phase === 'delayed') {
     return {
       phase: 'delayed',
@@ -42,4 +51,3 @@ export function resolveAssessmentStatusPhase(currentPhase, stage) {
   if (currentPhase === 'degraded') return 'degraded';
   return 'processing';
 }
-

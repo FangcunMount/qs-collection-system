@@ -29,6 +29,7 @@ export function normalizeSubmissionContext(value = {}) {
       value.assessmentWaitStartedAt || value.assessment_wait_started_at
     ),
     phase: toId(value.phase) || 'submit_prepared',
+    statusMessage: toId(value.statusMessage || value.status_message),
     updatedAt: Number(value.updatedAt || value.updated_at || Date.now()),
   };
 }

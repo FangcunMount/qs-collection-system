@@ -27,39 +27,85 @@ export async function waitAssessmentReportLifecycle({
   let assessmentId = assessmentIdFromUrl ? String(assessmentIdFromUrl) : '';
   let resolvedAnswerSheetId = answerSheetId ? String(answerSheetId) : '';
 
-	if (!assessmentId) {
-		if (!resolvedAnswerSheetId || !testeeId) {
-			throw new Error('缺少答卷或受试者编号，无法查询测评状态');
-		}
-		logger?.RUN?.('[waitAssessmentReportLifecycle] 阶段①：轮询 assessment-readiness', {
-			answerSheetId: resolvedAnswerSheetId,
-			testeeId,
-		});
-		const readiness = await waitForAssessmentReadiness(resolvedAnswerSheetId, testeeId, {
-			...assessmentLookupOptions,
-			shouldContinue,
-			onAttempt: (attempt, result, elapsedMs) => {
-				assessmentLookupOptions.onAttempt?.(attempt, result, elapsedMs);
-				onStatus?.({
-					status: 'processing',
-					stage: 'assessment_pending',
-					message: elapsedMs >= 60000 ? '答卷已接收，测评生成延迟' : '正在生成测评记录，请稍候...',
-				});
-			},
-			onDelayed: (elapsedMs, detail) => {
-				assessmentLookupOptions.onDelayed?.(elapsedMs, detail);
-				onStatus?.({
-					status: 'processing',
-					stage: 'assessment_delayed',
-					message: '答卷已接收，测评生成延迟',
-				});
-			},
-		});
-		if (readiness) {
-			assessmentId = String(readiness.assessment_id);
-			resolvedAnswerSheetId = String(readiness.answersheet_id || resolvedAnswerSheetId);
-			onSubmissionReady?.({ requestId: String(requestId || ''), answersheetId: resolvedAnswerSheetId, assessmentId });
-		}
+  if (!assessmentId) {
+    if (!resolvedAnswerSheetId || !testeeId) {
+      throw new Error('缺少答卷或受试者编号，无法查询测评状态');
+    }
+    logger?.RUN?.('[waitAssessmentReportLifecycle] 阶段①：轮询 assessment-readiness', {
+      answerSheetId: resolvedAnswerSheetId,
+      testeeId,
+    });
+    const readiness = await waitForAssessmentReadiness(resolvedAnswerSheetId, testeeId, {
+      ...assessmentLookupOptions,
+      shouldContinue,
+      onAttempt: (attempt, result, elapsedMs) => {
+        assessmentLookupOptions.onAttempt?.(attempt, result, elapsedMs);
+        onStatus?.({
+          status: 'processing',
+          stage: 'assessment_pending',
+          message: elapsedMs >= 60000 ? '答卷已接收，测评生成延迟' : '正在生成测评记录，请稍候...',
+        });
+      },
+      onDelayed: (elapsedMs, detail) => {
+        assessmentLookupOptions.onDelayed?.(elapsedMs, detail);
+        onStatus?.({
+          status: 'processing',
+          stage: 'assessment_delayed',
+          message: '答卷已接收，测评生成延迟',
+        });
+      },
+    });
+    if (!readiness) {
+      return {
+        cancelled: true,
+        source: 'assessment-readiness',
+        statusData: {},
+        answerSheetId: resolvedAnswerSheetId,
+      };
+    }
+
+    const readinessStatus = String(readiness.status || '').toLowerCase();
+    resolvedAnswerSheetId = readiness.answersheet_id
+      ? String(readiness.answersheet_id)
+      : resolvedAnswerSheetId;
+    if (readinessStatus === 'no_assessment_required') {
+      return {
+        source: 'assessment-readiness',
+        statusData: {
+          ...readiness,
+          status: 'no_assessment_required',
+          stage: 'no_assessment_required',
+          message: readiness.message || '答卷已提交，无需生成测评报告',
+        },
+        answerSheetId: resolvedAnswerSheetId,
+        requestId: requestId ? String(requestId) : '',
+      };
+    }
+    if (readinessStatus === 'failed') {
+      const failedResult = {
+        source: 'assessment-readiness',
+        failed: true,
+        statusData: {
+          ...readiness,
+          status: 'failed',
+          stage: 'assessment_failed',
+          message: readiness.message || readiness.reason || '测评记录生成失败，请稍后重试',
+        },
+        answerSheetId: resolvedAnswerSheetId,
+        requestId: requestId ? String(requestId) : '',
+      };
+      if (readiness.assessment_id) {
+        failedResult.assessmentId = String(readiness.assessment_id);
+      }
+      return failedResult;
+    }
+
+    assessmentId = readiness.assessment_id ? String(readiness.assessment_id) : '';
+    onSubmissionReady?.({
+      requestId: String(requestId || ''),
+      answersheetId: resolvedAnswerSheetId,
+      assessmentId,
+    });
   }
 
   if (!assessmentId) {

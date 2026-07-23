@@ -89,6 +89,7 @@ const AssessmentReportPendingPage = () => {
   const [phase, setPhase] = useState<ReportWaitPhase>("processing");
   const [message, setMessage] = useState("正在生成测评记录，请稍候...");
   const [stage, setStage] = useState("");
+  const [failureCanOpenReport, setFailureCanOpenReport] = useState(false);
   const [dots, setDots] = useState("");
   const isPollingRef = useRef(false);
   const runIdRef = useRef(0);
@@ -110,6 +111,7 @@ const AssessmentReportPendingPage = () => {
     setPhase(flowParams.initialPhase);
     setStage(flowParams.initialStage);
     setMessage(flowParams.initialMessage);
+    setFailureCanOpenReport(false);
 
     const isActive = () => isPollingRef.current && runIdRef.current === runId;
 
@@ -182,6 +184,13 @@ const AssessmentReportPendingPage = () => {
           answersheetId: string;
           assessmentId: string;
         }) => {
+          if (flowParamsRef.current) {
+            flowParamsRef.current = {
+              ...flowParamsRef.current,
+              answerSheetId: submission.answersheetId,
+              assessmentId: submission.assessmentId,
+            };
+          }
           saveSubmissionContext({
             requestId: submission.requestId,
             testeeId,
@@ -208,6 +217,48 @@ const AssessmentReportPendingPage = () => {
       const resolvedAssessmentId = toText(result.assessmentId);
       const resolvedAnswerSheetId = toText(result.answerSheetId || answerSheetId);
 
+      logger.RUN("[AnalysisWait] 等待结束", {
+        source: result.source,
+        assessmentId: resolvedAssessmentId,
+        status: statusData.status,
+        stage: statusData.stage,
+      });
+
+      if (statusData.status === "no_assessment_required") {
+        isPollingRef.current = false;
+        clearSubmissionContext();
+        Taro.redirectTo({
+          url: routes.assessmentResponse({
+            a: resolvedAnswerSheetId,
+            task_id: taskId || undefined,
+          }),
+        });
+        return;
+      }
+
+      if (strategy.isFailed(statusData.status)) {
+        const failureMessage = statusData.reason || statusData.message || "报告生成失败，请稍后重试";
+        if (statusData.stage) setStage(statusData.stage);
+        setPhase("failure");
+        setMessage(failureMessage);
+        const canOpenReport = result.source !== "assessment-readiness" && Boolean(resolvedAssessmentId);
+        setFailureCanOpenReport(canOpenReport);
+        if (result.source === "assessment-readiness") {
+          saveSubmissionContext({
+            requestId,
+            testeeId,
+            assessmentKind: strategy.kind,
+            answersheetId: resolvedAnswerSheetId,
+            assessmentId: "",
+            assessmentWaitStartedAt,
+            phase: "assessment_failed",
+            statusMessage: failureMessage,
+          });
+        }
+        isPollingRef.current = false;
+        return;
+      }
+
       saveSubmissionContext({
         requestId,
         testeeId,
@@ -217,19 +268,12 @@ const AssessmentReportPendingPage = () => {
         assessmentWaitStartedAt,
         phase: "report_processing",
       });
-
-      logger.RUN("[AnalysisWait] 等待结束", {
-        source: result.source,
-        assessmentId: resolvedAssessmentId,
-        status: statusData.status,
-        stage: statusData.stage,
-      });
-
-      if (strategy.isFailed(statusData.status)) {
-        setPhase("failure");
-        setMessage(statusData.reason || statusData.message || "报告生成失败，请稍后重试");
-        isPollingRef.current = false;
-        return;
+      if (flowParamsRef.current && resolvedAssessmentId) {
+        flowParamsRef.current = {
+          ...flowParamsRef.current,
+          answerSheetId: resolvedAnswerSheetId,
+          assessmentId: resolvedAssessmentId,
+        };
       }
 
       if (strategy.isCompleted(statusData.status) && resolvedAssessmentId) {
@@ -288,6 +332,7 @@ const AssessmentReportPendingPage = () => {
       assessmentKind: "",
       assessmentWaitStartedAt: 0,
       phase: "",
+      statusMessage: "",
     };
     const routeAssessmentId = toText(params.aid || resumeContext.assessmentId);
     const resume = resolveAssessmentWaitResume({
@@ -321,7 +366,15 @@ const AssessmentReportPendingPage = () => {
       return undefined;
     }
 
-    void startWaitFlow(flowParams);
+    if (flowParams.initialPhase === "failure") {
+      isPollingRef.current = false;
+      setPhase("failure");
+      setStage(flowParams.initialStage);
+      setMessage(flowParams.initialMessage);
+      setFailureCanOpenReport(false);
+    } else {
+      void startWaitFlow(flowParams);
+    }
     return () => {
       isPollingRef.current = false;
       runIdRef.current += 1;
@@ -448,9 +501,11 @@ const AssessmentReportPendingPage = () => {
 
           {phase === "failure" ? (
             <View className="wait-actions">
-              <ActionButton variant="secondary" tone="medical" block onClick={openReport}>
-                查看报告
-              </ActionButton>
+              {failureCanOpenReport ? (
+                <ActionButton variant="secondary" tone="medical" block onClick={openReport}>
+                  查看报告
+                </ActionButton>
+              ) : null}
               <ActionButton variant="ghost" tone="neutral" block onClick={() => Taro.navigateBack()}>
                 返回
               </ActionButton>

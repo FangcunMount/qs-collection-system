@@ -40,4 +40,14 @@ describe('submission context compatibility', () => {
     });
     expect(normalizeSubmissionContext({}).assessmentWaitStartedAt).toBe(0);
   });
+
+  test('preserves readiness terminal message for page recovery', () => {
+    expect(normalizeSubmissionContext({
+      phase: 'assessment_failed',
+      status_message: '模型校验失败',
+    })).toMatchObject({
+      phase: 'assessment_failed',
+      statusMessage: '模型校验失败',
+    });
+  });
 });

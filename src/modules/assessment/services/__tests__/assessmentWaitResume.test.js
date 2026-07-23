@@ -28,4 +28,17 @@ describe('assessment wait restart recovery', () => {
     expect(resolveAssessmentStatusPhase('delayed', 'assessment_delayed')).toBe('delayed');
     expect(resolveAssessmentStatusPhase('delayed', 'scoring')).toBe('processing');
   });
+
+  test('restores readiness failure as terminal until the user explicitly retries', () => {
+    expect(resolveAssessmentWaitResume({
+      phase: 'assessment_failed',
+      statusMessage: '模型校验失败',
+      assessmentWaitStartedAt: 1234,
+    }, 100000)).toEqual({
+      phase: 'failure',
+      stage: 'assessment_failed',
+      message: '模型校验失败',
+      startedAt: 1234,
+    });
+  });
 });

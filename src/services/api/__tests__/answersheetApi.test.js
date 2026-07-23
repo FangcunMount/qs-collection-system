@@ -86,4 +86,26 @@ describe('answersheet reliable API', () => {
     now.mockRestore();
     expect(delayed).toHaveBeenCalledWith(69000, expect.objectContaining({ statusCode: 503 }));
   });
+
+  test.each([
+    ['no_assessment_required', { status: 'no_assessment_required', answersheet_id: '42' }],
+    ['failed', { status: 'failed', answersheet_id: '42', assessment_id: '99' }],
+  ])('returns terminal readiness phase %s without polling or collapsing it into a generic error', async (_phase, readiness) => {
+    const wait = jest.fn();
+    await expect(waitForAssessmentReadiness('42', '7', {
+      fetchReadiness: async () => readiness,
+      delay: wait,
+    })).resolves.toEqual(readiness);
+    expect(wait).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    [{ status: 'ready', answersheet_id: '42' }, 'ready 状态缺少 assessment_id'],
+    [{ status: 'mystery', answersheet_id: '42' }, '未知状态 mystery'],
+  ])('rejects malformed or unknown readiness protocol payloads', async (readiness, reason) => {
+    await expect(waitForAssessmentReadiness('42', '7', {
+      fetchReadiness: async () => readiness,
+      delay: async () => {},
+    })).rejects.toThrow(reason);
+  });
 });

@@ -105,8 +105,12 @@ export const waitForAssessmentReadiness = async (answerSheetId, testeeId, option
     const status = String(readiness?.status || '').toLowerCase();
     const elapsedMs = Date.now() - startedAt;
     options.onAttempt?.(attempt, readiness, elapsedMs);
-    if (status === 'ready' && readiness.assessment_id) return readiness;
-    if (status !== 'pending') throw new Error('测评就绪状态异常，请稍后重试');
+    if (status === 'ready') {
+      if (!readiness.assessment_id) throw new Error('测评就绪协议异常：ready 状态缺少 assessment_id');
+      return readiness;
+    }
+    if (status === 'no_assessment_required' || status === 'failed') return readiness;
+    if (status !== 'pending') throw new Error(`测评就绪协议异常：未知状态 ${status || '<empty>'}`);
     if (elapsedMs >= 60000) options.onDelayed?.(elapsedMs, readiness);
     await wait(Number(readiness.next_poll_after_ms) > 0 ? Number(readiness.next_poll_after_ms) : 2000);
   }
