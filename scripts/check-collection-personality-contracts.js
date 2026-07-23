@@ -170,7 +170,9 @@ const assessmentKind = read('src/shared/lib/assessmentKind.js');
 
 assertContains(assessmentKind, /isTypologyCatalogModel/, 'assessmentKind must expose isTypologyCatalogModel');
 assertContains(assessmentKind, /isTypologyAssessmentModel/, 'assessmentKind must expose isTypologyAssessmentModel');
-assertContains(mappers, /product_channel|productChannel/, 'model mapper must read product_channel');
+assertContains(mappers, /kind: model\.kind/, 'model mapper must retain canonical kind');
+assertContains(mappers, /algorithm/, 'model mapper must retain canonical algorithm');
+assertNotContains(mappers, /sub_kind|product_channel|algorithm_family/, 'model mapper must not read retired identity fields');
 
 assertContains(
   waitForReportReady,

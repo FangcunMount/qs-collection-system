@@ -24,11 +24,13 @@ const catalogRequest = (path, params = {}, { needToken = false } = {}) => {
 // stay “量表”, while the transport contract is the generic model catalogue.
 export const listPublishedAssessmentModels = ({
   kind = 'scale',
+  kinds,
   category,
   page = 1,
   pageSize = 20,
 } = {}) => catalogRequest('/assessment-models', {
   kind,
+  kinds: Array.isArray(kinds) ? kinds.join(',') : kinds,
   category,
   page,
   page_size: pageSize,

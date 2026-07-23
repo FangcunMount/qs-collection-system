@@ -186,7 +186,7 @@ const reportFailedFixture = readJson('src/modules/assessment/__fixtures__/person
 
   const mbti = normalizePersonalityModel(models.find((item) => /^MBTI_/i.test(String(item.code || ''))));
   assert(mbti.algorithm === 'personality_typology', 'shared typology algorithm');
-  assert(mbti.productChannel === 'typology', 'model productChannel');
+  assert(mbti.kind === 'typology' && mbti.algorithm === 'personality_typology', 'model canonical identity');
   assert(typeof mbti.id === 'string' || mbti.id === '', 'model id normalized to string when present');
 }
 
