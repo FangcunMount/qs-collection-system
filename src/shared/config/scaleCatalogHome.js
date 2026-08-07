@@ -16,11 +16,3 @@ export const SCALE_MEDICAL_CATEGORY_VALUES = Object.freeze(
 export const isMedicalScaleCategory = (category) => (
   SCALE_MEDICAL_CATEGORY_VALUES.includes(String(category || '').trim())
 );
-
-// Keep the catalogue backward-compatible while the historical null-category
-// snapshots are being backfilled. Once the backfill completes, only the
-// canonical medical categories remain visible; `personality` is excluded.
-export const isVisibleInMedicalScaleCatalog = (category) => {
-  const normalized = String(category || '').trim();
-  return normalized === '' || isMedicalScaleCategory(normalized);
-};

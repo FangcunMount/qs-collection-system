@@ -10,7 +10,7 @@ import SectionHeader from "@/shared/ui/SectionHeader";
 import StatePanel from "@/shared/ui/StatePanel";
 import SurfaceCard from "@/shared/ui/SurfaceCard";
 import { routes } from "@/shared/config/routes";
-import { SCALE_COMMON_CATEGORIES, isVisibleInMedicalScaleCatalog } from "@/shared/config/scaleCatalogHome";
+import { SCALE_COMMON_CATEGORIES, isMedicalScaleCategory } from "@/shared/config/scaleCatalogHome";
 import { buildAssessmentScanTargetUrl, isScanCancelError } from "@/shared/lib/entryScan";
 import { listHotPublishedAssessmentModels } from "@/services/api/assessmentModelCatalogApi";
 import { getLogger } from "@/shared/lib/logger";
@@ -47,7 +47,7 @@ const ScaleCatalogPage = () => {
 	  const payload = result.data || result;
 	  const models: unknown[] = Array.isArray(payload.models) ? payload.models : [];
 	  setHotScales(models.map(mapMedicalCatalogCard).filter(
-        (scale) => isVisibleInMedicalScaleCatalog(scale.category)
+        (scale) => isMedicalScaleCategory(scale.category)
       ));
     } catch (error) {
       console.error("加载热门量表失败:", error);

@@ -240,8 +240,13 @@ const scaleCatalogHome = read('src/shared/config/scaleCatalogHome.js');
 });
 assertContains(
   scaleListPage,
-  /isVisibleInMedicalScaleCatalog\(scale\.category\)/,
+  /isMedicalScaleCategory\(scale\.category\)/,
   'scale list must exclude non-medical categories from the medical catalogue'
+);
+assertNotContains(
+  scaleCatalogHome,
+  /normalized\s*===\s*['"]['"]|isVisibleInMedicalScaleCatalog/,
+  'scale catalogue must not retain the historical empty-category visibility fallback'
 );
 assertContains(
   assessmentModelCatalogApi,

@@ -8,7 +8,7 @@ import PageShell from "@/shared/ui/PageShell";
 import StatePanel from "@/shared/ui/StatePanel";
 import SurfaceCard from "@/shared/ui/SurfaceCard";
 import { routes } from "@/shared/config/routes";
-import { SCALE_COMMON_CATEGORIES, isVisibleInMedicalScaleCatalog } from "@/shared/config/scaleCatalogHome";
+import { SCALE_COMMON_CATEGORIES, isMedicalScaleCategory } from "@/shared/config/scaleCatalogHome";
 import { listPublishedAssessmentModels } from "@/services/api/assessmentModelCatalogApi";
 import { getLogger } from "@/shared/lib/logger";
 import {
@@ -102,7 +102,7 @@ const ScaleListPage = () => {
         const payload = (result.data || result) as Record<string, unknown>;
         const models: unknown[] = Array.isArray(payload.models) ? payload.models : [];
         collected.push(...models.map(mapMedicalCatalogCard).filter(
-          (scale) => isVisibleInMedicalScaleCatalog(scale.category)
+          (scale) => isMedicalScaleCategory(scale.category)
         ));
         total = Number(payload.total || collected.length);
         const responsePageSize = Number(payload.page_size || 20);
