@@ -116,7 +116,8 @@ export const login = async (code, appId) => {
     }, {
       host: config.iamHost,
       method: 'POST',
-      needToken: false
+      needToken: false,
+      logPolicy: 'metadata_only'
     });
 
     const result = createTokenResult(payload);
@@ -158,7 +159,8 @@ export const refreshToken = async (refreshTokenValue) => {
     }, {
       host: config.iamHost,
       method: 'POST',
-      needToken: false
+      needToken: false,
+      logPolicy: 'metadata_only'
     });
 
     const result = createTokenResult(payload);
@@ -199,6 +201,7 @@ export const logout = async (accessToken, refreshTokenValue) => {
       host: config.iamHost,
       method: 'POST',
       needToken: false,
+      logPolicy: 'metadata_only',
       header: accessToken ? { Authorization: `Bearer ${accessToken}` } : {}
     });
     return { ok: true, raw: payload };

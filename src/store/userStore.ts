@@ -1,3 +1,4 @@
+import { getSessionRevision, onSessionCleared } from '@/shared/stores/sessionPrivacy';
 import { getAccountProfile } from '@/services/api/account';
 
 /**
@@ -170,7 +171,9 @@ const put = ({ type, payload }: { type: string; payload?: any }): void => {
 const effects: Record<string, Effect> = {
   async getUserInfo(_: any, helpers: EffectHelpers = { call, put }): Promise<UserInfo | null> {
     // 使用新的 IAM Identity API
+    const revision = getSessionRevision();
     const rawResponse = await helpers.call(getAccountProfile);
+    if (revision !== getSessionRevision()) return null;
     if (!rawResponse) {
       return null;
     }
@@ -207,7 +210,9 @@ const effects: Record<string, Effect> = {
   },
   async fetchCurrent(_: any, helpers: EffectHelpers = { call, put }): Promise<any> {
     // 使用新的 IAM Identity API
+    const revision = getSessionRevision();
     const response = await helpers.call(getAccountProfile);
+    if (revision !== getSessionRevision()) return null;
     if (response) {
       helpers.put({ type: 'saveCurrentUser', payload: response });
     }
@@ -301,17 +306,20 @@ export async function initUserStore(force: boolean = false): Promise<UserStoreSt
     });
   }
 
+  const revision = getSessionRevision();
   dispatch('setLoading', true);
 
   try {
     await runEffect('getUserInfo');
+    if (revision !== getSessionRevision()) return cloneState();
     dispatch('setInitialized', true);
   } catch (error) {
+    if (revision !== getSessionRevision()) return cloneState();
     console.error('[UserStore] 初始化失败:', error);
     dispatch('setInitialized', false);
     dispatch('save', { userInfo: null });
   } finally {
-    dispatch('setLoading', false);
+    if (revision === getSessionRevision()) dispatch('setLoading', false);
   }
 
   const result = cloneState();
@@ -332,3 +340,6 @@ const UserModel = {
 };
 
 export default UserModel;
+
+// Account identity must not survive logout or a late profile response.
+onSessionCleared(resetUserStore);

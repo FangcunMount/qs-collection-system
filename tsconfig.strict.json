@@ -7,6 +7,15 @@
     "types": ["node", "react", "react-dom", "jest"]
   },
   "include": [
+    "src/services/api/aiExplanationApi.ts",
+    "src/services/requestLifetime.ts",
+    "src/shared/stores/sessionPrivacy.ts",
+    "src/modules/assessment/hooks/useAIExplanation.ts",
+    "src/modules/assessment/services/aiExplanation*.ts",
+    "src/modules/assessment/services/waitForAIExplanation.ts",
+    "src/modules/assessment/components/ai-explanation/**/*.tsx",
+    "src/modules/assessment/pages/AIExplanationPage.tsx",
+    "src/pages/assessment/ai-explanation/index.tsx",
     "src/types/**/*.d.ts",
     "src/shared/ui/**/*.ts",
     "src/shared/ui/**/*.tsx",

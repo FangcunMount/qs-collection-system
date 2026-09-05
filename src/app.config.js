@@ -45,6 +45,7 @@ export default {
         'records/index',
         'response/index',
         'report/index',
+        'ai-explanation/index',
         'personality-report/index',
         'report-trend/index',
         'report-pending/index',

@@ -26,6 +26,7 @@ import { buildBehaviorReportViewModel } from "../viewModels/behaviorReport";
 import type { BehaviorReportViewModel, MedicalReportViewModel } from "../types";
 import BehaviorReportContent from "../components/report/BehaviorReportContent";
 import MedicalReportContent from "../components/report/MedicalReportContent";
+import AIExplanationEntryCard from "../components/ai-explanation/AIExplanationEntryCard";
 import MedicalReportOverview from "../components/report/MedicalReportOverview";
 import MedicalReportTrendSummary from "../components/report/MedicalReportTrendSummary";
 import ReportCompletionAction from "../components/report/ReportCompletionAction";
@@ -182,6 +183,7 @@ const AssessmentReportPage = () => {
           ) : (
             <>
               <MedicalReportOverview report={report} />
+              <AIExplanationEntryCard {...assessmentContext} />
               <PlanSubscribeConfirm
                 taskId={planTaskId}
                 planName={entryContext?.plan_name}

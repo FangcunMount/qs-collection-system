@@ -1,0 +1,33 @@
+@import "../../../../styles/tokens.less";
+
+.ai-explanation {
+  color: @text-color-primary;
+  &__page { padding: @space-5; }
+  &__stack { display: flex; flex-direction: column; gap: @space-4; }
+  &__row { display: flex; align-items: center; justify-content: space-between; gap: @space-3; }
+  &__row--leading { justify-content: flex-start; }
+  &__title { display: block; font-size: @font-size-section-title; font-weight: @font-weight-medium; line-height: @line-height-heading; }
+  &__heading { display: block; font-size: @font-size-card-title; font-weight: @font-weight-medium; line-height: @line-height-heading; }
+  &__body { display: block; white-space: pre-wrap; word-break: break-all; font-size: @font-size-body; line-height: @line-height-body; }
+  &__caption, &__label { display: block; font-size: @font-size-caption; color: @text-color-secondary; line-height: @line-height-body; }
+  &__label { color: @color-medical-700; margin-bottom: @space-2; }
+  &__notice { background: @color-warning-50; color: @color-warning-700; padding: @space-4; border-radius: @radius-card; font-size: @font-size-body; }
+  &__caution { color: @color-warning-700; font-size: @font-size-body; line-height: @line-height-body; white-space: pre-wrap; }
+  &__boundary { padding-top: @space-4; border-top: 1rpx solid @border-color-base; }
+  &__entry { margin-top: @space-4; margin-bottom: @space-4; }
+  &__art { flex-shrink: 0; }
+  &__art--hero { width: 352rpx; height: 352rpx; margin: 0 auto; }
+  &__art--entry { width: 176rpx; height: 176rpx; }
+  &__art--small { width: 104rpx; height: 104rpx; }
+  &__image { width: 100%; height: 100%; }
+  &__wait { text-align: center; }
+  &__dots { display: flex; gap: 14rpx; justify-content: center; padding: @space-3; }
+  &__dots > view { width: 12rpx; height: 12rpx; border-radius: 50%; background: @color-medical-600; opacity: .4; }
+  &--motion &__dots > view { animation: ai-explanation-wait 1.6s ease-in-out infinite; }
+  &--motion &__dots > view:nth-child(2) { animation-delay: .18s; }
+  &--motion &__dots > view:nth-child(3) { animation-delay: .36s; }
+  &--motion &__complete { animation: ai-explanation-complete .22s ease-out both; }
+}
+@keyframes ai-explanation-wait { 0%,80%,100% { opacity: .4; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-6rpx); } }
+@keyframes ai-explanation-complete { from { opacity: 0; transform: translateY(8rpx); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .ai-explanation .ai-explanation__dots > view, .ai-explanation .ai-explanation__complete { animation: none; } }

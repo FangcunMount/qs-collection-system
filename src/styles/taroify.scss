@@ -1,6 +1,9 @@
 // Centralized Taroify style manifest. Add a component here only after a Qlume
 // adapter adopts it; importing @taroify/core/index.css is intentionally banned.
 @use "@taroify/icons/index.scss" as icons;
+// Button's native overlay must be positioned outside the flex layout. The
+// button SCSS entry does not include this dependency (its JS style entry does).
+@use "@taroify/core/button-base/index.scss" as buttonBase;
 @use "@taroify/core/button/index.scss" as button;
 @use "@taroify/core/checkbox/index.scss" as checkbox;
 @use "@taroify/core/dialog/index.scss" as dialog;

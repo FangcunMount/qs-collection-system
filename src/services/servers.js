@@ -1,4 +1,5 @@
 import Taro from '@tarojs/taro';
+import { requestCancelled } from './requestLifetime';
 
 import config from '@/config.js';
 import { getUrl } from '@/shared/lib/url';
@@ -45,28 +46,28 @@ function appendQueryParams(url, query = {}) {
   return `${url}${separator}${pairs.join('&')}`;
 }
 
-function getConfigToken() {
+function getConfigToken(quiet = false) {
   const configToken = config.token;
   if (configToken !== undefined && configToken !== null) {
-    console.info('[Load Token] 从 config 配置获取 token, 长度:', configToken.length);
+    if (!quiet) console.info('[Load Token] 从 config 配置获取 token, 长度:', configToken.length);
     return configToken;
   }
   return null;
 }
 
-function loadToken() {
-  const configToken = getConfigToken();
+function loadToken(quiet = false) {
+  const configToken = getConfigToken(quiet);
   if (configToken) {
     return configToken;
   }
 
   const accessToken = getAccessToken();
   if (accessToken) {
-    console.info('[Load Token] 从 TokenStore 获取到 access_token, 长度:', accessToken.length);
+    if (!quiet) console.info('[Load Token] 从 TokenStore 获取到 access_token, 长度:', accessToken.length);
     return accessToken;
   }
 
-  console.warn('[Load Token] ⚠️ 未找到 token');
+  if (!quiet) console.warn('[Load Token] ⚠️ 未找到 token');
   return null;
 }
 
@@ -74,12 +75,13 @@ function loadToken() {
  * 通用请求函数，自动处理 token 和错误
  * @param {string} url - API 路径
  * @param {object} params - 请求参数
- * @param {object} options - 请求选项
- * @param {string} options.host - 可选的自定义域名（如 config.iamHost, config.collectionHost）
+ * @param {Record<string, any>} options - 请求选项（host 可选择 API 域名）
  * @returns
  */
 export async function request(url, params = {}, options = {}) {
-  console.log('[Request] 请求 URL:', url, '参数:', params, '选项:', options);
+  const quiet = options.logPolicy === 'metadata_only';
+  assertActive(options);
+  if (!quiet) console.log('[Request] 请求 URL:', url, '参数:', params, '选项:', options);
 
   const requestParams = interceptorsRequest({
     ...options,
@@ -87,22 +89,23 @@ export async function request(url, params = {}, options = {}) {
     data: params
   });
 
-  const configToken = getConfigToken();
+  const configToken = getConfigToken(quiet);
   const shouldHandleAuth = requestParams.needToken && !configToken;
-  console.info('[Request] 鉴权上下文', summarizeRequestAuth(requestParams, { shouldHandleAuth }));
+  if (!quiet) console.info('[Request] 鉴权上下文', summarizeRequestAuth(requestParams, { shouldHandleAuth }));
 
   if (shouldHandleAuth) {
     try {
-      const token = await sessionManager.ensureValidAccessToken({ allowInteractiveLogin: true });
+      const token = await sessionManager.ensureValidAccessToken({ allowInteractiveLogin: options.allowInteractiveLogin ?? true });
+      assertActive(requestParams);
       requestParams.header['Authorization'] = `Bearer ${token}`;
-      console.info('[Request] 已注入可用 access token', {
+      if (!quiet) console.info('[Request] 已注入可用 access token', {
         url: requestParams.url,
         tokenLength: token?.length ?? 0
       });
     } catch (error) {
-      console.error('[Request] 获取可用 access_token 失败:', error);
+      if (!quiet) console.error('[Request] 获取可用 access_token 失败:', error);
 
-      if (!error?.reason || (error.reason !== 'session_expired' && error.reason !== 'unregistered')) {
+      if (!options.suppressErrorToast && (!error?.reason || (error.reason !== 'session_expired' && error.reason !== 'unregistered'))) {
         Taro.showToast({
           title: String(error?.message ?? '请求失败'),
           icon: 'none'
@@ -112,12 +115,13 @@ export async function request(url, params = {}, options = {}) {
       throw error;
     }
   } else {
-    const token = loadToken();
+    const token = loadToken(quiet);
     if (requestParams.needToken && token) {
       requestParams.header['Authorization'] = `Bearer ${token}`;
     }
   }
 
+  assertActive(requestParams);
   return baseRequest(requestParams, {
     authRetryCount: 0,
     qpsRetryCount: 0,
@@ -149,8 +153,9 @@ function readHeader(headers = {}, name) {
 }
 
 function resolveRetryAfterMs(meta = {}, fallbackMs = 0) {
-  const headerValue = Number(readHeader(meta.headers, 'Retry-After'));
-  const headerDelayMs = Number.isFinite(headerValue) && headerValue > 0 ? headerValue * 1000 : 0;
+  const raw = readHeader(meta.headers, 'Retry-After');
+  const headerValue = Number(raw);
+  const headerDelayMs = Number.isFinite(headerValue) ? Math.max(0, headerValue * 1000) : Math.max(0, Date.parse(raw) - Date.now()) || 0;
   const payload = meta.payload && typeof meta.payload === 'object' ? meta.payload : {};
   const bodyDelayMs = Number(payload.retry_after_ms || payload.next_poll_after_ms || 0);
   return Math.max(headerDelayMs, Number.isFinite(bodyDelayMs) ? bodyDelayMs : 0, fallbackMs);
@@ -168,11 +173,18 @@ function createRequestError(meta, extra = {}) {
   };
 }
 
+function assertActive(params) {
+  if (params.lifetime && !params.lifetime.isActive()) throw requestCancelled();
+}
+
 async function retryWithFreshToken(params, context) {
-  console.info('[BaseRequest] 开始强制刷新并重放请求', summarizeRequestAuth(params, context));
+  assertActive(params);
+  const quiet = params.logPolicy === 'metadata_only';
+  if (!quiet) console.info('[BaseRequest] 开始强制刷新并重放请求', summarizeRequestAuth(params, context));
   const newToken = await sessionManager.refreshSession();
+  assertActive(params);
   params.header['Authorization'] = `Bearer ${newToken}`;
-  console.info('[BaseRequest] 强制刷新成功，准备重放请求', {
+  if (!quiet) console.info('[BaseRequest] 强制刷新成功，准备重放请求', {
     url: params.url,
     newTokenLength: newToken?.length ?? 0,
     nextAuthRetryCount: context.authRetryCount + 1
@@ -184,12 +196,36 @@ async function retryWithFreshToken(params, context) {
 }
 
 function baseRequest(params, context) {
+  assertActive(params);
+  const quiet = params.logPolicy === 'metadata_only';
+  const startedAt = Date.now();
   if (params.isNeedLoading) {
     Taro.showLoading({ title: params.loadingText });
   }
 
-  return new Promise((resolve, reject) => {
-    Taro.request({
+  return new Promise((resolvePromise, rejectPromise) => {
+    let settled = false;
+    let unsubscribe = () => {};
+    let task;
+    const finish = (callback, value) => {
+      if (settled) return;
+      settled = true;
+      unsubscribe();
+      callback(value);
+    };
+    const resolve = value => finish(resolvePromise, value);
+    const reject = error => finish(rejectPromise, error);
+    const cancelled = () => {
+      if (settled) return true;
+      if (params.lifetime && !params.lifetime.isActive()) { reject(requestCancelled()); return true; }
+      return false;
+    };
+    unsubscribe = params.lifetime?.onCancel(() => {
+      reject(requestCancelled());
+      task?.abort?.();
+    }) || unsubscribe;
+    if (cancelled()) return;
+    task = Taro.request({
       ...params,
       complete: () => {
         if (params.isNeedLoading) {
@@ -197,21 +233,23 @@ function baseRequest(params, context) {
         }
       },
       success: async (res) => {
+        if (cancelled()) return;
         const meta = extractResponseMeta(res);
 
-        console.log('[BaseRequest] 原始响应:', {
+        if (quiet) console.info('[Request]', { method: params.method, statusCode: meta.statusCode, code: meta.code, elapsedMs: Date.now() - startedAt });
+        if (!quiet) console.log('[BaseRequest] 原始响应:', {
           statusCode: meta.statusCode,
           data: meta.data,
           dataType: typeof meta.data,
-          hasDataField: 'data' in meta.data,
+          hasDataField: meta.data && typeof meta.data === 'object' && 'data' in meta.data,
           dataKeys: Object.keys(meta.data)
         });
 
         if (meta.statusCode === QPS_STATUS_CODE) {
           const retryAfterMs = resolveRetryAfterMs(meta);
-          if (context.qpsRetryCount >= QPS_RETRY_LIMIT) {
+          if (params.retry429 === false || context.qpsRetryCount >= QPS_RETRY_LIMIT) {
             const throttledMessage = meta.data?.message || meta.data?.errmsg || '请求过于频繁，请稍候再试';
-            console.warn('[BaseRequest] 接口返回 429，重试次数已达上限', {
+            if (!quiet) console.warn('[BaseRequest] 接口返回 429，重试次数已达上限', {
               url: params.url,
               qpsRetry: context.qpsRetryCount,
               limit: QPS_RETRY_LIMIT
@@ -242,6 +280,7 @@ function baseRequest(params, context) {
             limit: QPS_RETRY_LIMIT
           });
           setTimeout(() => {
+            if (cancelled()) return;
             baseRequest(params, {
               ...context,
               qpsRetryCount: nextAttempt
@@ -256,8 +295,8 @@ function baseRequest(params, context) {
         }
 
         const authCode = meta.code || String(meta.statusCode || '');
-        if (context.shouldHandleAuth && isSessionExpiredCode(authCode)) {
-          console.warn('[BaseRequest] 收到会话失效响应，尝试强制刷新 token', {
+        if (context.shouldHandleAuth && isSessionExpiredCode(authCode) && !(params.refreshOnForbidden === false && (meta.statusCode === 403 || authCode === '403'))) {
+          if (!quiet) console.warn('[BaseRequest] 收到会话失效响应，尝试强制刷新 token', {
             url: params.url,
             statusCode: meta.statusCode,
             code: authCode,
@@ -266,7 +305,7 @@ function baseRequest(params, context) {
           });
 
           if (context.authRetryCount >= 1) {
-            console.error('[BaseRequest] Token 刷新后仍然鉴权失败，结束当前会话');
+            if (!quiet) console.error('[BaseRequest] Token 刷新后仍然鉴权失败，结束当前会话');
             sessionManager.clearSession('session_expired', { navigateHome: true });
             reject(createRequestError(meta, { needRelogin: true }));
             return;
@@ -276,7 +315,9 @@ function baseRequest(params, context) {
             const retryResult = await retryWithFreshToken(params, context);
             resolve(retryResult);
           } catch (error) {
-            console.error('[BaseRequest] 强制刷新 token 失败:', {
+            if (cancelled()) return;
+            if (error?.code === 'REQUEST_CANCELLED') { reject(error); return; }
+            if (!quiet) console.error('[BaseRequest] 强制刷新 token 失败:', {
               url: params.url,
               reason: error?.reason,
               code: error?.code,
@@ -317,6 +358,7 @@ function baseRequest(params, context) {
         resolve(meta.payload);
       },
       fail: (err) => {
+        if (cancelled()) return;
         const message = err?.message ?? '请求失败';
         if (!params.suppressErrorToast) {
           Taro.showToast({ title: message, icon: 'none' });
@@ -344,20 +386,25 @@ function interceptorsRequest(options) {
   const requestParam = {
     url: options.url ?? defaultConfig.url,
     data: options.data ?? defaultConfig.data,
-    header: options.header ?? defaultConfig.header,
+    header: { ...(options.header ?? defaultConfig.header) },
     method: options.method ?? defaultConfig.method,
     dataType: options.dataType ?? defaultConfig.dataType,
     responseType: options.responseType ?? defaultConfig.responseType,
     isNeedLoading: options.isNeedLoading ?? defaultConfig.isNeedLoading,
     loadingText: options.loadingText ?? defaultConfig.loadingText,
     needToken: options.needToken ?? defaultConfig.needToken,
-    suppressErrorToast: options.suppressErrorToast ?? defaultConfig.suppressErrorToast
+    suppressErrorToast: options.suppressErrorToast ?? defaultConfig.suppressErrorToast,
+    retry429: options.retry429 ?? true,
+    refreshOnForbidden: options.refreshOnForbidden ?? true,
+    logPolicy: options.logPolicy,
+    lifetime: options.lifetime,
+    timeout: options.timeout ?? 60000
   };
 
-  const token = loadToken();
-  console.log('[InterceptorsRequest] 设置 token 到 header', {
+  const quiet = options.logPolicy === 'metadata_only';
+  const token = loadToken(quiet);
+  if (!quiet) console.log('[InterceptorsRequest] 设置 token 到 header', {
     hasToken: !!token,
-    token: token?.substring(0, 20) + '...',
     url: requestParam.url
   });
   if (token && requestParam.needToken) {

@@ -1,3 +1,4 @@
+import { getSessionRevision } from '@/shared/stores/sessionPrivacy';
 import config from '@/config.js';
 import { getWxApi } from '@/shared/platform/weapp/wxApi';
 import {
@@ -101,11 +102,13 @@ async function getWechatLoginCode() {
 }
 
 async function performLogin() {
+  const revision = getSessionRevision();
   logSessionEvent('开始执行登录流程', {
     appId: config.appId
   });
   const code = await getWechatLoginCode();
   const result = await iamAuthn.login(code, config.appId);
+  if (revision !== getSessionRevision()) throw createSessionError('session_changed', '会话已改变');
 
   if (result.ok) {
     logSessionEvent('登录流程成功');
@@ -125,6 +128,7 @@ async function performLogin() {
 }
 
 async function performRefresh() {
+  const revision = getSessionRevision();
   const refreshToken = getRefreshToken();
   if (!refreshToken) {
     throw createSessionError('session_expired', '未找到 refresh token');
@@ -134,6 +138,7 @@ async function performRefresh() {
     refreshTokenLength: refreshToken.length
   });
   const result = await iamAuthn.refreshToken(refreshToken);
+  if (revision !== getSessionRevision()) throw createSessionError('session_changed', '会话已改变');
 
   if (result.ok) {
     logSessionEvent('刷新流程成功');
@@ -209,16 +214,19 @@ export function loginSession() {
   }
 
   setSessionStatus(SESSION_STATUS.AUTHENTICATING);
-  loginPromise = (async () => {
+  const currentPromise = (async () => {
     try {
       return await performLogin();
     } finally {
-      loginPromise = null;
-      resetStatusIfNeeded(SESSION_STATUS.AUTHENTICATING);
+      if (loginPromise === currentPromise) {
+        loginPromise = null;
+        resetStatusIfNeeded(SESSION_STATUS.AUTHENTICATING);
+      }
     }
   })();
 
-  return loginPromise;
+  loginPromise = currentPromise;
+  return currentPromise;
 }
 
 export function refreshSession() {
@@ -228,16 +236,19 @@ export function refreshSession() {
   }
 
   setSessionStatus(SESSION_STATUS.REFRESHING);
-  refreshPromise = (async () => {
+  const currentPromise = (async () => {
     try {
       return await performRefresh();
     } finally {
-      refreshPromise = null;
-      resetStatusIfNeeded(SESSION_STATUS.REFRESHING);
+      if (refreshPromise === currentPromise) {
+        refreshPromise = null;
+        resetStatusIfNeeded(SESSION_STATUS.REFRESHING);
+      }
     }
   })();
 
-  return refreshPromise;
+  refreshPromise = currentPromise;
+  return currentPromise;
 }
 
 export async function bootstrapSession(options = {}) {
@@ -265,6 +276,7 @@ export async function bootstrapSession(options = {}) {
       logSessionEvent('启动阶段通过 refresh token 恢复会话');
       return { status: SESSION_STATUS.AUTHENTICATED };
     } catch (error) {
+      if (error?.reason === 'session_changed') throw error;
       if (error?.reason === 'unregistered') {
         return { status: SESSION_STATUS.UNREGISTERED };
       }
@@ -295,6 +307,7 @@ export async function bootstrapSession(options = {}) {
     logSessionEvent('启动阶段通过交互登录建立会话');
     return { status: SESSION_STATUS.AUTHENTICATED };
   } catch (error) {
+    if (error?.reason === 'session_changed') throw error;
     if (error?.reason === 'unregistered') {
       return { status: SESSION_STATUS.UNREGISTERED };
     }
@@ -336,6 +349,7 @@ export async function ensureValidAccessToken(options = {}) {
       });
       return await refreshSession();
     } catch (error) {
+      if (error?.reason === 'session_changed') throw error;
       if (error?.reason === 'unregistered') {
         throw error;
       }

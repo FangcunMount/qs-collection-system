@@ -24,6 +24,8 @@ const taro = {
   showToast: noop,
   stopPullDownRefresh: noop,
   useDidShow: noop,
+  useDidHide: noop,
+  useUnload: noop,
   usePullDownRefresh: noop,
   useReady: noop,
   useRouter: () => ({ params: routerParams }),

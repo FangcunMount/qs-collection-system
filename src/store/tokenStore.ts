@@ -1,4 +1,5 @@
 import Taro from '@tarojs/taro';
+import { clearPrivateSessionState } from '@/shared/stores/sessionPrivacy';
 
 /**
  * Token 数据结构
@@ -210,7 +211,7 @@ export function setToken(token: TokenInput, refreshToken?: string): void {
 
   const tokenData = normalizeTokenData(token, refreshToken);
   if (!tokenData) {
-    console.error('[TokenStore] 无效的 token 格式:', token);
+    console.error('[TokenStore] 无效的 token 格式');
     return;
   }
 
@@ -271,6 +272,7 @@ export function updateAccessToken(newAccessToken: string, newRefreshToken?: stri
  */
 export function clearToken(): void {
   state.tokenData = null;
+  clearPrivateSessionState();
 
   try {
     Taro.removeStorageSync(STORAGE_KEY);
