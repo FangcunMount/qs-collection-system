@@ -12,11 +12,11 @@
 
 | 资产 | 领域/用途 | 版本 | 文件大小 | 建议显示 | 裁切 | 替代文本 |
 |---|---|---:|---:|---|---|---|
-| `src/assets/hero/qlume-home-v2.webp` | 总首页成长路径 Banner | v2 | 21,256 B | 1200×600 比例 | 居中 cover，保留左侧安静区 | 通往远方的温和成长路径 |
-| `src/pages/catalog-medical/assets/hero/medical-catalog-v2.webp` | 医学目录专业评估 Banner | v2 | 19,918 B | 1200×600 比例 | 居中 cover，保留左侧文字区 | 纸质评估表与书写工具 |
-| `src/pages/catalog-ability/assets/hero/ability-catalog-v2.webp` | 行为能力家庭成长 Banner | v2 | 24,176 B | 1200×600 比例 | 居中 cover，人物不可被裁掉 | 家庭通过观察与积木支持儿童成长 |
+| `src/assets/hero/qlume-home-v2.webp` | 总首页成长路径 Banner | v2 | 23,888 B | 1200×600 比例 | 居中 cover，保留左侧安静区 | 通往远方的温和成长路径 |
+| `src/pages/catalog-medical/assets/hero/medical-catalog-v2.webp` | 医学目录专业评估 Banner | v2 | 22,298 B | 1200×600 比例 | 居中 cover，保留左侧文字区 | 纸质评估表与书写工具 |
+| `src/pages/catalog-ability/assets/hero/ability-catalog-v2.webp` | 行为能力家庭成长 Banner | v2 | 27,282 B | 1200×600 比例 | 居中 cover，人物不可被裁掉 | 家庭通过观察与积木支持儿童成长 |
 
-三张资产均为 2026-07-14 定向生成候选的人工选定版本，经裁切、缩放并以 WebP 压缩入库；源候选不进入小程序包。
+三张资产均为 2026-07-14 定向生成候选的人工选定版本，经裁切、缩放并以 WebP 压缩入库；源候选不进入小程序包。2026-09-05 从当前 PNG 原图重新编码 WebP（cwebp 质量 85，1200×600，未裁切），复核后接入上述路径；PNG 源图保存在 `docs/design/assets/catalog-heroes/`。
 
 ## 生成方向记录
 

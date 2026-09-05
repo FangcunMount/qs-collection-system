@@ -90,6 +90,7 @@ const DimensionScale = ({
           </>
         ) : null}
       </View>
+      {dimension.description ? <Text className="pr-dimension-scale__description">{dimension.description}</Text> : null}
     </View>
   );
 };
@@ -109,7 +110,7 @@ const suggestionPresentation = (suggestion: { category: string; content: string 
   return { category, content };
 };
 
-type GrowthGroupKey = "strength" | "attention" | "action";
+type GrowthGroupKey = "strength" | "attention" | "action" | "general";
 
 interface GrowthSuggestionPresentation {
   category: string;
@@ -123,6 +124,12 @@ const growthGroupDefinitions: Array<{
   title: string;
   description: string;
 }> = [
+  {
+    key: "general",
+    eyebrow: "参考",
+    title: "报告建议",
+    description: "结合具体情境理解以下建议",
+  },
   {
     key: "strength",
     eyebrow: "保持",
@@ -150,7 +157,7 @@ const growthGroupKey = (suggestion: GrowthSuggestionPresentation): GrowthGroupKe
   if (/(注意|提醒|风险|挑战|警示)/.test(category)) return "attention";
   if (/(建议|行动|成长|改善|练习|协作)/.test(category)) return "action";
   if (!category && /^(可以|尝试|建议|保持|安排|设置|把|为自己)/.test(content)) return "action";
-  return suggestion.source === "dimension" || Boolean(category) ? "action" : "strength";
+  return "general";
 };
 
 const visibleSuggestionContext = (category: string): string => (
@@ -159,7 +166,7 @@ const visibleSuggestionContext = (category: string): string => (
     : category
 );
 
-const PersonalityReportContent = ({ report }: { report: PersonalityReportViewModel }) => {
+const PersonalityReportContent = ({ report, supplement }: { report: PersonalityReportViewModel; supplement?: React.ReactNode }) => {
   const conclusionKey = comparableText(report.hero.conclusion);
   const reportSections = report.sections.filter((section) => section.content);
   const showConclusion = Boolean(
@@ -205,29 +212,10 @@ const PersonalityReportContent = ({ report }: { report: PersonalityReportViewMod
         createdAtText={report.createdAt ? formatSimpleDate(report.createdAt) : ""}
       />
 
-      <ReportRegion
-        number="02"
-        title="维度观察"
-        subtitle="四组倾向没有好坏，只代表你更自然的位置"
-        className="pr-report-region--dimensions"
-      >
-        {report.dimensions.length ? (
-          <View className="pr-dimension-list">
-            {report.dimensions.map((dimension, index) => (
-              <DimensionScale
-                key={dimension.factor_code || index}
-                dimension={dimension}
-                outcomeCode={report.outcome.code}
-              />
-            ))}
-          </View>
-        ) : (
-          <StatePanel state="empty" tone="personality" compact title="暂无维度数据" />
-        )}
-      </ReportRegion>
+      {supplement}
 
       <ReportRegion
-        number="03"
+        number="02"
         title="人格报告"
         subtitle="从整体特征到具体表现，理解你的行为方式"
         className="pr-report-region--interpretation"
@@ -248,7 +236,7 @@ const PersonalityReportContent = ({ report }: { report: PersonalityReportViewMod
       </ReportRegion>
 
       <ReportRegion
-        number="04"
+        number="03"
         title="成长建议"
         subtitle="看见优势，也为自己留出可以成长的空间"
         className="pr-report-region--growth"
@@ -285,6 +273,27 @@ const PersonalityReportContent = ({ report }: { report: PersonalityReportViewMod
           <StatePanel state="empty" tone="personality" compact title="暂无成长建议" />
         )}
       </ReportRegion>
+      <ReportRegion
+        number="04"
+        title="维度观察"
+        subtitle="结合各维度的得分与原始解释理解倾向"
+        className="pr-report-region--dimensions"
+      >
+        {report.dimensions.length ? (
+          <View className="pr-dimension-list">
+            {report.dimensions.map((dimension, index) => (
+              <DimensionScale
+                key={dimension.factor_code || index}
+                dimension={dimension}
+                outcomeCode={report.outcome.code}
+              />
+            ))}
+          </View>
+        ) : (
+          <StatePanel state="empty" tone="personality" compact title="暂无维度数据" />
+        )}
+      </ReportRegion>
+
     </View>
   );
 };

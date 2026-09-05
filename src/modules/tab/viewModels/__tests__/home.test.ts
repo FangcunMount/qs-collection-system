@@ -13,9 +13,9 @@ describe("home view models", () => {
       id: "assessment-1",
       answerSheetId: "sheet-1",
       title: "GAD-7",
-      score: 12,
+      score: 12.4,
       riskTone: "medium",
-      riskLabel: "中等偏高",
+      riskLabel: "中风险",
       icon: "report.png",
       testeeId: "testee-1",
     });
@@ -25,6 +25,10 @@ describe("home view models", () => {
     expect(mapRecentAssessment(null, 0, [])).toBeNull();
     expect(formatHomeDateTime("")).toBe("时间待同步");
     expect(resolveHomeRiskTone("critical")).toBe("high");
+    expect(mapRecentAssessment({ id: "missing" }, 0, [])).toMatchObject({
+      score: "", riskTone: "unknown", riskLabel: "查看报告", tag: "",
+    });
+    expect(resolveHomeRiskTone("not_high")).toBe("unknown");
   });
 
   it("does not show the answer-sheet title when a questionnaire title is available", () => {

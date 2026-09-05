@@ -67,8 +67,9 @@
   display: flex;
   align-items: center;
   color: @text-color-primary;
-  font-size: @font-size-body;
-  line-height: 1.5;
+  font-size: @font-size-reading;
+  line-height: 1.65;
+  word-break: break-all;
 }
 
 // Taroify keeps the icon and label in separate wrappers. Make the label fill
@@ -109,3 +110,5 @@
   min-width: 160rpx;
   align-items: center;
 }
+
+@media (prefers-reduced-motion: reduce) { .question-choice, .writer-role-option { transition: none; &:active { transform: none; } } }

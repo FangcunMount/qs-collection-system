@@ -53,21 +53,21 @@ const report: PersonalityReportViewModel = {
 };
 
 describe("PersonalityReportContent", () => {
-  test("shows the four report regions in order", () => {
+  test("shows conclusion and advice before dimensions without losing original explanations", () => {
     const content = collectText(renderer.create(
       <PersonalityReportContent report={report} />,
     ).toJSON());
 
     expect(content).toContain("01总览");
     expect(content).toContain("人格分类16 型人格测评");
-    expect(content).toContain("02维度观察");
+    expect(content).toContain("04维度观察");
     expect(content).toContain("EI能量倾向偏向 I · 70%");
     expect(content).toContain("E外向");
     expect(content).toContain("I内向");
     expect(content).toContain("能量倾向");
-    expect(content).toContain("03人格报告");
+    expect(content).toContain("02人格报告");
     expect(content).toContain("系统思考");
-    expect(content).toContain("04成长建议");
+    expect(content).toContain("03成长建议");
     expect(content).not.toContain("general");
     expect(content).toContain("可以发挥");
     expect(content).toContain("组织执行");
@@ -76,5 +76,17 @@ describe("PersonalityReportContent", () => {
     expect(content).toContain("可以尝试");
     expect(content).toContain("协作主动同步思路");
     expect(content).toContain("能量倾向保留独立空间");
+    expect(content).toContain("偏向独处恢复能量");
+    expect(content.indexOf("02人格报告")).toBeLessThan(content.indexOf("03成长建议"));
+    expect(content.indexOf("03成长建议")).toBeLessThan(content.indexOf("04维度观察"));
   });
+});
+
+test("uncategorized report advice is not presented as an inherent strength", () => {
+  const content = collectText(renderer.create(<PersonalityReportContent report={{
+    ...report, dimensions: [], suggestions: [{ category: "general", content: "压力持续时可寻求支持" }],
+  }} />).toJSON());
+  expect(content).toContain("报告建议");
+  expect(content).toContain("压力持续时可寻求支持");
+  expect(content).not.toContain("这些特质是你自然拥有的能量");
 });

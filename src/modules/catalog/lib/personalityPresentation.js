@@ -54,7 +54,7 @@ const ALGORITHM_PRESENTATION = Object.freeze({
     disclaimer: 'SBTI 是娱乐向趣味测评，结果仅供消遣和社交分享，不代表真实人格类型或心理状态。',
     cta: '开始趣味测评',
   },
-  personality_typology: {
+  enneagram: {
     badge: '深度探索',
     hero: {
       kicker: 'DEEP EXPLORATION',
@@ -104,6 +104,22 @@ const ALGORITHM_PRESENTATION = Object.freeze({
   },
 });
 
+// A shared execution algorithm does not identify a personality model family.
+export const resolvePersonalityPresentationKey = (item = {}, hint) => {
+  const families = [item.family_code, item.familyCode, item.model_family, hint];
+  for (const family of families) {
+    const key = String(family || '').trim().toLowerCase();
+    if (ALGORITHM_PRESENTATION[key]) return key;
+  }
+  const code = String(item.modelCode || item.code || item.model_code || '').toUpperCase();
+  if (/^MBTI_/.test(code)) return 'mbti';
+  if (/^SBTI_/.test(code)) return 'sbti';
+  if (/^BIG5_/.test(code)) return 'bigfive';
+  if (/^ENNEAGRAM_/.test(code)) return 'enneagram';
+  const algorithm = String(item.algorithm || '').toLowerCase();
+  return ALGORITHM_PRESENTATION[algorithm] ? algorithm : '';
+};
+
 export const resolveAlgorithmPresentation = (algorithm) => {
   const key = String(algorithm || '').toLowerCase();
   return ALGORITHM_PRESENTATION[key] || null;
@@ -140,7 +156,7 @@ const pickList = (primary, fallback = []) => {
  * 将 algorithm 展示配置合并进目录/详情 ViewModel（API 有值时优先）
  */
 export const applyAlgorithmPresentation = (item = {}, algorithm) => {
-  const presentation = resolveAlgorithmPresentation(algorithm || item.algorithm);
+  const presentation = resolveAlgorithmPresentation(resolvePersonalityPresentationKey(item, algorithm));
   if (!presentation) return { ...item };
 
   const hero = item.hero || {};
@@ -158,9 +174,9 @@ export const applyAlgorithmPresentation = (item = {}, algorithm) => {
     durationMin: item.durationMin ?? estimateDurationMin(item.questionCount, algorithm || item.algorithm),
     hero: {
       kicker: pickText(hero.kicker, presentationHero.kicker),
-      title: pickText(presentationHero.title, hero.title, item.title),
-      subtitle: pickText(presentationHero.subtitle, hero.subtitle, item.subtitle),
-      sticker: pickText(presentationHero.sticker, hero.sticker),
+      title: pickText(hero.title, presentationHero.title, item.title),
+      subtitle: pickText(hero.subtitle, presentationHero.subtitle, item.subtitle),
+      sticker: pickText(hero.sticker, presentationHero.sticker),
     },
   };
 };

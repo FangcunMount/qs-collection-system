@@ -4,6 +4,9 @@ import Taro from "@tarojs/taro";
 
 import PageShell from "@/shared/ui/PageShell";
 
+import { useNetworkConnection } from "../hooks/useNetworkConnection";
+import { getSessionRevision } from "@/shared/stores/sessionPrivacy";
+import StatePanel from "@/shared/ui/StatePanel";
 import QuestionRenderer from "./QuestionRenderer";
 import QuestionnaireBottomActions from "./QuestionnaireBottomActions";
 
@@ -96,8 +99,18 @@ export default function QuestionnaireForm({
   const [questionSheet, setQuestionSheet] = useState<QuestionnaireData | null>(null);
   const [writerRoles, setWriterRoles] = useState<WriterRoleOption[]>([]);
   const [writerRoleCode, setWriterRoleCode] = useState<string | null>(null);
+  const connected = useNetworkConnection();
+  const [submitError, setSubmitError] = useState("");
   const [scrollTop, setScrollTop] = useState(-1);
   const submissionAttemptRef = useRef<unknown>(null);
+  const mountedRef = useRef(true);
+  const questionLoadRevision = useRef(0);
+  const [loadError, setLoadError] = useState("");
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; questionLoadRevision.current += 1; };
+  }, []);
 
   const applyQuestionnaire = (result: QuestionnaireData): void => {
     logger.RUN('[QuestionnaireForm] 问卷数据加载成功:', {
@@ -120,6 +133,12 @@ export default function QuestionnaireForm({
   };
 
   useEffect(() => {
+    questionLoadRevision.current += 1;
+    setLoadError("");
+    setSubmitError("");
+    submissionAttemptRef.current = null;
+    setWriterRoles([]);
+    setWriterRoleCode(null);
     if (initialQuestionnaire) {
       applyQuestionnaire(initialQuestionnaire);
       return;
@@ -135,18 +154,17 @@ export default function QuestionnaireForm({
    * @param questionnaireCode 问卷 code
    */
   const initQuestionnaire = (id: string): void => {
-    Taro.showLoading();
+    const revision = ++questionLoadRevision.current;
     setQuestionSheet(null);
+    setLoadError("");
     setWriterRoles([]);
     setWriterRoleCode(null);
-
-    getQuestionnaire(id).then((result: unknown) => {
+    void getQuestionnaire(id).then((result: unknown) => {
+      if (!mountedRef.current || revision !== questionLoadRevision.current) return;
       applyQuestionnaire(result as QuestionnaireData);
-      Taro.hideLoading();
-    }).catch(error => {
-      console.error('加载问卷失败:', error);
-      Taro.hideLoading();
-      Taro.showToast({ title: '加载问卷失败', icon: 'none' });
+    }).catch(() => {
+      if (!mountedRef.current || revision !== questionLoadRevision.current) return;
+      setLoadError("问卷暂时无法加载，请检查网络后重试。");
     });
   };
 
@@ -267,6 +285,9 @@ export default function QuestionnaireForm({
     },
     submit: async () => {
       if (!questionSheet) return;
+      const sessionRevision = getSessionRevision();
+      const questionnaireRevision = questionLoadRevision.current;
+      setSubmitError("");
       const submitData = buildQuestionnaireSubmission(questionSheet, submitContract);
 
       logger.RUN("handleSubmitQuestionnaire <RUN>, params: ", {
@@ -283,10 +304,16 @@ export default function QuestionnaireForm({
 			{},
           { submitContract, submissionAttempt: submissionAttemptRef.current }
         );
+        if (!mountedRef.current || sessionRevision !== getSessionRevision() || questionnaireRevision !== questionLoadRevision.current) return;
+        submissionAttemptRef.current = res?.submission_attempt || submissionAttemptRef.current;
+        if (!res?.id && !res?.request_id) throw new Error("暂未收到提交确认，请重试。");
       } catch (error: unknown) {
+        if (!mountedRef.current || sessionRevision !== getSessionRevision() || questionnaireRevision !== questionLoadRevision.current) return;
         submissionAttemptRef.current = (error as SubmissionError)?.submissionAttempt || submissionAttemptRef.current;
+        setSubmitError("提交结果暂未确认，答案仍在当前页面，可重试提交。");
         throw error;
       }
+      if (!mountedRef.current || sessionRevision !== getSessionRevision() || questionnaireRevision !== questionLoadRevision.current) return;
       submissionAttemptRef.current = res.submission_attempt || submissionAttemptRef.current;
       logger.RUN('[QuestionnaireForm] 提交完成', {
         answersheetId: res.id,
@@ -321,6 +348,7 @@ export default function QuestionnaireForm({
           tone={questionSheet?.type === "PersonalityAssessment" ? "personality" : "medical"}
           showSubmit
           submitting={subBtnLoading}
+          statusMessage={subBtnLoading ? "正在提交，请稍候" : submitError ? "提交未确认，可重试" : connected === false ? "当前离线，提交需要联网" : "答案尚未提交"}
           onSubmit={handleSubmit}
         />
       ) : null}
@@ -329,6 +357,8 @@ export default function QuestionnaireForm({
         <View className="qs-header__container">
           <Text className="qs-header__eyebrow">测评问卷</Text>
           <Text className="qs-header__title">{questionSheet?.title}</Text>
+          {connected === false ? <Text className="qs-header__notice">当前离线，可继续填写；提交时需要联网。</Text> : null}
+          {canSubmit ? <Text className="qs-header__notice">{submitError || "答案暂存于当前页面，请在提交后再离开。"}</Text> : null}
         </View>
 
         {writerRoles.length > 0 ? (
@@ -338,6 +368,8 @@ export default function QuestionnaireForm({
             changeRoleCode={setWriterRoleCode}
           />
         ) : null}
+
+        {!questionSheet ? <StatePanel state={loadError ? "error" : "loading"} title={loadError ? "问卷加载失败" : "正在加载问卷"} description={loadError || undefined} actionText={loadError ? "重新加载" : undefined} onAction={loadError && questionnaireCode ? () => initQuestionnaire(questionnaireCode) : undefined} /> : null}
 
         {visibleQuestionEntries.map(({ question, sourceIndex, displayIndex }) => (
           <QuestionRow

@@ -44,8 +44,11 @@ export function buildPostSubmitRedirectUrl({
   assessmentId,
   requestId,
   testeeId,
+  submitContract,
   planTaskId,
 }) {
+  // The submitted contract owns the result, even if the global member changes while waiting.
+  const reportTesteeId = submitContract?.testee_id || testeeId;
   const kind = resolveSubmitAssessmentKind({
     questionnaireType,
     assessmentKind,
@@ -56,7 +59,7 @@ export function buildPostSubmitRedirectUrl({
     return routes.assessmentReportPending({
       a: answersheetId,
       aid: assessmentId || undefined,
-      t: testeeId || undefined,
+      t: reportTesteeId || undefined,
       kind: ASSESSMENT_KIND.PERSONALITY,
       request_id: requestId || undefined,
       task_id: planTaskId || undefined,
@@ -67,7 +70,7 @@ export function buildPostSubmitRedirectUrl({
     return routes.assessmentReportPending({
       a: answersheetId,
       aid: assessmentId || undefined,
-      t: testeeId || undefined,
+      t: reportTesteeId || undefined,
       kind: ASSESSMENT_KIND.ABILITY,
       request_id: requestId || undefined,
       task_id: planTaskId || undefined,
@@ -78,7 +81,7 @@ export function buildPostSubmitRedirectUrl({
     return routes.assessmentReportPending({
       a: answersheetId,
       aid: assessmentId || undefined,
-      t: testeeId || undefined,
+      t: reportTesteeId || undefined,
       request_id: requestId || undefined,
       task_id: planTaskId || undefined,
     });

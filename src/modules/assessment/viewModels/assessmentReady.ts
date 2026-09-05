@@ -59,6 +59,7 @@ export function buildAssessmentReadyViewModel({
     estimatedMinutes: hasQuestions
       ? getEstimatedTime(questionnaire ?? { questions })
       : (isPersonality ? "--" : 0),
+    writerRolesLabel: questionnaire?.writer_roles?.map((role) => role.name).filter(Boolean).join(" / ") || undefined,
     introTitle: isPersonality ? "测评简介" : "量表简介",
     introduction: questionnaire?.introduction
       || questionnaire?.description

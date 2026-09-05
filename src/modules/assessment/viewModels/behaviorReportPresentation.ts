@@ -102,24 +102,15 @@ const factorMeta = (
   };
 };
 
-const isStable = (factor: BehaviorReportFactorViewModel): boolean => {
-  if (factor.tScore !== null) return factor.tScore < 60;
-  return /^(normal|none|typical|stable)$/i.test(factor.level?.code || factor.level?.severity || "");
-};
+export const behaviorLevelLabel = (level: BehaviorReportLevelViewModel | null): string =>
+  level?.label || level?.code || "未提供结果等级";
 
-const growthStatusLabel = (factor: BehaviorReportFactorViewModel): string => {
-  if (factor.tScore !== null) {
-    if (factor.tScore < 60) return "常模范围";
-    if (factor.tScore < 65) return "可继续练习";
-    if (factor.tScore < 70) return "建议重点练习";
-    return "优先支持";
-  }
-  const level = `${factor.level?.severity || ""} ${factor.level?.code || ""}`.toLowerCase();
-  if (/severe|critical|high/.test(level)) return "优先支持";
-  if (/moderate|medium|elevated/.test(level)) return "建议重点练习";
-  if (/mild|attention|watch|low/.test(level)) return "可继续练习";
-  return "持续观察";
-};
+export const behaviorScoreLabel = (kind: string): string => ({
+  t_score: "T 分",
+  raw_score: "原始分",
+  percentile: "百分位",
+  standard_score: "标准分",
+}[kind] || kind || "得分");
 
 const factorPresentation = (
   family: BehaviorReportFamily,
@@ -131,25 +122,10 @@ const factorPresentation = (
     factor,
     icon: meta.icon,
     palette: meta.palette,
-    statusLabel: growthStatusLabel(factor),
+    statusLabel: behaviorLevelLabel(factor.level),
     scoreValue: factor.tScore ?? factor.rawScore,
     scoreKind: factor.tScore === null ? "raw_score" : "t_score",
   };
-};
-
-const summaryFor = (
-  score: number | null,
-  level: BehaviorReportLevelViewModel | null,
-): { headline: string; hero: string } => {
-  const key = `${level?.severity || ""} ${level?.code || ""}`.toLowerCase();
-  const rank = score ?? (/severe|critical|high/.test(key) ? 75 : /moderate|medium|elevated/.test(key) ? 67 : /mild|attention|watch/.test(key) ? 62 : 50);
-  if (rank >= 70) {
-    return { headline: "建议优先提供支持", hero: "看见已有能力，也找到需要优先支持的方向" };
-  }
-  if (rank >= 60) {
-    return { headline: "发现可继续练习的方向", hero: "看见优势，也发现可以继续练习的方向" };
-  }
-  return { headline: "整体表现处于常模范围", hero: "看见稳定表现，也保留持续成长的空间" };
 };
 
 export const buildBehaviorReportPresentation = (
@@ -169,32 +145,25 @@ export const buildBehaviorReportPresentation = (
   const chartFactors = family === "brief2" && normOverviewFactors.length
     ? normOverviewFactors
     : normLeafFactors.length ? normLeafFactors : presentations.filter((item) => item.factor.tScore !== null);
-  const stableFactors = leafFactors.filter((item) => isStable(item.factor));
-  const attentionFactors = leafFactors.filter((item) => !isStable(item.factor));
   const totalTScore = totalFactor?.factor.tScore ?? null;
-  const primaryTScore = report.primaryScore?.kind === "t_score" ? report.primaryScore.value : null;
-  const summaryScore = totalTScore ?? report.primaryScore?.value ?? null;
-  const summaryLevel = totalFactor?.factor.level || report.level;
-  const summary = summaryFor(totalTScore ?? primaryTScore, summaryLevel);
-  const stableCount = stableFactors.length;
-  const attentionCount = attentionFactors.length;
+  const summaryScore = report.primaryScore?.value ?? totalTScore;
 
   return {
     family,
     familyLabel: family === "brief2" ? "执行功能" : family === "spm" ? "感觉处理" : "行为能力",
     chartTitle: family === "brief2"
-      ? "核心指数与同龄常模"
-      : family === "spm" ? "感觉处理维度与同龄常模" : "因子得分与同龄常模",
-    heroMessage: summary.hero,
+      ? "核心指数与常模基准"
+      : family === "spm" ? "感觉处理维度与常模基准" : "因子得分与常模基准",
+    heroMessage: "结合本次结果，了解日常表现与支持方向",
     summaryScore,
-    summaryScoreLabel: totalTScore !== null
-      ? `${family === "brief2" ? "综合执行功能" : family === "spm" ? "感觉处理总分" : "综合"} T 分`
-      : report.primaryScore?.label || (report.primaryScore?.kind === "t_score" ? "综合 T 分" : "综合得分"),
-    summaryHeadline: summary.headline,
+    summaryScoreLabel: report.primaryScore
+      ? `${report.primaryScore.label ? `${report.primaryScore.label} · ` : ""}${behaviorScoreLabel(report.primaryScore.kind)}`
+      : totalTScore !== null ? `${totalFactor?.factor.title || "总分"} · T 分` : "本次得分",
+    summaryHeadline: behaviorLevelLabel(report.level),
     chartFactors,
-    portraitFactors: leafFactors.length ? leafFactors : presentations,
-    chartCallout: attentionCount
-      ? `${stableCount} 个维度处于常模范围，${attentionCount} 个维度建议结合日常情境重点观察`
-      : "各维度整体处于常模范围，可继续保持稳定、清晰的日常支持",
+    // Index and total dimensions can also contain interpretation and advice.
+    portraitFactors: presentations,
+    chartCallout: "图表展示本次 T 分与报告提供的常模基准，结果等级以报告文字为准。",
+
   };
 };

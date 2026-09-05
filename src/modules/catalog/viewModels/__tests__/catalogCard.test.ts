@@ -25,11 +25,19 @@ describe("catalog card view models", () => {
       category: "emt",
       tags: ["情绪", "焦虑"],
       questionCount: 7,
-      durationLabel: "约 3 分钟",
+      durationLabel: "约 4 分钟",
       tone: "medical",
       disabled: false,
     });
     expect(source.scale_code).toBe(" GAD-7 ");
+  });
+
+  it("shows only provided suitability facts and rejects explicit unpublished status", () => {
+    expect(mapMedicalCatalogCard({ code: "one", reporters: ["parent", "teacher"], applicable_ages: ["school_child", "school_child"], status: "published" })).toMatchObject({
+      reporterLabel: "家长、教师", audienceLabel: "学龄儿童", statusLabel: "已发布", disabled: false,
+    });
+    expect(mapMedicalCatalogCard({ code: "draft", status: "draft" }).disabled).toBe(true);
+    expect(mapMedicalCatalogCard({ code: "unknown" })).toMatchObject({ reporterLabel: "", audienceLabel: "", description: "" });
   });
 
   it("keeps keyword search local and includes tags", () => {
@@ -56,9 +64,9 @@ describe("catalog card view models", () => {
     });
   });
 
-  it("uses stable duration fallbacks", () => {
-    expect(formatCatalogDuration(0)).toBe("约 5 分钟");
-    expect(formatCatalogDuration(60)).toBe("约 10 分钟");
+  it("estimates from known question counts and keeps missing durations unknown", () => {
+    expect(formatCatalogDuration(0)).toBe("用时待确认");
+    expect(formatCatalogDuration(60)).toBe("约 30 分钟");
   });
 
   it("keeps unavailable ability assessments disabled", () => {
@@ -89,7 +97,7 @@ describe("catalog card view models", () => {
       code: "EXECUTIVE_FUNCTION_36",
       modelCode: "EXECUTIVE_FUNCTION_36",
       questionCount: 36,
-      durationLabel: "约 6 分钟",
+      durationLabel: "约 18 分钟",
       iconKey: "executive",
       testedLabel: "已发布",
       disabled: false,

@@ -1,6 +1,6 @@
-import React, { useMemo, useRef, useEffect } from 'react';
+import useNativeEChart from "./useNativeEChart";
+import React, { useMemo } from "react";
 import { View } from '@tarojs/components';
-import * as echarts from '@/pages/assessment/components/ec-canvas/echarts';
 import { getRiskConfig } from '@/shared/lib/statusFormatters';
 import { normalizeFactorChartData } from './factorChartData';
 
@@ -9,7 +9,6 @@ import { normalizeFactorChartData } from './factorChartData';
  * data: [{ title, score, max_score, risk_level }]
  */
 const FactorScatterChart = ({ data = [] }) => {
-  const chartRef = useRef(null);
 
   const riskLabelMap = {
     high: '高风险',
@@ -98,7 +97,7 @@ const FactorScatterChart = ({ data = [] }) => {
         formatter: (params) => {
           const item = normalized[params.dataIndex];
           if (!item) return '';
-          const riskLabel = riskLabelMap[item.risk_level] || '正常';
+          const riskLabel = getRiskConfig(item.risk_level).label;
           const scoreText = item.maxScore
             ? `${item.score} / ${item.maxScore} (${(item.percent ?? 0).toFixed(1)}%)`
             : `${item.score}`;
@@ -148,28 +147,7 @@ const FactorScatterChart = ({ data = [] }) => {
     };
   }, [processed]);
 
-  const ec = useMemo(
-    () => ({
-      onInit(canvas, width, height, dpr) {
-        const chart = echarts.init(canvas, null, {
-          width,
-          height,
-          devicePixelRatio: dpr,
-        });
-        canvas.setChart(chart);
-        chart.setOption(option);
-        chartRef.current = chart;
-        return chart;
-      },
-    }),
-    [option],
-  );
-
-  useEffect(() => {
-    if (chartRef.current && option) {
-      chartRef.current.setOption(option, true);
-    }
-  }, [option]);
+  const { ec, onInit } = useNativeEChart(option);
 
   return (
     <View className="scatter-chart-wrapper" style={`height: ${chartHeight}rpx;`}>
@@ -177,6 +155,7 @@ const FactorScatterChart = ({ data = [] }) => {
         id="factor-scatter"
         canvasId="factor-scatter"
         ec={ec}
+        onInit={onInit}
         style="width: 100%; height: 100%;"
       />
     </View>

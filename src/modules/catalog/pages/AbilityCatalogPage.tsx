@@ -17,7 +17,8 @@ import {
   mapAbilityCatalogCard,
   type CatalogCardViewModel,
 } from "@/modules/catalog/viewModels/catalogCard";
-import behaviorHeroImage from "@/pages/catalog-ability/assets/hero/ability-catalog-v2.png";
+import CatalogAssessmentFacts from "../components/CatalogAssessmentFacts";
+import behaviorHeroImage from "@/pages/catalog-ability/assets/hero/ability-catalog-v2.webp";
 import executiveImage from "@/pages/catalog-ability/assets/icon/icon-executive-function.png";
 import abilityImage from "@/pages/catalog-ability/assets/icon/icon-behavior-ability.png";
 import workingMemoryImage from "@/pages/catalog-ability/assets/icon/icon-working-memory.png";
@@ -214,12 +215,7 @@ const AbilityCatalogPage = () => {
                     ) : null}
                   </View>
                   <Text className="ability-assessment-card__desc">{item.description}</Text>
-                  <View className="ability-assessment-card__meta">
-                    <Text className="ability-assessment-card__duration">{item.durationLabel}</Text>
-                    {item.testedLabel ? (
-                      <Text className="ability-assessment-card__tested">{item.testedLabel}</Text>
-                    ) : null}
-                  </View>
+                  <CatalogAssessmentFacts card={item} />
                 </View>
                 <View className="ability-assessment-card__arrow">
                   <Icon name="arrow-right" size={18} color="#FFFFFF" />

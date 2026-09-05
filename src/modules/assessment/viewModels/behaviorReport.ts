@@ -11,7 +11,8 @@ const isSource = (value: unknown): value is Source => Boolean(value) && typeof v
 const asSource = (value: unknown): Source => isSource(value) ? value : {};
 const asText = (value: unknown): string => value == null ? "" : String(value);
 const asNumber = (value: unknown): number | null => {
-  if (value === null || value === undefined || value === "") return null;
+  if (typeof value !== "number" && typeof value !== "string") return null;
+  if (typeof value === "string" && !value.trim()) return null;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 };
@@ -106,9 +107,12 @@ export const buildBehaviorReportViewModel = (
       factorCode: item.factor_code ? asText(item.factor_code) : undefined,
     };
   });
+  const matchingTestee = !report.testee_id || asText(report.testee_id) === asText(fallbackTestee?.id)
+    ? fallbackTestee
+    : null;
   const testeeName = asText(report.testee_name)
-    || fallbackTestee?.legalName
-    || fallbackTestee?.name
+    || matchingTestee?.legalName
+    || matchingTestee?.name
     || "";
   const testeeId = asText(report.testee_id) || asText(fallbackTestee?.id);
 

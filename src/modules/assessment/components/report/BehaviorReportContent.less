@@ -780,3 +780,23 @@
     color: @color-warning-700;
   }
 }
+
+// Restore the original visual hierarchy without clipping report text.
+.behavior-summary-card { flex-wrap: wrap; padding-right: 30rpx; gap: 20rpx; }
+.behavior-summary-card__score-block { width: auto; min-width: 120rpx; max-width: 100%; }
+.behavior-summary-card__score { font-size: 60rpx; overflow-wrap: anywhere; }
+.behavior-summary-card__content { flex-basis: 280rpx; }
+.behavior-summary-card__copy { display: block; overflow: visible; -webkit-line-clamp: unset; font-size: 30rpx; line-height: 1.8; white-space: pre-wrap; }
+.behavior-summary-card__badge { position: static; width: 64rpx; height: 64rpx; margin-left: auto; }
+.behavior-section-card__header, .behavior-portrait-section__header, .behavior-ability-card__header { flex-wrap: wrap; }
+.behavior-ability-card__title-row { flex-basis: 240rpx; }
+.behavior-ability-card__title-row > view { min-width: 0; }
+.behavior-ability-card__title { font-size: 30rpx; overflow-wrap: break-word; }
+.behavior-ability-card__copy, .behavior-ability-card__suggestion-copy, .behavior-overall-advice__copy { font-size: 30rpx; line-height: 1.8; white-space: pre-wrap; overflow-wrap: break-word; }
+.behavior-ability-card__meta, .behavior-ability-card__norm { font-size: 26rpx; line-height: 1.6; }
+.behavior-ability-card__norm { display: flex; flex-direction: column; }
+.behavior-status-badge { background: @surface-subtle; color: @text-color-secondary; font-size: 24rpx; line-height: 1.5; white-space: normal; max-width: 100%; box-sizing: border-box; overflow-wrap: anywhere; }
+.behavior-report-hero__title { overflow-wrap: break-word; }
+.behavior-section-card__subtitle, .behavior-summary-card__score-label, .behavior-norm-card__meta, .behavior-report-note__text { font-size: 26rpx; line-height: 1.6; }
+
+.behavior-ability-card__result { max-width: 100%; min-width: 0; }

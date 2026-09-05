@@ -8,6 +8,15 @@ export const aiSourceNotice = (state?: SourceState) => ({
   unknown: '暂时无法确认报告版本，可以刷新状态后再查看。',
 }[state || 'unknown']);
 export function aiStateCopy(state: AIState): { title: string; description: string; action?: string } {
+  if (state.output?.status === 'not_applicable') {
+    switch (state.output.reason_code) {
+      case 'feature_disabled': return { title: 'AI 解读尚未开放', description: '开放后，可在这里请求本次测评的补充解读。你可以先阅读标准报告。' };
+      case 'source_not_supported': return { title: '本次报告暂不支持 AI 解读', description: '这份报告暂不支持生成补充解读，请继续阅读标准报告。' };
+      case 'profile_unresolved':
+      case 'profile_mismatch': return { title: '本量表的 AI 解读暂未开放', description: '本量表暂时无法提供补充解读，标准报告仍可正常阅读。' };
+      default: return { title: '本次报告暂无法提供 AI 解读', description: '当前无法为这份报告提供补充解读，请继续阅读标准报告。' };
+    }
+  }
   switch (state.view) {
     case 'checking': return { title: '正在查询解读状态', description: '请稍候' };
     case 'ready': return { title: '进一步理解这份结果', description: '基于本次测评结果，帮助理解多个维度之间的关系，并提供可以尝试的日常建议。', action: '开始解读' };

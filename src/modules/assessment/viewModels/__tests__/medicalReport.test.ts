@@ -29,8 +29,21 @@ describe("medical report view model", () => {
     });
   });
 
+
+  test.each([null, undefined, "", "  ", false, "invalid"])("does not invent a score from %s or discard a standalone conclusion", (total_score) => {
+    const result = buildMedicalReportViewModel({ total_score, conclusion: "本次结论" });
+    expect(result.total).toBeNull();
+    expect(result.conclusion).toBe("本次结论");
+    expect(result.hasContent).toBe(true);
+  });
+
   test("keeps personality payload dispatch compatible", () => {
     expect(isPersonalityReportPayload({ data: { model_extra: { type_code: "INTJ" } } })).toBe(true);
     expect(isPersonalityReportPayload({ scale_code: "SCARED" })).toBe(false);
   });
+});
+
+test("does not borrow a different member's name for a historical report", () => {
+  expect(buildMedicalReportViewModel({ testee_id: "report-member" }, { id: "selected-member", legalName: "另一个成员" })).toMatchObject({ testeeId: "report-member", testeeName: "" });
+  expect(buildMedicalReportViewModel({ testee_id: "report-member" }, { id: "report-member", legalName: "报告成员" })).toMatchObject({ testeeId: "report-member", testeeName: "报告成员" });
 });

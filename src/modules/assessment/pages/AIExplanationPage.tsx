@@ -14,6 +14,7 @@ import '../components/ai-explanation/index.less';
 
 export default function AIExplanationPage() {
   const params = Taro.useRouter().params;
+  const tone = params.kind === 'personality' ? 'personality' : 'medical';
   const scope = { assessmentId: params.aid || '', testeeId: params.t || '' };
   const { state, visible, start, refresh, prepare } = useAIExplanation(scope, { generationId: params.gid });
   // Static is the accessible default on mini-program runtimes without reliable OS motion preferences.
@@ -22,11 +23,11 @@ export default function AIExplanationPage() {
   const output = state.output;
   const returnToReport = () => {
     if (Taro.getCurrentPages().length > 1) { void Taro.navigateBack({ delta: 1 }); return; }
-    void Taro.redirectTo({ url: scope.assessmentId && scope.testeeId ? routes.assessmentReport({ aid: scope.assessmentId, t: scope.testeeId }) : routes.assessmentRecords({}) });
+    void Taro.redirectTo({ url: scope.assessmentId && scope.testeeId ? (tone === 'personality' ? routes.personalityReport : routes.assessmentReport)({ aid: scope.assessmentId, t: scope.testeeId }) : routes.assessmentRecords({}) });
   };
   const generated = state.view === 'generated' && output?.content;
   const waiting = state.view === 'waiting' || state.view === 'submitting';
-  return <PageShell tone="medical" className={`ai-explanation ${motion && visible ? 'ai-explanation--motion' : ''}`}>
+  return <PageShell tone={tone} className={`ai-explanation ${motion && visible ? 'ai-explanation--motion' : ''}`}>
     <View className="ai-explanation__page ai-explanation__stack">
       {output?.source_state && (generated || (state.view === 'waiting' && output.source_state !== 'current')) &&
         <AIExplanationSourceNotice state={output.source_state} />}
@@ -36,7 +37,7 @@ export default function AIExplanationPage() {
         </View>
         <AIExplanationContent content={generated} />
         {output?.source_state !== 'current' && <ActionButton variant="ghost" onClick={refresh}>刷新状态</ActionButton>}
-      </View> : <SurfaceCard tone={state.view === 'ready' ? 'medical' : 'neutral'} className={`ai-explanation__stack ${waiting ? 'ai-explanation__wait' : ''}`}>
+      </View> : <SurfaceCard tone={state.view === 'ready' ? tone : 'neutral'} className={`ai-explanation__stack ${waiting ? 'ai-explanation__wait' : ''}`}>
         {(state.view === 'ready' || waiting) && <AIExplanationIllustration />}
         <Text className="ai-explanation__title">{copy.title}</Text>
         <Text className="ai-explanation__body">{copy.description}</Text>

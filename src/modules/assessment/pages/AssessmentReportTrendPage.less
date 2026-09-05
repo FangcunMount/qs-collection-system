@@ -19,7 +19,7 @@
   margin-bottom: @space-2;
   color: @text-color-primary;
   font-size: @font-size-card-title;
-  font-weight: @font-weight-bold;
+  font-weight: @font-weight-semibold;
   line-height: 1.4;
 }
 
@@ -31,7 +31,7 @@
   &__item {
     display: block;
     color: @text-color-secondary;
-    font-size: @font-size-caption;
+    font-size: 26rpx;
     line-height: 1.6;
   }
 }
@@ -43,7 +43,7 @@
   border-radius: @radius-md;
   color: @text-color-secondary;
   background: @surface-subtle;
-  font-size: @font-size-caption;
+  font-size: 26rpx;
   line-height: 1.7;
 }
 
@@ -102,7 +102,7 @@
     display: block;
     color: @text-color-primary;
     font-size: @font-size-card-title-sm;
-    font-weight: @font-weight-bold;
+    font-weight: @font-weight-semibold;
   }
 
   &__meta {
@@ -115,7 +115,7 @@
   &__delta,
   &__score {
     color: @text-color-secondary;
-    font-size: @font-size-caption;
+    font-size: 26rpx;
   }
 }
 
@@ -131,6 +131,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: @space-2;
   border-radius: @radius-lg-token;
   background: @surface-subtle;
@@ -158,7 +159,7 @@
 
   &__score {
     color: @text-color-secondary;
-    font-size: @font-size-caption;
+    font-size: 26rpx;
   }
 
   &__action {

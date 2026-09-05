@@ -18,7 +18,8 @@ import {
   mapMedicalCatalogCard,
   type CatalogCardViewModel,
 } from "@/modules/catalog/viewModels/catalogCard";
-import medicalHeroBanner from "@/pages/catalog-medical/assets/hero/medical-catalog-v2.png";
+import CatalogAssessmentFacts from "../components/CatalogAssessmentFacts";
+import medicalHeroBanner from "@/pages/catalog-medical/assets/hero/medical-catalog-v2.webp";
 import medicalTrustImage from "@/pages/catalog-medical/assets/home/home-current-record-checklist.png";
 import "./ScaleCatalogPage.less";
 
@@ -73,7 +74,7 @@ const ScaleCatalogPage = () => {
 
   const handleScaleClick = useCallback((scale: CatalogCardViewModel) => {
     logger.RUN("点击量表", scale);
-    if (!scale?.code) {
+    if (scale.disabled) {
       Taro.showToast({ title: "量表暂不可用", icon: "none" });
       return;
     }
@@ -224,19 +225,15 @@ const ScaleCatalogPage = () => {
                   <SurfaceCard
                     key={scale.code || scale.title}
                     className="scale-hot-row"
-                    onClick={() => handleScaleClick(scale)}
+                    onClick={scale.disabled ? undefined : () => handleScaleClick(scale)}
                   >
                     <View className="scale-hot-row__content">
                       <View className="scale-hot-row__title-line">
                         <Text className="scale-hot-row__title">{scale.title}</Text>
-                        <Text className="scale-hot-row__tag">
-                          {scale.tags[0] || scale.durationLabel}
-                        </Text>
+                        {scale.tags[0] ? <Text className="scale-hot-row__tag">{scale.tags[0]}</Text> : null}
                       </View>
-                      <Text className="scale-hot-row__desc">{scale.description}</Text>
-                      <Text className="scale-hot-row__meta">
-                        {[scale.tags[0] || "适合自评", scale.durationLabel].filter(Boolean).join(" · ")}
-                      </Text>
+                      {scale.description ? <Text className="scale-hot-row__desc">{scale.description}</Text> : null}
+                      <CatalogAssessmentFacts card={scale} />
                     </View>
                     <Icon name="arrow-right" size={18} color="#8A96AA" />
                   </SurfaceCard>
@@ -259,7 +256,7 @@ const ScaleCatalogPage = () => {
             <View className="scale-trust-card__content">
               <Text className="scale-trust-card__title">专业可靠 · 科学严谨 · 隐私安全</Text>
               <Text className="scale-trust-card__desc">
-                所有量表均来自权威来源，结果仅供参考
+                请结合量表说明选择，结果用于观察与沟通参考
               </Text>
             </View>
             <Image className="scale-trust-card__image" src={medicalTrustImage} mode="aspectFit" />

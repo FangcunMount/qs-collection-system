@@ -14,8 +14,8 @@ describe("questionnaire chrome", () => {
       .join("");
     const value = component.root.findByProps({ className: "questionnaire-progress__value" });
 
-    expect(text).toBe("12/48");
-    expect(value.props.style).toEqual({ width: "25%" });
+    expect(text).toBe("当前题目 12/48");
+    expect(value.props.style).toEqual({ transform: "scaleX(0.25)" });
   });
 
   test("bottom actions keep native disabled and loading semantics", () => {

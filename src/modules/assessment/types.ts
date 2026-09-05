@@ -31,6 +31,7 @@ export interface AssessmentReadyViewModel {
   subtitle?: string;
   questionCount: number | "--";
   estimatedMinutes: number | "--";
+  writerRolesLabel?: string;
   introTitle: string;
   introduction: string;
   testees: AssessmentReadyTesteeViewModel[];
@@ -127,6 +128,7 @@ export interface MedicalReportViewModel {
   tone: "medical";
   scaleName: string;
   scaleCode: string;
+  conclusion: string;
   riskLevel: string;
   suggestions: MedicalReportSuggestionViewModel[];
   createdAt: string;

@@ -7,7 +7,8 @@ const asSource = (value: unknown): Source => value && typeof value === "object"
   : {};
 const asText = (value: unknown): string => value == null ? "" : String(value);
 const asNumber = (value: unknown): number | null => {
-  if (value === null || value === undefined || value === "") return null;
+  if (typeof value !== "number" && typeof value !== "string") return null;
+  if (typeof value === "string" && !value.trim()) return null;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 };
@@ -28,9 +29,13 @@ export const buildMedicalReportViewModel = (
   const sourceSuggestions = Array.isArray(report.suggestions) ? report.suggestions : [];
   const sourceDimensions = Array.isArray(report.dimensions) ? report.dimensions : [];
   const totalScore = asNumber(report.total_score);
+  const conclusion = asText(report.conclusion);
+  const matchingTestee = !report.testee_id || asText(report.testee_id) === asText(fallbackTestee?.id)
+    ? fallbackTestee
+    : null;
   const testeeName = asText(report.testee_name)
-    || fallbackTestee?.legalName
-    || fallbackTestee?.name
+    || matchingTestee?.legalName
+    || matchingTestee?.name
     || "";
   const testeeId = asText(report.testee_id) || asText(fallbackTestee?.id);
 
@@ -59,16 +64,17 @@ export const buildMedicalReportViewModel = (
     tone: "medical",
     scaleName: asText(report.scale_name || report.model_name || model.title),
     scaleCode: asText(report.scale_code || report.model_code || model.code),
+    conclusion,
     riskLevel: asText(report.risk_level),
     suggestions,
     createdAt: asText(report.created_at),
     testeeName,
     testeeId,
     total: totalScore === null ? null : {
-      content: asText(report.conclusion),
+      content: conclusion,
       score: totalScore,
     },
     factors,
-    hasContent: totalScore !== null || factors.length > 0 || suggestions.length > 0,
+    hasContent: Boolean(conclusion) || totalScore !== null || factors.length > 0 || suggestions.length > 0,
   };
 };

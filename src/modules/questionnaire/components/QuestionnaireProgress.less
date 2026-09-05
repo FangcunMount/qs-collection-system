@@ -13,7 +13,7 @@
 .questionnaire-progress__current {
   color: @color-neutral-900;
   font-size: @font-size-page-title;
-  font-weight: @font-weight-black;
+  font-weight: @font-weight-semibold;
   line-height: 1;
 }
 
@@ -28,7 +28,7 @@
 
 .questionnaire-progress__track {
   height: 12rpx;
-  margin-bottom: @space-7;
+  margin-bottom: @space-4;
   overflow: hidden;
   border-radius: @radius-pill;
   background: @color-neutral-100;
@@ -38,5 +38,10 @@
   height: 100%;
   border-radius: @radius-pill;
   background: @gradient-action-primary;
-  transition: width 0.28s ease;
+  width: 100%;
+  transform-origin: left center;
+  transition: transform 160ms ease-out;
 }
+
+.questionnaire-progress__caption { font-size: @font-size-body; color: @text-color-secondary; margin-right: @space-2; }
+@media (prefers-reduced-motion: reduce) { .questionnaire-progress__value { transition: none; } }

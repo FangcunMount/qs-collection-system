@@ -11,7 +11,7 @@ import FactorScatterChart from "./FactorScatterChart";
 import RadarChart from "./RadarChart";
 
 type ReportTab = "factor-analysis" | "pro-advice";
-type ChartType = "radar" | "overview" | "bar" | "scatter";
+type ChartType = "radar" | "bar" | "scatter";
 
 interface MedicalReportContentProps {
   factors: MedicalReportFactorViewModel[];
@@ -21,17 +21,12 @@ const TypedFactorBarChart = FactorBarChart as React.ComponentType<{ data: Medica
 const TypedFactorScatterChart = FactorScatterChart as React.ComponentType<{ data: MedicalReportFactorViewModel[] }>;
 const TypedRadarChart = RadarChart as React.ComponentType<{ data: MedicalReportFactorViewModel[] }>;
 
-const factorPercent = (factor: MedicalReportFactorViewModel): number => {
-  if (factor.score === null || factor.maxScore === null || factor.maxScore <= 0) return 0;
-  return Math.min(Math.max((Number(factor.score) / Number(factor.maxScore)) * 100, 0), 100);
-};
-
 const FactorCard = ({ factor }: { factor: MedicalReportFactorViewModel }) => {
   const risk = getRiskConfig(factor.riskLevel);
-  const hasScore = factor.score !== null;
-  const hasMax = factor.maxScore !== null && factor.maxScore > 0;
+  const hasScore = typeof factor.score === "number" && Number.isFinite(factor.score);
+  const hasMax = typeof factor.maxScore === "number" && Number.isFinite(factor.maxScore) && factor.maxScore > 0;
   const percent = hasScore && hasMax
-    ? Math.min((Number(factor.score) / Number(factor.maxScore)) * 100, 100)
+    ? Math.min(Math.max((Number(factor.score) / Number(factor.maxScore)) * 100, 0), 100)
     : 0;
   return (
     <View className={`factor-card ${risk.className}`}>
@@ -112,38 +107,15 @@ const MedicalReportContent = ({ factors }: MedicalReportContentProps) => {
                 <View className="chart-header">
                   <Text className="card-title">因子维度分布</Text>
                   <View className="chart-toggle">
-                    {(["radar", "overview", "bar", "scatter"] as ChartType[]).map((type) => (
+                    {(["radar", "bar", "scatter"] as ChartType[]).map((type) => (
                       <FilterChip key={type} tone="medical" selected={chartType === type} onClick={() => setChartType(type)}>
-                        {type === "radar" ? "雷达图" : type === "overview" ? "概览" : type === "bar" ? "条形图" : "散点图"}
+                        {type === "radar" ? "雷达图" : type === "bar" ? "条形图" : "散点图"}
                       </FilterChip>
                     ))}
                   </View>
                 </View>
                 {chartType === "radar" ? (
                   <View className="radar-chart-container"><TypedRadarChart data={factors} /></View>
-                ) : chartType === "overview" ? (
-                  <View className="factor-overview-chart">
-                    {factors.map((factor, index) => {
-                      const risk = getRiskConfig(factor.riskLevel);
-                      const percent = factorPercent(factor);
-                      return (
-                        <View key={factor.factorCode || index} className="factor-overview-chart__row">
-                          <View className="factor-overview-chart__header">
-                            <Text className="factor-overview-chart__name">{factor.title}</Text>
-                            <Text className="factor-overview-chart__value">
-                              {factor.score ?? "--"}{factor.maxScore != null ? ` / ${factor.maxScore}` : ""}
-                            </Text>
-                          </View>
-                          <View className="factor-overview-chart__track">
-                            <View
-                              className="factor-overview-chart__bar"
-                              style={{ width: `${percent}%`, backgroundColor: risk.bgColor }}
-                            />
-                          </View>
-                        </View>
-                      );
-                    })}
-                  </View>
                 ) : (
                   <View className="factor-chart-summary">
                     {factors.slice(0, 6).map((factor, index) => (

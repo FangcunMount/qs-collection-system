@@ -4,6 +4,7 @@ const storage = new Map();
 let routerParams = {};
 
 const taro = {
+  canIUse: () => false,
   getAccountInfoSync: () => ({ miniProgram: { envVersion: 'release' } }),
   getCurrentInstance: () => ({ router: { params: {}, path: '' } }),
   getMenuButtonBoundingClientRect: () => ({ bottom: 0, height: 0, left: 0, right: 0, top: 0, width: 0 }),
@@ -11,6 +12,7 @@ const taro = {
   getStorageSync: (key) => storage.get(key),
   getSystemInfoSync: () => ({ statusBarHeight: 0 }),
   hideLoading: noop,
+  nextTick: (callback) => callback(),
   navigateBack: resolved,
   navigateTo: resolved,
   redirectTo: resolved,
@@ -18,6 +20,7 @@ const taro = {
   removeStorageSync: (key) => storage.delete(key),
   requestSubscribeMessage: resolved,
   scanCode: resolved,
+  setNavigationBarTitle: resolved,
   setStorageSync: (key, value) => storage.set(key, value),
   showLoading: noop,
   showModal: resolved,

@@ -1,12 +1,11 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import useNativeEChart from "./useNativeEChart";
+import React, { useMemo } from "react";
 import { View } from "@tarojs/components";
 
-import * as echarts from "@/pages/assessment/components/ec-canvas/echarts";
 
 const shortLabel = (value = "") => value.length > 6 ? `${value.slice(0, 6)}…` : value;
 
 const BehaviorNormComparisonChart = ({ data = [] }) => {
-  const chartRef = useRef(null);
   const points = useMemo(() => data.filter((item) => (
     Number.isFinite(item.tScore) && Number.isFinite(item.benchmark)
   )), [data]);
@@ -14,15 +13,11 @@ const BehaviorNormComparisonChart = ({ data = [] }) => {
   const option = useMemo(() => {
     const measured = points.map((item) => item.tScore);
     const benchmark = points.map((item) => item.benchmark);
-    const allValues = [...measured, ...benchmark];
-    const minValue = allValues.length ? Math.min(...allValues) : 20;
-    const maxValue = allValues.length ? Math.max(...allValues) : 80;
-    const yMin = Math.min(30, Math.floor((minValue - 5) / 10) * 10);
-    const yMax = Math.max(80, Math.ceil((maxValue + 5) / 10) * 10);
 
     return {
-      animationDuration: 500,
-      grid: { left: 18, right: 22, top: 28, bottom: 40, containLabel: true },
+      animation: false,
+      legend: { data: ["本次 T 分", "常模基准"], top: 0, selectedMode: false },
+      grid: { left: 8, right: 28, top: 42, bottom: 24, containLabel: true },
       tooltip: {
         trigger: "axis",
         backgroundColor: "rgba(255, 255, 255, 0.98)",
@@ -38,84 +33,39 @@ const BehaviorNormComparisonChart = ({ data = [] }) => {
         },
       },
       xAxis: {
-        type: "category",
-        boundaryGap: false,
-        data: points.map((item) => item.title),
-        axisLine: { lineStyle: { color: "#DDE8F6" } },
-        axisTick: { show: false },
-        axisLabel: {
-          color: "#66738E",
-          fontSize: 10,
-          interval: 0,
-          formatter: shortLabel,
-        },
-      },
-      yAxis: {
         type: "value",
-        min: yMin,
-        max: yMax,
-        interval: 10,
         name: "T 分",
-        nameTextStyle: { color: "#8A96AA", fontSize: 10, padding: [0, 0, 0, -8] },
         axisLine: { show: false },
         axisTick: { show: false },
-        axisLabel: { color: "#8A96AA", fontSize: 10 },
+        axisLabel: { color: "#66738E", fontSize: 11 },
         splitLine: { lineStyle: { color: "#E8F0F7", type: "dashed" } },
       },
+      yAxis: {
+        type: "category",
+        inverse: true,
+        data: points.map((item) => item.title),
+        axisLine: { show: false },
+        axisTick: { show: false },
+        axisLabel: { color: "#53627A", fontSize: 11, interval: 0, formatter: shortLabel },
+      },
       series: [
-        {
-          name: "本次 T 分",
-          type: "line",
-          data: measured,
-          smooth: 0.28,
-          symbol: "circle",
-          symbolSize: 8,
-          lineStyle: { width: 3, color: "#18A999" },
-          itemStyle: { color: "#18A999", borderColor: "#FFFFFF", borderWidth: 2 },
-          areaStyle: {
-            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: "rgba(24, 169, 153, 0.16)" },
-              { offset: 1, color: "rgba(24, 169, 153, 0.01)" },
-            ]),
-          },
-          label: {
-            show: true,
-            position: "top",
-            color: "#168C80",
-            fontSize: 10,
-          },
-        },
-        {
-          name: "常模基准",
-          type: "line",
-          data: benchmark,
-          symbol: "none",
-          lineStyle: { width: 2, color: "#8B7CF6", type: "dashed" },
-        },
+        { name: "本次 T 分", type: "bar", data: measured, barMaxWidth: 16,
+          itemStyle: { color: "#18A999" }, label: { show: true, position: "right", fontSize: 11 } },
+        { name: "常模基准", type: "bar", data: benchmark, barMaxWidth: 16,
+          itemStyle: { color: "#8B7CF6" }, label: { show: true, position: "right", fontSize: 11 } },
       ],
     };
   }, [points]);
 
-  const ec = useMemo(() => ({
-    onInit(canvas, width, height, dpr) {
-      const chart = echarts.init(canvas, null, { width, height, devicePixelRatio: dpr });
-      canvas.setChart(chart);
-      chart.setOption(option);
-      chartRef.current = chart;
-      return chart;
-    },
-  }), [option]);
-
-  useEffect(() => {
-    if (chartRef.current) chartRef.current.setOption(option, true);
-  }, [option]);
+  const { ec, onInit } = useNativeEChart(option);
 
   return (
-    <View className="behavior-norm-chart">
+    <View className="behavior-norm-chart" style={{ height: `${Math.max(360, points.length * 96 + 120)}rpx` }}>
       <ec-canvas
         id="behavior-norm-comparison"
         canvasId="behavior-norm-comparison"
         ec={ec}
+        onInit={onInit}
         style="width: 100%; height: 100%;"
       />
     </View>

@@ -11,7 +11,7 @@ export const normalizeFactorChartData = (data = []) => {
       ...item,
       score,
       maxScore,
-      riskLevel: item.riskLevel || item.risk_level || 'normal',
+      riskLevel: item.riskLevel || item.risk_level || '',
       percent: maxScore ? Math.min(Math.max((score / maxScore) * 100, 0), 100) : null,
     };
   });

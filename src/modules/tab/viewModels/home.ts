@@ -3,7 +3,7 @@ import { resolveAssessmentKind } from "@/shared/lib/assessmentKind";
 import { getRiskConfig } from "@/shared/lib/statusFormatters";
 import { normalizeCatalogLabel } from "@/modules/catalog/viewModels/catalogCard";
 
-export type HomeRiskTone = "normal" | "low" | "medium" | "high";
+export type HomeRiskTone = "normal" | "low" | "medium" | "high" | "unknown";
 
 export interface RecentAssessmentViewModel {
   id: string;
@@ -58,17 +58,16 @@ export const formatHomeDateTime = (value: unknown): string => {
 
 export const resolveHomeRiskTone = (riskLevel: unknown): HomeRiskTone => {
   const raw = String(riskLevel || "").toLowerCase();
-  if (raw.includes("high") || raw.includes("severe") || raw.includes("critical")) return "high";
-  if (raw.includes("medium") || raw.includes("mid") || raw.includes("moderate")) return "medium";
-  if (raw.includes("low") || raw.includes("mild")) return "low";
-  return "normal";
+  if (["high", "high_risk", "severe", "critical"].includes(raw)) return "high";
+  if (["medium", "medium_risk", "mid", "moderate"].includes(raw)) return "medium";
+  if (["low", "low_risk", "mild"].includes(raw)) return "low";
+  if (["normal", "none", "healthy"].includes(raw)) return "normal";
+  return "unknown";
 };
 
 const resolveRiskLabel = (riskLevel: unknown): string => {
   const tone = resolveHomeRiskTone(riskLevel);
-  if (tone === "high") return "偏高";
-  if (tone === "medium") return "中等偏高";
-  return "良好";
+  return tone === "unknown" ? "查看报告" : getRiskConfig(tone).label;
 };
 
 export const mapRecentAssessment = (
@@ -91,10 +90,10 @@ export const mapRecentAssessment = (
     title: resolveRecentAssessmentTitle(item),
     completedAt: formatHomeDateTime(item.submitted_at ?? item.completed_at ?? item.created_at ?? item.updated_at),
     scaleCode: normalizeCatalogLabel(item.scale_code ?? item.questionnaire_code ?? item.code),
-    tag: categoryTag || (riskTone === "normal" ? "健康状态" : riskConfig.label) || "健康状态",
-    score: scoreValue === undefined || scoreValue === null || scoreValue === "" || Number.isNaN(numericScore)
+    tag: categoryTag || (riskTone === "unknown" ? "" : riskConfig.label),
+    score: scoreValue === undefined || scoreValue === null || scoreValue === "" || !Number.isFinite(numericScore)
       ? ""
-      : Math.round(numericScore),
+      : numericScore,
     riskLevel,
     riskTone,
     riskLabel: resolveRiskLabel(riskLevel),

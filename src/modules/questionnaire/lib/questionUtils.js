@@ -3,6 +3,7 @@
  */
 
 import { isEmpty } from '@/shared/lib/type';
+import { configuredAssessmentMinutes, estimateAssessmentMinutes } from '@/shared/lib/assessmentDuration';
 
 export const SUBMIT_NO_ANSWER_MESSAGE = '请至少完成一道题目后再提交';
 
@@ -76,13 +77,7 @@ export function getValidQuestionCount(questions, showControllerCheck = null) {
  * @returns {number} 预计答题时间（分钟，向上取整）
  */
 export function getEstimatedTime(questionnaire, showControllerCheck = null, timePerQuestion = 0.5) {
-  // 如果问卷有预设的预计时间，优先使用
-  if (questionnaire?.estimated_time && questionnaire.estimated_time > 0) {
-    return Math.ceil(questionnaire.estimated_time);
-  }
-
-  // 否则根据有效题目数量计算
   const validQuestionCount = getValidQuestionCount(questionnaire?.questions, showControllerCheck);
-  return Math.ceil(validQuestionCount * timePerQuestion);
+  const configuredMinutes = configuredAssessmentMinutes(questionnaire);
+  return estimateAssessmentMinutes(validQuestionCount, configuredMinutes, timePerQuestion) ?? 0;
 }
-

@@ -1,6 +1,6 @@
-import React, { useMemo, useRef, useEffect } from 'react';
+import useNativeEChart from "./useNativeEChart";
+import React, { useMemo } from "react";
 import { View } from '@tarojs/components';
-import * as echarts from '@/pages/assessment/components/ec-canvas/echarts';
 import { getRiskConfig } from '@/shared/lib/statusFormatters';
 import { normalizeFactorChartData } from './factorChartData';
 
@@ -9,7 +9,6 @@ import { normalizeFactorChartData } from './factorChartData';
  * data: [{ title, score, max_score, risk_level }]
  */
 const RadarChart = ({ data = [] }) => {
-  const chartRef = useRef(null);
 
   // 根据风险等级获取颜色配置
   const hexToRgba = (hex, alpha) => {
@@ -32,13 +31,13 @@ const RadarChart = ({ data = [] }) => {
 
   // 计算整体风险等级（取最高风险）
   const getOverallRiskLevel = () => {
-    if (!data || data.length === 0) return 'normal';
+    if (!data || data.length === 0) return 'unknown';
     const riskPriority = { 'high': 3, 'medium': 2, 'low': 1, 'normal': 0 };
-    let maxRisk = 'normal';
-    let maxPriority = 0;
+    let maxRisk = 'unknown';
+    let maxPriority = -1;
     data.forEach(item => {
-      const itemRiskLevel = item.riskLevel || item.risk_level || 'normal';
-      const priority = riskPriority[itemRiskLevel] || 0;
+      const itemRiskLevel = getRiskConfig(item.riskLevel || item.risk_level).className.replace('risk-', '');
+      const priority = riskPriority[itemRiskLevel] ?? -1;
       if (priority > maxPriority) {
         maxPriority = priority;
         maxRisk = itemRiskLevel;
@@ -162,12 +161,7 @@ const RadarChart = ({ data = [] }) => {
             const percentValues = params.data.value; // 这是百分比值
             normalizedData.forEach((item, index) => {
               if (index < percentValues.length) {
-                const riskLabel = {
-                  'high': '高风险',
-                  'medium': '中风险',
-                  'low': '低风险',
-                  'normal': '正常',
-                }[item?.riskLevel] || '正常';
+                const riskLabel = getRiskConfig(item?.riskLevel).label;
                 // 显示原始得分和百分比
                 const originalScore = Number(item.score) || 0;
                 const maxScore = Number(item.maxScore) || 1;
@@ -284,29 +278,7 @@ const RadarChart = ({ data = [] }) => {
   }, [data]);
 
   // echarts 初始化配置
-  const ec = useMemo(
-    () => ({
-      onInit(canvas, width, height, dpr) {
-        const chart = echarts.init(canvas, null, {
-          width,
-          height,
-          devicePixelRatio: dpr,
-        });
-        canvas.setChart(chart);
-        chart.setOption(option);
-        chartRef.current = chart;
-        return chart;
-      },
-    }),
-    [option],
-  );
-
-  // 数据变化时更新图表
-  useEffect(() => {
-    if (chartRef.current && option) {
-      chartRef.current.setOption(option, true);
-    }
-  }, [option]);
+  const { ec, onInit } = useNativeEChart(option);
 
   return (
     <View className="radar-chart-wrapper">
@@ -314,6 +286,7 @@ const RadarChart = ({ data = [] }) => {
         id="radar"
         canvasId="radar"
         ec={ec}
+        onInit={onInit}
         style="width: 100%; height: 100%;"
       />
     </View>

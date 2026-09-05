@@ -1,6 +1,8 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import Taro, { usePullDownRefresh } from "@tarojs/taro";
 import { View, Text, ScrollView, Image } from "@tarojs/components";
+import ActionButton from "@/shared/ui/ActionButton";
+import CatalogAssessmentFacts from "../components/CatalogAssessmentFacts";
 import SearchBox from "@/shared/ui/SearchBox";
 import AppNavigationBar from "@/shared/ui/AppNavigationBar";
 import FilterChip from "@/shared/ui/FilterChip";
@@ -71,6 +73,7 @@ const ScaleListPage = () => {
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [searchText, setSearchText] = useState("");
+  const [appliedSearchText, setAppliedSearchText] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [pagination, setPagination] = useState<PaginationState>({
     page: 1,
@@ -81,11 +84,22 @@ const ScaleListPage = () => {
   const [isParamsReady, setIsParamsReady] = useState(false);
   const [queryToken, setQueryToken] = useState(0);
 
+  const requestGeneration = useRef(0);
+  const requestPending = useRef(false);
+
+  useEffect(() => () => { requestGeneration.current += 1; }, []);
+
   const loadScaleList = useCallback(async (page = 1, append = false) => {
+    const generation = ++requestGeneration.current;
+    requestPending.current = true;
+    if (!append) {
+      setScaleList([]);
+      setPagination({ page: 1, page_size: 20, total: 0, total_pages: 0 });
+    }
     try {
       setLoading(true);
       setLoadError("");
-      const hasSearch = Boolean(String(searchText || '').trim());
+      const hasSearch = Boolean(String(appliedSearchText || '').trim());
       const loadAllPages = hasSearch || !selectedCategory;
       let currentPage = loadAllPages ? 1 : page;
       let totalPages = 1;
@@ -99,6 +113,7 @@ const ScaleListPage = () => {
           page: currentPage,
           pageSize: 20,
         });
+        if (generation !== requestGeneration.current) return;
         const payload = (result.data || result) as Record<string, unknown>;
         const models: unknown[] = Array.isArray(payload.models) ? payload.models : [];
         collected.push(...models.map(mapMedicalCatalogCard).filter(
@@ -112,7 +127,7 @@ const ScaleListPage = () => {
       } while (currentPage <= totalPages);
 
       const filtered = hasSearch
-        ? collected.filter((scale) => matchesCatalogCardSearch(scale, searchText))
+        ? collected.filter((scale) => matchesCatalogCardSearch(scale, appliedSearchText))
         : collected;
       setScaleList((prev) => (append ? [...prev, ...filtered] : filtered));
       setPagination({
@@ -122,13 +137,17 @@ const ScaleListPage = () => {
         total_pages: loadAllPages ? 1 : totalPages,
       });
     } catch (error) {
+      if (generation !== requestGeneration.current) return;
       console.error("加载量表列表失败:", error);
       setLoadError("量表目录加载失败，请检查网络后重试。");
       Taro.showToast({ title: "加载失败，请重试", icon: "none", duration: 2000 });
     } finally {
-      setLoading(false);
+      if (generation === requestGeneration.current) {
+        requestPending.current = false;
+        setLoading(false);
+      }
     }
-  }, [searchText, selectedCategory]);
+  }, [appliedSearchText, selectedCategory]);
 
   usePullDownRefresh(async () => {
     await loadScaleList(1, false);
@@ -139,6 +158,7 @@ const ScaleListPage = () => {
     const params = Taro.getCurrentInstance()?.router?.params || {};
     if (params.keyword) {
       setSearchText(params.keyword);
+      setAppliedSearchText(params.keyword);
     }
     if (params.category) {
       setSelectedCategory(params.category);
@@ -162,19 +182,23 @@ const ScaleListPage = () => {
   }, []);
 
   const handleSearch = useCallback(() => {
+    requestGeneration.current += 1;
     setSelectedCategory(null);
+    setAppliedSearchText(searchText.trim());
     setQueryToken((token) => token + 1);
-  }, []);
+  }, [searchText]);
 
   const handleChipClick = useCallback((value: string | null) => {
+    requestGeneration.current += 1;
     setSearchText("");
+    setAppliedSearchText("");
     setSelectedCategory(value);
     setQueryToken((token) => token + 1);
   }, []);
 
   const handleScaleClick = useCallback((scale: CatalogCardViewModel) => {
     logger.RUN("点击量表", scale);
-    if (!scale?.code) {
+    if (scale.disabled) {
       Taro.showToast({ title: "量表暂不可用", icon: "none" });
       return;
     }
@@ -182,6 +206,7 @@ const ScaleListPage = () => {
   }, []);
 
   const handleLoadMore = () => {
+    if (requestPending.current) return;
     if (pagination.page >= pagination.total_pages) {
       Taro.showToast({ title: "没有更多量表了", icon: "none" });
       return;
@@ -228,7 +253,7 @@ const ScaleListPage = () => {
         </ScrollView>
 
         <View className="scale-list-count">
-          <Text>{pagination.total ? `共 ${pagination.total} 个量表` : "量表列表"}</Text>
+          <Text>{loading ? "正在更新量表…" : `共 ${pagination.total} 个量表`}</Text>
         </View>
 
         <View className="scale-list">
@@ -250,23 +275,24 @@ const ScaleListPage = () => {
                 <SurfaceCard
                   key={scale.code || scale.title}
                   className="scale-list-row"
-                  onClick={() => handleScaleClick(scale)}
+                  interactive={!scale.disabled}
+                  onClick={scale.disabled ? undefined : () => handleScaleClick(scale)}
                 >
                   <View className="scale-list-row__icon">
                     <Image className="scale-list-row__image" src={resolveScaleImage(scale)} mode="aspectFit" />
                   </View>
                   <View className="scale-list-row__content">
                     <Text className="scale-list-row__title">{scale.title}</Text>
-                    <Text className="scale-list-row__desc">{scale.description}</Text>
+                    {scale.description ? <Text className="scale-list-row__desc">{scale.description}</Text> : null}
+                    <CatalogAssessmentFacts card={scale} />
                   </View>
-                  <Text className="scale-list-row__duration">{scale.durationLabel}</Text>
+
                 </SurfaceCard>
               ))}
-              {pagination.page < pagination.total_pages && (
-                <View className="scale-list-load-more" onClick={handleLoadMore}>
-                  <Text>加载更多</Text>
-                </View>
-              )}
+              {loadError ? <StatePanel state="error" compact tone="medical" title="后续量表加载失败" description="已加载的量表仍可查看，请重试。" actionText="重试加载" onAction={() => loadScaleList(pagination.page + 1, true)} /> : null}
+              {pagination.page < pagination.total_pages && !loadError ? (
+                <ActionButton variant="secondary" block loading={loading} onClick={handleLoadMore}>加载更多</ActionButton>
+              ) : null}
             </>
           ) : (
             <StatePanel

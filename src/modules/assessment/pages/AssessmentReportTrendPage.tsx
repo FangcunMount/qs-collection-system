@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Text, View } from "@tarojs/components";
-import Taro from "@tarojs/taro";
+import Taro, { useDidHide, useDidShow } from "@tarojs/taro";
+import { getSessionRevision, onSessionCleared } from "@/shared/stores/sessionPrivacy";
 
 import TrendLineChart from "@/modules/assessment/components/report/TrendLineChart";
-import { formatReportDelta } from "@/modules/assessment/lib/reportTrend";
+import { calculateReportDelta, formatReportDelta, formatReportScore, parseReportScore } from "@/modules/assessment/lib/reportTrend";
 import { routes } from "@/shared/config/routes";
 import { formatChartDateLabel, formatSimpleDate } from "@/shared/lib/dateFormatters";
 import PageShell from "@/shared/ui/PageShell";
@@ -64,7 +65,7 @@ interface TrendSummary {
 interface ChartPoint {
   label: string;
   fullLabel: string;
-  value: number;
+  value: number | null;
 }
 
 const TypedTrendLineChart = TrendLineChart as React.ComponentType<{
@@ -88,7 +89,22 @@ const AssessmentReportTrendPage = () => {
   const [summary, setSummary] = useState<TrendSummary | null>(null);
   const [selectedFactorCode, setSelectedFactorCode] = useState("");
 
+  const requestVersion = useRef(0);
+  const reloadOnShow = useRef(false);
+  useEffect(() => onSessionCleared(() => {
+    reloadOnShow.current = false;
+    requestVersion.current += 1;
+    setSummary(null);
+    setSelectedFactorCode("");
+    setLoading(false);
+    setErrorMessage("登录状态已变化，请重新打开报告。");
+  }), []);
+
   const fetchSummary = useCallback(async () => {
+    const version = ++requestVersion.current;
+    const session = getSessionRevision();
+    const isCurrent = () => version === requestVersion.current && session === getSessionRevision();
+    setSummary(null);
     if (!assessmentId || !testeeId) {
       setErrorMessage("缺少测评或受测者参数，无法加载趋势。");
       setLoading(false);
@@ -98,6 +114,7 @@ const AssessmentReportTrendPage = () => {
     setErrorMessage("");
     try {
       const result = await getAssessmentTrendSummary(assessmentId, testeeId) as unknown;
+      if (!isCurrent()) return;
       const wrapped = result && typeof result === "object"
         ? result as { data?: TrendSummary }
         : null;
@@ -106,15 +123,27 @@ const AssessmentReportTrendPage = () => {
         : result as TrendSummary | null;
       setSummary(data || null);
     } catch (error: unknown) {
+      if (!isCurrent()) return;
       console.error("[analysis/trend] 获取趋势摘要失败:", error);
       setErrorMessage(getErrorMessage(error));
     } finally {
-      setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
   }, [assessmentId, testeeId]);
 
+  useDidHide(() => {
+    requestVersion.current += 1;
+    reloadOnShow.current = true;
+  });
+  useDidShow(() => {
+    if (!reloadOnShow.current) return;
+    reloadOnShow.current = false;
+    void fetchSummary();
+  });
+
   useEffect(() => {
     void fetchSummary();
+    return () => { requestVersion.current += 1; };
   }, [fetchSummary]);
 
   useEffect(() => {
@@ -142,14 +171,14 @@ const AssessmentReportTrendPage = () => {
   const totalTrendPoints = useMemo<ChartPoint[]>(() => timeline.map((item) => ({
     label: formatChartDateLabel(item.submitted_at),
     fullLabel: item.submitted_at,
-    value: Number(item.total_score || 0),
+    value: parseReportScore(item.total_score),
   })), [timeline]);
 
   const factorTrendPoints = useMemo<ChartPoint[]>(() => (
     (selectedFactor?.points || []).map((item) => ({
       label: formatChartDateLabel(item.submitted_at),
       fullLabel: item.submitted_at,
-      value: Number(item.score || 0),
+      value: parseReportScore(item.score),
     }))
   ), [selectedFactor]);
 
@@ -213,9 +242,10 @@ const AssessmentReportTrendPage = () => {
                     tone="medical"
                     title="总分趋势"
                     description={previous
-                      ? `较上次 ${formatReportDelta(Number(current.total_score || 0) - Number(previous.total_score || 0))}`
+                      ? `较上次 ${formatReportDelta(calculateReportDelta(current.total_score, previous.total_score))}`
                       : "暂无上次记录"}
                   />
+                  <Text className="trend-header-note">缺失分数保留为空缺；分数升降需结合量表结论理解。</Text>
                   <TypedTrendLineChart
                     chartId="analysis-total-trend"
                     points={totalTrendPoints}
@@ -263,9 +293,9 @@ const AssessmentReportTrendPage = () => {
                           return (
                             <View className="selected-factor-summary__meta">
                               <RiskTag riskLevel={change.risk_level} />
-                              <Text className="selected-factor-summary__delta">{formatReportDelta(Number(change.delta || 0))}</Text>
+                              <Text className="selected-factor-summary__delta">{formatReportDelta(change.delta)}</Text>
                               <Text className="selected-factor-summary__score">
-                                {change.previous_score} → {change.current_score}
+                                {formatReportScore(change.previous_score)} → {formatReportScore(change.current_score)}
                               </Text>
                             </View>
                           );
@@ -293,7 +323,7 @@ const AssessmentReportTrendPage = () => {
                           <Text className="history-list-item__time">{formatSimpleDate(item.submitted_at)}</Text>
                           <View className="history-list-item__tags">
                             <RiskTag riskLevel={item.risk_level} />
-                            <Text className="history-list-item__score">总分 {item.total_score}</Text>
+                            <Text className="history-list-item__score">总分 {formatReportScore(item.total_score)}</Text>
                           </View>
                         </View>
                         <ActionButton

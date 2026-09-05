@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from "react";
-import { Button, Image, OpenData, Text, View } from "@tarojs/components";
+import React, { useEffect, useRef, useState } from "react";
+import { Button, Image, Text, View } from "@tarojs/components";
 import Taro from "@tarojs/taro";
 import Icon from "@/shared/ui/Icon";
-import type { IconName } from "@/shared/ui/Icon";
-
 import { routes } from "@/shared/config/routes";
 import { getAccountStoreState, initAccountStore, subscribeAccountStore } from "@/shared/stores/account";
+import { getSessionStoreState, subscribeSessionStore } from "@/shared/stores/session";
+import { bootstrapSession } from "@/services/auth/sessionManager";
+import { logoutAccount } from "@/modules/account/services/logoutAccount";
 import BottomMenu from "@/shared/ui/BottomMenu";
 import PageShell from "@/shared/ui/PageShell";
 import ActionButton from "@/shared/ui/ActionButton";
@@ -13,65 +14,89 @@ import SurfaceCard from "@/shared/ui/SurfaceCard";
 import type { UserStoreState } from "@/store/userStore";
 import "./MeTabPage.less";
 
-const menuItems = [
-  { id: 1, name: "我的档案", icon: "user", tone: "medical" },
-  { id: 2, name: "我的记录", icon: "list", tone: "success" },
-  { id: 3, name: "设置", icon: "settings", tone: "warning" },
-] as const;
+const sessionExists = () => {
+  const { tokenData } = getSessionStoreState();
+  return Boolean(tokenData?.access_token || tokenData?.refresh_token);
+};
+const versionLabel = () => {
+  try { return Taro.getAccountInfoSync().miniProgram.version || ""; } catch (_) { return ""; }
+};
 
 const MeTabPage = () => {
   const [userState, setUserState] = useState<UserStoreState>(() => getAccountStoreState());
+  const [isLoggedIn, setIsLoggedIn] = useState(sessionExists);
+  const [busy, setBusy] = useState(false);
+  const actionPending = useRef(false);
+  const mounted = useRef(true);
+  const [version] = useState(versionLabel);
   const userInfo = userState.userInfo;
-  const isLoggedIn = Boolean(userInfo?.name);
-  const userName = userInfo?.name || userInfo?.nickname || "用户";
+  const userName = userInfo?.name || userInfo?.nickname || "已登录用户";
   const userAvatar = userInfo?.picture || userInfo?.avatarUrl || "";
-  const canUseWechatOpenData = process.env.TARO_ENV === "weapp";
 
   useEffect(() => {
-    const unsubscribe = subscribeAccountStore((snapshot: UserStoreState) => setUserState(snapshot));
-    const initial = getAccountStoreState();
-    if (!initial.isInitialized && !initial.isLoading) {
-      initAccountStore().catch((error: unknown) => console.error("[UserProfile] 初始化用户数据失败:", error));
-    }
-    return unsubscribe;
+    mounted.current = true;
+    const unsubscribeAccount = subscribeAccountStore(setUserState);
+    const unsubscribeSession = subscribeSessionStore(() => setIsLoggedIn(sessionExists()));
+    return () => { mounted.current = false; unsubscribeAccount(); unsubscribeSession(); };
   }, []);
 
-  const handleMenuItemClick = (id: number) => {
-    if (id === 1) Taro.navigateTo({ url: routes.testeeList() });
-    if (id === 2) Taro.navigateTo({ url: routes.assessmentRecords() });
-    if (id === 3) Taro.pageScrollTo({ scrollTop: 9999, duration: 200 });
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    const initial = getAccountStoreState();
+    if (!initial.isInitialized && !initial.isLoading) void initAccountStore();
+  }, [isLoggedIn]);
+
+  const handleLogin = async () => {
+    if (actionPending.current) return;
+    actionPending.current = true;
+    setBusy(true);
+    try {
+      const session = await bootstrapSession({ allowInteractiveLogin: true });
+      if (session.status !== "authenticated" && session.status !== "unregistered") {
+        Taro.showToast({ title: "暂时无法登录，请稍后重试", icon: "none" });
+      }
+    } catch (_) {
+      Taro.showToast({ title: "登录未完成，请重试", icon: "none" });
+    } finally {
+      actionPending.current = false;
+      if (mounted.current) setBusy(false);
+    }
   };
 
-  const handleClearCache = () => {
-    Taro.showModal({
-      title: "清除缓存",
-      content: "确定要清除所有缓存数据吗？",
-      success: (result) => {
-        if (!result.confirm) return;
-        try {
-          Taro.clearStorage();
-          Taro.showToast({ title: "缓存已清除", icon: "success", duration: 2000 });
-        } catch (_error: unknown) {
-          Taro.showToast({ title: "清除失败", icon: "none", duration: 2000 });
-        }
-      },
-    });
+  const handleLogout = async () => {
+    if (actionPending.current) return;
+    actionPending.current = true;
+    try {
+      const confirmation = await Taro.showModal({
+        title: "退出登录",
+        content: "退出后将清除本机的账号、成员与测评临时信息，已提交的测评记录仍保留在账号中。",
+      });
+      if (!confirmation.confirm) return;
+      setBusy(true);
+      const revocation = logoutAccount();
+      // Drop old report pages from the navigation stack as soon as local
+      // identity is cleared; remote revocation can finish independently.
+      await Taro.reLaunch({ url: routes.tabMe() });
+      const result = await revocation;
+      if (!sessionExists()) Taro.showToast({ title: result.remoteRevoked ? "已退出登录" : "已退出本机，远端注销未确认", icon: "none" });
+    } catch (_) {
+      Taro.showToast({ title: "退出未完成，请重试", icon: "none" });
+    } finally {
+      actionPending.current = false;
+      if (mounted.current) setBusy(false);
+    }
   };
 
-  const handleLogout = () => {
-    Taro.showModal({
-      title: "退出登录",
-      content: "确定要退出当前登录状态吗？",
-      success: (result) => {
-        if (!result.confirm) return;
-        try {
-          Taro.clearStorage();
-          Taro.redirectTo({ url: routes.accountRegister() });
-        } catch (_error: unknown) {
-          Taro.showToast({ title: "退出失败", icon: "none", duration: 2000 });
-        }
-      },
-    });
+  const openPrivacy = async () => {
+    try {
+      if (process.env.TARO_ENV === "weapp" && typeof Taro.openPrivacyContract === "function") {
+        await Taro.openPrivacyContract();
+        return;
+      }
+      await Taro.showModal({ title: "隐私授权说明", content: "小程序在登录、家庭档案管理和测评服务中使用必要的身份与档案信息。可在微信的小程序设置中查看和管理授权。", showCancel: false });
+    } catch (_) {
+      Taro.showToast({ title: "暂时无法打开，可在小程序设置中查看", icon: "none" });
+    }
   };
 
   return (
@@ -80,60 +105,46 @@ const MeTabPage = () => {
         {isLoggedIn ? (
           <View className="user-info">
             <View className="user-avatar">
-              {canUseWechatOpenData ? (
-                <OpenData type="userAvatarUrl" className="avatar-open-data" />
-              ) : userAvatar ? (
-                <Image src={userAvatar} className="avatar-img" mode="aspectFill" />
-              ) : <Text>👤</Text>}
+              {userAvatar ? <Image src={userAvatar} className="avatar-img" mode="aspectFill" /> : <Icon name="user" size={32} />}
             </View>
             <View className="user-details">
               <Text className="user-name">{userName}</Text>
-              <Text className="user-desc">{userInfo?.mobile || ""}</Text>
+              <Text className="user-desc">{userState.isLoading ? "正在加载账号信息…" : "管理家庭档案，回顾测评记录"}</Text>
             </View>
           </View>
         ) : (
-          <SurfaceCard interactive className="login-card" onClick={() => Taro.navigateTo({ url: routes.accountRegister() })}>
-            <View className="login-avatar"><Text>👤</Text></View>
-            <View className="login-info">
-              <View className="login-title-row">
-                <Text className="login-title">登录/注册</Text>
-                <Icon name="arrow-right" size={20} color="#8A96AA" />
-              </View>
-              <Text className="login-subtitle">点击登录，享受完整服务</Text>
-            </View>
+          <SurfaceCard className="login-card">
+            <Text className="login-title">欢迎来到 Qlume</Text>
+            <Text className="login-subtitle">登录后管理家庭档案，查看已有测评记录。</Text>
+            <ActionButton block loading={busy} onClick={() => void handleLogin()}>登录 / 注册</ActionButton>
           </SurfaceCard>
         )}
       </View>
-
-      <View className="menu-grid">
-        {menuItems.map((item) => (
-          <SurfaceCard key={item.id} interactive className="profile-menu-item" onClick={() => handleMenuItemClick(item.id)}>
-            <View className={`profile-menu-icon profile-menu-icon--${item.tone}`}>
-              <Icon name={item.icon as IconName} size={28} color="#6657D9" />
-            </View>
-            <Text className="profile-menu-name">{item.name}</Text>
-          </SurfaceCard>
-        ))}
-      </View>
-
-      <View className="action-section">
+      <View className="profile-group">
+        <Text className="profile-group__title">家庭与测评</Text>
         <SurfaceCard className="settings-card">
-          <Button className="settings-item" onClick={() => Taro.navigateTo({ url: routes.accountSubscription() })}>
+          <Button className="settings-item" hoverClass="settings-item--pressed" onClick={() => Taro.navigateTo({ url: routes.testeeList() })}>
+            <View className="settings-item__content"><Text>家庭档案</Text><Text className="settings-item__description">选择与管理测评成员</Text></View><Text className="settings-item__arrow">›</Text>
+          </Button>
+          <Button className="settings-item" hoverClass="settings-item--pressed" onClick={() => Taro.navigateTo({ url: routes.assessmentRecords() })}>
+            <View className="settings-item__content"><Text>医学测评记录</Text><Text className="settings-item__description">人格与行为报告可从对应目录查看</Text></View><Text className="settings-item__arrow">›</Text>
+          </Button>
+        </SurfaceCard>
+      </View>
+      <View className="profile-group">
+        <Text className="profile-group__title">通知与隐私</Text>
+        <SurfaceCard className="settings-card">
+          <Button className="settings-item" hoverClass="settings-item--pressed" onClick={() => Taro.navigateTo({ url: routes.accountSubscription() })}>
             <Text>订阅消息管理</Text><Text className="settings-item__arrow">›</Text>
           </Button>
-          <Button className="settings-item" onClick={handleClearCache}>
-            <Text>清除缓存</Text><Text className="settings-item__arrow">›</Text>
-          </Button>
-          <Button className="settings-item" onClick={() => Taro.showModal({
-            title: "隐私授权说明",
-            content: "小程序仅在完成登录、档案管理和测评记录查询时使用必要的身份与档案信息。",
-            showCancel: false,
-          })}>
+          <Button className="settings-item" hoverClass="settings-item--pressed" onClick={() => void openPrivacy()}>
             <Text>隐私授权说明</Text><Text className="settings-item__arrow">›</Text>
           </Button>
         </SurfaceCard>
-        <ActionButton variant="danger" tone="neutral" block onClick={handleLogout}>退出登录</ActionButton>
-        <Text className="version-text">Version 2.4.0</Text>
+      </View>
+      <View className="action-section">
+        {isLoggedIn ? <ActionButton variant="ghost" tone="neutral" block loading={busy} onClick={() => void handleLogout()}>退出登录</ActionButton> : null}
+        <Text className="version-text">Qlume{version ? ` · ${version}` : ""}</Text>
       </View>
       <BottomMenu activeKey="我的" />
     </PageShell>

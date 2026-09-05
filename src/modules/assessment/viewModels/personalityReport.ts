@@ -9,12 +9,14 @@ export const buildPersonalityReportViewModel = (
   fallbackTestee?: FallbackTestee,
 ): PersonalityReportViewModel => {
   const normalized = normalizePersonalityReport(raw) as Omit<PersonalityReportViewModel, "tone">;
+  const matchingTestee = !normalized.testeeId || String(normalized.testeeId) === String(fallbackTestee?.id)
+    ? fallbackTestee : null;
   return {
     ...normalized,
     tone: "personality",
     testeeName: normalized.testeeName
-      || fallbackTestee?.legalName
-      || fallbackTestee?.name
+      || matchingTestee?.legalName
+      || matchingTestee?.name
       || "",
     testeeId: normalized.testeeId || String(fallbackTestee?.id || ""),
   };

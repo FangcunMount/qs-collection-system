@@ -1,12 +1,13 @@
-import React, { useCallback, useEffect, useState } from "react";
-import Taro from "@tarojs/taro";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import Taro, { useDidHide, useDidShow } from "@tarojs/taro";
+import { getSessionRevision, onSessionCleared } from "@/shared/stores/sessionPrivacy";
 import { View } from "@tarojs/components";
 
 import { routes } from "@/shared/config/routes";
 import { isAbilityAssessmentKind, isPersonalityAssessmentKind } from "@/shared/lib/assessmentKind";
 import { getLogger } from "@/shared/lib/logger";
 import { getAssessmentEntryContext } from "@/shared/stores/assessmentEntry";
-import { findTesteeById, getSelectedTesteeId } from "@/shared/stores/testees";
+import { findTesteeById } from "@/shared/stores/testees";
 import { getAssessmentTrendSummary } from "@/services/api/assessments";
 import ReportPageShell from "../components/report/ReportPageShell";
 import PlanSubscribeConfirm from "@/shared/ui/PlanSubscribeConfirm";
@@ -37,11 +38,6 @@ const logger = getLogger("analysis");
 type RouteParams = Record<string, string | undefined>;
 type TrendSummary = Record<string, unknown>;
 
-const currentFallbackTestee = () => {
-  const selectedId = getSelectedTesteeId();
-  return selectedId ? findTesteeById(selectedId) : null;
-};
-
 const messageOf = (error: unknown): string => error instanceof Error && error.message
   ? error.message
   : "加载分析报告失败";
@@ -59,7 +55,25 @@ const AssessmentReportPage = () => {
   const [error, setError] = useState("");
   const [trendSummary, setTrendSummary] = useState<TrendSummary | null>(null);
   const [trendLoading, setTrendLoading] = useState(false);
+  const [trendError, setTrendError] = useState("");
   const [entryContext] = useState(() => getAssessmentEntryContext());
+
+  const requestVersion = useRef(0);
+  const reloadOnShow = useRef(false);
+  const trendVersion = useRef(0);
+  useEffect(() => onSessionCleared(() => {
+    reloadOnShow.current = false;
+    requestVersion.current += 1;
+    trendVersion.current += 1;
+    setReport(null);
+    setAssessmentContext({ assessmentId: "", testeeId: "" });
+    setAnswerSheetId("");
+    setTrendSummary(null);
+    setTrendLoading(false);
+    setTrendError("");
+    setLoading(false);
+    setError("登录状态已变化，请重新打开报告。");
+  }), []);
 
   const redirectPersonality = useCallback((raw?: unknown) => {
     if (!isPersonalityAssessmentKind(assessmentKind) && !isPersonalityReportPayload(raw)) return false;
@@ -75,35 +89,52 @@ const AssessmentReportPage = () => {
   }, [assessmentKind, params.a, params.aid, params.rid, params.t, params.task_id]);
 
   const loadTrend = useCallback(async (assessmentId: string, testeeId: string) => {
+    const version = ++trendVersion.current;
+    const reportVersion = requestVersion.current;
+    const session = getSessionRevision();
+    const isCurrent = () => version === trendVersion.current && reportVersion === requestVersion.current && session === getSessionRevision();
     if (isAbilityReport || !assessmentId || !testeeId) {
       setTrendSummary(null);
       return;
     }
     setTrendLoading(true);
+    setTrendError("");
     try {
       const result = await getAssessmentTrendSummary(assessmentId, testeeId) as unknown;
+      if (!isCurrent()) return;
       const wrapper = result && typeof result === "object" ? result as { data?: unknown } : {};
-      const payload = wrapper.data ?? result;
-      setTrendSummary(payload && typeof payload === "object" ? payload as TrendSummary : null);
+      const payload = "data" in wrapper ? wrapper.data : result;
+      if (!payload || typeof payload !== "object") throw new Error("暂未获取到趋势数据，请重试");
+      setTrendSummary(payload as TrendSummary);
     } catch (trendError) {
+      if (!isCurrent()) return;
       logger.ERROR("[Analysis] 获取趋势摘要失败:", trendError);
       setTrendSummary(null);
+      setTrendError("暂未获取到趋势数据，请重试");
     } finally {
-      setTrendLoading(false);
+      if (isCurrent()) setTrendLoading(false);
     }
   }, [isAbilityReport]);
 
-  const applyReport = useCallback((raw: unknown) => {
+  const applyReport = useCallback((raw: unknown, testeeId: string) => {
     logger.RUN("[Analysis] 原始报告数据:", raw);
     if (redirectPersonality(raw)) return false;
     const viewModel = isAbilityReport
-      ? buildBehaviorReportViewModel(raw, currentFallbackTestee())
-      : buildMedicalReportViewModel(raw, currentFallbackTestee());
+      ? buildBehaviorReportViewModel(raw, findTesteeById(testeeId) || { id: testeeId })
+      : buildMedicalReportViewModel(raw, findTesteeById(testeeId) || { id: testeeId });
     setReport(viewModel);
     return true;
   }, [isAbilityReport, redirectPersonality]);
 
   const loadFromRoute = useCallback(async () => {
+    const version = ++requestVersion.current;
+    trendVersion.current += 1;
+    const session = getSessionRevision();
+    const isCurrent = () => version === requestVersion.current && session === getSessionRevision();
+    setAssessmentContext({ assessmentId: "", testeeId: "" });
+    setTrendSummary(null);
+    setTrendError("");
+    setTrendLoading(false);
     if (redirectPersonality()) return;
     setLoading(true);
     setError("");
@@ -116,9 +147,10 @@ const AssessmentReportPage = () => {
         const result = isAbilityReport
           ? await loadBehaviorReportByAssessmentId({ assessmentId, testeeId: params.t })
           : await loadMedicalReportByAssessmentId({ assessmentId, testeeId: params.t });
+        if (!isCurrent()) return;
         const context = { assessmentId: String(result.assessmentId), testeeId: String(result.testeeId) };
         setAssessmentContext(context);
-        if (applyReport(result.report)) void loadTrend(context.assessmentId, context.testeeId);
+        if (applyReport(result.report, context.testeeId)) void loadTrend(context.assessmentId, context.testeeId);
       } else {
         const result = isAbilityReport
           ? await loadBehaviorReportByAnswerSheet({
@@ -131,21 +163,35 @@ const AssessmentReportPage = () => {
             testeeIdFromUrl: params.t,
             logger,
           });
+        if (!isCurrent()) return;
         const context = { assessmentId: String(result.assessmentId), testeeId: String(result.testeeId) };
         setAssessmentContext(context);
-        if (applyReport(result.report)) await loadTrend(context.assessmentId, context.testeeId);
+        if (applyReport(result.report, context.testeeId)) void loadTrend(context.assessmentId, context.testeeId);
       }
     } catch (loadError) {
+      if (!isCurrent()) return;
       logger.ERROR("[Analysis] 获取测评报告失败:", loadError);
       setError(messageOf(loadError));
     } finally {
-      setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
   }, [applyReport, isAbilityReport, loadTrend, params.a, params.aid, params.rid, params.t, redirectPersonality]);
+
+  useDidHide(() => {
+    requestVersion.current += 1;
+    trendVersion.current += 1;
+    reloadOnShow.current = true;
+  });
+  useDidShow(() => {
+    if (!reloadOnShow.current) return;
+    reloadOnShow.current = false;
+    void loadFromRoute();
+  });
 
   useEffect(() => {
     logger.RUN("did effect <RUN> | params: ", params);
     void loadFromRoute();
+    return () => { requestVersion.current += 1; trendVersion.current += 1; };
   }, [loadFromRoute]);
 
   useEffect(() => {
@@ -197,8 +243,8 @@ const AssessmentReportPage = () => {
                 loading={trendLoading}
                 assessmentId={assessmentContext.assessmentId}
                 testeeId={assessmentContext.testeeId}
-                factors={report.factors}
-                riskLevel={report.riskLevel}
+                error={trendError}
+                onRetry={() => void loadTrend(assessmentContext.assessmentId, assessmentContext.testeeId)}
               />
               <MedicalReportContent factors={report.factors} />
             </>

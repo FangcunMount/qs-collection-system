@@ -89,7 +89,16 @@ export const getRiskConfig = (riskLevel) => {
     }
   };
   
-  return riskMap[risk] || riskMap['normal'];
+  // Missing or unfamiliar report facts cannot establish a normal result.
+  return riskMap[risk] || {
+    label: '未提供风险等级',
+    className: 'risk-unknown',
+    bgColor: '#66738E',
+    textColor: '#FFFFFF',
+    borderColor: 'transparent',
+    scoreBadgeBg: '#F1F5FA',
+    scoreBadgeColor: '#53627A',
+  };
 };
 
 /**

@@ -72,3 +72,16 @@ describe("behavior report view model", () => {
     expect(report.hasNormComparison).toBe(false);
   });
 });
+
+test("does not borrow a different member's name for a historical report", () => {
+  expect(buildBehaviorReportViewModel({ testee_id: "report-member" }, { id: "selected-member", legalName: "另一个成员" })).toMatchObject({ testeeId: "report-member", testeeName: "" });
+  expect(buildBehaviorReportViewModel({ testee_id: "report-member" }, { id: "report-member", legalName: "报告成员" })).toMatchObject({ testeeId: "report-member", testeeName: "报告成员" });
+});
+
+test.each([false, true, " ", [], {}, NaN, Infinity])("invalid numeric fields %s cannot establish a score or norm", (value) => {
+  const report = buildBehaviorReportViewModel({ primary_score: { value }, total_score: value,
+    dimensions: [{ raw_score: value, derived_scores: [{ kind: "t_score", value }], norm_reference: { score_kind: "t_score", benchmark: value } }],
+  });
+  expect(report.primaryScore).toBeNull();
+  expect(report.factors[0]).toMatchObject({ rawScore: null, tScore: null, normReference: null });
+});

@@ -45,7 +45,7 @@
   color: @scale-navy;
   font-size: 34rpx;
   line-height: 1;
-  font-weight: 900;
+  font-weight: @font-weight-semibold;
   text-align: center;
 }
 
@@ -125,7 +125,7 @@
 
 .scale-list-chip.is-active .scale-list-chip__text {
   color: #FFFFFF;
-  font-weight: 850;
+  font-weight: @font-weight-semibold;
 }
 
 .scale-list-count {
@@ -133,7 +133,7 @@
   color: #7E8BA2;
   font-size: @qlume-fs-tag;
   line-height: 1;
-  font-weight: 650;
+  font-weight: @font-weight-medium;
 }
 
 .scale-list {
@@ -144,75 +144,20 @@
 }
 
 .scale-list-row {
-  min-height: 144rpx;
-  padding: 24rpx;
-  .qlume-soft-card();
+  padding: @space-4;
   display: flex;
-  align-items: center;
-  gap: 18rpx;
+  align-items: flex-start;
+  gap: @space-3;
+  border: 1rpx solid @border-color-base;
+  border-radius: @radius-card;
+  background: @surface-card;
+  box-shadow: none;
 }
-
-.scale-list-row__icon {
-  width: 88rpx;
-  min-width: 88rpx;
-  height: 88rpx;
-  min-height: 88rpx;
-  border-radius: 24rpx;
-  background: linear-gradient(135deg, @qlume-scale-soft 0%, #FFFFFF 100%);
-  box-shadow: inset 0 0 0 1rpx rgba(229, 235, 247, 0.82);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.scale-list-row__image {
-  width: 104rpx;
-  min-width: 104rpx;
-  height: 104rpx;
-  min-height: 104rpx;
-  display: block;
-}
-
-.scale-list-row__content {
-  min-width: 0;
-  flex: 1;
-}
-
-.scale-list-row__title {
-  display: block;
-  color: @scale-navy;
-  font-size: @qlume-fs-card-title;
-  line-height: 1.3;
-  font-weight: 900;
-  .qlume-one-line-text();
-}
-
-.scale-list-row__desc {
-  display: block;
-  margin-top: 10rpx;
-  color: #687792;
-  font-size: @qlume-fs-desc;
-  line-height: 1.46;
-  font-weight: 600;
-  .qlume-two-line-text();
-}
-
-.scale-list-row__duration {
-  flex-shrink: 0;
-  min-height: 46rpx;
-  min-width: 104rpx;
-  padding: 0 16rpx;
-  border-radius: 999rpx;
-  color: @scale-blue;
-  background: #EEF6FF;
-  font-size: @qlume-fs-desc;
-  line-height: 46rpx;
-  font-weight: 850;
-  white-space: nowrap;
-  text-align: center;
-}
+.scale-list-row__icon { width: 72rpx; height: 72rpx; flex-shrink: 0; }
+.scale-list-row__image { width: 100%; height: 100%; display: block; }
+.scale-list-row__content { min-width: 0; flex: 1; }
+.scale-list-row__title { display: block; color: @text-color-primary; font-size: @font-size-card-title; line-height: 1.45; font-weight: @font-weight-semibold; word-break: break-all; }
+.scale-list-row__desc { display: block; margin-top: @space-2; color: @text-color-secondary; font-size: @font-size-body; line-height: 1.65; white-space: pre-wrap; word-break: break-all; }
 
 .scale-list-load-more {
   height: 92rpx;

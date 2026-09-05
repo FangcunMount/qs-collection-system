@@ -11,7 +11,7 @@ interface MedicalReportOverviewProps {
 }
 
 const MedicalReportOverview = ({ report }: MedicalReportOverviewProps) => {
-  const risk = getRiskConfig(report.riskLevel || "normal");
+  const risk = getRiskConfig(report.riskLevel);
   const firstSuggestion = report.suggestions[0]?.content || "";
   return (
     <View className="report-overview-card">
@@ -26,7 +26,7 @@ const MedicalReportOverview = ({ report }: MedicalReportOverviewProps) => {
       ) : null}
       <View className="score-display-area" style={{ background: risk.scoreBadgeBg || undefined }}>
         <View className="score-number" style={{ color: risk.scoreBadgeColor || undefined }}>
-          <Text className="score-main">{report.total?.score ?? 0}</Text>
+          <Text className="score-main">{report.total?.score ?? "未提供"}</Text>
           <Text className="score-unit">分</Text>
         </View>
         <View className="risk-level-badge" style={{ color: risk.scoreBadgeColor || undefined }}>

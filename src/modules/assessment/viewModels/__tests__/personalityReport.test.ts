@@ -64,3 +64,8 @@ describe("personality report view model", () => {
     });
   });
 });
+
+test("historical personality reports never borrow a different member's name", () => {
+  expect(buildPersonalityReportViewModel({ testee_id: "report-member" }, { id: "other", legalName: "其他成员" })).toMatchObject({ testeeId: "report-member", testeeName: "" });
+  expect(buildPersonalityReportViewModel({ testee_id: "report-member" }, { id: "report-member", legalName: "报告成员" })).toMatchObject({ testeeId: "report-member", testeeName: "报告成员" });
+});

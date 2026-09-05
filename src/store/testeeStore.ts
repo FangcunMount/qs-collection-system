@@ -1,5 +1,6 @@
 import Taro from '@tarojs/taro';
 import { getMyTestees } from '@/services/api/testees';
+import { getSessionRevision, onSessionCleared } from '@/shared/stores/sessionPrivacy';
 
 /**
  * 受试者基本信息
@@ -506,6 +507,7 @@ export async function initTesteeStore(force: boolean = false): Promise<TesteeSto
     });
   }
 
+  const revision = getSessionRevision();
   state.isLoading = true;
   notify();
 
@@ -527,6 +529,7 @@ export async function initTesteeStore(force: boolean = false): Promise<TesteeSto
 
     console.log('[TesteeStore] 从 Collection 加载受试者列表');
     const list = await loadTesteesFromCollection();
+    if (revision !== getSessionRevision()) return cloneState();
     console.log('[TesteeStore] Collection 加载成功，共', list.length, '个受试者');
     
     console.log('[TesteeStore] 解析后的列表长度:', list.length);
@@ -536,6 +539,7 @@ export async function initTesteeStore(force: boolean = false): Promise<TesteeSto
     console.log('[TesteeStore] 初始化成功，共', list.length, '个受试者');
     
   } catch (error) {
+    if (revision !== getSessionRevision()) return cloneState();
     console.error('[TesteeStore] 初始化失败:', error);
     
     // 如果有本地数据，使用本地数据
@@ -552,8 +556,10 @@ export async function initTesteeStore(force: boolean = false): Promise<TesteeSto
     
     state.isInitialized = false;
   } finally {
-    state.isLoading = false;
-    notify();
+    if (revision === getSessionRevision()) {
+      state.isLoading = false;
+      notify();
+    }
   }
 
   const result = cloneState();
@@ -608,3 +614,6 @@ const TesteeStore = {
 };
 
 export default TesteeStore;
+
+// Member identity belongs to the current account, including pending loads.
+onSessionCleared(resetTesteeStore);

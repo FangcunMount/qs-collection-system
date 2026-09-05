@@ -1,4 +1,6 @@
+import { formatApplicableAge, formatReporter } from "@/shared/lib/statusFormatters";
 import type { DomainTone } from "@/shared/ui/types";
+import { configuredAssessmentMinutes, formatAssessmentDuration } from "@/shared/lib/assessmentDuration";
 
 export interface CatalogCardViewModel {
   key: string;
@@ -11,6 +13,8 @@ export interface CatalogCardViewModel {
   questionCount: number;
   durationMin: number;
   durationLabel: string;
+  audienceLabel: string;
+  reporterLabel: string;
   tone: DomainTone;
   image?: string;
   badge: string;
@@ -54,44 +58,50 @@ export const normalizeCatalogTags = (value: unknown): string[] => (
   Array.isArray(value) ? value.map(normalizeCatalogLabel).filter(Boolean) : []
 );
 
+// These labels describe catalogue facts, never inferred suitability from a name.
+const selectionLabels = (item: Record<string, unknown>) => ({
+  audienceLabel: Array.from(new Set(normalizeCatalogTags(item.applicable_ages).map(formatApplicableAge))).join("、"),
+  reporterLabel: Array.from(new Set(normalizeCatalogTags(item.reporters).map(formatReporter))).join("、"),
+});
+const availableStatuses = ["published", "available", "active"];
+
 const toNumber = (value: unknown): number => {
   const result = Number(value);
   return Number.isFinite(result) && result > 0 ? result : 0;
 };
 
 export const formatCatalogDuration = (questionCount: number, durationMin = 0): string => {
-  if (durationMin > 0) return `约 ${durationMin} 分钟`;
-  if (questionCount > 0) return `约 ${Math.max(3, Math.ceil(questionCount / 6))} 分钟`;
-  return "约 5 分钟";
+  return formatAssessmentDuration(questionCount, durationMin);
 };
 
 export const mapMedicalCatalogCard = (value: unknown): CatalogCardViewModel => {
   const item = asRecord(value);
   const questionCount = toNumber(item.question_count ?? item.questionCount);
-  const durationMin = toNumber(
-    item.duration_min ?? item.durationMin ?? item.estimated_duration,
-  );
+  const durationMin = configuredAssessmentMinutes(item);
   const code = normalizeCatalogLabel(item.code ?? item.scale_code ?? item.questionnaire_code);
+  const status = normalizeCatalogLabel(item.status).toLowerCase();
+  const disabled = !code || Boolean(status && !availableStatuses.includes(status));
 
   return {
     key: code || normalizeCatalogLabel(item.id),
     code,
     title: normalizeCatalogLabel(item.title ?? item.name ?? item.scale_name) || "医学量表",
-    description: normalizeCatalogLabel(item.description) || "了解近期状态，辅助自我观察与沟通参考。",
+    description: normalizeCatalogLabel(item.description),
     subtitle: normalizeCatalogLabel(item.subtitle),
     category: normalizeCatalogLabel(item.category),
     tags: normalizeCatalogTags(item.tags),
     questionCount,
     durationMin,
     durationLabel: formatCatalogDuration(questionCount, durationMin),
+    ...selectionLabels(item),
     tone: "medical",
     image: normalizeCatalogLabel(item.image) || undefined,
     badge: normalizeCatalogLabel(item.badge),
-    statusLabel: normalizeCatalogLabel(item.status_label ?? item.statusLabel),
+    statusLabel: disabled ? "暂不可用" : normalizeCatalogLabel(item.status_label ?? item.statusLabel) || (status ? "已发布" : ""),
     testedLabel: normalizeCatalogLabel(item.tested_label ?? item.testedLabel),
     iconKey: normalizeCatalogLabel(item.icon_key ?? item.iconKey),
     cta: normalizeCatalogLabel(item.cta) || "开始测评",
-    disabled: !code,
+    disabled,
     modelCode: code,
     familyCode: normalizeCatalogLabel(item.family_code ?? item.familyCode),
     algorithm: "",
@@ -108,7 +118,7 @@ export const mapPersonalityCatalogCard = (value: unknown): CatalogCardViewModel 
   const item = asRecord(value);
   const hero = asRecord(item.hero);
   const questionCount = toNumber(item.questionCount ?? item.question_count);
-  const durationMin = toNumber(item.durationMin ?? item.duration_min);
+  const durationMin = configuredAssessmentMinutes(item);
   const modelCode = normalizeCatalogLabel(item.modelCode ?? item.model_code ?? item.code);
   const key = normalizeCatalogLabel(item.key ?? item.familyCode ?? item.family_code ?? modelCode).toLowerCase();
 
@@ -123,6 +133,7 @@ export const mapPersonalityCatalogCard = (value: unknown): CatalogCardViewModel 
     questionCount,
     durationMin,
     durationLabel: formatCatalogDuration(questionCount, durationMin),
+    ...selectionLabels(item),
     tone: "personality",
     image: normalizeCatalogLabel(item.image) || undefined,
     badge: normalizeCatalogLabel(item.badge),
@@ -159,7 +170,7 @@ export const mapAbilityCatalogCard = (value: unknown): CatalogCardViewModel => {
   const status = normalizeCatalogLabel(item.status).toLowerCase();
   const available = ["available", "published", "active"].includes(status) && Boolean(code);
   const questionCount = toNumber(item.questionCount ?? item.question_count);
-  const durationMin = toNumber(item.durationMin ?? item.duration_min ?? item.estimated_duration);
+  const durationMin = configuredAssessmentMinutes(item);
   const title = normalizeCatalogLabel(item.title ?? item.name) || "行为能力测评";
   const marker = `${code} ${title} ${normalizeCatalogLabel(item.description)}`.toLowerCase();
   const iconKey = normalizeCatalogLabel(item.iconKey ?? item.icon_key)
@@ -178,6 +189,7 @@ export const mapAbilityCatalogCard = (value: unknown): CatalogCardViewModel => {
     questionCount,
     durationMin,
     durationLabel,
+    ...selectionLabels(item),
     tone: "ability",
     image: normalizeCatalogLabel(item.image) || undefined,
     badge: normalizeCatalogLabel(item.badge),

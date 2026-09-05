@@ -277,3 +277,15 @@
 .fill-ready-page .page-shell__content--with-action.fill-ready-scroll {
   padding-bottom: calc(@bottom-action-min-height + @safe-area-bottom + @space-6);
 }
+
+// Keep the original preparation sections; allow full text and clear controls.
+.intro-content { font-size: @font-size-reading; text-align: left; }
+.testee-picker-copy { flex: 1; min-width: 0; overflow-wrap: break-word; }
+.testee-picker-arrow { flex-shrink: 0; font-size: @font-size-action; }
+.testee-info-value { min-width: 0; overflow-wrap: break-word; }
+.questionnaire-writer-notice {
+  margin-bottom: @space-4;
+  padding: @space-3 @space-4;
+  border-left: 4rpx solid @border-color-strong;
+  background: @surface-subtle;
+}

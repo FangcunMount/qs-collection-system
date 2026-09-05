@@ -4,6 +4,7 @@
 
 import {
   applyAlgorithmPresentation,
+  resolvePersonalityPresentationKey,
   estimateDurationMin,
 } from '@/modules/catalog/lib/personalityPresentation';
 import { isTypologyAssessmentModel } from '@/shared/lib/assessmentKind';
@@ -40,14 +41,14 @@ const normalizeStringList = (value) => {
 const ALGORITHM_CATALOG_LAYOUT = Object.freeze({
   mbti: 'featured',
   bigfive: 'deep_explore_compact',
-  personality_typology: 'deep_explore_compact',
+  enneagram: 'deep_explore_compact',
   sbti: 'secondary',
 });
 
 const ALGORITHM_THEME = Object.freeze({
   mbti: 'mbti',
   bigfive: 'ocean',
-  personality_typology: 'deep',
+  enneagram: 'deep',
   sbti: 'fun',
 });
 
@@ -55,11 +56,11 @@ const ALGORITHM_BADGE_LABEL = Object.freeze({
   mbti: '16 型人格',
   sbti: '趣味探索',
   bigfive: '科学测评',
-  personality_typology: '深度探索',
+  enneagram: '深度探索',
 });
 
 const ALGORITHM_CARD_BADGE = Object.freeze({
-  personality_typology: '9',
+  enneagram: '9',
   bigfive: '5',
 });
 
@@ -83,7 +84,7 @@ const buildDefaultCta = (title) => {
 const ALGORITHM_SORT_ORDER = Object.freeze({
   mbti: 0,
   sbti: 10,
-  personality_typology: 20,
+  enneagram: 20,
   bigfive: 30,
 });
 
@@ -112,23 +113,24 @@ export const extractPublishedModelList = (payload = {}) => {
 export const normalizePersonalityModel = (raw = {}) => {
   const model = normalizeIdFields(raw, ['id', 'questionnaire_id']);
   const algorithm = model.algorithm || '';
+  const presentationKey = resolvePersonalityPresentationKey(model);
   const familyCode =
     model.family_code ||
     model.familyCode ||
     model.model_family ||
-    algorithm ||
+    presentationKey ||
     '';
   const catalogLayout =
     model.catalog_layout ||
     model.catalogLayout ||
     model.layout ||
     model.display_slot ||
-    resolveCatalogLayoutFromAlgorithm(algorithm);
+    resolveCatalogLayoutFromAlgorithm(presentationKey);
   const gains = normalizeStringList(model.gains || model.benefits);
   const suitableFor = normalizeStringList(model.suitable_for || model.suitableFor || model.audience);
   const tags = Array.isArray(model.tags) ? model.tags : [];
   const hero = model.hero && typeof model.hero === 'object' ? model.hero : null;
-  const sortOrder = model.sort_order ?? model.sortOrder ?? resolveSortOrderFromAlgorithm(algorithm);
+  const sortOrder = model.sort_order ?? model.sortOrder ?? resolveSortOrderFromAlgorithm(presentationKey);
 
   return {
     id: toStringId(model.id),
@@ -141,7 +143,7 @@ export const normalizePersonalityModel = (raw = {}) => {
     version: model.version || '',
     familyCode,
     catalogLayout,
-    theme: model.theme || model.ui_theme || resolveThemeFromAlgorithm(algorithm),
+    theme: model.theme || model.ui_theme || resolveThemeFromAlgorithm(presentationKey),
     cardBadge: model.card_badge || model.cardBadge || '',
     sortOrder,
     isFeatured: Boolean(
@@ -179,7 +181,8 @@ export const mapPublishedModelToCatalogItem = (raw = {}) => {
   const tags = model.tags || [];
   const hero = model.hero || {};
 
-  const badgeLabel = resolveAlgorithmBadgeLabel(model.algorithm);
+  const presentationKey = resolvePersonalityPresentationKey(model);
+  const badgeLabel = resolveAlgorithmBadgeLabel(presentationKey);
 
   const mapped = {
     key: model.familyCode ? String(model.familyCode).toLowerCase() : String(code || '').toLowerCase(),
@@ -209,8 +212,8 @@ export const mapPublishedModelToCatalogItem = (raw = {}) => {
       subtitle: hero.subtitle || model.subtitle || '',
       sticker: hero.sticker || '',
     },
-    theme: model.theme || resolveThemeFromAlgorithm(model.algorithm) || 'deep',
-    cardBadge: model.cardBadge || resolveCardBadgeFromAlgorithm(model.algorithm),
+    theme: model.theme || resolveThemeFromAlgorithm(presentationKey) || 'deep',
+    cardBadge: model.cardBadge || resolveCardBadgeFromAlgorithm(presentationKey),
     cta: model.cta || buildDefaultCta(title),
     raw: model.raw,
   };

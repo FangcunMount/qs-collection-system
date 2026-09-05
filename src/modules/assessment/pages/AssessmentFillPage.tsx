@@ -470,7 +470,7 @@ export default function AssessmentFillController() {
     requestId: string,
   ): Promise<void> => {
     const questionnaireType = questionnaire?.type;
-    const selectedTesteeId = getSelectedTesteeId();
+    const submittedTesteeId = submitContract?.testee_id || selectedTesteeId;
     const assessmentKind = resolveSubmitAssessmentKind({
       questionnaireType,
       assessmentKind: fillAssessmentKind || entryParams.kind || submitContract?.assessment_kind,
@@ -483,7 +483,7 @@ export default function AssessmentFillController() {
       requestId,
       questionnaireType,
       assessmentKind,
-      testeeId: selectedTesteeId,
+      testeeId: submittedTesteeId,
       navigation: resolvePostSubmitNavigationKind({
         questionnaireType,
         isPersonalityFlow,
@@ -509,8 +509,9 @@ export default function AssessmentFillController() {
         answersheetId: answersheetid,
         assessmentId,
         requestId,
-        testeeId: selectedTesteeId,
+        testeeId: submittedTesteeId,
         planTaskId,
+        submitContract,
       }),
     });
   };

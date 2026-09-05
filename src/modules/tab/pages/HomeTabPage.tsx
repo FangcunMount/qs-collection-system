@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Taro, { usePullDownRefresh, useReady, useRouter } from "@tarojs/taro";
-import { View, Text, Image } from "@tarojs/components";
+import { View, Text, Image, Picker } from "@tarojs/components";
 import Icon from "@/shared/ui/Icon";
 
 import BottomMenu from "@/shared/ui/BottomMenu";
@@ -16,10 +16,11 @@ import { loadRecentAssessments as fetchRecentAssessments } from "@/modules/asses
 import { listHotPublishedAssessmentModels } from "@/services/api/assessmentModelCatalogApi";
 import { isPersonalityAssessmentKind } from "@/shared/lib/assessmentKind";
 import { getAssessmentEntryContext, subscribeAssessmentEntryContext } from "@/shared/stores/assessmentEntry";
-import { findTesteeById, getSelectedTesteeId, subscribeTesteeStore } from "@/shared/stores/testees";
+import { findTesteeById, getSelectedTesteeId, getTesteeList, setSelectedTesteeId, subscribeTesteeStore } from "@/shared/stores/testees";
+import type { Testee } from "@/store/testeeStore";
 import { mapMedicalCatalogCard, type CatalogCardViewModel } from "@/modules/catalog/viewModels/catalogCard";
 import { mapRecentAssessment, type RecentAssessmentViewModel } from "@/modules/tab/viewModels/home";
-import qlumeHeroBanner from "@/assets/hero/qlume-home-v2.png";
+import qlumeHeroBanner from "@/assets/hero/qlume-home-v2.webp";
 import anxietyIcon from "@/assets/icon/icon-anxiety-screening.png";
 import sleepQualityIcon from "@/assets/icon/icon-sleep-quality.png";
 import attentionIcon from "@/assets/icon/icon-attention-screening.png";
@@ -39,10 +40,6 @@ interface EntryContext {
   target_code?: string;
   task_id?: string;
   token?: string;
-}
-
-interface TesteeSummary {
-  id?: string;
 }
 
 interface PortalConfig {
@@ -65,12 +62,19 @@ const HomeIndex = () => {
   const [hotLoading, setHotLoading] = useState(false);
   const [hotError, setHotError] = useState("");
   const [entryContext, setEntryContext] = useState<EntryContext | null>(() => getAssessmentEntryContext());
-  const [currentTestee, setCurrentTestee] = useState<TesteeSummary | null>(() => getInitialTestee());
+  const [currentTestee, setCurrentTestee] = useState<Testee | null>(() => getInitialTestee());
+  const [testees, setTestees] = useState<Testee[]>(() => getTesteeList());
+  const selectedMemberId = useRef(currentTestee?.id || "");
+  const recentRequest = useRef(0);
+  const hotRequest = useRef(0);
 
   const hasEntryTask = Boolean(entryContext?.q || entryContext?.target_code);
   const featuredScale = hotScales[0] || null;
 
   const loadRecentAssessments = useCallback(async (testeeId?: string) => {
+    const request = ++recentRequest.current;
+    setRecentAssessments([]);
+    setRecentError("");
     if (!testeeId) {
       setRecentAssessments([]);
       setRecentLoading(false);
@@ -81,34 +85,39 @@ const HomeIndex = () => {
       setRecentLoading(true);
       setRecentError("");
       const source: unknown[] = await fetchRecentAssessments(testeeId, { pageSize: 3 });
+      if (request !== recentRequest.current) return;
       const list = source
         .map((item, index) => mapRecentAssessment(item, index, REPORT_ICONS))
         .filter((item): item is RecentAssessmentViewModel => Boolean(item));
       setRecentAssessments(list);
     } catch (error) {
+      if (request !== recentRequest.current) return;
       console.error("加载最近测评失败:", error);
       setRecentAssessments([]);
       setRecentError("最近报告同步失败，请稍后重试。");
     } finally {
-      setRecentLoading(false);
+      if (request === recentRequest.current) setRecentLoading(false);
     }
   }, []);
 
   const loadHotScales = useCallback(async () => {
+    const request = ++hotRequest.current;
     try {
       setHotLoading(true);
       setHotError("");
       const result = await listHotPublishedAssessmentModels();
+      if (request !== hotRequest.current) return;
       const payload = result.data || result;
       const models: unknown[] = Array.isArray(payload.models) ? payload.models : [];
       const list = models.map(mapMedicalCatalogCard);
       setHotScales(list);
     } catch (error) {
+      if (request !== hotRequest.current) return;
       console.error("加载首页热门量表失败:", error);
       setHotScales([]);
-      setHotError("今日推荐加载失败，请稍后重试。");
+      setHotError("暂时无法获取已发布测评，请重试。");
     } finally {
-      setHotLoading(false);
+      if (request === hotRequest.current) setHotLoading(false);
     }
   }, []);
 
@@ -186,7 +195,7 @@ const HomeIndex = () => {
 
   const handleStartHotScale = useCallback((scale: CatalogCardViewModel) => {
     const code = scale?.code;
-    if (!code) {
+    if (!code || scale.disabled) {
       Taro.showToast({ title: "量表暂不可用", icon: "none" });
       return;
     }
@@ -202,7 +211,6 @@ const HomeIndex = () => {
       handleStartHotScale(featuredScale);
       return;
     }
-    Taro.showToast({ title: "心情记录功能即将开放", icon: "none" });
   }, [featuredScale, handleStartHotScale]);
 
   const portalEntries = useMemo(() => {
@@ -213,9 +221,18 @@ const HomeIndex = () => {
 
     return [
       {
+        key: "medical",
+        title: "医学量表",
+        desc: "了解当下状态",
+        icon: "list",
+        image: portalMap.medical?.image,
+        tone: "medical",
+        onClick: () => handleOpenPortal(portalMap.medical),
+      },
+      {
         key: "personality",
         title: "人格探索",
-        desc: "16 人格 · 性格特质",
+        desc: "认识性格倾向",
         icon: "star",
         image: portalMap.personality?.image,
         tone: "personality",
@@ -224,7 +241,7 @@ const HomeIndex = () => {
       {
         key: "ability",
         title: "行为能力",
-        desc: "执行功能 · 行为潜能",
+        desc: "理解日常行为",
         icon: "chart",
         image: portalMap.ability?.image,
         tone: "ability",
@@ -247,8 +264,11 @@ const HomeIndex = () => {
 
   useEffect(() => {
     loadRecentAssessments(currentTestee?.id);
+  }, [currentTestee?.id, loadRecentAssessments]);
+
+  useEffect(() => {
     loadHotScales();
-  }, [currentTestee?.id, loadHotScales, loadRecentAssessments]);
+  }, [loadHotScales]);
 
   useReady(() => {
     handleDirectEntryRedirect((router.params || {}) as Record<string, unknown>);
@@ -259,12 +279,23 @@ const HomeIndex = () => {
       setEntryContext(snapshot);
     });
     const unsubscribeTestee = subscribeTesteeStore(({ selectedTesteeId }: { selectedTesteeId?: string }) => {
+      // Invalidate old member responses before the next render/effect.
+      if (selectedMemberId.current !== (selectedTesteeId || "")) {
+        selectedMemberId.current = selectedTesteeId || "";
+        ++recentRequest.current;
+        setRecentAssessments([]);
+        setRecentError("");
+        setRecentLoading(Boolean(selectedTesteeId));
+      }
+      setTestees(getTesteeList());
       setCurrentTestee(selectedTesteeId ? findTesteeById(selectedTesteeId) : null);
     });
 
     return () => {
       unsubscribeEntry();
       unsubscribeTestee();
+      ++recentRequest.current;
+      ++hotRequest.current;
     };
   }, []);
 
@@ -277,28 +308,45 @@ const HomeIndex = () => {
         navigation={<AppNavigationBar brandTitle="Qlume" transparent />}
       >
         <View className="home-welcome">
-          <Text className="home-welcome__title">Hi，欢迎来到 Qlume</Text>
-          <Text className="home-welcome__subtitle">科学测评 · 专业解读 · 成长陪伴</Text>
-        </View>
-
-        <View className="home-hero">
-          <Image className="home-hero__banner" src={qlumeHeroBanner} mode="aspectFill" />
-          <View className="home-hero__content">
-            <Text className="home-hero__title">持续关注，更好的自己</Text>
-            <Text className="home-hero__subtitle">记录变化，理解当下，也看见成长</Text>
-            <ActionButton className="home-hero__action" onClick={handleStartExplore}>开始测评</ActionButton>
-          </View>
+          <Text className="home-welcome__title">今天，想了解哪一方面？</Text>
+          {testees.length ? (
+            <Picker
+              mode="selector"
+              range={testees.map((testee) => ({ id: testee.id, label: testee.legalName || "未命名成员" }))}
+              rangeKey="label"
+              value={Math.max(0, testees.findIndex((testee) => testee.id === currentTestee?.id))}
+              onChange={(event) => {
+                const testee = testees[Number(event.detail.value)];
+                if (testee) setSelectedTesteeId(testee.id);
+              }}
+            >
+              <View className="home-member" hoverClass="home-member--pressed">
+                <Text>当前成员 · {currentTestee?.legalName || "请选择成员"}</Text>
+                <Text className="home-member__action">切换 ›</Text>
+              </View>
+            </Picker>
+          ) : (
+            <ActionButton variant="ghost" className="home-member-action" onClick={() => Taro.navigateTo({ url: routes.testeeList() })}>添加或选择家庭成员</ActionButton>
+          )}
         </View>
 
         {hasEntryTask && (
           <View className="home-task-strip" onClick={handleContinueEntry}>
             <View className="home-task-strip__text">
-              <Text className="home-task-strip__title">继续机构测评任务</Text>
-              <Text className="home-task-strip__meta">已识别到可继续的扫码入口</Text>
+              <Text className="home-task-strip__title">查看机构测评任务</Text>
+              <Text className="home-task-strip__meta">已识别扫码入口，进入后确认任务状态</Text>
             </View>
             <Icon name="arrow-right" size={16} color="#6657D9" />
           </View>
         )}
+
+        <View className="home-hero">
+          <Image className="home-hero__banner" src={qlumeHeroBanner} mode="aspectFill" />
+          <View className="home-hero__content">
+            <Text className="home-hero__title">每一次了解，都是成长的开始</Text>
+            <Text className="home-hero__subtitle">从适合的测评出发，理解自己与家人</Text>
+          </View>
+        </View>
 
         <View className="home-portal">
           {portalEntries.map((entry) => (
@@ -307,34 +355,28 @@ const HomeIndex = () => {
               className={`home-portal-card home-portal-card--${entry.tone}`}
               onClick={entry.onClick}
             >
-              <View className="home-portal-card__icon">
-                <Icon name={entry.icon as "star" | "chart"} size={28} color="#FFFFFF" />
-              </View>
+              {entry.image ? <Image className="home-portal-card__art" src={entry.image} mode="aspectFit" />
+                : <Icon name={entry.icon as "star" | "chart" | "list"} size={28} />}
               <View className="home-portal-card__body">
                 <Text className="home-portal-card__title">{entry.title}</Text>
                 <Text className="home-portal-card__desc">{entry.desc}</Text>
               </View>
-              {entry.image && (
-                <Image
-                  className="home-portal-card__art"
-                  src={entry.image}
-                  mode="aspectFit"
-                />
-              )}
             </SurfaceCard>
           ))}
         </View>
 
         <View className="home-panel home-reports-panel">
           <SectionHeader
-            title="最近测评报告"
+            title="最近医学报告"
             actionLabel="查看全部"
             onAction={handleViewRecords}
             className="home-section__header"
           />
 
           <View className="home-report-list">
-            {recentLoading ? (
+            {!currentTestee ? (
+              <StatePanel state="empty" title="先选择一位家庭成员" description="选择成员后，查看其医学测评报告。" actionText="管理家庭档案" onAction={() => Taro.navigateTo({ url: routes.testeeList() })} compact />
+            ) : recentLoading ? (
               <StatePanel state="loading" title="正在同步最近报告" compact />
             ) : recentError ? (
               <StatePanel
@@ -346,15 +388,12 @@ const HomeIndex = () => {
                 compact
               />
             ) : recentAssessments.length > 0 ? (
-              recentAssessments.map((assessment, index) => (
+              recentAssessments.map((assessment) => (
                 <SurfaceCard
                   key={assessment.answerSheetId || assessment.id || assessment.title}
                   className={`home-report-row home-report-row--${assessment.riskTone}`}
                   onClick={() => handleViewReport(assessment)}
                 >
-                  <View className={`home-report-row__icon home-report-row__icon--${index % REPORT_ICONS.length}`}>
-                    <Image className="home-report-row__image" src={assessment.icon} mode="aspectFit" />
-                  </View>
                   <View className="home-report-row__main">
                     <View className="home-report-row__title-line">
                       <Text className="home-report-row__title">{assessment.title}</Text>
@@ -377,9 +416,9 @@ const HomeIndex = () => {
             ) : (
               <StatePanel
                 state="empty"
-                title="暂无测评报告"
-                description="先开始一次科学测评。"
-                actionText="开始探索"
+                title="该成员暂无医学报告"
+                description="完成医学量表后可在这里查看；人格与行为能力报告可在对应领域查看。"
+                actionText="查找医学量表"
                 onAction={handleStartExplore}
                 compact
               />
@@ -389,28 +428,32 @@ const HomeIndex = () => {
 
         <View className="home-panel home-daily-panel">
           <SectionHeader
-            title="今日推荐"
+            title="已发布测评"
             actionLabel="查看更多"
             onAction={handleViewMoreHotScales}
             className="home-section__header"
           />
 
+          {hotLoading ? (
+            <StatePanel state="loading" title="正在加载测评" compact />
+          ) : hotError ? (
+            <StatePanel state="error" title="测评加载失败" description={hotError} actionText="重新加载" onAction={loadHotScales} compact />
+          ) : featuredScale ? (
           <SurfaceCard className="home-daily-card" onClick={handleDailyRecord}>
             <Image className="home-daily-card__icon" src={emotionIcon} mode="aspectFit" />
             <View className="home-daily-card__body">
               <Text className="home-daily-card__title">
-                {featuredScale?.title || "每日心情打卡"}
+                {featuredScale.title}
               </Text>
               <Text className="home-daily-card__desc">
-                {hotLoading
-                  ? "正在获取今日推荐..."
-                  : (hotError || featuredScale?.description || "记录心情，关注心理健康")}
+                {featuredScale.description}
               </Text>
             </View>
             <View className="home-daily-card__button">
-              <Text>{featuredScale ? "开始" : "去记录"}</Text>
+              <Text>查看</Text>
             </View>
           </SurfaceCard>
+          ) : <StatePanel state="empty" title="暂无推荐测评" description="可以前往目录查看已发布的医学量表。" actionText="查看量表" onAction={handleViewMoreHotScales} compact />}
         </View>
 
         <View className="home-bottom-spacer" />

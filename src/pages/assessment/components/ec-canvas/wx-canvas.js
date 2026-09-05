@@ -37,6 +37,11 @@ export default class WxCanvas {
     // noop
   }
 
+  removeEventListener() {
+    // Native ec-canvas forwards touch events; no DOM listeners were registered.
+    // ECharts still calls this counterpart when disposing its event proxy.
+  }
+
   attachEvent() {
     // noop
   }

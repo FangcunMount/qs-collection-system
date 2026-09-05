@@ -16,13 +16,14 @@ const QuestionnaireProgress = ({
 }: QuestionnaireProgressProps) => (
   <View className="questionnaire-progress">
     <View className="questionnaire-progress__label">
+      <Text className="questionnaire-progress__caption">当前题目 </Text>
       <Text className="questionnaire-progress__current">{current}</Text>
       <Text className="questionnaire-progress__total">/{total}</Text>
     </View>
     <View className="questionnaire-progress__track">
       <View
         className="questionnaire-progress__value"
-        style={{ width: `${percentage}%` }}
+        style={{ transform: `scaleX(${Number.isFinite(percentage) ? Math.min(100, Math.max(0, percentage)) / 100 : 0})` }}
       />
     </View>
   </View>

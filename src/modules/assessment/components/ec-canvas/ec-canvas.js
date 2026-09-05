@@ -46,7 +46,7 @@ Component({
   },
 
   data: {
-    isUseNewCanvas: false
+    isUseNewCanvas: null
   },
 
   ready: function () {
@@ -83,7 +83,8 @@ Component({
       const canUseNewCanvas = compareVersion(version, '2.9.0') >= 0;
       const forceUseOldCanvas = this.data.forceUseOldCanvas;
       const isUseNewCanvas = canUseNewCanvas && !forceUseOldCanvas;
-      this.setData({ isUseNewCanvas });
+      // Choose one canvas implementation before rendering; initialize after it mounts.
+      this.setData({ isUseNewCanvas }, () => {
 
       if (forceUseOldCanvas && canUseNewCanvas) {
         console.warn('开发者强制使用旧canvas,建议关闭');
@@ -105,12 +106,18 @@ Component({
           this.initByOldWay(callback);
         }
       }
+      });
     },
 
     initByOldWay(callback) {
       // 1.9.91 <= version < 2.9.0：原来的方式初始化
       ctx = wx.createCanvasContext(this.data.canvasId, this);
       const canvas = new WxCanvas(ctx, this.data.canvasId, false);
+      // Keep native touch forwarding attached to charts created by the init event.
+      canvas.setChart = (chart) => {
+        canvas.chart = chart;
+        this.chart = chart;
+      };
 
       if (echarts.setPlatformAPI) {
         echarts.setPlatformAPI({
@@ -157,6 +164,11 @@ Component({
           const ctx = canvasNode.getContext('2d')
 
           const canvas = new WxCanvas(ctx, this.data.canvasId, true, canvasNode)
+          // Keep native touch forwarding attached to charts created by the init event.
+          canvas.setChart = (chart) => {
+            canvas.chart = chart;
+            this.chart = chart;
+          };
           if (echarts.setPlatformAPI) {
             echarts.setPlatformAPI({
               createCanvas: () => canvas,

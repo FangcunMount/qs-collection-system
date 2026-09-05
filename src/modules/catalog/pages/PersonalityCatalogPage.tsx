@@ -6,7 +6,6 @@ import Icon from "@/shared/ui/Icon";
 import { PrivacyAuthorization } from "@/shared/ui/PrivacyAuthorization";
 import AppNavigationBar from "@/shared/ui/AppNavigationBar";
 import PageShell from "@/shared/ui/PageShell";
-import SectionHeader from "@/shared/ui/SectionHeader";
 import StatePanel from "@/shared/ui/StatePanel";
 import SurfaceCard from "@/shared/ui/SurfaceCard";
 import { routes } from "@/shared/config/routes";
@@ -22,18 +21,7 @@ import heroImage from "@/assets/home/home-entry-personality.png";
 import ieTestImage from "@/pages/catalog-personality/assets/icon/icon-ie-test.png";
 import typeBasicImage from "@/pages/catalog-personality/assets/icon/icon-personality-basic.png";
 import funTestImage from "@/pages/catalog-personality/assets/icon/icon-sbti.png";
-import reportImage from "@/pages/catalog-personality/assets/icon/icon-learning-performance.png";
-import starImage from "@/pages/catalog-personality/assets/icon/icon_small.png";
-import relationImage from "@/pages/catalog-personality/assets/icon/icon-emotional-regulation.png";
-import growthImage from "@/pages/catalog-personality/assets/icon/icon-behavior-ability.png";
 import "./PersonalityCatalogPage.less";
-
-const INTERPRET_SERVICES = Object.freeze([
-  { title: "专业报告解读", subtitle: "深度剖析性格特征", image: reportImage },
-  { title: "优势潜能分析", subtitle: "发现你的核心优势", image: starImage },
-  { title: "关系模式解读", subtitle: "理解人际互动方式", image: relationImage },
-  { title: "成长建议", subtitle: "提供个性化建议", image: growthImage },
-]);
 
 const PersonalityCatalogPage = () => {
   const [catalogItems, setCatalogItems] = useState<CatalogCardViewModel[]>([]);
@@ -111,10 +99,6 @@ const PersonalityCatalogPage = () => {
         mc: item.modelCode,
       }),
     });
-  };
-
-  const handleComingSoon = () => {
-    Taro.showToast({ title: "该服务即将开放", icon: "none" });
   };
 
   return (
@@ -246,23 +230,6 @@ const PersonalityCatalogPage = () => {
           tone="personality"
           statusFilter=""
         />
-
-        <View className="personality-section personality-service-section">
-          <SectionHeader title="个性化解读服务" tone="personality" />
-          <View className="personality-service-grid">
-            {INTERPRET_SERVICES.map((service) => (
-              <SurfaceCard key={service.title} className="personality-service-card" onClick={handleComingSoon}>
-                <View className="personality-service-card__icon">
-                  <Image className="personality-service-card__image" src={service.image} mode="aspectFit" />
-                </View>
-                <View className="personality-service-card__text">
-                  <Text className="personality-service-card__title">{service.title}</Text>
-                  <Text className="personality-service-card__subtitle">{service.subtitle}</Text>
-                </View>
-              </SurfaceCard>
-            ))}
-          </View>
-        </View>
 
         <View className="personality-home__note">
           <Text>16 型人格用于自我探索与沟通参考；趣味测评仅用于娱乐分享，不代表真实心理状态。</Text>

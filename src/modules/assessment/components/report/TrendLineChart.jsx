@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import useNativeEChart from "./useNativeEChart";
+import React, { useMemo } from "react";
 import { View } from "@tarojs/components";
-import * as echarts from "@/pages/assessment/components/ec-canvas/echarts";
+import { parseReportScore, formatReportScore } from "../../lib/reportTrend";
 
 const TrendLineChart = ({
   chartId = "trend-line",
@@ -12,10 +13,10 @@ const TrendLineChart = ({
   areaColor = "rgba(59, 130, 246, 0.12)",
   height = "320rpx",
 }) => {
-  const chartRef = useRef(null);
 
   const option = useMemo(() => {
-    if (!points || points.length === 0) {
+    const values = (points || []).map((item) => parseReportScore(item[valueKey]));
+    if (!values.some((value) => value !== null)) {
       return {
         title: {
           text: emptyText,
@@ -35,9 +36,9 @@ const TrendLineChart = ({
 
     const categories = points.map((item) => item[labelKey]);
     const tooltipLabels = points.map((item) => item.fullLabel || item[labelKey]);
-    const values = points.map((item) => Number(item[valueKey] || 0));
 
     return {
+      animation: false,
       grid: {
         left: 18,
         right: 18,
@@ -59,7 +60,7 @@ const TrendLineChart = ({
           const point = params[0];
           if (!point) return "";
           const label = tooltipLabels[point.dataIndex] || point.axisValue;
-          return `${label}<br/>${point.seriesName}: ${point.data}`;
+          return `${label}<br/>${point.seriesName}: ${formatReportScore(point.data)}`;
         },
       },
       xAxis: {
@@ -100,7 +101,8 @@ const TrendLineChart = ({
         {
           name: "分数",
           type: "line",
-          smooth: true,
+          smooth: false,
+          connectNulls: false,
           data: values,
           symbol: "circle",
           symbolSize: 7,
@@ -121,28 +123,7 @@ const TrendLineChart = ({
     };
   }, [areaColor, emptyText, labelKey, lineColor, points, valueKey]);
 
-  const ec = useMemo(
-    () => ({
-      onInit(canvas, width, heightValue, dpr) {
-        const chart = echarts.init(canvas, null, {
-          width,
-          height: heightValue,
-          devicePixelRatio: dpr,
-        });
-        canvas.setChart(chart);
-        chart.setOption(option);
-        chartRef.current = chart;
-        return chart;
-      },
-    }),
-    [option],
-  );
-
-  useEffect(() => {
-    if (chartRef.current && option) {
-      chartRef.current.setOption(option, true);
-    }
-  }, [option]);
+  const { ec, onInit } = useNativeEChart(option);
 
   return (
     <View className="trend-line-chart-wrapper" style={{ height }}>
@@ -150,6 +131,7 @@ const TrendLineChart = ({
         id={`${chartId}-canvas`}
         canvasId={`${chartId}-canvas`}
         ec={ec}
+        onInit={onInit}
         style="width: 100%; height: 100%;"
       />
     </View>

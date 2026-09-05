@@ -8,13 +8,25 @@
   &__row--leading { justify-content: flex-start; }
   &__title { display: block; font-size: @font-size-section-title; font-weight: @font-weight-medium; line-height: @line-height-heading; }
   &__heading { display: block; font-size: @font-size-card-title; font-weight: @font-weight-medium; line-height: @line-height-heading; }
-  &__body { display: block; white-space: pre-wrap; word-break: break-all; font-size: @font-size-body; line-height: @line-height-body; }
-  &__caption, &__label { display: block; font-size: @font-size-caption; color: @text-color-secondary; line-height: @line-height-body; }
+  &__body { display: block; white-space: pre-wrap; word-break: break-all; font-size: @font-size-reading; line-height: 1.7; }
+  &__caption, &__label { display: block; font-size: @font-size-body; color: @text-color-secondary; line-height: @line-height-body; }
   &__label { color: @color-medical-700; margin-bottom: @space-2; }
   &__notice { background: @color-warning-50; color: @color-warning-700; padding: @space-4; border-radius: @radius-card; font-size: @font-size-body; }
-  &__caution { color: @color-warning-700; font-size: @font-size-body; line-height: @line-height-body; white-space: pre-wrap; }
+  &__caution { color: @color-warning-700; font-size: @font-size-reading; line-height: 1.7; white-space: pre-wrap; }
   &__boundary { padding-top: @space-4; border-top: 1rpx solid @border-color-base; }
-  &__entry { margin-top: @space-4; margin-bottom: @space-4; }
+  &__entry { width: auto; margin: 0 @space-5 @space-5; gap: @space-3; }
+  &__entry--personality { margin: @space-4 @space-3 0; }
+  &__entry--personality &__label { color: @color-personality-700; }
+  &__detail-toggle {
+    width: 100%; min-height: @touch-target-min; margin: 0; padding: @space-2 0;
+    display: flex; align-items: center; justify-content: space-between; gap: @space-3;
+    background: transparent; border: 0; border-radius: 0; color: @color-medical-700;
+    font-size: @font-size-body; line-height: @line-height-body; text-align: left;
+    &::after { border: 0; }
+    &--pressed { background: @surface-subtle; }
+  }
+  &__detail-content { padding-top: @space-2; }
+
   &__art { flex-shrink: 0; }
   &__art--hero { width: 352rpx; height: 352rpx; margin: 0 auto; }
   &__art--entry { width: 176rpx; height: 176rpx; }

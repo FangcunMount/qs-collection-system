@@ -1,0 +1,63 @@
+import Taro from '@tarojs/taro';
+import { logoutAccount } from '../logoutAccount';
+import { logout } from '@/services/api/auth';
+import { clearSession } from '@/services/auth/sessionManager';
+import { getAccessToken, setToken } from '@/shared/stores/session';
+import { getAccountInfo, setAccountInfo } from '@/shared/stores/account';
+import { getTesteeStoreState, initTesteeStore, setTesteeList, setSelectedTesteeId } from '@/shared/stores/testees';
+import { getAssessmentEntryContext, setAssessmentEntryContext } from '@/shared/stores/assessmentEntry';
+import { getMyTestees } from '@/services/api/testees';
+import { getSubmissionContext, saveSubmissionContext } from '@/modules/assessment/services/submissionContextStore';
+jest.mock('@/services/api/auth', () => ({ logout: jest.fn() }));
+jest.mock('@/services/api/testees', () => ({ getMyTestees: jest.fn() }));
+jest.mock('@/services/api/account', () => ({ getAccountProfile: jest.fn() }));
+const deferred = () => { let resolve; const promise = new Promise(yes => { resolve = yes; }); return { resolve, promise }; };
+const token = access_token => ({ access_token, refresh_token: 'test-refresh', expires_in: 3600 });
+beforeEach(() => {
+  ['log', 'info', 'error'].forEach(level => jest.spyOn(console, level).mockImplementation(() => {}));
+  clearSession(); logout.mockResolvedValue({ ok: true });
+});
+afterEach(() => jest.restoreAllMocks());
+
+test('clears local identity and private context immediately while preserving unrelated preferences', async () => {
+  setToken(token('old-account'));
+  setAccountInfo({ name: '原账号', picture: '' });
+  setTesteeList([{ id: 'old-member', legalName: '原成员' }]); setSelectedTesteeId('old-member');
+  setAssessmentEntryContext({ task_id: 'old-task' });
+  saveSubmissionContext({ testeeId: 'old-member', assessmentId: 'old-assessment' });
+  Taro.setStorageSync('qlume:session:ai-test', 'old-private');
+  Taro.setStorageSync('userInfo', { name: 'old' });
+  Taro.setStorageSync('plan_task_subscribe_status:old-task', true);
+  Taro.setStorageSync('motion-preference', false);
+  const remote = deferred(); logout.mockReturnValueOnce(remote.promise);
+  const pending = logoutAccount();
+  expect(getAccessToken()).toBeNull();
+  expect(getAccountInfo()?.name).toBeFalsy();
+  expect(getTesteeStoreState().testeeList).toEqual([]);
+  expect(getAssessmentEntryContext()).toBeNull();
+  expect(getSubmissionContext().assessmentId).toBe('');
+  expect(Taro.getStorageSync('qlume:session:ai-test')).toBeUndefined();
+  expect(Taro.getStorageSync('userInfo')).toBeUndefined();
+  expect(Taro.getStorageSync('plan_task_subscribe_status:old-task')).toBeUndefined();
+  expect(Taro.getStorageSync('motion-preference')).toBe(false);
+  expect(logout).toHaveBeenCalledWith('old-account', 'test-refresh');
+  setToken(token('new-account')); remote.resolve({ ok: false });
+  expect(await pending).toEqual({ remoteRevoked: false });
+  expect(getAccessToken()).toBe('new-account');
+});
+
+test('a member request finishing after logout cannot refill the new account or end its loading state', async () => {
+  setToken(token('old-account'));
+  const old = deferred(); const next = deferred();
+  getMyTestees.mockReturnValueOnce(old.promise).mockReturnValueOnce(next.promise);
+  const oldLoad = initTesteeStore(true);
+  await logoutAccount();
+  setToken(token('new-account'));
+  const nextLoad = initTesteeStore(true);
+  old.resolve({ items: [{ id: 'old-member', name: '原成员' }] }); await oldLoad;
+  expect(getTesteeStoreState().testeeList).toEqual([]);
+  expect(getTesteeStoreState().isLoading).toBe(true);
+  next.resolve({ items: [{ id: 'new-member', name: '新成员' }] }); await nextLoad;
+  expect(getTesteeStoreState().testeeList[0].id).toBe('new-member');
+  expect(getTesteeStoreState().isLoading).toBe(false);
+});
