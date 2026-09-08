@@ -77,3 +77,26 @@
 | `child-female.webp` | 女童静态形象 v1 | 37496 | aspectFit 完整人物，不裁切；高度由首页 Token 控制 | 主包 |
 
 人物为非真人、通用身份提示；相邻受试者姓名、年龄提供文字信息。生日不足 18 周岁使用儿童形象，满 18 周岁使用成人形象；无有效生日或性别时使用中性图标，图片失败可点击重试。年龄分组仅用于首页表现，不代表具体量表的适用范围。生成提示词、源图路径和实现边界见 [首页实施记录](decisions/subject-home-v1.md)。
+
+## iPhone 本地图片兼容修复（2026-09-08）
+
+用户反馈 iPhone 首页人物无法加载后，运行图片改为 PNG/JPEG；上文 WebP/SVG 表格保留为历史生成记录。Taro Image 文档对 WebP 默认解码及资源来源有约束，因此不再将浏览器预览结果视为本地 WebP 的真机兼容证明。参考：https://docs.taro.zone/docs/components/media/image/ 。
+
+| 当前运行资源 | 编码与尺寸 | 字节数 |
+|---|---|---:|
+| `src/assets/home/subjects/child-male.png` | PNG 300×450 | 90847 |
+| `src/assets/home/subjects/child-female.png` | PNG 300×450 | 100548 |
+| `src/assets/home/subjects/adult-male.png` | PNG 300×450 | 82269 |
+| `src/assets/home/subjects/adult-female.png` | PNG 300×450 | 70334 |
+| `src/pages/catalog-medical/assets/icon/pressure.png` | PNG 96×96 | 2459 |
+| `src/pages/catalog-medical/assets/icon/attention.png` | PNG 96×96 | 4881 |
+| `src/pages/catalog-medical/assets/icon/sleep.png` | PNG 96×96 | 3496 |
+| `src/pages/catalog-medical/assets/icon/mood.png` | PNG 96×96 | 3122 |
+| `src/pages/catalog-ability/assets/hero/ability-catalog-v2.jpg` | JPEG 1200×600 | 63935 |
+| `src/pages/assessment/ai-explanation/assets/report-lens-v1.png` | PNG 256×256 | 46101 |
+
+四个人物按显示分辨率缩至 300×450，保留完整 RGBA 光影与透明度，不使用索引色量化。医学图标由原 SVG 栅格化为 96×96 透明 PNG；行为能力 Banner 转为 JPEG，AI 插图使用透明 PNG。运行引用已全部切换，原 WebP/SVG 保留为源资产。
+
+`check:ui-assets` 增加扩展名与文件头一致性检查，并阻止页面直接导入本地 WebP/SVG。行为能力页清除叠加的旧紫色样式，恢复家庭横幅、青绿色 CTA 与白色核心测评卡片，保留真实目录和报告加载；无历史页面时返回首页使用 redirectTo，与当前自定义底栏一致。
+
+验证：71 组、348 项测试，以及类型、契约、资源、构建和包体检查通过。通过临时浏览器适配预览检查了家庭横幅和核心卡片；尚未在用户 iPhone 上复验。

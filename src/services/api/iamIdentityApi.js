@@ -20,7 +20,7 @@ function generateIdempotencyKey() {
  */
 export const getMe = () => {
   return request('/identity/me', {}, {
-    host: config.iamHost,
+    host: config.iamIdentityHost,
     needToken: true
   });
 };
@@ -32,7 +32,7 @@ export const getMe = () => {
  */
 export const updateMe = (userData) => {
   return request('/identity/me', userData, {
-    host: config.iamHost,
+    host: config.iamIdentityHost,
     method: 'PATCH',
     needToken: true
   });
@@ -46,7 +46,7 @@ export const updateMe = (userData) => {
  */
 export const getMyProfiles = (offset = 0, limit = 20) => {
   return request('/identity/me/profiles', {}, {
-    host: config.iamHost,
+    host: config.iamIdentityHost,
     params: { offset, limit },
     needToken: true
   });
@@ -59,7 +59,7 @@ export const getMyProfiles = (offset = 0, limit = 20) => {
  */
 export const createProfile = (profileData) => {
   return request('/identity/profiles', profileData, {
-    host: config.iamHost,
+    host: config.iamIdentityHost,
     method: 'POST',
     needToken: true,
     header: {
@@ -75,7 +75,7 @@ export const createProfile = (profileData) => {
  */
 export const getProfile = (profileId) => {
   return request(`/identity/profiles/${String(profileId)}`, {}, {
-    host: config.iamHost,
+    host: config.iamIdentityHost,
     needToken: true
   });
 };
@@ -88,7 +88,7 @@ export const getProfile = (profileId) => {
  */
 export const updateProfile = (profileId, profileData) => {
   return request(`/identity/profiles/${String(profileId)}`, profileData, {
-    host: config.iamHost,
+    host: config.iamIdentityHost,
     method: 'PATCH',
     needToken: true
   });
@@ -131,7 +131,7 @@ export const listProfileLinks = ({
   if (resolvedIncludeRevoked !== undefined) params.include_revoked = resolvedIncludeRevoked;
 
   return request('/identity/profile-links', {}, {
-    host: config.iamHost,
+    host: config.iamIdentityHost,
     params,
     needToken: true
   });
@@ -148,7 +148,7 @@ export const createProfileLink = ({ profileId, userId, relation = 'parent' }) =>
     userId: userId ? String(userId) : undefined,
     relation
   }, {
-    host: config.iamHost,
+    host: config.iamIdentityHost,
     method: 'POST',
     needToken: true,
     header: {
@@ -164,7 +164,7 @@ export const createProfileLink = ({ profileId, userId, relation = 'parent' }) =>
  */
 export const revokeProfileLink = (profileLinkId) => {
   return request(`/identity/profile-links/${String(profileLinkId)}/revoke`, {}, {
-    host: config.iamHost,
+    host: config.iamIdentityHost,
     method: 'POST',
     needToken: true
   });

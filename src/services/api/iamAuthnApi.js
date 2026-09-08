@@ -99,8 +99,7 @@ export const login = async (code, appId) => {
   const resolvedAppId = appId || config.appId;
   console.info('[IAM Authn] 发起登录请求', {
     method: 'wechat',
-    audience: 'mobile',
-    host: config.iamHost,
+    host: config.iamAuthnHost,
     appId: maskIdentifier(resolvedAppId),
     hasCode: Boolean(code),
     codeLength: code?.length ?? 0
@@ -114,7 +113,7 @@ export const login = async (code, appId) => {
         code
       }
     }, {
-      host: config.iamHost,
+      host: config.iamAuthnHost,
       method: 'POST',
       needToken: false,
       logPolicy: 'metadata_only'
@@ -148,7 +147,7 @@ export const login = async (code, appId) => {
  */
 export const refreshToken = async (refreshTokenValue) => {
   console.info('[IAM Authn] 发起刷新请求', {
-    host: config.iamHost,
+    host: config.iamAuthnHost,
     hasRefreshToken: Boolean(refreshTokenValue),
     refreshTokenLength: refreshTokenValue?.length ?? 0
   });
@@ -157,7 +156,7 @@ export const refreshToken = async (refreshTokenValue) => {
     const payload = await request('/authn/refresh_token', {
       refresh_token: refreshTokenValue
     }, {
-      host: config.iamHost,
+      host: config.iamAuthnHost,
       method: 'POST',
       needToken: false,
       logPolicy: 'metadata_only'
@@ -198,7 +197,7 @@ export const logout = async (accessToken, refreshTokenValue) => {
 
   try {
     const payload = await request('/authn/logout', data, {
-      host: config.iamHost,
+      host: config.iamAuthnHost,
       method: 'POST',
       needToken: false,
       logPolicy: 'metadata_only',
@@ -213,15 +212,23 @@ export const logout = async (accessToken, refreshTokenValue) => {
 /**
  * 验证访问令牌
  * @param {string} token - 访问令牌
+ * @param {string[]} expectedAudience - 调用场景明确要求的受众，必填
  * @returns {Promise<{valid: boolean, claims: object}>}
  */
-export const verifyToken = (token) => {
+export const verifyToken = async (token, expectedAudience) => {
+  if (!Array.isArray(expectedAudience) || expectedAudience.length === 0 ||
+      expectedAudience.some(value => typeof value !== 'string' || !value.trim())) {
+    throw new Error('expectedAudience 必须为非空受众列表，且不能含空元素');
+  }
+  const audiences = [...new Set(expectedAudience.map(value => value.trim()))];
   return request('/authn/verify', {
-    access_token: token
+    access_token: token,
+    expected_audience: audiences
   }, {
-    host: config.iamHost,
+    host: config.iamAuthnHost,
     method: 'POST',
-    needToken: false
+    needToken: false,
+    logPolicy: 'metadata_only'
   });
 };
 
@@ -234,51 +241,9 @@ export const verifyToken = (token) => {
  */
 export const registerWechatAccount = (code, appId, profile = {}) => {
   return request('/authn/signups/wechat-miniprogram', buildWechatMiniProgramSignupPayload(code, appId, profile), {
-    host: config.iamHost,
+    host: config.iamAuthnHost,
     method: 'POST',
     needToken: false
-  });
-};
-
-/**
- * 获取账户信息
- * @param {string} accountId - 账户ID
- * @returns {Promise<object>}
- */
-export const getAccount = (accountId) => {
-  return request(`/authn/accounts/${accountId}`, {}, {
-    host: config.iamHost,
-    needToken: true
-  });
-};
-
-/**
- * 更新账户资料
- * @param {string} accountId - 账户ID
- * @param {object} profile - 资料数据
- * @returns {Promise<{message: string}>}
- */
-export const updateAccountProfile = (accountId, profile) => {
-  return request(`/authn/accounts/${accountId}/profile`, profile, {
-    host: config.iamHost,
-    method: 'PUT',
-    needToken: true
-  });
-};
-
-/**
- * 设置账户 UnionID
- * @param {string} accountId - 账户ID
- * @param {string} unionId - UnionID
- * @returns {Promise<{message: string}>}
- */
-export const setAccountUnionId = (accountId, unionId) => {
-  return request(`/authn/accounts/${accountId}/unionid`, {
-    union_id: unionId
-  }, {
-    host: config.iamHost,
-    method: 'PUT',
-    needToken: true
   });
 };
 
@@ -287,8 +252,5 @@ export default {
   refreshToken,
   logout,
   verifyToken,
-  registerWechatAccount,
-  getAccount,
-  updateAccountProfile,
-  setAccountUnionId
+  registerWechatAccount
 };

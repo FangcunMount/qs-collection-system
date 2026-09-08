@@ -45,8 +45,15 @@ assertNotContains(identityApi, /params\.active\s*=/, 'ProfileLink list must not 
 assertNotContains(authnApi, /\/auth\/login/, 'legacy /auth/login must not be used');
 assertNotContains(registerApi, /\/auth\/login/, 'legacy /auth/login must not be used in register API');
 
+assertContains(authnApi, /config\.iamAuthnHost/, 'AuthN must use its v3 host');
+assertContains(registerApi, /config\.iamAuthnHost/, 'signup must use the AuthN v3 host');
+assertContains(identityApi, /config\.iamIdentityHost/, 'Identity must keep its independent v2 host');
+assertNotContains(authnApi + registerApi + identityApi, /config\.iamHost\b/, 'versioned clients must not share iamHost');
+assertContains(authnApi, /expected_audience:/, 'verification must send explicit expected audience');
+assertNotContains(authnApi, /\/authn\/accounts/, 'retired account endpoints must not be exported');
+
 if (process.exitCode) {
   process.exit(process.exitCode);
 }
 
-console.log('[iam-contracts] IAM REST contracts are aligned with V2 expectations');
+console.log('[iam-contracts] IAM AuthN v3 / Identity v2 contracts are aligned');

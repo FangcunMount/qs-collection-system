@@ -5,6 +5,10 @@ export const getUrl = (url, host) => {
 
   if (host) {
     baseUrl = `${host}${url}`;
+  } else if (url === "/authn" || url.startsWith("/authn/")) {
+    baseUrl = `${config.iamAuthnHost}${url}`;
+  } else if (url === "/identity" || url.startsWith("/identity/")) {
+    baseUrl = `${config.iamIdentityHost}${url}`;
   } else if (url.startsWith("/common")) {
     baseUrl = `https://api.${config.domain}${url.replace(new RegExp("/common"), "")}`;
   } else if (

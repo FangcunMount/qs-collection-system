@@ -36,7 +36,7 @@ function toWechatMiniProgramSignupPayload(userInfo = {}) {
  */
 export const postUserRegister = (userInfo) => {
   return request('/authn/signups/wechat-miniprogram', toWechatMiniProgramSignupPayload(userInfo), {
-    host: config.iamHost,
+    host: config.iamAuthnHost,
     method: 'POST',
     isNeedLoading: true,
     needToken: false
