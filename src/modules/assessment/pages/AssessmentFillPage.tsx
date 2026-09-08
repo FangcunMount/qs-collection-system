@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import Taro, { useReady, useRouter, useShareAppMessage } from "@tarojs/taro";
+import React, { useEffect, useRef, useState } from "react";
+import Taro, { useLoad, useShareAppMessage } from "@tarojs/taro";
 
 import { ROUTES, routes } from "@/shared/config/routes";
 import { getAssessmentEntryContext, setAssessmentEntryContext } from "@/shared/stores/assessmentEntry";
@@ -71,7 +71,22 @@ const getErrorMessage = (error: unknown, fallback: string): string => {
   return String(candidate.errMsg || candidate.message || fallback);
 };
 
-export default function AssessmentFillController() {
+// Bind each fill session to its own onLoad parameters. useRouter() memoizes the
+// global router at mount, which may still belong to the previous stacked page.
+export default function AssessmentFillPage() {
+  const [entry, setEntry] = useState<{ params: RouteParams; revision: number } | null>(null);
+  useLoad((params) => {
+    setEntry(previous => ({ params: { ...params } as RouteParams, revision: (previous?.revision || 0) + 1 }));
+  });
+  return entry ? <AssessmentFillController key={entry.revision} paramData={entry.params} /> : null;
+}
+
+function AssessmentFillController({ paramData }: { paramData: RouteParams }) {
+  const active = useRef(true);
+  useEffect(() => {
+    active.current = true;
+    return () => { active.current = false; };
+  }, []);
   const [questionnaireCode, setQuestionnaireCode] = useState<string | null>(null);
   const [modelCode, setModelCode] = useState<string | null>(null);
   const [isPersonalityFlow, setIsPersonalityFlow] = useState(false);
@@ -84,12 +99,11 @@ export default function AssessmentFillController() {
   const [testeeInfo, setTesteeInfo] = useState<TesteeInput | null>(null);
   const [testeeList, setTesteeList] = useState<Testee[]>([]);
   const [selectedTesteeId, setSelectedTesteeIdState] = useState("");
-  const [entryContext, setEntryContextState] = useState<EntryContext | null>(() => getAssessmentEntryContext());
+  const [entryContext, setEntryContextState] = useState<EntryContext | null>(null);
 
   const canSubmit = true;
   const [isSinglePage, setIsSinglePage] = useState(false);
 
-  const paramData = useRouter().params as RouteParams;
   const entryParams = normalizeAssessmentEntryParams(paramData);
   const planTaskId = resolvePlanTaskId(paramData, entryContext);
   const fillAssessmentKind = resolveSubmitAssessmentKind({
@@ -110,17 +124,20 @@ export default function AssessmentFillController() {
     return unsubscribe;
   }, []);
 
-  useReady(() => {
+  useEffect(() => {
     logger.RUN("did show <RUN>, params: ", { ...paramData });
 
     Taro.showLoading({ title: "加载中", mask: true });
 
     resolveAssessmentFillEntryParams(paramData).then((rawResult: unknown) => {
+      if (!active.current) return;
       const result = rawResult as ResolvedFillEntry;
       logger.RUN("did show <RUN>, cleared params: ", result);
       if (paramData.scene || hasEntryContext(result)) {
         setAssessmentEntryContext(result);
         setEntryContextState(getAssessmentEntryContext());
+      } else {
+        setAssessmentEntryContext(null);
       }
       const {
         q: nextQuestionnaireCode,
@@ -174,11 +191,13 @@ export default function AssessmentFillController() {
         setIsPersonalityFlow(true);
       }
 
-      beforeEach(async () => {
+      return beforeEach(async () => {
         setQuestionnaireCode(resolvedQuestionnaireCode);
         await initPageData(resolvedQuestionnaireCode, personalityModelCode, testeeid, result);
       });
     }).catch((error) => {
+      if (!active.current) return;
+      Taro.hideLoading();
       console.error('解析入口参数失败:', error);
       redirectToEntryError({
         title: "入口解析失败",
@@ -188,7 +207,7 @@ export default function AssessmentFillController() {
         buttonUrl: routes.tabHome()
       });
     });
-  });
+  }, [paramData]);
 
   useShareAppMessage(() => ({}));
 
@@ -206,6 +225,7 @@ export default function AssessmentFillController() {
   ): Promise<void> => {
     try {
       await refreshTesteeList();
+      if (!active.current) return;
 
       const storedList = getStoredTesteeList();
       const bootstrap = resolveTesteeBootstrap(storedList, explicitTesteeId);
@@ -236,6 +256,7 @@ export default function AssessmentFillController() {
         await loadAssessmentContentOnly(nextQuestionnaireCode, nextModelCode, resolvedEntryParams);
       }
     } catch (error) {
+      if (!active.current) return;
       console.error('初始化页面数据失败:', error);
       Taro.hideLoading();
       Taro.showToast({ title: '加载失败，请重试', icon: 'none' });
@@ -249,7 +270,7 @@ export default function AssessmentFillController() {
     const { questionnaireData, submitContract: nextSubmitContract } =
       await loadPersonalitySessionForFill({ modelCode: nextModelCode, testeeId });
 
-    setSubmitContract(nextSubmitContract);
+    if (active.current) setSubmitContract(nextSubmitContract);
     return questionnaireData as QuestionnaireData;
   };
 
@@ -267,10 +288,12 @@ export default function AssessmentFillController() {
       if (!nextQuestionnaireCode) throw new Error("缺少问卷编码");
 
       const questionnaireData = await getQuestionnaire(nextQuestionnaireCode);
+      if (!active.current) return;
       setQuestionnaire(questionnaireData as QuestionnaireData);
       setCurrentStep('ready');
       Taro.hideLoading();
     } catch (error) {
+      if (!active.current) return;
       console.error('加载问卷失败:', error);
       Taro.hideLoading();
       if (hasEntryContext(resolvedEntryParams)) {
@@ -302,6 +325,7 @@ export default function AssessmentFillController() {
         getTestee(testeeId)
       ]);
 
+      if (!active.current) return;
       setQuestionnaire(questionnaireData as QuestionnaireData);
       setTesteeInfo(testeeData as TesteeInput);
       if (shouldDirectStartPersonality(nextModelCode)) {
@@ -312,6 +336,7 @@ export default function AssessmentFillController() {
       }
       Taro.hideLoading();
     } catch (error) {
+      if (!active.current) return;
       console.error('加载数据失败:', error);
       Taro.hideLoading();
       if (hasEntryContext(resolvedEntryParams) || nextModelCode) {
@@ -342,15 +367,18 @@ export default function AssessmentFillController() {
 
     try {
       const testeeData = await getTestee(testeeId);
+      if (!active.current) return;
       setTesteeInfo(testeeData as TesteeInput);
 
       if (isPersonalityFlow && modelCode) {
         Taro.showLoading({ title: "加载中", mask: true });
         const questionnaireData = await loadPersonalitySession(modelCode, testeeId);
+        if (!active.current) return;
         setQuestionnaire(questionnaireData);
         Taro.hideLoading();
       }
     } catch (error) {
+      if (!active.current) return;
       console.error('加载档案信息失败:', error);
       Taro.hideLoading();
       Taro.showToast({ title: '加载档案信息失败', icon: 'none' });
@@ -386,9 +414,11 @@ export default function AssessmentFillController() {
       try {
         Taro.showLoading({ title: "加载中", mask: true });
         const questionnaireData = await loadPersonalitySession(modelCode, selectedTesteeId);
+        if (!active.current) return;
         setQuestionnaire(questionnaireData);
         Taro.hideLoading();
       } catch (error) {
+        if (!active.current) return;
         Taro.hideLoading();
         Taro.showToast({ title: getErrorMessage(error, '加载题版失败'), icon: 'none' });
         return;
@@ -404,6 +434,7 @@ export default function AssessmentFillController() {
         entryContext
       });
 
+      if (!active.current) return;
       logger.RUN('[Fill] 开始测评前触发订阅提醒', subscribeResult);
 
       if (subscribeResult.status === 'accepted') {
@@ -418,6 +449,7 @@ export default function AssessmentFillController() {
         });
       }
     } catch (error) {
+      if (!active.current) return;
       logger.WARN('[Fill] 开始测评前触发订阅提醒失败', error);
       Taro.showToast({
         title: getErrorMessage(error, '订阅失败，请稍后重试'),
@@ -469,6 +501,7 @@ export default function AssessmentFillController() {
     assessmentId: string,
     requestId: string,
   ): Promise<void> => {
+    if (!active.current) return;
     const questionnaireType = questionnaire?.type;
     const submittedTesteeId = submitContract?.testee_id || selectedTesteeId;
     const assessmentKind = resolveSubmitAssessmentKind({
