@@ -18,7 +18,7 @@ import {
   type CatalogCardViewModel,
 } from "@/modules/catalog/viewModels/catalogCard";
 import CatalogAssessmentFacts from "../components/CatalogAssessmentFacts";
-import behaviorHeroImage from "@/pages/catalog-ability/assets/hero/ability-catalog-v2.webp";
+import behaviorHeroImage from "@/pages/catalog-ability/assets/hero/ability-catalog-v2.jpg";
 import executiveImage from "@/pages/catalog-ability/assets/icon/icon-executive-function.png";
 import abilityImage from "@/pages/catalog-ability/assets/icon/icon-behavior-ability.png";
 import workingMemoryImage from "@/pages/catalog-ability/assets/icon/icon-working-memory.png";
@@ -125,7 +125,7 @@ const AbilityCatalogPage = () => {
       Taro.navigateBack();
       return;
     }
-    Taro.switchTab({ url: routes.tabHome() });
+    Taro.redirectTo({ url: routes.tabHome() });
   }, []);
 
   const handleViewAssessments = useCallback(() => {
@@ -210,9 +210,6 @@ const AbilityCatalogPage = () => {
                   </Text>
                   <View className="ability-assessment-card__title-line">
                     <Text className="ability-assessment-card__title">{item.title}</Text>
-                    {item.statusLabel ? (
-                      <Text className="ability-assessment-card__badge">{item.statusLabel}</Text>
-                    ) : null}
                   </View>
                   <Text className="ability-assessment-card__desc">{item.description}</Text>
                   <CatalogAssessmentFacts card={item} />

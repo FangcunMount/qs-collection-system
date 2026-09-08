@@ -18,10 +18,10 @@ import {
   type CatalogCardViewModel,
 } from "@/modules/catalog/viewModels/catalogCard";
 import MedicalScaleCard from "../components/MedicalScaleCard";
-import sleepIcon from "@/pages/catalog-medical/assets/icon/sleep.svg";
-import moodIcon from "@/pages/catalog-medical/assets/icon/mood.svg";
-import pressureIcon from "@/pages/catalog-medical/assets/icon/pressure.svg";
-import attentionIcon from "@/pages/catalog-medical/assets/icon/attention.svg";
+import sleepIcon from "@/pages/catalog-medical/assets/icon/sleep.png";
+import moodIcon from "@/pages/catalog-medical/assets/icon/mood.png";
+import pressureIcon from "@/pages/catalog-medical/assets/icon/pressure.png";
+import attentionIcon from "@/pages/catalog-medical/assets/icon/attention.png";
 import "./ScaleCatalogPage.less";
 
 const PAGE_NAME = "questionnaire_list";

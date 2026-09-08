@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Image, View } from '@tarojs/components';
-import illustration from '@/pages/assessment/ai-explanation/assets/report-lens-v1.webp';
+import illustration from '@/pages/assessment/ai-explanation/assets/report-lens-v1.png';
 
 export default function AIExplanationIllustration({ size = 'hero' }: { size?: 'hero' | 'entry' | 'small' }) {
   const [failed, setFailed] = useState(false);

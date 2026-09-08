@@ -16,10 +16,10 @@ import { findTesteeById, getSelectedTesteeId, getTesteeList, setSelectedTesteeId
 import type { Testee } from "@/store/testeeStore";
 import { mapRecentAssessment, type RecentAssessmentViewModel } from "@/modules/tab/viewModels/home";
 import { resolveHomeSubject } from "../viewModels/homeSubject";
-import adultMale from "@/assets/home/subjects/adult-male.webp";
-import adultFemale from "@/assets/home/subjects/adult-female.webp";
-import childMale from "@/assets/home/subjects/child-male.webp";
-import childFemale from "@/assets/home/subjects/child-female.webp";
+import adultMale from "@/assets/home/subjects/adult-male.png";
+import adultFemale from "@/assets/home/subjects/adult-female.png";
+import childMale from "@/assets/home/subjects/child-male.png";
+import childFemale from "@/assets/home/subjects/child-female.png";
 import emotionIcon from "@/assets/icon/icon-emotion-state.png";
 import pressureIcon from "@/assets/icon/icon-anxiety-screening.png";
 import sleepIcon from "@/assets/icon/icon-sleep-quality.png";
