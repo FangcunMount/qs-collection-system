@@ -58,3 +58,25 @@ test('a new search clears old rows, returns an honest empty state and disables u
   await act(async () => { tree.root.findByType(SearchBox).props.onConfirm(); });
   expect(textOf()).not.toContain('未发布量表'); expect(textOf()).toContain('暂无匹配量表');
 });
+
+test('audience and reporter filters cover later pages and intersect without guessing missing metadata', async () => {
+  Taro.getCurrentInstance.mockReturnValue({ router: { params: { category: 'slp' } } });
+  const first = { code: 'one', title: '第一项', category: 'slp', applicable_ages: ['adult'], reporters: ['self'] };
+  const second = { code: 'two', title: '第二页儿童量表', category: 'slp', applicable_ages: ['school_child'], reporters: ['parent'] };
+  const unknown = { code: 'unknown', title: '儿童名称但未提供适用对象', category: 'slp' };
+  listPublishedAssessmentModels.mockImplementation(({ page }) => Promise.resolve(response(page === 1 ? [first, unknown] : [second], 3, 2)));
+  await act(async () => { tree = renderer.create(<ScaleListPage />); });
+  expect(textOf()).not.toContain('第二页儿童量表');
+  await act(async () => { tree.root.findByProps({ className: 'scale-list-filters__toggle' }).props.onClick(); });
+  expect(textOf()).toContain('第二页儿童量表');
+  const pickers = tree.root.findAllByType('taro-picker');
+  act(() => pickers[0].props.onChange({ detail: { value: pickers[0].props.range.indexOf('学龄儿童') } }));
+  expect(textOf()).toContain('第二页儿童量表');
+  expect(textOf()).not.toContain('第一项');
+  expect(textOf()).not.toContain('儿童名称但未提供适用对象');
+  const reporter = tree.root.findAllByType('taro-picker')[1];
+  act(() => reporter.props.onChange({ detail: { value: reporter.props.range.indexOf('自评') } }));
+  expect(textOf()).toContain('暂无匹配量表');
+  await clickCategory('情绪');
+  expect(tree.root.findAllByType('taro-picker').every(picker => picker.props.value === 0)).toBe(true);
+});

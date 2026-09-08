@@ -1,0 +1,72 @@
+@import "../../../styles/tokens.less";
+.medical-scale-card {
+  min-width: 0;
+  &__category {
+    display: inline-block;
+    padding: @space-1 @space-2;
+    border-radius: @radius-xs;
+    color: @color-medical-700;
+    background: @color-medical-50;
+    font-size: @font-size-caption;
+    line-height: 1.3;
+    font-weight: @font-weight-semibold;
+  }
+  &__title {
+    display: block;
+    margin-top: @space-2;
+    color: @text-color-primary;
+    font-size: @font-size-card-title;
+    font-weight: @font-weight-bold;
+    line-height: @line-height-heading;
+    overflow-wrap: anywhere;
+  }
+  &__description {
+    display: block;
+    margin-top: @space-2;
+    color: @text-color-secondary;
+    font-size: @font-size-body;
+    line-height: @line-height-body;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  &__footer {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: @space-2 @space-3;
+    border-top: 1rpx solid @border-color-base;
+    margin-top: @space-3;
+    padding-top: @space-2;
+  }
+  &__facts {
+    flex: 1;
+    min-width: 240rpx;
+  }
+  .catalog-assessment-facts {
+    margin-top: 0;
+  }
+  &__note {
+    display: block;
+    color: @text-color-tertiary;
+    font-size: @font-size-caption;
+    line-height: @line-height-body;
+  }
+  &__action {
+    display: flex;
+    align-items: center;
+    gap: @space-1;
+    min-height: @touch-target-min;
+    margin-left: auto;
+    color: @color-medical-700;
+    font-size: @font-size-body;
+    font-weight: @font-weight-medium;
+  }
+  &--compact &__footer {
+    border-top: 0;
+    padding-top: 0;
+    margin-top: @space-2;
+  }
+  &--disabled &__action {
+    color: @text-color-tertiary;
+  }
+}

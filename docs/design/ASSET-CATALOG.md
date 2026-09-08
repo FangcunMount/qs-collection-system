@@ -49,3 +49,18 @@
 | `src/pages/assessment/ai-explanation/assets/report-lens-v1.webp` | 医学报告 AI 入口、准备/等待、成品标识 | v1 | 13,730 B | 88 / 176 / 52px | 装饰为空；contain 不裁切 | assessment 分包资源路径 |
 
 源图为本清单登记的内置 image_gen v1 候选；运行时导出 352×352 WebP，保留透明背景，符合新增图片 100 KiB 预算。最终打包归属以构建产物为准。
+
+## 医学目录线条图标（2026-09-08）
+
+按用户确认的医学首页、列表设计实施：医学首页移除大幅 Banner，改用四枚分类线条图标；列表移除缩略图。总首页、人格与行为能力页不变。历史图片保留，医学首页不再引用上述 Banner。
+
+通用操作继续通过 `shared/ui/Icon` 使用已安装的 Taroify 0.9.2 图标，无新依赖。参考：https://taroify.github.io/taroify.com/components/icon/ 。四枚医学分类图标为本项目原创 SVG，非 AI 位图：32×32 viewBox、1.7 圆头线条，颜色对应 `@color-medical-700`（更换主题时需同步 SVG）。
+
+| 文件（相对 `src/pages/catalog-medical/assets/icon/`） | 用途 | 字节数 | 显示与裁切 | 包归属 | 替代信息 |
+|---|---|---:|---|---|---|
+| `sleep.svg` | 睡眠分类 v1 | 278 | 64rpx 方形，aspectFit，不裁切 | 医学分包 | 相邻分类文字提供名称 |
+| `mood.svg` | 情绪分类 v1 | 283 | 64rpx 方形，aspectFit，不裁切 | 医学分包 | 相邻分类文字提供名称 |
+| `pressure.svg` | 压力分类 v1 | 280 | 64rpx 方形，aspectFit，不裁切 | 医学分包 | 相邻分类文字提供名称 |
+| `attention.svg` | 执行功能分类 v1 | 389 | 64rpx 方形，aspectFit，不裁切 | 医学分包 | 相邻分类文字提供名称 |
+
+列表筛选使用接口提供的适用年龄与填写者字段；展开筛选时加载当前类别的全部分页，缺失字段不推断。设计图的“查看详情”调整为当前真实填写流程对应的“开始评估”；没有新增详情路由或模拟量表数据。底部导航继续复用现有组件。

@@ -1,14 +1,14 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import Taro, { usePullDownRefresh } from "@tarojs/taro";
-import { View, Text, ScrollView, Image } from "@tarojs/components";
+import { View, Text, ScrollView, Picker } from "@tarojs/components";
 import ActionButton from "@/shared/ui/ActionButton";
-import CatalogAssessmentFacts from "../components/CatalogAssessmentFacts";
+import MedicalScaleCard from "../components/MedicalScaleCard";
+import Icon from "@/shared/ui/Icon";
 import SearchBox from "@/shared/ui/SearchBox";
 import AppNavigationBar from "@/shared/ui/AppNavigationBar";
 import FilterChip from "@/shared/ui/FilterChip";
 import PageShell from "@/shared/ui/PageShell";
 import StatePanel from "@/shared/ui/StatePanel";
-import SurfaceCard from "@/shared/ui/SurfaceCard";
 import { routes } from "@/shared/config/routes";
 import { SCALE_COMMON_CATEGORIES, isMedicalScaleCategory } from "@/shared/config/scaleCatalogHome";
 import { listPublishedAssessmentModels } from "@/services/api/assessmentModelCatalogApi";
@@ -18,12 +18,6 @@ import {
   matchesCatalogCardSearch,
   type CatalogCardViewModel,
 } from "@/modules/catalog/viewModels/catalogCard";
-import categorySleepImage from "@/pages/catalog-medical/assets/home/category-sleep.png";
-import categoryMoodImage from "@/pages/catalog-medical/assets/home/category-mood.png";
-import categoryPressureImage from "@/pages/catalog-medical/assets/home/category-pressure.png";
-import categoryAttentionImage from "@/pages/catalog-medical/assets/home/category-attention.png";
-import categoryChildImage from "@/pages/catalog-medical/assets/home/category-child.png";
-import categorySensoryImage from "@/pages/catalog-medical/assets/home/category-sensory.png";
 import "./ScaleListPage.less";
 
 const logger = getLogger("questionnaire_full_list");
@@ -32,23 +26,6 @@ const CATEGORY_CHIPS = [
   { value: null, key: "all", title: "全部" },
   ...SCALE_COMMON_CATEGORIES.map((item) => ({ value: item.value, key: item.key, title: item.title })),
 ];
-
-const resolveScaleImage = (scale: CatalogCardViewModel) => {
-  const marker = [
-    scale.title,
-    scale?.description,
-    scale?.category,
-    ...(scale?.tags || []),
-  ].join(" ");
-
-  if (/睡眠|入睡|失眠|sleep/i.test(marker)) return categorySleepImage;
-  if (/儿童|行为|家长|child|parent/i.test(marker)) return categoryChildImage;
-  if (/压力|压力量表|PSS|stress/i.test(marker)) return categoryPressureImage;
-  if (/执行|注意|专注|ADHD|SNAP|attention/i.test(marker)) return categoryAttentionImage;
-  if (/感觉|统合|sensory/i.test(marker)) return categorySensoryImage;
-  if (/情绪|焦虑|抑郁|GAD|PHQ|mood|anxiety/i.test(marker)) return categoryMoodImage;
-  return categorySleepImage;
-};
 
 interface PaginationState {
   page: number;
@@ -83,6 +60,11 @@ const ScaleListPage = () => {
   });
   const [isParamsReady, setIsParamsReady] = useState(false);
   const [queryToken, setQueryToken] = useState(0);
+  const [filterMode, setFilterMode] = useState(false);
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const [audienceFilter, setAudienceFilter] = useState("");
+  const [reporterFilter, setReporterFilter] = useState("");
+
 
   const requestGeneration = useRef(0);
   const requestPending = useRef(false);
@@ -100,7 +82,7 @@ const ScaleListPage = () => {
       setLoading(true);
       setLoadError("");
       const hasSearch = Boolean(String(appliedSearchText || '').trim());
-      const loadAllPages = hasSearch || !selectedCategory;
+      const loadAllPages = hasSearch || !selectedCategory || filterMode;
       let currentPage = loadAllPages ? 1 : page;
       let totalPages = 1;
       let total = 0;
@@ -147,7 +129,7 @@ const ScaleListPage = () => {
         setLoading(false);
       }
     }
-  }, [appliedSearchText, selectedCategory]);
+  }, [appliedSearchText, selectedCategory, filterMode]);
 
   usePullDownRefresh(async () => {
     await loadScaleList(1, false);
@@ -183,6 +165,8 @@ const ScaleListPage = () => {
 
   const handleSearch = useCallback(() => {
     requestGeneration.current += 1;
+    setAudienceFilter("");
+    setReporterFilter("");
     setSelectedCategory(null);
     setAppliedSearchText(searchText.trim());
     setQueryToken((token) => token + 1);
@@ -192,6 +176,8 @@ const ScaleListPage = () => {
     requestGeneration.current += 1;
     setSearchText("");
     setAppliedSearchText("");
+    setAudienceFilter("");
+    setReporterFilter("");
     setSelectedCategory(value);
     setQueryToken((token) => token + 1);
   }, []);
@@ -214,20 +200,39 @@ const ScaleListPage = () => {
     loadScaleList(pagination.page + 1, true);
   };
 
+  // Facets are offered only after every page in the current category is loaded.
+  // Missing audience/reporter metadata is never inferred from a scale title.
+  const audienceOptions = ["全部对象", ...Array.from(new Set(scaleList.flatMap(card => card.audienceLabel.split("、").filter(Boolean))))];
+  const reporterOptions = ["全部填写者", ...Array.from(new Set(scaleList.flatMap(card => card.reporterLabel.split("、").filter(Boolean))))];
+  const visibleScales = scaleList.filter(card =>
+    (!audienceFilter || card.audienceLabel.split("、").includes(audienceFilter)) &&
+    (!reporterFilter || card.reporterLabel.split("、").includes(reporterFilter))
+  );
+  const categoryTitle = CATEGORY_CHIPS.find(chip => chip.value === selectedCategory)?.title;
+  const listTitle = appliedSearchText ? "搜索结果" : selectedCategory ? `${categoryTitle || "医学"}量表` : "全部量表";
+  const toggleFilters = () => {
+    setFiltersExpanded(value => !value);
+    if (!filterMode) {
+      requestGeneration.current += 1;
+      setFilterMode(true);
+      setQueryToken(token => token + 1);
+    }
+  };
+
   return (
     <PageShell
       tone="medical"
       className="scale-list-page"
       contentClassName="scale-list-page__scroll"
       navigation={(
-        <AppNavigationBar title="全部量表" showBack onBack={handleBack} tone="medical" transparent />
+        <AppNavigationBar title="医学量表" showBack onBack={handleBack} tone="medical" transparent />
       )}
     >
 
         <View className="scale-list-search">
           <SearchBox
             className="scale-list-search-box"
-            placeholder="搜索量表名称、关键词"
+            placeholder="搜索量表名称或关键词"
             value={searchText}
             onInput={(e) => setSearchText(e.detail.value)}
             onConfirm={handleSearch}
@@ -252,8 +257,27 @@ const ScaleListPage = () => {
           </View>
         </ScrollView>
 
+        <View className="scale-list-filters">
+          <View className="scale-list-filters__toggle" onClick={toggleFilters}>
+            <Text>{[audienceFilter || "适用对象", reporterFilter || "填写者"].join(" · ")}</Text>
+            <View className="scale-list-filters__action"><Text>{filtersExpanded ? "收起" : "筛选"}</Text><Icon name="filter" size={18} /></View>
+          </View>
+          {filtersExpanded ? <View className="scale-list-filters__fields">
+            <Picker mode="selector" range={audienceOptions} value={Math.max(0, audienceOptions.indexOf(audienceFilter))}
+              disabled={loading || Boolean(loadError)} onChange={event => setAudienceFilter(audienceOptions[Number(event.detail.value)] === "全部对象" ? "" : audienceOptions[Number(event.detail.value)])}>
+              <View className="scale-list-filters__field"><Text>适用对象</Text><Text>{audienceFilter || "全部对象"} ⌄</Text></View>
+            </Picker>
+            <Picker mode="selector" range={reporterOptions} value={Math.max(0, reporterOptions.indexOf(reporterFilter))}
+              disabled={loading || Boolean(loadError)} onChange={event => setReporterFilter(reporterOptions[Number(event.detail.value)] === "全部填写者" ? "" : reporterOptions[Number(event.detail.value)])}>
+              <View className="scale-list-filters__field"><Text>填写者</Text><Text>{reporterFilter || "全部填写者"} ⌄</Text></View>
+            </Picker>
+            <Text className="scale-list-filters__note">{loading ? "正在加载可筛选范围…" : "按量表已提供的信息筛选，未标注信息不作推断。"}</Text>
+          </View> : null}
+        </View>
+        <View className="scale-list-hint"><Icon name="info" size={16} /><Text>先确认适用对象，再选择评估工具</Text></View>
         <View className="scale-list-count">
-          <Text>{loading ? "正在更新量表…" : `共 ${pagination.total} 个量表`}</Text>
+          <Text className="scale-list-count__title">{listTitle}</Text>
+          <Text>{loading ? "正在更新量表…" : loadError && !scaleList.length ? "加载失败" : `共 ${filterMode ? visibleScales.length : pagination.total} 个量表`}</Text>
         </View>
 
         <View className="scale-list">
@@ -269,25 +293,11 @@ const ScaleListPage = () => {
               tone="medical"
               compact
             />
-          ) : scaleList.length > 0 ? (
+          ) : visibleScales.length > 0 ? (
             <>
-              {scaleList.map((scale) => (
-                <SurfaceCard
-                  key={scale.code || scale.title}
-                  className="scale-list-row"
-                  interactive={!scale.disabled}
-                  onClick={scale.disabled ? undefined : () => handleScaleClick(scale)}
-                >
-                  <View className="scale-list-row__icon">
-                    <Image className="scale-list-row__image" src={resolveScaleImage(scale)} mode="aspectFit" />
-                  </View>
-                  <View className="scale-list-row__content">
-                    <Text className="scale-list-row__title">{scale.title}</Text>
-                    {scale.description ? <Text className="scale-list-row__desc">{scale.description}</Text> : null}
-                    <CatalogAssessmentFacts card={scale} />
-                  </View>
-
-                </SurfaceCard>
+              {visibleScales.map((scale) => (
+                <MedicalScaleCard key={scale.code || scale.title} card={scale}
+                  className="scale-list-row" onSelect={() => handleScaleClick(scale)} />
               ))}
               {loadError ? <StatePanel state="error" compact tone="medical" title="后续量表加载失败" description="已加载的量表仍可查看，请重试。" actionText="重试加载" onAction={() => loadScaleList(pagination.page + 1, true)} /> : null}
               {pagination.page < pagination.total_pages && !loadError ? (
@@ -298,13 +308,14 @@ const ScaleListPage = () => {
             <StatePanel
               state="empty"
               title="暂无匹配量表"
-              description="请换个关键词或分类试试。"
+              description="请换个关键词、分类或筛选条件试试。"
               tone="medical"
               compact
             />
           )}
         </View>
 
+        <View className="scale-list-disclaimer"><Text>评估结果供参考，不替代专业诊断。</Text></View>
         <View className="scale-list__bottom-spacer" />
     </PageShell>
   );
