@@ -74,8 +74,14 @@ assertContains(assessmentPortals, /home-entry-personality\.png/, 'personality po
 assertContains(assessmentPortals, /home-(entry|child)-behavior\.(png|webp)/, 'ability portal must reference home entry image');
 
 assertContains(homeProfileCard, /home-current-record-checklist\.png/, 'home current record card must reference checklist image');
-assertContains(homeTabPage, /listHotPublishedAssessmentModels/, 'home page must load hot published assessment models');
-assertContains(homeTabPage, /home-portal-card__art/, 'home page must render image-backed portal cards');
+// The approved subject-centred home replaces the hot-model feed and portal artwork.
+assertContains(homeTabPage, /resolveHomeSubject\(currentTestee\)/, 'home page must derive its presentation from the selected subject');
+assertContains(homeTabPage, /setSelectedTesteeId\(testee\.id\)/, 'home selection must update the shared subject store');
+assertContains(homeTabPage, /routes\.tabScales\(\)/, 'home must retain access to the medical catalog');
+assertContains(homeTabPage, /routes\.personalityCatalog\(\)/, 'home must retain access to the personality catalog');
+assertContains(homeTabPage, /routes\.abilityCatalog\(\)/, 'home must retain access to the ability catalog');
+assertContains(homeTabPage, /handleDirectEntryRedirect/, 'home must preserve scene and token entry');
+assertNotContains(homeTabPage, /listHotPublishedAssessmentModels/, 'home must not load the retired hot-model feed');
 assertContains(homeViewModel, /assessmentKind:\s*String\(resolveAssessmentKind\(item\)/, 'home recent reports must preserve assessment kind');
 assertContains(homeTabPage, /isPersonalityAssessmentKind\(assessmentKind\)/, 'home report navigation must route personality separately');
 assertContains(homeRecentAssessments, /isReportReadable\(item\.status\)/, 'home recent reports must only expose readable reports');

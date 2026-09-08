@@ -34,34 +34,33 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-test('each domain opens its actual catalog', async () => {
+test('unknown demographics preserve all domain entries without choosing an arbitrary avatar', async () => {
   const navigate = jest.spyOn(Taro, 'navigateTo');
   await act(async () => { component = renderer.create(<HomeTabPage />); });
   const cards = component.root.findAllByType(SurfaceCard)
-    .filter(card => (card.props.className || '').includes('home-portal-card '));
-  expect(cards).toHaveLength(3);
-  for (const card of cards) card.props.onClick();
+    .filter(card => (card.props.className || '').startsWith('home-service '));
+  expect(cards).toHaveLength(4);
+  for (const card of cards.slice(0, 3)) card.props.onClick();
   expect(navigate.mock.calls.map(([arg]) => arg.url)).toEqual([
-    expect.stringContaining('catalog-medical'),
-    expect.stringContaining('catalog-personality'),
-    expect.stringContaining('catalog-ability'),
+    expect.stringContaining('catalog-medical'), expect.stringContaining('catalog-personality'), expect.stringContaining('catalog-ability'),
   ]);
-  expect(textOf(component)).toContain('当前成员 · 成员一');
-  expect(textOf(component)).toContain('最近医学报告');
+  expect(textOf(component)).toContain('成员一');
+  expect(textOf(component)).toContain('完善资料后展示对应形象');
+  expect(listHotPublishedAssessmentModels).not.toHaveBeenCalled();
 });
 
-test('loading and retry states never become a fictitious mood-record feature', async () => {
+test('reports expose a real retry state and never create a mood-record feature', async () => {
   const request = deferred();
-  listHotPublishedAssessmentModels.mockReturnValueOnce(request.promise);
+  loadRecentAssessments.mockReturnValueOnce(request.promise);
   await act(async () => { component = renderer.create(<HomeTabPage />); });
-  expect(textOf(component)).toContain('正在加载测评');
-  expect(textOf(component)).not.toContain('心情打卡');
+  act(() => component.root.findByProps({ className: 'home-recent-toggle' }).props.onClick());
+  expect(textOf(component)).toContain('正在同步最近报告');
   await act(async () => { request.reject(new Error('offline')); });
-  const error = component.root.findAllByType(StatePanel).find(node => node.props.title === '测评加载失败');
+  const error = component.root.findByType(StatePanel);
   expect(error.props.state).toBe('error');
   await act(async () => { await error.props.onAction(); });
-  expect(textOf(component)).toContain('暂无推荐测评');
-  expect(textOf(component)).not.toContain('去记录');
+  expect(textOf(component)).toContain('该成员暂无医学报告');
+  expect(textOf(component)).not.toContain('心情打卡');
 });
 
 test('changing member rejects late reports from the previous member', async () => {
@@ -72,6 +71,7 @@ test('changing member rejects late reports from the previous member', async () =
   await act(async () => {
     component.root.findByType('taro-picker').props.onChange({ detail: { value: 1 } });
   });
+  act(() => component.root.findByProps({ className: 'home-recent-toggle' }).props.onClick());
   await act(async () => { second.resolve([{ id: 'new', scale_name: '第二位成员的报告', testee_id: 'two' }]); });
   expect(textOf(component)).toContain('第二位成员的报告');
   await act(async () => { first.resolve([{ id: 'old', scale_name: '第一位成员的报告', testee_id: 'one' }]); });
@@ -80,4 +80,27 @@ test('changing member rejects late reports from the previous member', async () =
   // Store notifications for the same member must not erase the loaded report.
   await act(async () => { setTesteeList(members); });
   expect(textOf(component)).toContain('第二位成员的报告');
+});
+
+
+test('switching subjects updates the avatar and working category links together', async () => {
+  setTesteeList([
+    { id: 'adult', legalName: '成人', dob: '1990-01-01', gender: 1 },
+    { id: 'child', legalName: '孩子', dob: '2020-01-01', gender: 2 },
+  ]);
+  setSelectedTesteeId('adult');
+  const navigate = jest.spyOn(Taro, 'navigateTo');
+  await act(async () => { component = renderer.create(<HomeTabPage />); });
+  expect(textOf(component)).toContain('心理健康');
+  expect(textOf(component)).toContain('人格探索');
+  await act(async () => { component.root.findByType('taro-picker').props.onChange({ detail: { value: 1 } }); });
+  expect(textOf(component)).toContain('一起，读懂孩子的日常');
+  expect(textOf(component)).toContain('注意与专注');
+  expect(textOf(component)).not.toContain('人格探索');
+  const cards = component.root.findAllByType(SurfaceCard).filter(card => card.props.className.startsWith('home-service '));
+  act(() => cards[2].props.onClick());
+  expect(navigate).toHaveBeenLastCalledWith({ url: expect.stringContaining('category=adhd') });
+  const image = component.root.findByProps({ className: 'home-stage__figure' });
+  act(() => image.props.onError());
+  expect(textOf(component)).toContain('形象未加载，点击重试');
 });
