@@ -18,7 +18,21 @@ const walk = (directory) => {
   fs.readdirSync(directory, { withFileTypes: true }).forEach((entry) => {
     const absolutePath = path.join(directory, entry.name);
     if (entry.isDirectory()) return walk(absolutePath);
-    if (!imageExtensions.has(path.extname(entry.name).toLowerCase())) return;
+    const extension = path.extname(entry.name).toLowerCase();
+    if (['.tsx', '.ts', '.jsx', '.js'].includes(extension)) {
+      const source = fs.readFileSync(absolutePath, 'utf8');
+      // Local WebP decoding is not a cross-device Image guarantee. Keep SVG
+      // artwork as sources, but ship raster versions to native Image elements.
+      if (/\b(?:from\s*|import\s*|require\(\s*)['"][^'"]+\.(?:webp|svg)['"]/.test(source)) {
+        violations.push(`${path.relative(root, absolutePath)}: 小程序运行图片请引用 PNG/JPEG，勿直接导入本地 WebP/SVG`);
+      }
+    }
+    if (!imageExtensions.has(extension)) return;
+    const header = fs.readFileSync(absolutePath).subarray(0, 12);
+    const validHeader = extension === '.png' ? header.subarray(0, 8).equals(Buffer.from([137,80,78,71,13,10,26,10]))
+      : extension === '.webp' ? header.toString('ascii', 0, 4) === 'RIFF' && header.toString('ascii', 8, 12) === 'WEBP'
+      : header[0] === 255 && header[1] === 216;
+    if (!validHeader) violations.push(`${path.relative(root, absolutePath)}: 图片内容与扩展名不一致`);
 
     const relativePath = path.relative(root, absolutePath).split(path.sep).join('/');
     const bytes = fs.statSync(absolutePath).size;
