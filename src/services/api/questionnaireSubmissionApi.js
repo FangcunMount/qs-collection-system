@@ -1,4 +1,3 @@
-import { getAssessmentEntryContext } from '@/shared/stores/assessmentEntry';
 import { getSelectedTesteeId } from '@/shared/stores/testees';
 import { serializeAnswerValue } from '@/modules/questionnaire/lib/answerSerializer';
 import {
@@ -47,9 +46,11 @@ export const submitQuestionnaire = async (questionnaire, writer_role_code, signi
     title: questionnaire.name || questionnaire.title,
   };
 
-  const entryContext = getAssessmentEntryContext();
-  if (entryContext?.task_id) {
-    requestData.task_id = entryContext.task_id;
+  if (!submitContract.answering_start_id) throw new Error('缺少作答开始记录，请重新开始测评');
+  requestData.answering_start_id = String(submitContract.answering_start_id);
+  requestData.origin_ref = submitContract.origin_ref;
+  if (submitContract.origin_ref?.type === "plan_task") {
+    requestData.task_id = submitContract.origin_ref.id;
   }
 
   const submissionAttempt = options.idempotencyKey
@@ -75,6 +76,8 @@ export const submitQuestionnaire = async (questionnaire, writer_role_code, signi
     acceptedRequestId: '',
     clientRequestId: initialRequestId,
     idempotencyKey,
+    answeringStartId: requestData.answering_start_id,
+    originRef: requestData.origin_ref,
     testeeId: selectedTesteeId,
     modelCode: submitContract.model_code,
     questionnaireCode: requestData.questionnaire_code,
@@ -135,6 +138,8 @@ export const submitQuestionnaire = async (questionnaire, writer_role_code, signi
     acceptedRequestId: requestId,
     idempotencyKey,
     clientRequestId: lastRequestId,
+    answeringStartId: requestData.answering_start_id,
+    originRef: requestData.origin_ref,
     testeeId: selectedTesteeId,
     modelCode: submitContract.model_code,
     questionnaireCode: requestData.questionnaire_code,

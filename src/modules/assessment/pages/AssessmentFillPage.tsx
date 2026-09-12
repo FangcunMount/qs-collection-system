@@ -38,6 +38,7 @@ import {
   resolveQuestionnaireSinglePageMode,
   resolveTesteeBootstrap,
 } from "../lib/assessmentFillFlow";
+import { beginAnswering, answeringOrigin } from "../services/answeringStart";
 import { buildAssessmentReadyViewModel } from "../viewModels/assessmentReady";
 import AssessmentReadyView from "../views/AssessmentReadyView";
 import AssessmentAnsweringView from "../views/AssessmentAnsweringView";
@@ -83,6 +84,9 @@ export default function AssessmentFillPage() {
 
 function AssessmentFillController({ paramData }: { paramData: RouteParams }) {
   const active = useRef(true);
+  const startAttempt = useRef<any>(null);
+  const starting = useRef(false);
+  const contentContract = useRef<AssessmentSubmitContract | null>(null);
   useEffect(() => {
     active.current = true;
     return () => { active.current = false; };
@@ -99,6 +103,8 @@ function AssessmentFillController({ paramData }: { paramData: RouteParams }) {
   const [testeeInfo, setTesteeInfo] = useState<TesteeInput | null>(null);
   const [testeeList, setTesteeList] = useState<Testee[]>([]);
   const [selectedTesteeId, setSelectedTesteeIdState] = useState("");
+  const currentTestee = useRef(selectedTesteeId);
+  currentTestee.current = selectedTesteeId;
   const [entryContext, setEntryContextState] = useState<EntryContext | null>(null);
 
   const canSubmit = true;
@@ -270,7 +276,10 @@ function AssessmentFillController({ paramData }: { paramData: RouteParams }) {
     const { questionnaireData, submitContract: nextSubmitContract } =
       await loadPersonalitySessionForFill({ modelCode: nextModelCode, testeeId });
 
-    if (active.current) setSubmitContract(nextSubmitContract);
+    if (active.current) {
+      contentContract.current = nextSubmitContract;
+      setSubmitContract(nextSubmitContract);
+    }
     return questionnaireData as QuestionnaireData;
   };
 
@@ -329,6 +338,15 @@ function AssessmentFillController({ paramData }: { paramData: RouteParams }) {
       setQuestionnaire(questionnaireData as QuestionnaireData);
       setTesteeInfo(testeeData as TesteeInput);
       if (shouldDirectStartPersonality(nextModelCode)) {
+        setCurrentStep('ready');
+        const started = await beginAnswering({
+          ...contentContract.current, questionnaire_code: (questionnaireData as QuestionnaireData).code,
+          questionnaire_version: (questionnaireData as QuestionnaireData).version, testee_id: testeeId,
+        }, answeringOrigin(getAssessmentEntryContext() || {}, resolvePlanTaskId(resolvedEntryParams, getAssessmentEntryContext())));
+        if (!active.current) return;
+        if (currentTestee.current !== testeeId) return;
+        startAttempt.current = started.attempt;
+        setSubmitContract(started.contract);
         setIsSinglePage(true);
         setCurrentStep('filling');
       } else {
@@ -466,14 +484,27 @@ function AssessmentFillController({ paramData }: { paramData: RouteParams }) {
       isPersonalityFlow,
     });
 
-    setSubmitContract((current) => ({
-      ...(current || {}),
-      questionnaire_code: current?.questionnaire_code || questionnaire?.code,
-      questionnaire_version: current?.questionnaire_version || questionnaire?.version,
-      testee_id: selectedTesteeId,
-      model_code: current?.model_code || modelCode || undefined,
-      assessment_kind: assessmentKind || current?.assessment_kind,
-    }));
+    if (starting.current) return;
+    starting.current = true;
+    try {
+      const current = contentContract.current || submitContract;
+      const started = await beginAnswering({
+        ...(current || {}),
+        questionnaire_code: current?.questionnaire_code || questionnaire?.code,
+        questionnaire_version: current?.questionnaire_version || questionnaire?.version,
+        testee_id: selectedTesteeId,
+        assessment_kind: assessmentKind || current?.assessment_kind,
+      }, answeringOrigin(entryContext || {}, planTaskId), startAttempt.current);
+      if (!active.current) return;
+      if (currentTestee.current !== selectedTesteeId) return;
+      startAttempt.current = started.attempt;
+      setSubmitContract(started.contract);
+    } catch (error) {
+      if (active.current) Taro.showToast({ title: getErrorMessage(error, '开始失败，请重试'), icon: 'none' });
+      return;
+    } finally {
+      starting.current = false;
+    }
 
     setIsSinglePage(resolveQuestionnaireSinglePageMode({
       questionnaireType,

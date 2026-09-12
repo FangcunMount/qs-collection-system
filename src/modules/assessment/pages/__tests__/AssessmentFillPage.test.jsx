@@ -6,11 +6,18 @@ import AssessmentReadyView from '../../views/AssessmentReadyView';
 import AssessmentAnsweringView from '../../views/AssessmentAnsweringView';
 import QuestionRenderer from '@/modules/questionnaire/components/QuestionRenderer';
 import { getQuestionnaire } from '@/services/api/questionnaires';
+import { loadPersonalitySessionForFill } from '../../lib/personalityQuestionnaire';
+import { beginAnswering } from '../../services/answeringStart';
 import { getTestee } from '@/services/api/testees';
 import { resolveAssessmentFillEntryParams, redirectToEntryError } from '../../lib/assessmentFillEntry';
 import { requestPlanSubscribe } from '@/shared/ui/PlanSubscribeConfirm';
 import { setAssessmentEntryContext } from '@/shared/stores/assessmentEntry';
 
+jest.mock('../../services/answeringStart', () => ({
+  ...jest.requireActual('../../services/answeringStart'),
+  beginAnswering: jest.fn(async (contract, origin) => ({ attempt: { requestKey: 'start-key' }, contract: { ...contract, answering_start_id: '901', origin_ref: origin } })),
+}));
+jest.mock('../../lib/personalityQuestionnaire', () => ({ loadPersonalitySessionForFill: jest.fn() }));
 let mockLoad, mockReady;
 jest.mock('@tarojs/taro', () => {
   const taro = jest.requireActual('@tarojs/taro');
@@ -36,6 +43,7 @@ const deferred = () => { let resolve, reject; const promise = new Promise((yes, 
 let tree;
 beforeEach(() => {
   mockLoad = undefined; mockReady = undefined;
+  loadPersonalitySessionForFill.mockResolvedValue({ questionnaireData: questionnaire('PERSONALITY'), submitContract: { questionnaire_code: 'PERSONALITY', questionnaire_version: '1', testee_id: 'member' } });
   Taro.__setRouterParams({ q: 'A' });
   getQuestionnaire.mockReset().mockImplementation(async code => questionnaire(code));
   getTestee.mockReset().mockResolvedValue({ id: 'member', legalName: '成员' });
@@ -98,4 +106,32 @@ test('leaving a filling page ignores its late submission callback', async () => 
   const redirect = jest.spyOn(Taro, 'redirectTo');
   await load({ q: 'B' }); await act(async () => oldWritten('old-answer', 'old-assessment', 'old-request'));
   expect(redirect).not.toHaveBeenCalled(); redirect.mockRestore();
+});
+
+ test('failed start stays ready; retry obtains a start before exposing answers', async () => {
+  beginAnswering.mockRejectedValueOnce(new Error('网络中断'));
+  await act(async () => { tree = renderer.create(<AssessmentFillPage />); });
+  await load({ q: 'A' }); await start();
+  expect(tree.root.findAllByType(AssessmentAnsweringView)).toHaveLength(0);
+  await start();
+  expect(answering().submitContract.answering_start_id).toBe('901');
+});
+test('late start completion cannot enter the replacement page', async () => {
+  const pending = deferred(); beginAnswering.mockReturnValueOnce(pending.promise);
+  await act(async () => { tree = renderer.create(<AssessmentFillPage />); });
+  await load({ q: 'A' });
+  let starting; await act(async () => { starting = tree.root.findByType(AssessmentReadyView).props.onStart(); });
+  await load({ q: 'B' });
+  await act(async () => { pending.resolve({ attempt: {}, contract: { questionnaire_code: 'A', answering_start_id: '900' } }); await starting; });
+  expect(tree.root.findAllByType(AssessmentAnsweringView)).toHaveLength(0);
+  await start(); expect(answering().questionnaireCode).toBe('B');
+});
+
+test('personality automatic start waits for the server before showing questions', async () => {
+  const pending = deferred(); beginAnswering.mockReturnValueOnce(pending.promise);
+  await act(async () => { tree = renderer.create(<AssessmentFillPage />); });
+  await load({ model_code: 'MODEL', start: '1' });
+  expect(tree.root.findAllByType(AssessmentAnsweringView)).toHaveLength(0);
+  await act(async () => pending.resolve({ attempt: {}, contract: { questionnaire_code: 'PERSONALITY', answering_start_id: '902', testee_id: 'member' } }));
+  expect(answering().submitContract.answering_start_id).toBe('902');
 });

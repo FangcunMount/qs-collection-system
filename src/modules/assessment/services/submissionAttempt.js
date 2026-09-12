@@ -38,6 +38,7 @@ const buildCanonicalSubmission = (payload = {}) => {
     testee_id: String(payload.testee_id || ''),
     task_id: String(payload.task_id || ''),
     answers: normalizedAnswers,
+    ...(payload.answering_start_id ? { answering_start_id: String(payload.answering_start_id), origin_ref: payload.origin_ref } : {}),
   };
 };
 
@@ -81,7 +82,7 @@ export function resolveSubmissionAttempt(payload = {}, previousAttempt = null, f
   const fingerprint = buildSubmissionFingerprint(payload);
   const previousFingerprint = String(previousAttempt?.fingerprint || '');
   const matchesCurrent = previousFingerprint === fingerprint;
-  const matchesLegacy = !previousFingerprint.startsWith('v2:')
+  const matchesLegacy = !payload.answering_start_id && !previousFingerprint.startsWith('v2:')
     && previousFingerprint === buildLegacySubmissionFingerprint(payload);
   if (
     !forceNewAttempt

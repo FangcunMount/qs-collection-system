@@ -13,6 +13,8 @@ export function normalizeSubmissionContext(value = {}) {
   const legacyClientRequestId = toId(value.clientRequestId || value.client_request_id);
   return {
     fingerprint: toId(value.fingerprint),
+    answeringStartId: toId(value.answeringStartId || value.answering_start_id),
+    originRef: value.originRef || value.origin_ref || null,
     requestId: legacyRequestId || legacyClientRequestId,
     lastRequestId: toId(value.lastRequestId || value.last_request_id || legacyClientRequestId || legacyRequestId),
     acceptedRequestId: toId(value.acceptedRequestId || value.accepted_request_id),
