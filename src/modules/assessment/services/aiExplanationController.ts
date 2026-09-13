@@ -1,5 +1,7 @@
 import * as api from '@/services/api/aiExplanationApi';
-import type { AIOutput, AIScope } from '@/services/api/aiExplanationApi';
+import { isWorkflowRequestId, isReportId } from '@/services/api/aiExplanationApi';
+import { createAIRequestId } from './aiExplanationRequestId';
+import type { AIOutput, AIScope, AIWorkflowCommand } from '@/services/api/aiExplanationApi';
 import { createRequestLifetime } from '@/services/requestLifetime';
 import type { RequestLifetime } from '@/services/requestLifetime';
 import { readAIPointer, saveAIPointer, removeAIPointer, readAIRetryAt, saveAIRetryAt } from './aiExplanationContextStore';
@@ -7,25 +9,26 @@ import type { AIAccountScope } from './aiExplanationContextStore';
 import { AI_WAIT_LIMIT_MS, AI_LONG_WAIT_MS, AI_NETWORK_RETRY_LIMIT, aiPollDelay, isAIWaiting } from './waitForAIExplanation';
 
 export type AIViewState = 'checking' | 'ready' | 'submitting' | 'waiting' | 'generated' | 'failed' | 'unavailable' |
-  'limited' | 'unconfirmed' | 'paused' | 'unsupported' | 'forbidden' | 'authRequired' | 'invalid';
+  'storageUnavailable' | 'limited' | 'unconfirmed' | 'paused' | 'unsupported' | 'forbidden' | 'authRequired' | 'invalid';
 export interface AIState {
   view: AIViewState; output?: AIOutput; generationId?: string; retryAt?: number;
   refreshError?: boolean; longWait?: boolean; animateCompletion?: boolean;
 }
 interface Dependencies {
   capability: (scope: AIScope, lifetime?: RequestLifetime) => Promise<AIOutput>;
-  request: (scope: AIScope, lifetime?: RequestLifetime) => Promise<AIOutput>;
+  request: (scope: AIScope, command: AIWorkflowCommand, lifetime?: RequestLifetime) => Promise<AIOutput>;
   get: (scope: AIScope, gid: string, lifetime?: RequestLifetime) => Promise<AIOutput>;
   read: typeof readAIPointer; save: typeof saveAIPointer; remove: typeof removeAIPointer;
   readRetryAt: typeof readAIRetryAt; saveRetryAt: typeof saveAIRetryAt;
-  now: () => number; random: () => number;
+  now: () => number; random: () => number; createRequestId: () => Promise<string>;
 }
 export function createAIExplanationController(scope: AIAccountScope, onChange: (state: AIState) => void,
   options: { generationId?: string; poll?: boolean; isCurrent?: () => boolean } = {}, overrides: Partial<Dependencies> = {}) {
   const deps: Dependencies = { capability: api.getAIExplanationCapability, request: api.requestAIExplanation, get: api.getAIExplanation,
-    read: readAIPointer, save: saveAIPointer, remove: removeAIPointer, readRetryAt: readAIRetryAt, saveRetryAt: saveAIRetryAt, now: Date.now, random: Math.random, ...overrides };
+    read: readAIPointer, save: saveAIPointer, remove: removeAIPointer, readRetryAt: readAIRetryAt, saveRetryAt: saveAIRetryAt, now: Date.now, random: Math.random, createRequestId: createAIRequestId, ...overrides };
   let state: AIState = { view: 'checking' };
-  let gid = options.generationId || deps.read(scope)?.generationId || '';
+  let gid = options.generationId || '';
+  let reportId = '';
   let lifetime: RequestLifetime | undefined;
   let active = false;
   let epoch = 0;
@@ -33,7 +36,6 @@ export function createAIExplanationController(scope: AIAccountScope, onChange: (
   let startedAt = 0;
   let attempts = 0;
   let errors = 0;
-  let uncertain = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let deadline: ReturnType<typeof setTimeout> | undefined;
   let longWaitTimer: ReturnType<typeof setTimeout> | undefined;
@@ -69,11 +71,11 @@ export function createAIExplanationController(scope: AIAccountScope, onChange: (
   };
   function accept(output: AIOutput) {
     errors = 0;
-    if (output.status !== 'ready') uncertain = false;
-    if (output.status === 'ready' && uncertain) { emit({ view: 'unconfirmed' }); return; }
     if (output.generation_id) {
+      if (gid && output.generation_id !== gid || reportId && output.source_report_id && reportId !== output.source_report_id) throw new api.AIContractError();
       gid = output.generation_id;
-      deps.save(scope, gid, output.source_report_id);
+      reportId = output.source_report_id || reportId;
+      deps.save(scope, gid, reportId);
     }
     const view: AIViewState = isAIWaiting(output.status) ? 'waiting' : output.status === 'ready' ? 'ready' :
       output.status === 'generated' ? 'generated' : output.status === 'failed' ? 'failed' : 'unavailable';
@@ -85,9 +87,9 @@ export function createAIExplanationController(scope: AIAccountScope, onChange: (
   function handleError(error: unknown, operation: 'get' | 'post') {
     const err = error as { code?: string; statusCode?: number; retryAfterMs?: number; reason?: string };
     clearTimers();
-    if (operation === 'post' && err.statusCode && err.statusCode >= 400 && err.statusCode < 500) uncertain = false;
+    if (err.code === 'AI_STORAGE_UNAVAILABLE') { emit({ view: 'storageUnavailable' }); return; }
     if (err.code === 'AI_CONTRACT_UNSUPPORTED') { emit({ view: 'unsupported' }); return; }
-    if (err.statusCode === 403) { deps.remove(scope); gid = ''; emit({ view: 'forbidden' }); return; }
+    if (err.statusCode === 403) { try { deps.remove(scope); } catch (_) { /* Never keep output visible after revocation. */ } gid = ''; reportId = ''; emit({ view: 'forbidden' }); return; }
     if (err.statusCode === 401 || ['anonymous','session_expired','unregistered','session_changed'].includes(err.reason || '')) {
       emit({ view: 'authRequired' }); return;
     }
@@ -98,8 +100,7 @@ export function createAIExplanationController(scope: AIAccountScope, onChange: (
       emit({ view: 'limited', retryAt }); return;
     }
     if (operation === 'get' && err.statusCode === 404 && gid) {
-      deps.remove(scope); gid = ''; emit({ view: 'checking' });
-      void read(); return; // Capability only; never recreate a missing generation.
+      emit({ view: 'unconfirmed' }); return; // Keep the same durable command; a missing read is not proof the POST failed.
     }
     if (operation === 'post') {
       emit({ view: err.statusCode && err.statusCode >= 400 && err.statusCode < 500 ? 'unavailable' : 'unconfirmed' });
@@ -116,16 +117,36 @@ export function createAIExplanationController(scope: AIAccountScope, onChange: (
     const version = epoch;
     try {
       // Entry may discover a pointer created on the detail page while it was hidden.
-      if (!gid) gid = deps.read(scope)?.generationId || '';
+      restorePointer();
       const output = gid ? await deps.get(scope, gid, lifetime) : await deps.capability(scope, lifetime);
       if (allowed(version)) { busy = false; accept(output); }
     } catch (error) {
       if (allowed(version)) { busy = false; handleError(error, 'get'); }
     } finally { if (version === epoch) busy = false; }
   }
+  function restorePointer() {
+    const pointer = deps.read(scope);
+    if (pointer && (!gid || pointer.generationId === gid)) {
+      gid = pointer.generationId;
+      reportId = pointer.sourceReportId || reportId;
+    }
+  }
+  async function submit() {
+    busy = true;
+    const version = epoch;
+    emit({ view: 'submitting' });
+    try {
+      // Fail before POST when storage is unavailable; retries retain both identities.
+      deps.save(scope, gid, reportId);
+      const output = await deps.request(scope, { requestId: gid, reportId }, lifetime);
+      if (allowed(version)) { busy = false; accept(output); }
+    } catch (error) {
+      if (allowed(version)) { busy = false; handleError(error, 'post'); }
+    } finally { if (version === epoch) busy = false; }
+  }
   function begin() {
     if (!scope.accountId) { emit({ view: 'authRequired' }); return false; }
-    if (!/^[1-9]\d*$/.test(scope.assessmentId) || !/^[1-9]\d*$/.test(scope.testeeId)) { emit({ view: 'invalid' }); return false; }
+    if (!isReportId(scope.assessmentId) || !isReportId(scope.testeeId) || gid && !isWorkflowRequestId(gid)) { emit({ view: 'invalid' }); return false; }
     const retryAt = Math.max(state.retryAt || 0, deps.readRetryAt(scope));
     if (deps.now() < retryAt) { emit({ view: 'limited', retryAt }); return false; }
     resetRequest();
@@ -137,7 +158,6 @@ export function createAIExplanationController(scope: AIAccountScope, onChange: (
     show() {
       if (active) return;
       active = true;
-      if (!options.generationId) gid = deps.read(scope)?.generationId || gid;
       if (begin()) { emit({ view: 'checking' }); void read(); }
     },
     hide() {
@@ -149,20 +169,29 @@ export function createAIExplanationController(scope: AIAccountScope, onChange: (
       if (!current() || busy || !begin()) return;
       emit({ view: 'checking' }); void read();
     },
-    prepare() {
+    async prepare() {
       if (!current() || busy || state.view !== 'unconfirmed' || !begin()) return;
-      uncertain = false;
-      emit({ view: 'checking' }); void read();
+      if (gid && reportId) await submit();
+      else { emit({ view: 'checking' }); void read(); }
     },
     async start() {
       if (!current() || busy || state.view !== 'ready' || !begin()) return;
+      const selectedReport = state.output?.source_report_id;
+      if (!selectedReport || !isReportId(selectedReport)) { emit({ view: 'unsupported' }); return; }
       busy = true;
       const version = epoch;
-      uncertain = true;
       emit({ view: 'submitting' });
       try {
-        const output = await deps.request(scope, lifetime);
-        if (allowed(version)) { busy = false; accept(output); }
+        restorePointer();
+        if (gid) { busy = false; await read(); return; }
+        const requestId = await deps.createRequestId();
+        if (!allowed(version)) return;
+        // A second page may have submitted while random bytes were being acquired.
+        restorePointer();
+        if (gid) { busy = false; await read(); return; }
+        if (!isWorkflowRequestId(requestId)) throw new api.AIContractError();
+        gid = requestId; reportId = selectedReport;
+        await submit();
       } catch (error) {
         if (allowed(version)) { busy = false; handleError(error, 'post'); }
       } finally { if (version === epoch) busy = false; }

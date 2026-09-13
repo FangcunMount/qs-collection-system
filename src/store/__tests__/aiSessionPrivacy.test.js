@@ -8,7 +8,7 @@ let logs;
 beforeEach(() => { logs = ['log','info','warn','error'].map(level => jest.spyOn(console, level).mockImplementation(() => {})); clearToken(); });
 afterEach(() => logs.forEach(log => log.mockRestore()));
 test('clearing token removes account identity and AI restoration pointers', () => {
-  setToken({ access_token: 'dummy-test-token', refresh_token: 'dummy-refresh-token', expires_in: 3600 }); setUserInfo({ id: 'account-1', name: 'Test', picture: '' }); saveAIPointer(scope, 'gid');
+  setToken({ access_token: 'dummy-test-token', refresh_token: 'dummy-refresh-token', expires_in: 3600 }); setUserInfo({ id: 'account-1', name: 'Test', picture: '' }); saveAIPointer(scope, '00000000-0000-4000-8000-000000000001', '99');
   clearToken(); expect(getUserInfo()?.id).toBeUndefined(); expect(readAIPointer(scope)).toBeUndefined();
 });
 test('late account profile response cannot revive the logged-out identity', async () => {

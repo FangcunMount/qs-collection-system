@@ -18,7 +18,7 @@ export interface AIOutput {
   status: AIStatus; reason_code?: string; generation_id?: string; artifact_id?: string;
   source_report_id?: string; source_state: SourceState; content?: AIContent;
   failure?: { code: string; safe_message: string; retryable: boolean };
-  created_at?: string; updated_at?: string;
+  created_at?: string; updated_at?: string; workflow_version?: number;
 }
 export interface AIScope { assessmentId: string; testeeId: string }
 export class AIContractError extends Error {
@@ -65,7 +65,7 @@ export function parseAIOutput(input: unknown): AIOutput {
   return value as unknown as AIOutput;
 }
 const scopePath = ({ assessmentId, testeeId }: AIScope) => {
-  if (!/^[1-9]\d*$/.test(assessmentId) || !/^[1-9]\d*$/.test(testeeId)) throw new Error('测评参数不完整');
+  if (!isReportId(assessmentId) || !isReportId(testeeId)) throw new Error('测评参数不完整');
   return `/assessments/${encodeURIComponent(assessmentId)}`;
 };
 const options = (scope: AIScope, lifetime?: RequestLifetime) => ({
@@ -73,26 +73,55 @@ const options = (scope: AIScope, lifetime?: RequestLifetime) => ({
   retry429: false, refreshOnForbidden: false, logPolicy: 'metadata_only', allowInteractiveLogin: false,
   timeout: 15000, lifetime, params: { testee_id: scope.testeeId },
 });
+export interface AIWorkflowCommand { requestId: string; reportId: string }
+export const isWorkflowRequestId = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(id) && id !== '00000000-0000-0000-0000-000000000000';
+export const isReportId = (id: string) => /^[1-9]\d{0,19}$/.test(id) && (id.length < 20 || id <= '18446744073709551615');
+
 export async function getAIExplanationCapability(scope: AIScope, lifetime?: RequestLifetime): Promise<AIOutput> {
-  const path = scopePath(scope);
-  const output = parseAIOutput(await request(`${path}/ai-explanation/capability`, {}, {
-    ...options(scope, lifetime), method: 'GET', params: { testee_id: scope.testeeId, locale: 'zh-CN' },
-  }));
-  if (!['ready','not_ready','not_applicable'].includes(output.status)) throw new AIContractError();
-  return output;
+  const value = await request(`${scopePath(scope)}/ai-workflows/source`, {}, { ...options(scope, lifetime), method: 'GET' });
+  if (!object(value) || !['ready', 'not_ready', 'not_applicable'].includes(String(value.status))) throw new AIContractError();
+  if (value.status === 'ready') {
+    if (typeof value.report_id !== 'string' || !isReportId(value.report_id) || !text(value.source_version)) throw new AIContractError();
+  } else if (value.report_id !== undefined || value.source_version !== undefined) throw new AIContractError();
+  return { status: value.status as AIStatus, source_report_id: value.report_id as string | undefined,
+    source_state: value.status === 'ready' ? 'current' : 'unavailable',
+    reason_code: value.status === 'not_applicable' ? 'source_not_supported' : undefined };
 }
-export async function requestAIExplanation(scope: AIScope, lifetime?: RequestLifetime): Promise<AIOutput> {
-  const output = parseAIOutput(await request(`${scopePath(scope)}/ai-explanations`, { locale: 'zh-CN', focus_areas: [] }, {
+
+// UI generation_id now carries the new request UUID; legacy Generation IDs are never sent.
+export async function requestAIExplanation(scope: AIScope, command: AIWorkflowCommand, lifetime?: RequestLifetime): Promise<AIOutput> {
+  if (!isWorkflowRequestId(command.requestId) || !isReportId(command.reportId)) throw new AIContractError();
+  const value = await request(`${scopePath(scope)}/ai-workflows`, { request_id: command.requestId, report_id: command.reportId }, {
     ...options(scope, lifetime), method: 'POST',
-  }));
-  if (output.status === 'ready') throw new AIContractError();
-  return output;
+  });
+  if (!object(value) || value.request_id !== command.requestId || value.status !== 'accepted') throw new AIContractError();
+  return { status: 'pending', generation_id: command.requestId, source_report_id: command.reportId, source_state: 'unknown', workflow_version: 0 };
 }
-export async function getAIExplanation(scope: AIScope, generationId: string, lifetime?: RequestLifetime): Promise<AIOutput> {
-  if (!generationId) throw new Error('解读参数不完整');
-  const output = parseAIOutput(await request(`${scopePath(scope)}/ai-explanations/${encodeURIComponent(generationId)}`, {}, {
+
+export function parseWorkflowResult(value: unknown, requestId: string): AIOutput {
+  if (!object(value) || value.request_id !== requestId || !isWorkflowRequestId(requestId) ||
+      !Number.isSafeInteger(value.version) || (value.version as number) < 0) throw new AIContractError();
+  const statusMap: Record<string, AIStatus> = { accepted: 'pending', queued: 'pending', running: 'generating', completed: 'generated', blocked: 'failed', cancelled: 'failed' };
+  const status = statusMap[String(value.status)];
+  if (!status || value.status !== 'accepted' && value.version === 0) throw new AIContractError();
+  if (status === 'generated' && (typeof value.report_id !== 'string' || !isReportId(value.report_id) || !text(value.source_version))) throw new AIContractError();
+  return parseAIOutput({ status, generation_id: requestId, workflow_version: value.version, source_state: 'unknown',
+    artifact_id: value.artifact_id, source_report_id: value.report_id, content: value.content,
+    failure: status === 'failed' ? { code: `workflow_${String(value.status)}`, safe_message: value.status === 'cancelled' ? '本次解读已停止。' : '本次解读暂未完成，可稍后刷新状态或联系工作人员。', retryable: false } : undefined });
+}
+
+export async function getAIExplanation(scope: AIScope, requestId: string, lifetime?: RequestLifetime): Promise<AIOutput> {
+  if (!isWorkflowRequestId(requestId)) throw new AIContractError();
+  const output = parseWorkflowResult(await request(`${scopePath(scope)}/ai-workflows/${encodeURIComponent(requestId)}`, {}, {
     ...options(scope, lifetime), method: 'GET',
-  }));
-  if (output.generation_id !== generationId || output.status === 'ready') throw new AIContractError();
-  return output;
+  }), requestId);
+  if (output.status !== 'generated') return output;
+  try {
+    const source = await getAIExplanationCapability(scope, lifetime);
+    return { ...output, source_state: source.status === 'ready' ? (source.source_report_id === output.source_report_id ? 'current' : 'stale') : 'unavailable' };
+  } catch (error) {
+    const err = error as { statusCode?: number; reason?: string; code?: string };
+    if (err.statusCode === 401 || err.statusCode === 403 || err.reason || err.code === 'AI_CONTRACT_UNSUPPORTED') throw error;
+    return { ...output, source_state: 'unavailable' };
+  }
 }
