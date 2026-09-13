@@ -5,7 +5,7 @@ const scope = { accountId: 'account-1', assessmentId: '101', testeeId: '201' };
 beforeEach(() => { clearPrivateSessionState(); });
 test('stores only whitelisted pointers and isolates account, testee and assessment', () => {
   saveAIPointer({ ...scope, content: 'private-report', token: 'private-token' }, '00000000-0000-4000-8000-000000000001', '99');
-  expect(readAIPointer(scope)).toMatchObject({ generationId: '00000000-0000-4000-8000-000000000001', sourceReportId: '99' });
+  expect(readAIPointer(scope)).toMatchObject({ requestId: '00000000-0000-4000-8000-000000000001', sourceReportId: '99' });
   ['accountId','assessmentId','testeeId'].forEach(key => expect(readAIPointer({ ...scope, [key]: 'other' })).toBeUndefined());
   const value = Taro.getStorageInfoSync().keys.map(key => Taro.getStorageSync(key));
   expect(JSON.stringify(value)).not.toMatch(/private-report|private-token/);
@@ -16,7 +16,7 @@ test('unresolved request identities neither expire nor get evicted by other asse
   const id='00000000-0000-4000-8000-000000000001';
   for (let i=1;i<=35;i++) saveAIPointer({...scope,assessmentId:String(i)},id,'99');
   jest.advanceTimersByTime(8*86400000);
-  expect(readAIPointer({...scope,assessmentId:'1'}).generationId).toBe(id);
+  expect(readAIPointer({...scope,assessmentId:'1'}).requestId).toBe(id);
   expect(readAIPointer({...scope,assessmentId:'35'})).toBeDefined();
   jest.useRealTimers();
 });
@@ -44,4 +44,46 @@ test('old result pointers are ignored and new pending reads preserve the origina
  const id='00000000-0000-4000-8000-000000000001';
  saveAIPointer(scope,id,'99');saveAIPointer(scope,id);
  expect(readAIPointer(scope).sourceReportId).toBe('99');
+});
+
+const previousKey = `${PRIVATE_SESSION_PREFIX}ai-workflow:v2`;
+const currentKey = `${PRIVATE_SESSION_PREFIX}ai-workflow:v3`;
+const pendingV2 = { ...scope, schemaVersion: 2,
+ generationId: '00000000-0000-4000-8000-000000000001', sourceReportId: '99', updatedAt: 100 };
+test('upgrades existing workflow UUIDs once without changing scope, age or selected report', () => {
+ Taro.setStorageSync(previousKey, [pendingV2, { ...pendingV2, accountId: 'account-2' }]);
+ expect(readAIPointer(scope)).toEqual({ ...scope, schemaVersion: 3,
+  requestId: pendingV2.generationId, sourceReportId: '99', updatedAt: 100 });
+ expect(readAIPointer({ ...scope, accountId: 'account-2' }).requestId).toBe(pendingV2.generationId);
+ expect(Taro.getStorageInfoSync().keys).not.toContain(previousKey);
+ expect(JSON.stringify(Taro.getStorageSync(currentKey))).not.toContain('generationId');
+ removeAIPointer(scope);
+ expect(readAIPointer(scope)).toBeUndefined();
+});
+test('failed migration preserves the original pending UUID and does not claim empty state', () => {
+ Taro.setStorageSync(previousKey, [pendingV2]);
+ const write = jest.spyOn(Taro, 'setStorageSync').mockImplementation(() => {});
+ expect(() => readAIPointer(scope)).toThrow();
+ expect(Taro.getStorageSync(previousKey)).toEqual([pendingV2]);
+ write.mockRestore();
+ expect(readAIPointer(scope).requestId).toBe(pendingV2.generationId);
+});
+test('invalid old workflow pointers fail closed instead of allowing a fresh paid request', () => {
+ Taro.setStorageSync(previousKey, [{ ...pendingV2, generationId: '123' }]);
+ expect(() => readAIPointer(scope)).toThrow();
+ expect(Taro.getStorageInfoSync().keys).not.toContain(currentKey);
+});
+test('a verified v3 store remains authoritative if old-key cleanup failed', () => {
+ Taro.setStorageSync(previousKey, [pendingV2]);
+ const remove = jest.spyOn(Taro, 'removeStorageSync').mockImplementation(() => { throw new Error('busy'); });
+ expect(readAIPointer(scope).requestId).toBe(pendingV2.generationId);
+ remove.mockRestore();
+ removeAIPointer(scope);
+ expect(readAIPointer(scope)).toBeUndefined();
+ expect(Taro.getStorageSync(previousKey)).toEqual([pendingV2]);
+});
+test('migration retains only pointer metadata, never cached content or credentials', () => {
+ Taro.setStorageSync(previousKey, [{ ...pendingV2, content: 'private-report', token: 'private-token' }]);
+ readAIPointer(scope);
+ expect(JSON.stringify(Taro.getStorageSync(currentKey))).not.toMatch(/private-report|private-token/);
 });

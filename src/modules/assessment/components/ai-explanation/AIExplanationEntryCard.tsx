@@ -23,7 +23,7 @@ export default function AIExplanationEntryCard({ tone = 'medical', ...scope }: A
     </View>
     {state.view === 'checking' ? <Text className="ai-explanation__caption">正在查询可用状态…</Text> : navigable ? <>
       <Text className="ai-explanation__caption">帮助理解维度之间的关系与日常建议，仅作补充参考，不替代标准报告。</Text>
-      <ActionButton variant="secondary" block onClick={() => Taro.navigateTo({ url: routes.aiExplanation({ aid: scope.assessmentId, t: scope.testeeId, gid: state.generationId, kind: tone === 'personality' ? 'personality' : undefined }) })}>{label}</ActionButton>
+      <ActionButton variant="secondary" block onClick={() => Taro.navigateTo({ url: routes.aiExplanation({ aid: scope.assessmentId, t: scope.testeeId, gid: state.requestId, kind: tone === 'personality' ? 'personality' : undefined }) })}>{label}</ActionButton>
     </> : <>
       <Text className="ai-explanation__heading">{copy.title}</Text>
       <Text className="ai-explanation__caption">{copy.description}</Text>

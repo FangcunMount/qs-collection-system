@@ -55,7 +55,7 @@ test('429 schedules nothing and prevents early manual refresh across hide/show',
 });
 test('hiding cancels work and ignores late output; show resumes known gid using GET', async () => {
   let resolveGet; deps.get.mockImplementation(() => new Promise(resolve => { resolveGet = resolve; }));
-  setup({ generationId: '00000000-0000-4000-8000-000000000001' }); await flush();
+  setup({ requestId: '00000000-0000-4000-8000-000000000001' }); await flush();
   const lifetime = deps.get.mock.calls[0][2]; controller.hide(); expect(lifetime.isActive()).toBe(false);
   resolveGet(generated); await flush(); expect(controller.getState().output).toBeUndefined(); expect(deps.save).not.toHaveBeenCalled();
   controller.show(); await flush(); expect(deps.get).toHaveBeenCalledTimes(2); expect(deps.request).not.toHaveBeenCalled();
@@ -63,31 +63,31 @@ test('hiding cancels work and ignores late output; show resumes known gid using 
 test('aborted POST is stored before sending and a remounted page only queries the original UUID', async () => {
   let finish; deps.request.mockImplementation(() => new Promise(resolve => { finish = resolve; }));
   setup(); await flush(); const post = controller.start(); await flush();
-  const saved={generationId:pending.generation_id,sourceReportId:pending.source_report_id};
+  const saved={requestId:pending.requestId,sourceReportId:pending.source_report_id};
   expect(deps.save).toHaveBeenCalledTimes(1); deps.read.mockReturnValue(saved);
   controller.hide(); finish(generated); await post;
   expect(deps.save).toHaveBeenCalledTimes(1);
   setup(); await flush(); expect(controller.getState().view).toBe('generated');
   expect(deps.request).toHaveBeenCalledTimes(1);
-  expect(deps.get).toHaveBeenCalledWith(scope,saved.generationId,expect.anything());
+  expect(deps.get).toHaveBeenCalledWith(scope,saved.requestId,expect.anything());
 });
 test('account context invalidation refuses late responses even without a hide callback', async () => {
   let current = true, finish; deps.get.mockImplementation(() => new Promise(resolve => { finish = resolve; }));
-  setup({ generationId: '00000000-0000-4000-8000-000000000001', isCurrent: () => current }); current = false; finish(generated); await flush();
+  setup({ requestId: '00000000-0000-4000-8000-000000000001', isCurrent: () => current }); current = false; finish(generated); await flush();
   expect(controller.getState().output).toBeUndefined(); expect(deps.save).not.toHaveBeenCalled();
 });
 test('a missing workflow from a link never falls back to creating another request', async () => {
-  deps.get.mockRejectedValue({ statusCode: 404 }); setup({ generationId: pending.generation_id }); await flush();
+  deps.get.mockRejectedValue({ statusCode: 404 }); setup({ requestId: pending.requestId }); await flush();
   expect(deps.remove).not.toHaveBeenCalled(); expect(deps.capability).not.toHaveBeenCalled();
   expect(controller.getState().view).toBe('unconfirmed'); await controller.prepare(); await flush();
   expect(deps.request).not.toHaveBeenCalled(); expect(deps.get).toHaveBeenCalledTimes(2);
 });
 test('permission denial clears output and terminates polling', async () => {
-  deps.get.mockRejectedValue({ statusCode: 403 }); setup({ generationId: '00000000-0000-4000-8000-000000000001' }); await flush();
-  expect(controller.getState()).toMatchObject({ view: 'forbidden', generationId: undefined }); expect(jest.getTimerCount()).toBe(0);
+  deps.get.mockRejectedValue({ statusCode: 403 }); setup({ requestId: '00000000-0000-4000-8000-000000000001' }); await flush();
+  expect(controller.getState()).toMatchObject({ view: 'forbidden', requestId: undefined }); expect(jest.getTimerCount()).toBe(0);
 });
 test.each(['current','stale','unavailable','unknown'])('generated source %s is preserved independently', async source_state => {
-  deps.get.mockResolvedValue({ ...generated, source_state }); setup({ generationId: '00000000-0000-4000-8000-000000000001' }); await flush();
+  deps.get.mockResolvedValue({ ...generated, source_state }); setup({ requestId: '00000000-0000-4000-8000-000000000001' }); await flush();
   expect(controller.getState()).toMatchObject({ view: 'generated', output: { source_state } }); expect(jest.getTimerCount()).toBe(0);
 });
 test('five minute foreground limit cancels an in-flight GET and pauses without declaring failure', async () => {
@@ -96,10 +96,10 @@ test('five minute foreground limit cancels an in-flight GET and pauses without d
   expect(controller.getState().view).toBe('paused'); expect(deps.get.mock.calls[0][2].isActive()).toBe(false); expect(jest.getTimerCount()).toBe(0);
 });
 test('network retries are bounded; entry card does not poll', async () => {
-  deps.get.mockRejectedValue({ statusCode: 503 }); setup({ generationId: '00000000-0000-4000-8000-000000000001' }); await flush();
+  deps.get.mockRejectedValue({ statusCode: 503 }); setup({ requestId: '00000000-0000-4000-8000-000000000001' }); await flush();
   for (let i = 0; i < 3; i++) { jest.advanceTimersByTime(10000); await flush(); }
   expect(deps.get).toHaveBeenCalledTimes(4); expect(controller.getState().view).toBe('paused'); expect(jest.getTimerCount()).toBe(0);
-  controller.hide(); setup({ generationId: '00000000-0000-4000-8000-000000000001', poll: false }); await flush(); expect(jest.getTimerCount()).toBe(0);
+  controller.hide(); setup({ requestId: '00000000-0000-4000-8000-000000000001', poll: false }); await flush(); expect(jest.getTimerCount()).toBe(0);
 });
 test('no overlapping GET while previous response is pending', async () => {
   deps.get.mockImplementation(() => new Promise(() => {})); setup(); await flush(); await controller.start();
@@ -126,9 +126,9 @@ test('storage read failure does not turn into a fresh request',async()=>{
 test('another page saving a command during UUID creation prevents a second submission',async()=>{
  let finish;deps.createRequestId.mockImplementation(()=>new Promise(resolve=>{finish=resolve}));
  setup();await flush();const post=controller.start();await flush();
- deps.read.mockReturnValue({generationId:pending.generation_id,sourceReportId:'99'});
+ deps.read.mockReturnValue({requestId:pending.requestId,sourceReportId:'99'});
  finish('00000000-0000-4000-8000-000000000002');await post;
- expect(deps.request).not.toHaveBeenCalled();expect(deps.get).toHaveBeenCalledWith(scope,pending.generation_id,expect.anything());
+ expect(deps.request).not.toHaveBeenCalled();expect(deps.get).toHaveBeenCalledWith(scope,pending.requestId,expect.anything());
 });
 test('source identity mismatch in completed results cannot be displayed',async()=>{
  deps.get.mockResolvedValue({...generated,source_report_id:'100'});

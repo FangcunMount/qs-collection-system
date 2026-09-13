@@ -11,11 +11,11 @@ const accountId = () => {
   const id = getUserInfo()?.id;
   return getAccessToken() && typeof id === 'string' ? id : '';
 };
-export function useAIExplanation(scope: AIScope, options: { generationId?: string; poll?: boolean } = {}) {
+export function useAIExplanation(scope: AIScope, options: { requestId?: string; poll?: boolean } = {}) {
   const [account, setAccount] = useState(accountId);
   const [state, setState] = useState<AIState>({ view: 'checking' });
   const [visible, setVisible] = useState(true);
-  const scopeKey = [account, scope.assessmentId, scope.testeeId, options.generationId || ''].join('|');
+  const scopeKey = [account, scope.assessmentId, scope.testeeId, options.requestId || ''].join('|');
   const scopeRef = useRef(scopeKey);
   scopeRef.current = scopeKey;
   const controllerScope = useRef('');
@@ -45,7 +45,7 @@ export function useAIExplanation(scope: AIScope, options: { generationId?: strin
     controllerScope.current = scopeKey;
     if (visibleRef.current) instance.show();
     return () => { mounted = false; instance.hide(); if (controller.current === instance) controller.current = null; };
-  }, [account, scope.assessmentId, scope.testeeId, options.generationId, options.poll, scopeKey]);
+  }, [account, scope.assessmentId, scope.testeeId, options.requestId, options.poll, scopeKey]);
   useDidShow(() => { visibleRef.current = true; setVisible(true); controller.current?.show(); });
   useDidHide(() => { visibleRef.current = false; setVisible(false); controller.current?.hide(); });
   useUnload(() => { visibleRef.current = false; controller.current?.hide(); });

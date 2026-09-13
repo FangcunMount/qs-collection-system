@@ -15,7 +15,7 @@ export interface AIContent {
   integrated_insights: AIInsight[]; suggestions: AISuggestion[]; limitations: string[];
 }
 export interface AIOutput {
-  status: AIStatus; reason_code?: string; generation_id?: string; artifact_id?: string;
+  status: AIStatus; reason_code?: string; requestId?: string; artifact_id?: string;
   source_report_id?: string; source_state: SourceState; content?: AIContent;
   failure?: { code: string; safe_message: string; retryable: boolean };
   created_at?: string; updated_at?: string; workflow_version?: number;
@@ -37,15 +37,15 @@ const suggestion = (value: unknown) => object(value) && ['standard_derived', 'ge
   refs(value.evidence_refs) && strings(value.source_suggestion_refs) &&
   (value.origin !== 'standard_derived' || value.source_suggestion_refs.length > 0) && value.actions.length > 0 && (value.caution === undefined || typeof value.caution === 'string');
 
-export function parseAIOutput(input: unknown): AIOutput {
+export function validateExplanationView(input: unknown): AIOutput {
   if (!object(input)) throw new AIContractError();
   let value: Record<string, unknown> = input;
   if ( !['ready','not_ready','not_applicable','pending','generating','generated','failed'].includes(String(value.status)) ||
       !['current','stale','unavailable','unknown'].includes(String(value.source_state))) throw new AIContractError();
-  for (const key of ['generation_id','artifact_id','source_report_id','reason_code','created_at','updated_at']) {
+  for (const key of ['requestId','artifact_id','source_report_id','reason_code','created_at','updated_at']) {
     if (value[key] !== undefined && typeof value[key] !== 'string') throw new AIContractError();
   }
-  if (['pending','generating','generated','failed'].includes(String(value.status)) && !text(value.generation_id)) throw new AIContractError();
+  if (['pending','generating','generated','failed'].includes(String(value.status)) && !text(value.requestId)) throw new AIContractError();
   if (value.failure !== undefined && (!object(value.failure) || !text(value.failure.code) ||
       typeof value.failure.safe_message !== 'string' || typeof value.failure.retryable !== 'boolean')) throw new AIContractError();
   if (value.status === 'failed' && !value.failure) throw new AIContractError();
@@ -88,14 +88,14 @@ export async function getAIExplanationCapability(scope: AIScope, lifetime?: Requ
     reason_code: value.status === 'not_applicable' ? 'source_not_supported' : undefined };
 }
 
-// UI generation_id now carries the new request UUID; legacy Generation IDs are never sent.
+// The view uses the same request UUID as the workflow transport and durable pointer.
 export async function requestAIExplanation(scope: AIScope, command: AIWorkflowCommand, lifetime?: RequestLifetime): Promise<AIOutput> {
   if (!isWorkflowRequestId(command.requestId) || !isReportId(command.reportId)) throw new AIContractError();
   const value = await request(`${scopePath(scope)}/ai-workflows`, { request_id: command.requestId, report_id: command.reportId }, {
     ...options(scope, lifetime), method: 'POST',
   });
   if (!object(value) || value.request_id !== command.requestId || value.status !== 'accepted') throw new AIContractError();
-  return { status: 'pending', generation_id: command.requestId, source_report_id: command.reportId, source_state: 'unknown', workflow_version: 0 };
+  return { status: 'pending', requestId: command.requestId, source_report_id: command.reportId, source_state: 'unknown', workflow_version: 0 };
 }
 
 export function parseWorkflowResult(value: unknown, requestId: string): AIOutput {
@@ -105,7 +105,7 @@ export function parseWorkflowResult(value: unknown, requestId: string): AIOutput
   const status = statusMap[String(value.status)];
   if (!status || value.status !== 'accepted' && value.version === 0) throw new AIContractError();
   if (status === 'generated' && (typeof value.report_id !== 'string' || !isReportId(value.report_id) || !text(value.source_version))) throw new AIContractError();
-  return parseAIOutput({ status, generation_id: requestId, workflow_version: value.version, source_state: 'unknown',
+  return validateExplanationView({ status, requestId: requestId, workflow_version: value.version, source_state: 'unknown',
     artifact_id: value.artifact_id, source_report_id: value.report_id, content: value.content,
     failure: status === 'failed' ? { code: `workflow_${String(value.status)}`, safe_message: value.status === 'cancelled' ? '本次解读已停止。' : '本次解读暂未完成，可稍后刷新状态或联系工作人员。', retryable: false } : undefined });
 }

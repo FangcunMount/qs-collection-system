@@ -1,5 +1,5 @@
 export const ready = { status: 'ready', source_state: 'current', source_report_id: '99' };
-export const pending = { status: 'pending', source_state: 'current', generation_id: '00000000-0000-4000-8000-000000000001', source_report_id: '99' };
+export const pending = { status: 'pending', source_state: 'current', requestId: '00000000-0000-4000-8000-000000000001', source_report_id: '99' };
 export const generated = {
   ...pending, status: 'generated', artifact_id: 'artifact-1',
   content: {
