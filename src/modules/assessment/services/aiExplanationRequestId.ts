@@ -7,11 +7,10 @@ export class AIRequestPreparationError extends Error {
 
 export async function createAIRequestId(): Promise<string> {
   try {
-    // Taro 3.6 forwards this native API without promisifying it. Wait for its
-    // callbacks, while also consuming a Promise returned by newer adapters.
+    // WeChat exposes secure random bytes on UserCryptoManager. Its method
+    // returns void, so wait for the native callback and preserve its receiver.
     const { randomValues } = await new Promise<Taro.UserCryptoManager.getRandomValues.SuccessCallbackResult>((resolve, reject) => {
-      const result = Taro.getRandomValues({ length: 16, success: resolve, fail: reject });
-      result?.then(resolve, reject);
+      Taro.getUserCryptoManager().getRandomValues({ length: 16, success: resolve, fail: reject });
     });
     if (!(randomValues instanceof ArrayBuffer) || randomValues.byteLength !== 16) throw new AIRequestPreparationError();
     const bytes = new Uint8Array(randomValues);
