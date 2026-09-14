@@ -135,3 +135,12 @@ test('source identity mismatch in completed results cannot be displayed',async()
  setup();await flush();await controller.start();controller.refresh();await flush();
  expect(controller.getState().view).toBe('unsupported');expect(controller.getState().output).toBeUndefined();
 });
+test('request ID preparation failure never claims an uncertain POST or writes a pointer', async () => {
+ deps.createRequestId.mockRejectedValueOnce({code:'AI_REQUEST_PREPARATION_FAILED'});
+ setup(); await flush(); await controller.start();
+ expect(controller.getState().view).toBe('preparationFailed');
+ expect(deps.request).not.toHaveBeenCalled(); expect(deps.save).not.toHaveBeenCalled();
+ controller.refresh(); await flush(); await controller.start();
+ expect(deps.request).toHaveBeenCalledTimes(1);
+ expect(controller.getState().view).toBe('waiting');
+});
