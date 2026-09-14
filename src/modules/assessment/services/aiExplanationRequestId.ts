@@ -12,7 +12,10 @@ export async function createAIRequestId(): Promise<string> {
     const { randomValues } = await new Promise<Taro.UserCryptoManager.getRandomValues.SuccessCallbackResult>((resolve, reject) => {
       Taro.getUserCryptoManager().getRandomValues({ length: 16, success: resolve, fail: reject });
     });
-    if (!(randomValues instanceof ArrayBuffer) || randomValues.byteLength !== 16) throw new AIRequestPreparationError();
+    // Native buffers may come from another JS realm in WeChat. The intrinsic
+    // getter checks the ArrayBuffer brand without relying on realm identity.
+    const byteLength = Object.getOwnPropertyDescriptor(ArrayBuffer.prototype, 'byteLength')?.get;
+    if (!byteLength || byteLength.call(randomValues) !== 16) throw new AIRequestPreparationError();
     const bytes = new Uint8Array(randomValues);
     bytes[6] = (bytes[6] & 15) | 64;
     bytes[8] = (bytes[8] & 63) | 128;
