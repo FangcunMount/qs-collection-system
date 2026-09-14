@@ -9,7 +9,7 @@ import type { AIAccountScope } from './aiExplanationContextStore';
 import { AI_WAIT_LIMIT_MS, AI_LONG_WAIT_MS, AI_NETWORK_RETRY_LIMIT, aiPollDelay, isAIWaiting } from './waitForAIExplanation';
 
 export type AIViewState = 'checking' | 'ready' | 'submitting' | 'waiting' | 'generated' | 'failed' | 'unavailable' |
-  'storageUnavailable' | 'limited' | 'unconfirmed' | 'paused' | 'unsupported' | 'forbidden' | 'authRequired' | 'invalid';
+  'storageUnavailable' | 'preparationFailed' | 'limited' | 'unconfirmed' | 'paused' | 'unsupported' | 'forbidden' | 'authRequired' | 'invalid';
 export interface AIState {
   view: AIViewState; output?: AIOutput; requestId?: string; retryAt?: number;
   refreshError?: boolean; longWait?: boolean; animateCompletion?: boolean;
@@ -87,6 +87,7 @@ export function createAIExplanationController(scope: AIAccountScope, onChange: (
   function handleError(error: unknown, operation: 'get' | 'post') {
     const err = error as { code?: string; statusCode?: number; retryAfterMs?: number; reason?: string };
     clearTimers();
+    if (err.code === 'AI_REQUEST_PREPARATION_FAILED') { emit({ view: 'preparationFailed' }); return; }
     if (err.code === 'AI_STORAGE_UNAVAILABLE') { emit({ view: 'storageUnavailable' }); return; }
     if (err.code === 'AI_CONTRACT_UNSUPPORTED') { emit({ view: 'unsupported' }); return; }
     if (err.statusCode === 403) { try { deps.remove(scope); } catch (_) { /* Never keep output visible after revocation. */ } activeRequestId = ''; reportId = ''; emit({ view: 'forbidden' }); return; }
