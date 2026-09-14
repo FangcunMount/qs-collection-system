@@ -1,3 +1,4 @@
+import { runInNewContext } from 'vm';
 import Taro from '@tarojs/taro';
 import { processApis } from '@tarojs/shared';
 import { createAIRequestId } from '../aiExplanationRequestId';
@@ -55,5 +56,23 @@ test('native failure is a preparation failure, not an unknown submission', async
 
 test('unavailable crypto manager fails without an insecure random fallback', async () => {
   delete Taro.getUserCryptoManager;
+  await expect(createAIRequestId()).rejects.toMatchObject({ code: 'AI_REQUEST_PREPARATION_FAILED' });
+});
+
+
+test('WeChat cross-realm ArrayBuffer keeps all bytes and creates a UUID', async () => {
+  const randomValues = runInNewContext('Uint8Array.from({length:16}, (_,i)=>i).buffer');
+  expect(randomValues instanceof ArrayBuffer).toBe(false);
+  manager.getRandomValues.mockImplementation(options => options.success({ randomValues }));
+  await expect(createAIRequestId()).resolves.toBe('00010203-0405-4607-8809-0a0b0c0d0e0f');
+});
+
+test.each([
+  { byteLength: 16 },
+  { byteLength: 16, [Symbol.toStringTag]: 'ArrayBuffer' },
+  new Uint8Array(16),
+  runInNewContext('new ArrayBuffer(15)'),
+])('buffer validation rejects lookalikes, typed arrays and incorrect lengths', async randomValues => {
+  manager.getRandomValues.mockImplementation(options => options.success({ randomValues }));
   await expect(createAIRequestId()).rejects.toMatchObject({ code: 'AI_REQUEST_PREPARATION_FAILED' });
 });
