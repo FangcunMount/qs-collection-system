@@ -42,7 +42,7 @@ test('account change cancels old lifetime before starting another account reques
   await settle(() => { tree = renderer.create(<Harness />); }); await settle(() => { void hook.start(); });
   const oldLifetime = api.requestAIExplanation.mock.calls[0][2];
   await settle(() => setUserInfo({ id: 'account-2', name: 'Other', picture: '' }));
-  expect(oldLifetime.isActive()).toBe(false); expect(hook.state.generationId).toBeUndefined();
+  expect(oldLifetime.isActive()).toBe(false); expect(hook.state.requestId).toBeUndefined();
   expect(api.getAIExplanation).not.toHaveBeenCalled(); await settle(() => mockUnload()); expect(jest.getTimerCount()).toBe(0);
 });
 
@@ -50,5 +50,5 @@ test('account invalidation still clears content when storage removal fails',asyn
  await settle(()=>{tree=renderer.create(<Harness/>)});await settle(()=>{void hook.start()});
  await settle(()=>mockHide());await settle(()=>mockShow());expect(hook.state.view).toBe('generated');
  const set=jest.spyOn(Taro,'setStorageSync').mockImplementation(()=>{throw new Error('full')});
- try { await settle(()=>setUserInfo({id:'account-2',name:'Other',picture:''}));expect(hook.state.output?.content).toBeUndefined();expect(hook.state.generationId).toBeUndefined(); } finally { set.mockRestore(); }
+ try { await settle(()=>setUserInfo({id:'account-2',name:'Other',picture:''}));expect(hook.state.output?.content).toBeUndefined();expect(hook.state.requestId).toBeUndefined(); } finally { set.mockRestore(); }
 });

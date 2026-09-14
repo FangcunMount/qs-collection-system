@@ -16,7 +16,7 @@ export default function AIExplanationPage() {
   const params = Taro.useRouter().params;
   const tone = params.kind === 'personality' ? 'personality' : 'medical';
   const scope = { assessmentId: params.aid || '', testeeId: params.t || '' };
-  const { state, visible, start, refresh, prepare } = useAIExplanation(scope, { generationId: params.gid });
+  const { state, visible, start, refresh, prepare } = useAIExplanation(scope, { requestId: params.gid });
   // Static is the accessible default on mini-program runtimes without reliable OS motion preferences.
   const [motion, setMotion] = useState(false);
   const copy = aiStateCopy(state);

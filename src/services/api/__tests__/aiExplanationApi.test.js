@@ -1,4 +1,4 @@
-import { getAIExplanationCapability, requestAIExplanation, getAIExplanation, parseAIOutput } from '../aiExplanationApi';
+import { getAIExplanationCapability, requestAIExplanation, getAIExplanation, validateExplanationView } from '../aiExplanationApi';
 import { request } from '../../servers';
 import { ready, pending, generated } from '../../../../scripts/test/fixtures/aiExplanation';
 jest.mock('../../servers', () => ({ request: jest.fn() }));
@@ -21,17 +21,17 @@ test('new endpoints preserve immutable IDs and scoped request policy', async () 
 test.each([
   { ...generated, status: 'new_status' },
   { ...generated, source_state: 'new_source' },
-  { ...generated, generation_id: 100 },
+  { ...generated, requestId: 100 },
   { ...generated, content: { ...generated.content, schema_version: 'v2' } },
   { ...generated, content: { ...generated.content, limitations: undefined } },
   { ...generated, content: { ...generated.content, suggestions: [] } },
 ])('unsupported or incomplete responses do not render a success', value => {
-  expect(() => parseAIOutput(value)).toThrow();
+  expect(() => validateExplanationView(value)).toThrow();
 });
 test('nullable empty source refs from Collection Go transport normalize only for low risk suggestions', () => {
   const content = { ...generated.content, suggestions: [{ ...generated.content.suggestions[0], source_suggestion_refs: null }] };
-  expect(parseAIOutput({ ...generated, content }).content.suggestions[0].source_suggestion_refs).toEqual([]);
-  expect(() => parseAIOutput({ ...generated, content: { ...content, suggestions: [{ ...content.suggestions[0], origin: 'standard_derived' }] } })).toThrow();
+  expect(validateExplanationView({ ...generated, content }).content.suggestions[0].source_suggestion_refs).toEqual([]);
+  expect(() => validateExplanationView({ ...generated, content: { ...content, suggestions: [{ ...content.suggestions[0], origin: 'standard_derived' }] } })).toThrow();
 });
 test('GET rejects a generation mismatch', async () => {
   request.mockResolvedValue(generated);
