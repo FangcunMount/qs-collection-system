@@ -5,7 +5,7 @@ jest.mock('../../servers', () => ({ request: jest.fn() }));
 const scope = { assessmentId: '18446744073709551615', testeeId: '9007199254740993' };
 
 const requestId = '00000000-0000-4000-8000-000000000001';
-const source = { status: 'ready', report_id: '99', source_version: 'standard-v1:101' };
+const source = { status: 'ready', report_id: '99', source_version: 'standard-v1:101', ai_eligibility: { status: 'available' } };
 const completed = { status: 'completed', request_id: requestId, version: 3, artifact_id: generated.artifact_id, report_id: '99', source_version: 'standard-v1:101', content: generated.content };
 test('new endpoints preserve immutable IDs and scoped request policy', async () => {
   request.mockResolvedValueOnce(source).mockResolvedValueOnce({ request_id: requestId, status: 'accepted' }).mockResolvedValueOnce(completed).mockResolvedValueOnce(source);
@@ -65,4 +65,21 @@ test('source comparison detects changed reports and access withdrawal',async()=>
 test('unavailable current source is never labeled current',async()=>{
  request.mockResolvedValueOnce(completed).mockRejectedValueOnce({statusCode:503});
  expect((await getAIExplanation(scope,requestId)).source_state).toBe('unavailable');
+});
+test('report readiness does not imply AI availability and does not hide a completed result', async () => {
+  const unpublished = { ...source, ai_eligibility: { status: 'unavailable', reason_code: 'publication_missing' } };
+  request.mockResolvedValueOnce(unpublished);
+  await expect(getAIExplanationCapability(scope)).resolves.toMatchObject({
+    status: 'not_applicable', reason_code: 'publication_missing', source_report_id: '99', source_state: 'current',
+  });
+  request.mockResolvedValueOnce(completed).mockResolvedValueOnce(unpublished);
+  expect((await getAIExplanation(scope, requestId)).source_state).toBe('current');
+});
+test.each([
+  { ...source, ai_eligibility: undefined },
+  { ...source, ai_eligibility: { status: 'available', reason_code: 'publication_missing' } },
+  { ...source, ai_eligibility: { status: 'unavailable', reason_code: 'unrecognized' } },
+])('unverified AI availability never enables a new request', async value => {
+  request.mockResolvedValue(value);
+  await expect(getAIExplanationCapability(scope)).rejects.toThrow();
 });
