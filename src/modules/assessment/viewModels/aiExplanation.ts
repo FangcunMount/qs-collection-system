@@ -12,6 +12,13 @@ export function aiStateCopy(state: AIState): { title: string; description: strin
     switch (state.output.reason_code) {
       case 'feature_disabled': return { title: 'AI 解读尚未开放', description: '开放后，可在这里请求本次测评的补充解读。你可以先阅读标准报告。' };
       case 'source_not_supported': return { title: '本次报告暂不支持 AI 解读', description: '这份报告暂不支持生成补充解读，请继续阅读标准报告。' };
+      case 'publication_missing': return { title: '本次报告的 AI 解读尚未开放', description: '当前还没有通过审核并发布的解读方案。标准报告仍可正常阅读。' };
+      case 'publication_paused': return { title: '本次报告的 AI 解读已暂停', description: '目前暂不接受新的解读请求。标准报告仍可正常阅读。' };
+      case 'source_incomplete':
+      case 'source_conflict': return { title: '本次报告暂无法生成 AI 解读', description: '报告所需的结构化结果暂不完整或不一致。标准报告仍可正常阅读。' };
+      case 'unsupported_scene':
+      case 'unsupported_model_version': return { title: '本次报告暂不支持 AI 解读', description: '当前版本尚未支持这份报告的解读，标准报告仍可正常阅读。' };
+      case 'asset_invalid': return { title: 'AI 解读配置暂不可用', description: '当前暂无法生成补充解读，标准报告仍可正常阅读。' };
       case 'profile_unresolved':
       case 'profile_mismatch': return { title: '本量表的 AI 解读暂未开放', description: '本量表暂时无法提供补充解读，标准报告仍可正常阅读。' };
       default: return { title: '本次报告暂无法提供 AI 解读', description: '当前无法为这份报告提供补充解读，请继续阅读标准报告。' };

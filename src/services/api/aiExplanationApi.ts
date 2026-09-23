@@ -28,6 +28,10 @@ export class AIContractError extends Error {
 const object = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
 const text = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0;
 const strings = (value: unknown): value is string[] => Array.isArray(value) && value.every(text);
+const eligibilityReasons = new Set([
+  'unsupported_scene', 'unsupported_model_version', 'source_incomplete', 'source_conflict',
+  'publication_missing', 'publication_paused', 'asset_invalid',
+]);
 const refs = (value: unknown) => Array.isArray(value) && value.every(ref => object(ref) &&
   ['dimension', 'overall_result', 'model_result', 'standard_suggestion'].includes(String(ref.kind)) && text(ref.ref));
 const insight = (value: unknown) => object(value) && ['reinforcing_pattern', 'contrasting_pattern', 'combined_strength', 'combined_attention', 'context_dependent_pattern'].includes(String(value.kind)) &&
@@ -82,9 +86,17 @@ export async function getAIExplanationCapability(scope: AIScope, lifetime?: Requ
   if (!object(value) || !['ready', 'not_ready', 'not_applicable'].includes(String(value.status))) throw new AIContractError();
   if (value.status === 'ready') {
     if (typeof value.report_id !== 'string' || !isReportId(value.report_id) || !text(value.source_version)) throw new AIContractError();
+    const eligibility = value.ai_eligibility;
+    if (!object(eligibility) ||
+        !(eligibility.status === 'available' && (eligibility.reason_code === undefined || eligibility.reason_code === '') ||
+          eligibility.status === 'unavailable' && eligibilityReasons.has(String(eligibility.reason_code)))) throw new AIContractError();
+    return {
+      status: eligibility.status === 'available' ? 'ready' : 'not_applicable',
+      source_report_id: value.report_id, source_state: 'current',
+      reason_code: eligibility.status === 'unavailable' ? String(eligibility.reason_code) : undefined,
+    };
   } else if (value.report_id !== undefined || value.source_version !== undefined) throw new AIContractError();
-  return { status: value.status as AIStatus, source_report_id: value.report_id as string | undefined,
-    source_state: value.status === 'ready' ? 'current' : 'unavailable',
+  return { status: value.status as AIStatus, source_state: 'unavailable',
     reason_code: value.status === 'not_applicable' ? 'source_not_supported' : undefined };
 }
 
@@ -118,7 +130,8 @@ export async function getAIExplanation(scope: AIScope, requestId: string, lifeti
   if (output.status !== 'generated') return output;
   try {
     const source = await getAIExplanationCapability(scope, lifetime);
-    return { ...output, source_state: source.status === 'ready' ? (source.source_report_id === output.source_report_id ? 'current' : 'stale') : 'unavailable' };
+    return { ...output, source_state: source.source_report_id ?
+      (source.source_report_id === output.source_report_id ? 'current' : 'stale') : 'unavailable' };
   } catch (error) {
     const err = error as { statusCode?: number; reason?: string; code?: string };
     if (err.statusCode === 401 || err.statusCode === 403 || err.reason || err.code === 'AI_CONTRACT_UNSUPPORTED') throw error;

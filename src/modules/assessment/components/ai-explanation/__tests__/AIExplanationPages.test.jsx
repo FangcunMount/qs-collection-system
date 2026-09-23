@@ -53,6 +53,12 @@ test.each([
   ['source_not_supported', '本次报告暂不支持 AI 解读'],
   ['profile_unresolved', '本量表的 AI 解读暂未开放'],
   ['profile_mismatch', '本量表的 AI 解读暂未开放'],
+  ['publication_missing', '本次报告的 AI 解读尚未开放'],
+  ['publication_paused', '本次报告的 AI 解读已暂停'],
+  ['source_incomplete', '本次报告暂无法生成 AI 解读'],
+  ['source_conflict', '本次报告暂无法生成 AI 解读'],
+  ['unsupported_model_version', '本次报告暂不支持 AI 解读'],
+  ['asset_invalid', 'AI 解读配置暂不可用'],
   ['not_applicable', '本次报告暂无法提供 AI 解读'],
 ])('unavailable reason %s is visible without a misleading request action', (reason, copy) => {
   model.state = { view: 'unavailable', output: { status: 'not_applicable', reason_code: reason, source_state: 'current' } };
