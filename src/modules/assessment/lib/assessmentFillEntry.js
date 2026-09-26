@@ -4,6 +4,7 @@ import { routes } from '@/shared/config/routes';
 import { parsingScene } from '@/shared/lib/scene';
 import { getMiniProgramEntryParams } from '@/services/api/miniProgramEntries';
 import { resolveAssessmentEntry } from '@/services/api/assessmentEntries';
+import { resolvePlanTaskEntry } from '@/services/api/planTaskEntries';
 
 export const INVALID_ENTRY_STATUSES = new Set(['inactive', 'disabled', 'revoked', 'expired']);
 
@@ -75,6 +76,19 @@ const mapResolvedAssessmentEntry = (token, result) => {
 
 export const resolveAssessmentFillEntryParams = (params) => {
   return new Promise((resolve, reject) => {
+    if (params.task_id && params.token && !isAssessmentEntryToken(params.token)) {
+      resolvePlanTaskEntry(params.task_id, params.token)
+        .then((result) => resolve({
+          ...params,
+          ...result,
+          t: result.testee_id,
+          entry_title: '机构测评任务',
+          target_code: result.q,
+        }))
+        .catch(reject);
+      return;
+    }
+
     if (params.token && isAssessmentEntryToken(params.token)) {
       resolveAssessmentEntry(params.token)
         .then((result) => {

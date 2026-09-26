@@ -90,12 +90,13 @@ const HomeIndex = () => {
   const handleDirectEntryRedirect = useCallback((params: Record<string, unknown>) => {
     const scene = String(params?.scene || "").trim();
     const token = String(params?.token || "").trim();
+    const taskId = String(params?.task_id || "").trim();
     if (!scene && !token) {
       return false;
     }
 
     const targetUrl = token
-      ? routes.assessmentFill({ token })
+      ? routes.assessmentFill({ token, task_id: taskId || undefined })
       : routes.assessmentFill({ scene });
 
     Taro.redirectTo({ url: targetUrl });
