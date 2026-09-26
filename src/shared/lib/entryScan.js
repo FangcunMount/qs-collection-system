@@ -47,7 +47,7 @@ export const buildAssessmentScanTargetUrl = (scanResult) => {
     }
 
     if (query.token) {
-      return routes.assessmentFill({ token: query.token });
+      return routes.assessmentFill({ token: query.token, task_id: query.task_id || undefined });
     }
 
     const urlPath = normalizeMiniProgramPath(query.path || "");
