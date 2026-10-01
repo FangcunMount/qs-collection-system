@@ -49,7 +49,6 @@ export default function PendingTaskList({ testeeId }: { testeeId: string }) {
   useDidHide(() => { ++request.current; stop(); });
   usePullDownRefresh(() => { void load().finally(() => Taro.stopPullDownRefresh()); });
   return <View className="pending-tasks">
-    <Text className="pending-tasks__heading">待填写任务</Text>
     {!testeeId ? <StatePanel state="empty" title="选择家庭档案后查看任务" compact />
       : error ? <StatePanel state="error" title={error} actionText="重新加载" onAction={load} compact />
       : loading && !tasks.length ? <StatePanel state="loading" title="正在同步任务" compact />

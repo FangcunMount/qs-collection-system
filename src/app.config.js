@@ -43,6 +43,7 @@ export default {
       pages: [
         'fill/index',
         'records/index',
+        'tasks/index',
         'response/index',
         'report/index',
         'ai-explanation/index',
