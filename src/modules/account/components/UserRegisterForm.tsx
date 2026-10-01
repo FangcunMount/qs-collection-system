@@ -95,7 +95,7 @@ const UserRegisterForm = ({ goUrl = "", submitClose = false }: UserRegisterFormP
       try {
         const session = await bootstrapSession({ allowInteractiveLogin: true });
         if (session.status === "authenticated") {
-          Taro.reLaunch({ url: routes.tabHome() });
+          Taro.reLaunch({ url: goUrl.startsWith("/pages/assessment/fill/index?task_id=") ? goUrl : routes.tabHome() });
           return;
         }
       } catch (loginError: unknown) {

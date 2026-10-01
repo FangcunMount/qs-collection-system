@@ -8,6 +8,7 @@ import { loadRecentAssessments } from '@/modules/assessment/services/loadRecentA
 import { listHotPublishedAssessmentModels } from '@/services/api/assessmentModelCatalogApi';
 import { resetTesteeStore, setTesteeList, setSelectedTesteeId } from '@/shared/stores/testees';
 
+jest.mock('../../components/PendingTaskList', () => ({ __esModule: true, default: () => null }));
 jest.mock('@/modules/assessment/services/loadRecentAssessments', () => ({ loadRecentAssessments: jest.fn() }));
 jest.mock('@/services/api/assessmentModelCatalogApi', () => ({ listHotPublishedAssessmentModels: jest.fn() }));
 

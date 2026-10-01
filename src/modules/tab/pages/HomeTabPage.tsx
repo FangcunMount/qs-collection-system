@@ -24,6 +24,7 @@ import emotionIcon from "@/assets/icon/icon-emotion-state.png";
 import pressureIcon from "@/assets/icon/icon-anxiety-screening.png";
 import sleepIcon from "@/assets/icon/icon-sleep-quality.png";
 import attentionIcon from "@/assets/icon/icon-attention-screening.png";
+import PendingTaskList from "../components/PendingTaskList";
 import "./HomeTabPage.less";
 
 const SUBJECT_IMAGES = { "adult-male": adultMale, "adult-female": adultFemale, "child-male": childMale, "child-female": childFemale };
@@ -91,11 +92,11 @@ const HomeIndex = () => {
     const scene = String(params?.scene || "").trim();
     const token = String(params?.token || "").trim();
     const taskId = String(params?.task_id || "").trim();
-    if (!scene && !token) {
+    if (!scene && !token && !taskId) {
       return false;
     }
 
-    const targetUrl = token
+    const targetUrl = taskId ? routes.assessmentFill({ task_id: taskId }) : token
       ? routes.assessmentFill({ token, task_id: taskId || undefined })
       : routes.assessmentFill({ scene });
 
@@ -131,7 +132,8 @@ const HomeIndex = () => {
       t: currentTestee?.id,
     };
     if (entryContext?.task_id) {
-      params.task_id = entryContext.task_id;
+      Taro.navigateTo({ url: routes.assessmentFill({ task_id: entryContext.task_id }) });
+      return;
     }
     if (entryContext?.token) {
       params.token = entryContext.token;
@@ -230,6 +232,7 @@ const HomeIndex = () => {
         <Icon name="arrow-right" size={18} />
       </View> : null}
 
+      <PendingTaskList key={currentTestee?.id || ""} testeeId={currentTestee?.id || ""} />
       <View className="home-welcome"><Text className="home-welcome__title">{subject.title}</Text><Text className="home-welcome__subtitle">{subject.subtitle}</Text></View>
       <View className="home-stage">
         <View className="home-stage__platform" />

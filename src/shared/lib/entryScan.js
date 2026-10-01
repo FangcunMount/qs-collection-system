@@ -42,6 +42,8 @@ export const buildAssessmentScanTargetUrl = (scanResult) => {
       return queryPart ? `${normalizedPath}?${queryPart}` : normalizedPath;
     }
 
+    if (query.task_id) return routes.assessmentFill({ task_id: query.task_id });
+
     if (query.scene) {
       return routes.assessmentFill({ scene: query.scene });
     }

@@ -1,3 +1,5 @@
+import Taro from '@tarojs/taro';
+import { parsingScene } from '@/shared/lib/scene';
 import { getSessionRevision } from '@/shared/stores/sessionPrivacy';
 import config from '@/config.js';
 import { getWxApi } from '@/shared/platform/weapp/wxApi';
@@ -169,13 +171,21 @@ function navigateHomeSafely() {
   }, 300);
 }
 
+function taskRegistrationReturn() {
+  const pages = Taro.getCurrentPages?.() || [];
+  const page = pages[pages.length - 1];
+  const options = page?.options || page?.$taroParams || {};
+  const taskId = options.task_id || (options.scene ? parsingScene(options.scene).task_id : "");
+  return taskId ? { goUrl: '/pages/assessment/fill/index', goParams: JSON.stringify({ task_id: String(taskId) }) } : {};
+}
+
 function navigateRegisterSafely() {
   if (isRegisterRedirecting) {
     return;
   }
 
   isRegisterRedirecting = true;
-  authorizationHandler.redirectToRegister();
+  authorizationHandler.redirectToRegister(taskRegistrationReturn());
   setTimeout(() => {
     isRegisterRedirecting = false;
   }, 300);

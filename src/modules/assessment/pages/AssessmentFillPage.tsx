@@ -77,7 +77,7 @@ const getErrorMessage = (error: unknown, fallback: string): string => {
 export default function AssessmentFillPage() {
   const [entry, setEntry] = useState<{ params: RouteParams; revision: number } | null>(null);
   useLoad((params) => {
-    setEntry(previous => ({ params: { ...params } as RouteParams, revision: (previous?.revision || 0) + 1 }));
+    setEntry(previous => ({ params: (params.task_id ? { task_id: params.task_id } : { ...params }) as RouteParams, revision: (previous?.revision || 0) + 1 }));
   });
   return entry ? <AssessmentFillController key={entry.revision} paramData={entry.params} /> : null;
 }
@@ -153,13 +153,13 @@ function AssessmentFillController({ paramData }: { paramData: RouteParams }) {
       } = result;
 
       const normalizedEntry = normalizeAssessmentEntryParams({
-        ...paramData,
+        ...(result.task_id ? {} : paramData),
         ...result,
-        mc: legacyModelCode || paramData.mc || paramData.model_code,
-        model_code: result.model_code || paramData.model_code || legacyModelCode || paramData.mc,
-        t: testeeid || paramData.t || paramData.testee_id,
-        testee_id: result.testee_id || paramData.testee_id || testeeid || paramData.t,
-        q: nextQuestionnaireCode || paramData.q,
+        mc: result.task_id ? undefined : legacyModelCode || paramData.mc || paramData.model_code,
+        model_code: result.task_id ? undefined : result.model_code || paramData.model_code || legacyModelCode || paramData.mc,
+        t: result.task_id ? testeeid : testeeid || paramData.t || paramData.testee_id,
+        testee_id: result.task_id ? result.testee_id : result.testee_id || paramData.testee_id || testeeid || paramData.t,
+        q: result.task_id ? nextQuestionnaireCode : nextQuestionnaireCode || paramData.q,
       });
 
       const personalityModelCode = normalizedEntry.modelCode || null;
@@ -203,6 +203,7 @@ function AssessmentFillController({ paramData }: { paramData: RouteParams }) {
       });
     }).catch((error) => {
       if (!active.current) return;
+      if (paramData.task_id && error?.reason === "unregistered") { Taro.hideLoading(); return; }
       Taro.hideLoading();
       console.error('解析入口参数失败:', error);
       redirectToEntryError({
@@ -296,7 +297,7 @@ function AssessmentFillController({ paramData }: { paramData: RouteParams }) {
       }
       if (!nextQuestionnaireCode) throw new Error("缺少问卷编码");
 
-      const questionnaireData = await getQuestionnaire(nextQuestionnaireCode);
+      const questionnaireData = await (resolvedEntryParams.task_id ? getQuestionnaire(nextQuestionnaireCode, resolvedEntryParams.questionnaire_version) : getQuestionnaire(nextQuestionnaireCode));
       if (!active.current) return;
       setQuestionnaire(questionnaireData as QuestionnaireData);
       setCurrentStep('ready');
@@ -330,11 +331,17 @@ function AssessmentFillController({ paramData }: { paramData: RouteParams }) {
       const [questionnaireData, testeeData] = await Promise.all([
         nextModelCode
           ? loadPersonalitySession(nextModelCode, testeeId)
-          : getQuestionnaire(nextQuestionnaireCode as string),
+          : resolvedEntryParams.task_id ? getQuestionnaire(nextQuestionnaireCode as string, resolvedEntryParams.questionnaire_version) : getQuestionnaire(nextQuestionnaireCode as string),
         getTestee(testeeId)
       ]);
 
       if (!active.current) return;
+      if (resolvedEntryParams.task_id) {
+        if ((questionnaireData as QuestionnaireData).code !== nextQuestionnaireCode || (questionnaireData as QuestionnaireData).version !== resolvedEntryParams.questionnaire_version) throw new Error("任务题版不匹配，请重新进入任务");
+        contentContract.current = { questionnaire_code: (questionnaireData as QuestionnaireData).code,
+          questionnaire_version: (questionnaireData as QuestionnaireData).version, testee_id: testeeId,
+          model_code: resolvedEntryParams.scale_code, model_version: resolvedEntryParams.model_version } as AssessmentSubmitContract;
+      }
       setQuestionnaire(questionnaireData as QuestionnaireData);
       setTesteeInfo(testeeData as TesteeInput);
       if (shouldDirectStartPersonality(nextModelCode)) {
@@ -380,6 +387,10 @@ function AssessmentFillController({ paramData }: { paramData: RouteParams }) {
    */
   const handleTesteeChange = async (testeeId: string): Promise<void> => {
     if (!testeeId) return;
+    if (planTaskId && testeeId !== entryContext?.t) {
+      Taro.showToast({ title: "该任务属于指定档案", icon: "none" });
+      return;
+    }
 
     setSelectedTesteeId(testeeId);
 
@@ -592,7 +603,7 @@ function AssessmentFillController({ paramData }: { paramData: RouteParams }) {
   const entryStatusText = resolveEntryStatusText(entryContext?.entry_status);
   const readyViewModel = buildAssessmentReadyViewModel({
     questionnaire,
-    testees: testeeList,
+    testees: planTaskId ? testeeList.filter(testee => testee.id === entryContext?.t) : testeeList,
     selectedTesteeId: selectedTesteeId || '',
     selectedTestee: testeeInfo,
     entryContext,
