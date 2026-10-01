@@ -22,6 +22,7 @@ export async function beginAnswering(contract, origin, previous = null) {
     questionnaire_code: String(contract.questionnaire_code || ''),
     questionnaire_version: String(contract.questionnaire_version || ''),
     origin_ref: origin,
+    ...(origin.type === 'plan_task' && contract.model_code ? { model_code: contract.model_code, model_version: contract.model_version } : {}),
   };
   if (!payload.testee_id || !payload.questionnaire_code || !payload.questionnaire_version) {
     throw new Error('作答内容或档案信息不完整，请刷新后重试');

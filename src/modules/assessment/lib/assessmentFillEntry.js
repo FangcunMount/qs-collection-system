@@ -76,14 +76,14 @@ const mapResolvedAssessmentEntry = (token, result) => {
 
 export const resolveAssessmentFillEntryParams = (params) => {
   return new Promise((resolve, reject) => {
-    if (params.task_id && params.token && !isAssessmentEntryToken(params.token)) {
-      resolvePlanTaskEntry(params.task_id, params.token)
+    if (params.task_id) {
+      resolvePlanTaskEntry(params.task_id)
         .then((result) => resolve({
-          ...params,
           ...result,
           t: result.testee_id,
           entry_title: '机构测评任务',
           target_code: result.q,
+          task_id: String(params.task_id),
         }))
         .catch(reject);
       return;
@@ -113,6 +113,10 @@ export const resolveAssessmentFillEntryParams = (params) => {
     }
 
     const np = parsingScene(params.scene);
+    if (np.task_id) {
+      resolveAssessmentFillEntryParams(np).then(resolve).catch(reject);
+      return;
+    }
     if (!np.mpqrcodeid) {
       resolve(np);
       return;
@@ -131,9 +135,9 @@ export const resolveAssessmentFillEntryParams = (params) => {
 
 export const resolvePlanTaskId = (params, context) => {
   return String(
-    context?.task_id ||
+    params?.task_id ||
+      context?.task_id ||
       context?.raw?.task_id ||
-      params?.task_id ||
       ''
   );
 };

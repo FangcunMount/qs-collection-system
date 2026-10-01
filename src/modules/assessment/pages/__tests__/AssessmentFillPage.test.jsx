@@ -19,12 +19,13 @@ jest.mock('../../services/answeringStart', () => ({
 }));
 jest.mock('../../lib/personalityQuestionnaire', () => ({ loadPersonalitySessionForFill: jest.fn() }));
 let mockLoad, mockReady;
+let mockEntryContext = { task_id: 'old-task', entry_title: '旧入口' };
 jest.mock('@tarojs/taro', () => {
   const taro = jest.requireActual('@tarojs/taro');
   return { ...taro, __esModule: true, default: taro, useLoad: fn => { mockLoad = fn; }, useReady: fn => { mockReady = fn; } };
 });
 jest.mock('@/shared/lib/logger', () => ({ getLogger: () => ({ RUN: jest.fn(), WARN: jest.fn() }) }));
-jest.mock('@/shared/stores/assessmentEntry', () => ({ getAssessmentEntryContext: () => ({ task_id: 'old-task', entry_title: '旧入口' }), setAssessmentEntryContext: jest.fn() }));
+jest.mock('@/shared/stores/assessmentEntry', () => ({ getAssessmentEntryContext: () => mockEntryContext, setAssessmentEntryContext: jest.fn(value => { mockEntryContext = value; }) }));
 jest.mock('@/shared/stores/testees', () => ({
   getSelectedTesteeId: () => 'member', getTesteeList: () => [{ id: 'member', legalName: '成员' }],
   refreshTesteeList: jest.fn(async () => {}), setSelectedTesteeId: jest.fn(),
@@ -42,7 +43,7 @@ const questionnaire = code => ({ code, version: '1', title: `量表${code}`, typ
 const deferred = () => { let resolve, reject; const promise = new Promise((yes, no) => { resolve = yes; reject = no; }); return { promise, resolve, reject }; };
 let tree;
 beforeEach(() => {
-  mockLoad = undefined; mockReady = undefined;
+  mockLoad = undefined; mockReady = undefined; mockEntryContext = { task_id: 'old-task', entry_title: '旧入口' };
   loadPersonalitySessionForFill.mockResolvedValue({ questionnaireData: questionnaire('PERSONALITY'), submitContract: { questionnaire_code: 'PERSONALITY', questionnaire_version: '1', testee_id: 'member' } });
   Taro.__setRouterParams({ q: 'A' });
   getQuestionnaire.mockReset().mockImplementation(async code => questionnaire(code));
@@ -134,4 +135,23 @@ test('personality automatic start waits for the server before showing questions'
   expect(tree.root.findAllByType(AssessmentAnsweringView)).toHaveLength(0);
   await act(async () => pending.resolve({ attempt: {}, contract: { questionnaire_code: 'PERSONALITY', answering_start_id: '902', testee_id: 'member' } }));
   expect(answering().submitContract.answering_start_id).toBe('902');
+});
+
+test('task-only entry pins exact question and model, and starts under the original task', async () => {
+ resolveAssessmentFillEntryParams.mockResolvedValueOnce({ task_id: '42', t: 'member', testee_id: 'member', q: 'EXACT', questionnaire_version: '1', scale_code: 'MODEL', model_version: 'v2', entry_title: '机构任务' });
+ await act(async () => { tree = renderer.create(<AssessmentFillPage />); });
+ await load({ task_id: '42', q: 'forged', mc: 'forged', t: '999', token: 'ae_forged' });
+ expect(resolveAssessmentFillEntryParams).toHaveBeenCalledWith({ task_id: '42' });
+ expect(getQuestionnaire).toHaveBeenCalledWith('EXACT', '1');
+ await start();
+ expect(beginAnswering).toHaveBeenLastCalledWith(expect.objectContaining({ questionnaire_code: 'EXACT', questionnaire_version: '1', model_code: 'MODEL', model_version: 'v2', testee_id: 'member' }), { type: 'plan_task', id: '42' }, null);
+ expect(answering().submitContract.origin_ref).toEqual({ type: 'plan_task', id: '42' });
+});
+
+test('task entry rejects a questionnaire response from a different version', async () => {
+ resolveAssessmentFillEntryParams.mockResolvedValueOnce({ task_id: '42', t: 'member', testee_id: 'member', q: 'EXACT', questionnaire_version: 'old-version', entry_title: '机构任务' });
+ await act(async () => { tree = renderer.create(<AssessmentFillPage />); });
+ await load({ task_id: '42' });
+ expect(tree.root.findAllByType(AssessmentReadyView)).toHaveLength(0);
+ expect(redirectToEntryError).toHaveBeenCalled();
 });
