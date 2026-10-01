@@ -1,7 +1,7 @@
-.pending-tasks { margin: 24px 0; }
-.pending-tasks__heading { display: block; font-size: 32px; font-weight: 600; margin-bottom: 16px; }
-.pending-tasks__row { margin-bottom: 16px; padding: 24px; }
-.pending-tasks__row > text { display: block; margin-bottom: 12px; font-size: 24px; }
-.pending-tasks__row .pending-tasks__title { font-size: 30px; font-weight: 600; }
-.pending-tasks__start { padding: 16px; border-radius: 16px; text-align: center; background: #e0f0e7; color: #245644; }
-.pending-tasks__start--disabled { background: #f1f1ee; color: #85857e; }
+@import "../../../styles/tokens.less";
+.pending-tasks { margin-top: @space-4; }
+.pending-tasks__row { margin-bottom: @space-3; padding: @space-4; }
+.pending-tasks__row > text { display: block; margin-bottom: @space-2; font-size: @font-size-caption; color: @text-color-secondary; line-height: @line-height-body; overflow-wrap: anywhere; }
+.pending-tasks__row .pending-tasks__title { font-size: @font-size-card-title; font-weight: @font-weight-semibold; color: @text-color-primary; }
+.pending-tasks__start { padding: @space-3; border-radius: @radius-md; text-align: center; background: @color-medical-50; color: @color-medical-700; font-size: @font-size-body; }
+.pending-tasks__start--disabled { background: @surface-subtle; color: @text-color-tertiary; }

@@ -24,7 +24,6 @@ import emotionIcon from "@/assets/icon/icon-emotion-state.png";
 import pressureIcon from "@/assets/icon/icon-anxiety-screening.png";
 import sleepIcon from "@/assets/icon/icon-sleep-quality.png";
 import attentionIcon from "@/assets/icon/icon-attention-screening.png";
-import PendingTaskList from "../components/PendingTaskList";
 import "./HomeTabPage.less";
 
 const SUBJECT_IMAGES = { "adult-male": adultMale, "adult-female": adultFemale, "child-male": childMale, "child-female": childFemale };
@@ -232,7 +231,6 @@ const HomeIndex = () => {
         <Icon name="arrow-right" size={18} />
       </View> : null}
 
-      <PendingTaskList key={currentTestee?.id || ""} testeeId={currentTestee?.id || ""} />
       <View className="home-welcome"><Text className="home-welcome__title">{subject.title}</Text><Text className="home-welcome__subtitle">{subject.subtitle}</Text></View>
       <View className="home-stage">
         <View className="home-stage__platform" />
@@ -248,6 +246,7 @@ const HomeIndex = () => {
         <View className="home-service__body"><Text className="home-service__title">{service.title}</Text><Text className="home-service__description">{service.desc}</Text></View>
       </SurfaceCard>)}</View>
 
+      <SurfaceCard className="home-records-link home-tasks-link" onClick={() => Taro.navigateTo({ url: routes.pendingTasks() })}><Icon name="list" size={22} /><Text className="home-records-link__title">待填写任务</Text><Text>查看任务 ›</Text></SurfaceCard>
       <SurfaceCard className="home-records-link" onClick={handleViewRecords}><Icon name="records" size={22} /><Text className="home-records-link__title">评估记录</Text><Text>查看记录 ›</Text></SurfaceCard>
       {currentTestee ? <>
         <View className="home-recent-toggle" onClick={() => setShowReports(value => !value)}><Text>最近医学报告</Text><Text>{showReports ? "收起 ⌃" : "展开 ⌄"}</Text></View>

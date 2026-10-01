@@ -4,11 +4,12 @@ import Taro from '@tarojs/taro';
 import HomeTabPage from '../HomeTabPage';
 import SurfaceCard from '@/shared/ui/SurfaceCard';
 import StatePanel from '@/shared/ui/StatePanel';
+import { listPlanTasks } from '@/services/api/planTaskEntries';
 import { loadRecentAssessments } from '@/modules/assessment/services/loadRecentAssessments';
 import { listHotPublishedAssessmentModels } from '@/services/api/assessmentModelCatalogApi';
 import { resetTesteeStore, setTesteeList, setSelectedTesteeId } from '@/shared/stores/testees';
 
-jest.mock('../../components/PendingTaskList', () => ({ __esModule: true, default: () => null }));
+jest.mock('@/services/api/planTaskEntries', () => ({ listPlanTasks: jest.fn() }));
 jest.mock('@/modules/assessment/services/loadRecentAssessments', () => ({ loadRecentAssessments: jest.fn() }));
 jest.mock('@/services/api/assessmentModelCatalogApi', () => ({ listHotPublishedAssessmentModels: jest.fn() }));
 
@@ -104,4 +105,15 @@ test('switching subjects updates the avatar and working category links together'
   const image = component.root.findByProps({ className: 'home-stage__figure' });
   act(() => image.props.onError());
   expect(textOf(component)).toContain('形象未加载，点击重试');
+});
+
+test('home exposes a compact task entry without loading or rendering a task list', async () => {
+  const navigate = jest.spyOn(Taro, 'navigateTo');
+  await act(async () => { component = renderer.create(<HomeTabPage />); });
+  expect(textOf(component)).toContain('待填写任务');
+  expect(textOf(component)).not.toContain('截止时间');
+  expect(textOf(component)).not.toContain('暂无待填写任务');
+  expect(listPlanTasks).not.toHaveBeenCalled();
+  act(() => component.root.findAllByType(SurfaceCard).find(card => (card.props.className || '').includes('home-tasks-link')).props.onClick());
+  expect(navigate).toHaveBeenCalledWith({ url: '/pages/assessment/tasks/index' });
 });
