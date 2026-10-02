@@ -3,6 +3,7 @@ import renderer, { act } from 'react-test-renderer';
 import AIExplanationContent from '../AIExplanationContent';
 import AIExplanationSourceNotice from '../AIExplanationSourceNotice';
 import { generated } from '../../../../../../scripts/test/fixtures/aiExplanation';
+import threeTopics from '../../../../../../scripts/test/fixtures/mbtiThreeTopicOutput.json';
 
 test('keeps actions and cautions visible, progressively reveals rationale without fabricated evidence drilldown', () => {
   const content = { ...generated.content, summary: '<script>private()</script>' };
@@ -30,4 +31,18 @@ test('keeps actions and cautions visible, progressively reveals rationale withou
 test.each(['current','stale','unavailable','unknown'])('source state %s has a visible textual explanation', state => {
   const tree = renderer.create(<AIExplanationSourceNotice state={state} />);
   expect(JSON.stringify(tree.toJSON())).toMatch(/本次测评|标准报告已更新|无法核实|无法确认/); tree.unmount();
+});
+test('renders three MBTI topics with questions, actions and explicit basis labels', () => {
+  const view = renderer.create(<AIExplanationContent content={threeTopics} />);
+  const text = JSON.stringify(view.toJSON());
+  for (const label of ['性格特征与自我理解', '职业发展探索', '恋爱婚姻中的沟通与相处',
+    '本次测评事实', '通用参考', '探索与自我核对', '自我核对问题', '可以尝试的行动']) {
+    expect(text).toContain(label);
+  }
+  expect(text).toContain(threeTopics.summary.content);
+  expect(text).toContain(threeTopics.sections[0].reflection_questions[0].question);
+  expect(text).toContain(threeTopics.sections[0].actions[0].steps[0]);
+  expect(text).toContain(threeTopics.limitations[0]);
+  expect(text).not.toContain('维度之间的联系');
+  expect(text).not.toContain('reference:');
 });

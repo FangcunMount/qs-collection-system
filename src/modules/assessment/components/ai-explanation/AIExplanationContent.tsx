@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Button, Text, View } from '@tarojs/components';
 import SurfaceCard from '@/shared/ui/SurfaceCard';
 import type { AIContent } from '@/services/api/aiExplanationApi';
+import MBTIThreeTopicContent from './MBTIThreeTopicContent';
 
 function ExplanationDetail({ label, children }: { label: string; children: React.ReactNode }) {
   const [expanded, setExpanded] = useState(false);
@@ -14,6 +15,7 @@ function ExplanationDetail({ label, children }: { label: string; children: React
 }
 
 export default function AIExplanationContent({ content }: { content: AIContent }) {
+  if (content.schema_version === 'ai-explanation-output/v2') return <MBTIThreeTopicContent content={content} />;
   return <View className="ai-explanation__stack">
     <View className="ai-explanation__stack">
       <Text className="ai-explanation__caption">AI 生成内容 · 仅作补充参考，不替代标准报告</Text>
