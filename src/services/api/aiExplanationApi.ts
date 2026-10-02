@@ -1,6 +1,8 @@
 import config from '@/config';
 import { request } from '../servers';
 import type { RequestLifetime } from '../requestLifetime';
+import { isMBTIReferenceSelection, resolveMBTIReferences } from './mbtiReferences';
+import type { MBTIReferenceSelection } from './mbtiReferences';
 import { isMBTIThreeTopicOutput } from './mbtiThreeTopicOutput';
 import type { MBTIThreeTopicOutput } from './mbtiThreeTopicOutput';
 
@@ -19,6 +21,7 @@ export interface AILegacyContent {
 export type AIContent = AILegacyContent | MBTIThreeTopicOutput;
 export interface AIOutput {
   status: AIStatus; reason_code?: string; requestId?: string; artifact_id?: string;
+  reference_material?: MBTIReferenceSelection; reference_material_fingerprint?: string;
   source_report_id?: string; source_state: SourceState; content?: AIContent;
   failure?: { code: string; safe_message: string; retryable: boolean };
   created_at?: string; updated_at?: string; workflow_version?: number;
@@ -72,6 +75,14 @@ export function validateExplanationView(input: unknown): AIOutput {
         !text(content.summary) || !Array.isArray(content.integrated_insights) || content.integrated_insights.length === 0 || !content.integrated_insights.every(insight) ||
         !Array.isArray(content.suggestions) || content.suggestions.length === 0 || !content.suggestions.every(suggestion) || !strings(content.limitations) || content.limitations.length === 0) throw new AIContractError();
   } else if (value.content !== undefined) throw new AIContractError();
+  if (value.reference_material !== undefined || value.reference_material_fingerprint !== undefined) {
+    if (value.status !== 'generated' || !isMBTIThreeTopicOutput(value.content) ||
+      !isMBTIReferenceSelection(value.reference_material) || typeof value.reference_material_fingerprint !== 'string' ||
+      !/^sha256:[a-f0-9]{64}$/.test(value.reference_material_fingerprint)) throw new AIContractError();
+    const material = value.reference_material;
+    if (value.content.sections.some(section => [...section.insights, ...section.reflection_questions, ...section.actions]
+      .some(item => !resolveMBTIReferences(material, item, section.topic)))) throw new AIContractError();
+  }
   return value as unknown as AIOutput;
 }
 const scopePath = ({ assessmentId, testeeId }: AIScope) => {
@@ -124,7 +135,8 @@ export function parseWorkflowResult(value: unknown, requestId: string): AIOutput
   if (!status || value.status !== 'accepted' && value.version === 0) throw new AIContractError();
   if (status === 'generated' && (typeof value.report_id !== 'string' || !isReportId(value.report_id) || !text(value.source_version))) throw new AIContractError();
   return validateExplanationView({ status, requestId: requestId, workflow_version: value.version, source_state: 'unknown',
-    artifact_id: value.artifact_id, source_report_id: value.report_id, content: value.content,
+    artifact_id: value.artifact_id, reference_material: value.reference_material,
+    reference_material_fingerprint: value.reference_material_fingerprint, source_report_id: value.report_id, content: value.content,
     failure: status === 'failed' ? { code: `workflow_${String(value.status)}`, safe_message: value.status === 'cancelled' ? '本次解读已停止。' : '本次解读暂未完成，可稍后刷新状态或联系工作人员。', retryable: false } : undefined });
 }
 

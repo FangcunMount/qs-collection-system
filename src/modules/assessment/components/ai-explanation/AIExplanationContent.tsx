@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button, Text, View } from '@tarojs/components';
 import SurfaceCard from '@/shared/ui/SurfaceCard';
+import type { MBTIReferenceSelection } from '@/services/api/mbtiReferences';
 import type { AIContent } from '@/services/api/aiExplanationApi';
 import MBTIThreeTopicContent from './MBTIThreeTopicContent';
 
@@ -14,8 +15,8 @@ function ExplanationDetail({ label, children }: { label: string; children: React
   </View>;
 }
 
-export default function AIExplanationContent({ content }: { content: AIContent }) {
-  if (content.schema_version === 'ai-explanation-output/v2') return <MBTIThreeTopicContent content={content} />;
+export default function AIExplanationContent({ content, references }: { content: AIContent; references?: MBTIReferenceSelection }) {
+  if (content.schema_version === 'ai-explanation-output/v2') return <MBTIThreeTopicContent content={content} references={references} />;
   return <View className="ai-explanation__stack">
     <View className="ai-explanation__stack">
       <Text className="ai-explanation__caption">AI 生成内容 · 仅作补充参考，不替代标准报告</Text>
