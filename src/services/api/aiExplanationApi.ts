@@ -1,6 +1,8 @@
 import config from '@/config';
 import { request } from '../servers';
 import type { RequestLifetime } from '../requestLifetime';
+import { isMBTIThreeTopicOutput } from './mbtiThreeTopicOutput';
+import type { MBTIThreeTopicOutput } from './mbtiThreeTopicOutput';
 
 export type AIStatus = 'ready' | 'not_ready' | 'not_applicable' | 'pending' | 'generating' | 'generated' | 'failed';
 export type SourceState = 'current' | 'stale' | 'unavailable' | 'unknown';
@@ -10,10 +12,11 @@ export interface AISuggestion {
   origin: 'standard_derived' | 'generated_low_risk'; category: string; title: string; goal: string;
   actions: string[]; rationale: string; evidence_refs: EvidenceRef[]; source_suggestion_refs: string[]; caution?: string;
 }
-export interface AIContent {
+export interface AILegacyContent {
   schema_version: 'ai-explanation-output/v1'; summary: string;
   integrated_insights: AIInsight[]; suggestions: AISuggestion[]; limitations: string[];
 }
+export type AIContent = AILegacyContent | MBTIThreeTopicOutput;
 export interface AIOutput {
   status: AIStatus; reason_code?: string; requestId?: string; artifact_id?: string;
   source_report_id?: string; source_state: SourceState; content?: AIContent;
@@ -62,7 +65,10 @@ export function validateExplanationView(input: unknown): AIOutput {
           ? { ...item, source_suggestion_refs: [] } : item) } };
     }
     const content = value.content;
-    if (!text(value.artifact_id) || !text(value.source_report_id) || !object(content) || content.schema_version !== 'ai-explanation-output/v1' ||
+    if (!text(value.artifact_id) || !text(value.source_report_id) || !object(content)) throw new AIContractError();
+    if (content.schema_version === 'ai-explanation-output/v2') {
+      if (!isMBTIThreeTopicOutput(content)) throw new AIContractError();
+    } else if (content.schema_version !== 'ai-explanation-output/v1' ||
         !text(content.summary) || !Array.isArray(content.integrated_insights) || content.integrated_insights.length === 0 || !content.integrated_insights.every(insight) ||
         !Array.isArray(content.suggestions) || content.suggestions.length === 0 || !content.suggestions.every(suggestion) || !strings(content.limitations) || content.limitations.length === 0) throw new AIContractError();
   } else if (value.content !== undefined) throw new AIContractError();
