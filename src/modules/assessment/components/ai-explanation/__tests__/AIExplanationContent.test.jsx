@@ -46,3 +46,18 @@ test('renders three MBTI topics with questions, actions and explicit basis label
   expect(text).not.toContain('维度之间的联系');
   expect(text).not.toContain('reference:');
 });
+
+test('reveals original reference text and source only when the reader opens its reference detail', () => {
+  const artifact = require('../../../../../../scripts/test/fixtures/mbtiThreeTopicArtifact.json');
+  const content = JSON.parse(artifact.content_json), references = JSON.parse(artifact.reference_material_json);
+  const ref = references.entries.find(e => e.entry_id === 'personality.ei.i');
+  const source = references.sources.find(s => s.source_id === ref.source_ids[0]);
+  const view = renderer.create(<AIExplanationContent content={content} references={references} />);
+  expect(JSON.stringify(view.toJSON())).not.toContain(ref.content);
+  act(() => view.root.findAllByType('taro-button')[0].props.onClick());
+  const text = JSON.stringify(view.toJSON());
+  expect(text).toContain(ref.content); expect(text).toContain(ref.usage_boundary);
+  expect(text).toContain(source.title); expect(text).toContain(source.url);
+  expect(text).not.toContain('reference:personality');
+  view.unmount();
+});

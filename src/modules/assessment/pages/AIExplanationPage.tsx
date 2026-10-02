@@ -35,7 +35,7 @@ export default function AIExplanationPage() {
         <View className="ai-explanation__row ai-explanation__row--leading">
           <AIExplanationIllustration size="small" /><Text className="ai-explanation__heading">补充解读已生成</Text>
         </View>
-        <AIExplanationContent content={generated} />
+        <AIExplanationContent content={generated} references={output?.reference_material} />
         {output?.source_state !== 'current' && <ActionButton variant="ghost" onClick={refresh}>刷新状态</ActionButton>}
       </View> : <SurfaceCard tone={state.view === 'ready' ? tone : 'neutral'} className={`ai-explanation__stack ${waiting ? 'ai-explanation__wait' : ''}`}>
         {(state.view === 'ready' || waiting) && <AIExplanationIllustration />}
