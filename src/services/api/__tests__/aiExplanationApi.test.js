@@ -7,6 +7,31 @@ const scope = { assessmentId: '18446744073709551615', testeeId: '900719925474099
 const requestId = '00000000-0000-4000-8000-000000000001';
 const source = { status: 'ready', report_id: '99', source_version: 'standard-v1:101', ai_eligibility: { status: 'available' } };
 const completed = { status: 'completed', request_id: requestId, version: 3, artifact_id: generated.artifact_id, report_id: '99', source_version: 'standard-v1:101', content: generated.content };
+const submitted = { request_id: requestId, status: 'submitted', operation_id: requestId, command_id: requestId,
+  status_url: `/api/v1/interpretation/ai-workflow/operations/${requestId}?testee_id=${scope.testeeId}&assessment_id=${scope.assessmentId}&request_id=${requestId}` };
+test('MQ submission waits for the original authorized workflow without resending or inventing business acceptance', async () => {
+  request.mockResolvedValueOnce(submitted)
+    .mockResolvedValueOnce({ request_id: requestId, status: 'accepted', version: 0 })
+    .mockResolvedValueOnce({ request_id: requestId, status: 'running', version: 2 })
+    .mockResolvedValueOnce(completed).mockResolvedValueOnce(source);
+  const output = await requestAIExplanation(scope, { requestId, reportId: '99' });
+  expect(output).toMatchObject({ status: 'pending', requestId, workflow_version: 0 });
+  expect(output.content).toBeUndefined();
+  expect((await getAIExplanation(scope, requestId)).status).toBe('pending');
+  expect((await getAIExplanation(scope, requestId)).status).toBe('generating');
+  expect((await getAIExplanation(scope, requestId)).status).toBe('generated');
+  expect(request.mock.calls.filter(call => call[2].method === 'POST')).toHaveLength(1);
+  expect(request.mock.calls.slice(1, 4).every(call => call[0] === `/assessments/${scope.assessmentId}/ai-workflows/${requestId}`)).toBe(true);
+});
+test.each([
+  { ...submitted, request_id: 'other' }, { ...submitted, operation_id: 'other' },
+  { ...submitted, command_id: 'other' }, { ...submitted, operation_id: undefined },
+  { ...submitted, command_id: undefined }, { ...submitted, status: 'published' },
+])('invalid submission identity is rejected without retrying', async value => {
+  request.mockResolvedValue(value);
+  await expect(requestAIExplanation(scope, { requestId, reportId: '99' })).rejects.toThrow();
+  expect(request).toHaveBeenCalledTimes(1);
+});
 test('new endpoints preserve immutable IDs and scoped request policy', async () => {
   request.mockResolvedValueOnce(source).mockResolvedValueOnce({ request_id: requestId, status: 'accepted' }).mockResolvedValueOnce(completed).mockResolvedValueOnce(source);
   await getAIExplanationCapability(scope);
