@@ -27,7 +27,7 @@ test('detail mount does not POST, only start button does', () => {
 });
 test('pending has real waiting text and motion is optional', () => {
   model.state = { view: 'waiting', output: pending };
-  const tree = renderer.create(<AIExplanationPage />); expect(textOf(tree)).toContain('请求已接收，等待开始');
+  const tree = renderer.create(<AIExplanationPage />); expect(textOf(tree)).toContain('请求已提交，等待开始');
   expect(textOf(tree)).not.toContain('ai-explanation--motion'); click(tree, '开启轻量动画');
   expect(textOf(tree)).toContain('ai-explanation--motion'); click(tree, '减少动画'); expect(textOf(tree)).not.toContain('ai-explanation--motion');
   expect(model.start).not.toHaveBeenCalled(); tree.unmount();

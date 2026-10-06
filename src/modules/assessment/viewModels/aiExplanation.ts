@@ -29,7 +29,7 @@ export function aiStateCopy(state: AIState): { title: string; description: strin
     case 'ready': return { title: '进一步理解这份结果', description: '基于本次测评结果，帮助理解多个维度之间的关系，并提供可以尝试的日常建议。', action: '开始解读' };
     case 'submitting': return { title: '正在提交请求', description: '请勿重复提交。你可以返回标准报告。' };
     case 'waiting': if (state.refreshError) return { title: '暂时无法更新解读状态', description: '正在尝试重新查询，标准报告仍可继续阅读。' };
-      return { title: state.output?.status === 'pending' ? '请求已接收，等待开始' : '解读正在生成',
+      return { title: state.output?.status === 'pending' ? '请求已提交，等待开始' : '解读正在生成',
       description: state.longWait ? '所需时间较长，你可以先阅读标准报告，稍后再查看。' : '你可以返回标准报告，稍后再查看。' };
     case 'failed': return { title: '本次 AI 解读未完成', description: state.output?.failure?.safe_message || '本次未能提供可展示的补充解读，标准报告仍可正常阅读。', action: '刷新状态' };
     case 'limited': return { title: '请求暂受限制', description: state.retryAt ? `请在 ${new Date(state.retryAt).toLocaleString()} 后再试，标准报告仍可正常阅读。` : '请稍后再试，标准报告仍可正常阅读。', action: '刷新状态' };

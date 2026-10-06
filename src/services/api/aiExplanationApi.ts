@@ -123,7 +123,12 @@ export async function requestAIExplanation(scope: AIScope, command: AIWorkflowCo
   const value = await request(`${scopePath(scope)}/ai-workflows`, { request_id: command.requestId, report_id: command.reportId }, {
     ...options(scope, lifetime), method: 'POST',
   });
-  if (!object(value) || value.request_id !== command.requestId || value.status !== 'accepted') throw new AIContractError();
+  if (!object(value) || value.request_id !== command.requestId ||
+      !['accepted', 'submitted'].includes(String(value.status))) throw new AIContractError();
+  if (value.status === 'submitted' &&
+      (value.operation_id !== command.requestId || value.command_id !== command.requestId)) throw new AIContractError();
+  // MQ submission confirms durable staging only. Poll the original authorized
+  // workflow; never follow a returned URL or infer that generation has started.
   return { status: 'pending', requestId: command.requestId, source_report_id: command.reportId, source_state: 'unknown', workflow_version: 0 };
 }
 
