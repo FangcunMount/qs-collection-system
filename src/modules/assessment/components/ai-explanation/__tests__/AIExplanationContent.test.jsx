@@ -4,6 +4,9 @@ import AIExplanationContent from '../AIExplanationContent';
 import AIExplanationSourceNotice from '../AIExplanationSourceNotice';
 import { generated } from '../../../../../../scripts/test/fixtures/aiExplanation';
 import threeTopics from '../../../../../../scripts/test/fixtures/mbtiThreeTopicOutput.json';
+import { parseWorkflowResult } from '../../../../../services/api/aiExplanationApi';
+
+jest.mock('../../../../../services/servers', () => ({ request: jest.fn() }));
 
 test('keeps actions and cautions visible, progressively reveals rationale without fabricated evidence drilldown', () => {
   const content = { ...generated.content, summary: '<script>private()</script>' };
@@ -59,5 +62,22 @@ test('reveals original reference text and source only when the reader opens its 
   expect(text).toContain(ref.content); expect(text).toContain(ref.usage_boundary);
   expect(text).toContain(source.title); expect(text).toContain(source.url);
   expect(text).not.toContain('reference:personality');
+  view.unmount();
+});
+
+test('renders a validated exploration result with all three themes and original reference detail', () => {
+  const artifact = require('../../../../../../scripts/test/fixtures/mbtiThreeTopicArtifact.json');
+  const references = JSON.parse(artifact.reference_material_json);
+  Object.assign(references, { model_code: 'MBTI_FC_93', model_version: 'v55-report-202608-v1' });
+  const id = '00000000-0000-4000-8000-000000000001';
+  const result = parseWorkflowResult({ request_id: id, status: 'completed', version: 5,
+    artifact_id: artifact.id, report_id: '99', source_version: 'report-v1:101',
+    content: JSON.parse(artifact.content_json), reference_material: references,
+    reference_material_fingerprint: artifact.reference_material_fingerprint }, id);
+  const view = renderer.create(<AIExplanationContent content={result.content} references={result.reference_material} />);
+  const text = JSON.stringify(view.toJSON());
+  for (const label of ['性格特征与自我理解', '职业发展探索', '恋爱婚姻中的沟通与相处']) expect(text).toContain(label);
+  act(() => view.root.findAllByType('taro-button')[0].props.onClick());
+  expect(JSON.stringify(view.toJSON())).toContain(references.entries.find(e => e.entry_id === 'personality.ei.i').content);
   view.unmount();
 });
