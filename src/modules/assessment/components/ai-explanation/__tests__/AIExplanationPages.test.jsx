@@ -24,6 +24,21 @@ test('entry navigates with the report scope and never starts generation', () => 
   click(tree, '请求深度解读'); expect(Taro.navigateTo).toHaveBeenCalledWith({ url: '/pages/assessment/ai-explanation/index?aid=101&t=201' });
   expect(model.start).not.toHaveBeenCalled(); tree.unmount();
 });
+test('uncertain entry opens the original request without submitting it', () => {
+  model.state = { view: 'unconfirmed', requestId: pending.requestId };
+  const tree = renderer.create(<AIExplanationEntryCard assessmentId="101" testeeId="201" />);
+  expect(textOf(tree)).toContain('暂未确认请求结果'); click(tree, '核对本次请求');
+  expect(Taro.navigateTo).toHaveBeenCalledWith({ url: `/pages/assessment/ai-explanation/index?aid=101&t=201&gid=${pending.requestId}` });
+  expect(model.start).not.toHaveBeenCalled(); expect(model.prepare).not.toHaveBeenCalled(); tree.unmount();
+});
+test('submission and technical hold copy do not claim generation has started', () => {
+  model.state = { view: 'waiting', output: { ...pending, submission_state: 'submitted' } };
+  const tree = renderer.create(<AIExplanationPage />); expect(textOf(tree)).toContain('请求已保存，等待确认');
+  expect(textOf(tree)).not.toContain('解读正在生成');
+  model.state = { view: 'paused', output: { ...pending, submission_state: 'held' } };
+  act(() => tree.update(<AIExplanationPage />)); expect(textOf(tree)).toContain('本次请求暂待核对');
+  click(tree, '刷新状态'); expect(model.refresh).toHaveBeenCalledTimes(1); expect(model.start).not.toHaveBeenCalled(); tree.unmount();
+});
 test('detail mount does not POST, only start button does', () => {
   const tree = renderer.create(<AIExplanationPage />); expect(model.start).not.toHaveBeenCalled();
   click(tree, '开始解读'); expect(model.start).toHaveBeenCalledTimes(1); tree.unmount();
@@ -39,6 +54,11 @@ test('failed refresh does not call start; uncertain request requires preparation
   model.state = { view: 'failed', output: failed }; const tree = renderer.create(<AIExplanationPage />);
   click(tree, '刷新状态'); expect(model.refresh).toHaveBeenCalledTimes(1); expect(model.start).not.toHaveBeenCalled();
   model.state = { view: 'unconfirmed' }; act(() => tree.update(<AIExplanationPage />)); click(tree, '核对请求结果');
+  expect(model.prepare).toHaveBeenCalledTimes(1); expect(model.start).not.toHaveBeenCalled(); tree.unmount();
+});
+test('an explicit command replay is labeled as submission rather than a read', () => {
+  model.state = { view: 'unconfirmed', canResumeSubmission: true };
+  const tree = renderer.create(<AIExplanationPage />); click(tree, '继续提交本次请求');
   expect(model.prepare).toHaveBeenCalledTimes(1); expect(model.start).not.toHaveBeenCalled(); tree.unmount();
 });
 test('disabled capability explains availability without allowing generation', () => {
@@ -122,7 +142,8 @@ test('waiting refresh reads the original request and never exposes a new-generat
 });
 
 test.each([
-  ['waiting', pending, '解读正在生成 · 查看进度'],
+  ['waiting', pending, '查看请求进度'],
+  ['waiting', { ...pending, status: 'generating' }, '解读正在生成 · 查看进度'],
   ['generated', generated, '查看深度解读'],
   ['failed', failed, '本次解读未完成 · 查看状态'],
 ])('report entry reopens the existing %s request in the same scope', (view, output, label) => {

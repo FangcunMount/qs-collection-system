@@ -18,10 +18,10 @@ export default function AIExplanationEntryCard({ tone = 'medical', render, ...sc
   const { state, refresh } = useAIExplanation(scope, { poll: false });
   const copy = aiStateCopy(state);
   const statusLabel = state.view === 'generated' ? '已生成' : state.view === 'waiting'
-    ? state.output?.status === 'pending' ? '等待开始' : '正在生成' : state.view === 'failed' ? '未完成' : '';
-  const navigable = ['ready','waiting','generated','failed'].includes(state.view);
-  const label = state.view === 'generated' ? '查看深度解读' : state.view === 'waiting' ? '解读正在生成 · 查看进度' :
-    state.view === 'failed' ? '本次解读未完成 · 查看状态' : '请求深度解读';
+    ? state.output?.submission_state === 'submitted' ? '待确认' : state.output?.status === 'pending' ? '等待开始' : '正在生成' : state.view === 'failed' ? '未完成' : '';
+  const navigable = ['ready','waiting','generated','failed','unconfirmed'].includes(state.view);
+  const label = state.view === 'generated' ? '查看深度解读' : state.view === 'waiting' ? state.output?.status === 'pending' ? '查看请求进度' : '解读正在生成 · 查看进度' :
+    state.view === 'failed' ? '本次解读未完成 · 查看状态' : state.view === 'unconfirmed' ? '核对本次请求' : '请求深度解读';
   const onOpen = () => { void Taro.navigateTo({ url: routes.aiExplanation({ aid: scope.assessmentId, t: scope.testeeId, gid: state.requestId, kind: tone === 'personality' ? 'personality' : undefined }) }); };
   const entry = <SurfaceCard tone={tone} className={`ai-explanation ai-explanation__entry ai-explanation__entry--${tone} ai-explanation__stack`}>
     <View className="ai-explanation__row">
@@ -30,7 +30,7 @@ export default function AIExplanationEntryCard({ tone = 'medical', render, ...sc
     </View>
     {state.view === 'checking' ? <Text className="ai-explanation__caption">正在查询可用状态…</Text> : navigable ? <>
       {statusLabel && <Text className={`ai-explanation__entry-status-label ai-explanation__entry-status-label--${state.view}`}>{statusLabel}</Text>}
-      {state.view === 'waiting' || state.view === 'failed' ? <View className="ai-explanation__entry-status">
+      {state.view === 'waiting' || state.view === 'failed' || state.view === 'unconfirmed' ? <View className="ai-explanation__entry-status">
         <Text className="ai-explanation__heading">{copy.title}</Text>
         <Text className="ai-explanation__caption">{copy.description}</Text>
       </View> : <Text className="ai-explanation__caption">{tone === 'personality' ? '从性格、职业与关系三个主题继续探索。仅作补充参考，不替代标准报告。' : '帮助理解维度之间的关系与日常建议，仅作补充参考，不替代标准报告。'}</Text>}

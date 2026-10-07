@@ -34,10 +34,25 @@ test('failed retryable=true refreshes existing gid, never starts a new attempt',
   expect(deps.request).toHaveBeenCalledTimes(1); expect(deps.get).toHaveBeenCalledWith(scope, '00000000-0000-4000-8000-000000000001', expect.anything());
   expect(controller.getState().view).toBe('failed');
 });
+test('held submission stops automatic polling and refresh stays GET-only', async () => {
+  deps.get.mockResolvedValue({ ...pending, submission_state: 'held' });
+  setup({ requestId: pending.requestId }); await flush();
+  expect(controller.getState().view).toBe('paused'); expect(jest.getTimerCount()).toBe(0);
+  controller.refresh(); await flush();
+  expect(deps.get).toHaveBeenCalledTimes(2); expect(deps.request).not.toHaveBeenCalled(); expect(deps.remove).not.toHaveBeenCalled();
+});
+test('a rejected admission is terminal for polling and never authorizes another POST', async () => {
+  deps.get.mockResolvedValue({ ...failed, submission_state: 'rejected' });
+  setup({ requestId: pending.requestId }); await flush();
+  expect(controller.getState().view).toBe('failed'); expect(jest.getTimerCount()).toBe(0);
+  await controller.start(); controller.refresh(); await flush();
+  expect(deps.request).not.toHaveBeenCalled(); expect(deps.remove).not.toHaveBeenCalled();
+});
 test('unknown POST and 404 retain the durable command; only explicit retry replays it', async () => {
   deps.request.mockRejectedValue({ code: '-1' }); deps.get.mockRejectedValue({statusCode:404});
   setup(); await flush(); await controller.start();
   expect(controller.getState().view).toBe('unconfirmed'); controller.hide(); controller.show(); await flush();
+  expect(controller.getState().canResumeSubmission).toBe(true);
   expect(controller.getState().view).toBe('unconfirmed'); expect(deps.request).toHaveBeenCalledTimes(1);
   expect(deps.remove).not.toHaveBeenCalled();
   deps.request.mockResolvedValue(pending);
@@ -80,6 +95,7 @@ test('a missing workflow from a link never falls back to creating another reques
   deps.get.mockRejectedValue({ statusCode: 404 }); setup({ requestId: pending.requestId }); await flush();
   expect(deps.remove).not.toHaveBeenCalled(); expect(deps.capability).not.toHaveBeenCalled();
   expect(controller.getState().view).toBe('unconfirmed'); await controller.prepare(); await flush();
+  expect(controller.getState().canResumeSubmission).toBe(false);
   expect(deps.request).not.toHaveBeenCalled(); expect(deps.get).toHaveBeenCalledTimes(2);
 });
 test('permission denial clears output and terminates polling', async () => {

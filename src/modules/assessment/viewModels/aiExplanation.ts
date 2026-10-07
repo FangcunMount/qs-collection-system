@@ -29,14 +29,19 @@ export function aiStateCopy(state: AIState): { title: string; description: strin
     case 'ready': return { title: '进一步理解这份结果', description: '基于本次测评结果，帮助理解多个维度之间的关系，并提供可以尝试的日常建议。', action: '开始解读' };
     case 'submitting': return { title: '正在提交请求', description: '请勿重复提交。你可以返回标准报告。' };
     case 'waiting': if (state.refreshError) return { title: '暂时无法更新解读状态', description: '正在尝试重新查询，标准报告仍可继续阅读。' };
+      if (state.output?.submission_state === 'submitted') return { title: '请求已保存，等待确认', description: '正在核对本次请求是否被接收。你可以先阅读标准报告，请勿重复提交。' };
       return { title: state.output?.status === 'pending' ? '请求已提交，等待开始' : '解读正在生成',
       description: state.longWait ? '所需时间较长，你可以先阅读标准报告，稍后再查看。' : '你可以返回标准报告，稍后再查看。' };
     case 'failed': return { title: '本次深度解读未完成', description: state.output?.failure?.safe_message || '本次未能提供可展示的补充解读，标准报告仍可正常阅读。', action: '刷新状态' };
     case 'limited': return { title: '请求暂受限制', description: state.retryAt ? `请在 ${new Date(state.retryAt).toLocaleString()} 后再试，标准报告仍可正常阅读。` : '请稍后再试，标准报告仍可正常阅读。', action: '刷新状态' };
     case 'storageUnavailable': return { title: '暂时无法保存解读请求', description: '请检查设备存储后重试，标准报告仍可正常阅读。', action: '刷新状态' };
     case 'preparationFailed': return { title: '暂时无法准备解读请求', description: '本次请求尚未发送，请刷新后重试。标准报告仍可正常阅读。', action: '刷新状态' };
-    case 'unconfirmed': return { title: '暂未确认请求结果', description: '暂时无法确认请求是否已被接收。继续核对同一次请求，避免重复提交。', action: '核对请求结果' };
-    case 'paused': return { title: '暂时无法更新解读状态', description: '可以稍后回来查看。已接收的请求不会因为离开页面而取消。', action: '刷新状态' };
+    case 'unconfirmed': return { title: '暂未确认请求结果', description: state.canResumeSubmission
+      ? '暂时无法确认请求是否已被接收。可沿用原请求编号与原报告继续提交，不会另建请求。'
+      : '暂时无法确认请求是否已被接收。继续核对同一次请求，避免重复提交。',
+      action: state.canResumeSubmission ? '继续提交本次请求' : '核对请求结果' };
+    case 'paused': if (state.output?.submission_state === 'held') return { title: '本次请求暂待核对', description: '请求信息已保留，暂未确认可以继续执行。请稍后刷新或联系工作人员，不要重复提交。', action: '刷新状态' };
+      return { title: '暂时无法更新解读状态', description: '可以稍后回来查看。已接收的请求不会因为离开页面而取消。', action: '刷新状态' };
     case 'unsupported': return { title: '当前版本暂不支持展示', description: '这份解读的数据格式暂不受支持，请继续阅读标准报告。' };
     case 'forbidden': return { title: '无法访问这份解读', description: '当前账号没有访问权限，请返回标准报告。' };
     case 'authRequired': return { title: '请先完成登录', description: '登录后可查看深度解读。请返回“我的”完成登录后再进入。' };

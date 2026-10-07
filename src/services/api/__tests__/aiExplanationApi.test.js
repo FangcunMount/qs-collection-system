@@ -9,9 +9,11 @@ const source = { status: 'ready', report_id: '99', source_version: 'standard-v1:
 const completed = { status: 'completed', request_id: requestId, version: 3, artifact_id: generated.artifact_id, report_id: '99', source_version: 'standard-v1:101', content: generated.content };
 const submitted = { request_id: requestId, status: 'submitted', operation_id: requestId, command_id: requestId,
   status_url: `/api/v1/interpretation/ai-workflow/operations/${requestId}?testee_id=${scope.testeeId}&assessment_id=${scope.assessmentId}&request_id=${requestId}` };
+const operation = { operation_id: requestId, command_id: requestId, resource_id: requestId, status: 'submitted', transport_status: 'awaiting_receipt' };
 test('MQ submission waits for the original authorized workflow without resending or inventing business acceptance', async () => {
   request.mockResolvedValueOnce(submitted)
     .mockResolvedValueOnce({ request_id: requestId, status: 'accepted', version: 0 })
+    .mockResolvedValueOnce(operation)
     .mockResolvedValueOnce({ request_id: requestId, status: 'running', version: 2 })
     .mockResolvedValueOnce(completed).mockResolvedValueOnce(source);
   const output = await requestAIExplanation(scope, { requestId, reportId: '99' });
@@ -21,7 +23,71 @@ test('MQ submission waits for the original authorized workflow without resending
   expect((await getAIExplanation(scope, requestId)).status).toBe('generating');
   expect((await getAIExplanation(scope, requestId)).status).toBe('generated');
   expect(request.mock.calls.filter(call => call[2].method === 'POST')).toHaveLength(1);
-  expect(request.mock.calls.slice(1, 4).every(call => call[0] === `/assessments/${scope.assessmentId}/ai-workflows/${requestId}`)).toBe(true);
+  expect(request.mock.calls.filter(call => call[0] === `/assessments/${scope.assessmentId}/ai-workflows/${requestId}`)).toHaveLength(3);
+});
+
+test('missing workflow queries the scoped original operation with GET only', async () => {
+  const lifetime = { isActive: () => true };
+  request.mockRejectedValueOnce({ statusCode: 404 }).mockResolvedValueOnce(operation);
+  expect(await getAIExplanation(scope, requestId, lifetime)).toMatchObject({ status: 'pending', submission_state: 'submitted', requestId });
+  expect(request.mock.calls[1]).toEqual([`/interpretation/ai-workflow/operations/${requestId}`, {}, expect.objectContaining({
+    method: 'GET', lifetime, retry429: false, allowInteractiveLogin: false,
+    params: { testee_id: scope.testeeId, assessment_id: scope.assessmentId, request_id: requestId },
+  })]);
+  expect(request.mock.calls.every(call => call[2].method === 'GET')).toBe(true);
+});
+test('a confirmed business refusal stops waiting without rendering receipt text or resending', async () => {
+  request.mockResolvedValueOnce({ request_id: requestId, status: 'accepted', version: 0 })
+    .mockResolvedValueOnce({ ...operation, status: 'rejected', decision: 'rejected', transport_status: 'confirmed',
+      code: 'private-provider-text', receipt: { sensitive: 'private-content' } });
+  const result = await getAIExplanation(scope, requestId);
+  expect(result).toMatchObject({ status: 'failed', submission_state: 'rejected', failure: { code: 'submission_rejected', retryable: false } });
+  expect(JSON.stringify(result)).not.toMatch(/private-/);
+  expect(request).toHaveBeenCalledTimes(2);
+});
+test.each([
+  { ...operation, transport_status: 'staged' },
+  { ...operation, status: 'accepted', decision: 'accepted', transport_status: 'confirmed' },
+])('transport or admission confirmation never implies generation or an artifact', async value => {
+  request.mockRejectedValueOnce({ statusCode: 404 }).mockResolvedValueOnce(value);
+  const result = await getAIExplanation(scope, requestId);
+  expect(result.status).toBe('pending'); expect(result.content).toBeUndefined(); expect(result.artifact_id).toBeUndefined();
+});
+test.each([
+  { ...operation, transport_status: 'held' },
+  { ...operation, status: 'held', decision: 'held', transport_status: 'held' },
+])('technical holds remain unresolved, rather than a business refusal', async value => {
+  request.mockRejectedValueOnce({ statusCode: 404 }).mockResolvedValueOnce(value);
+  expect(await getAIExplanation(scope, requestId)).toMatchObject({ status: 'pending', submission_state: 'held' });
+});
+test.each([
+  { ...operation, operation_id: 'other' }, { ...operation, command_id: 'other' },
+  { ...operation, resource_id: 'other' }, { ...operation, resource_id: undefined },
+  { ...operation, status: 'published' }, { ...operation, transport_status: 'unknown' },
+  { ...operation, decision: false }, { ...operation, decision: 'rejected' },
+  { ...operation, status: 'accepted', decision: 'accepted' },
+  { ...operation, status: 'rejected', decision: 'rejected' },
+  { ...operation, transport_status: 'confirmed' },
+])('an unverified operation cannot drive participant status', async value => {
+  request.mockRejectedValueOnce({ statusCode: 404 }).mockResolvedValueOnce(value);
+  await expect(getAIExplanation(scope, requestId)).rejects.toThrow();
+});
+test.each([401, 403, 429, 503])('workflow %s never falls back around a failed authorization or service read', async statusCode => {
+  request.mockRejectedValueOnce({ statusCode });
+  await expect(getAIExplanation(scope, requestId)).rejects.toMatchObject({ statusCode });
+  expect(request).toHaveBeenCalledTimes(1);
+});
+test.each([401, 403, 429, 503])('operation %s is preserved, never converted to a missing request', async statusCode => {
+  request.mockRejectedValueOnce({ statusCode: 404 }).mockRejectedValueOnce({ statusCode });
+  await expect(getAIExplanation(scope, requestId)).rejects.toMatchObject({ statusCode });
+  expect(request).toHaveBeenCalledTimes(2);
+});
+test('two missing reads retain an uncertain request, while an older server preserves a known pending request', async () => {
+  request.mockRejectedValueOnce({ statusCode: 404 }).mockRejectedValueOnce({ statusCode: 404 });
+  await expect(getAIExplanation(scope, requestId)).rejects.toMatchObject({ statusCode: 404 });
+  request.mockResolvedValueOnce({ request_id: requestId, status: 'accepted', version: 0 }).mockRejectedValueOnce({ statusCode: 404 });
+  expect(await getAIExplanation(scope, requestId)).toMatchObject({ status: 'pending', workflow_version: 0 });
+  expect(request.mock.calls.every(call => call[2].method === 'GET')).toBe(true);
 });
 test.each([
   { ...submitted, request_id: 'other' }, { ...submitted, operation_id: 'other' },
