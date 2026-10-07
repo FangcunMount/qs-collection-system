@@ -49,7 +49,7 @@ export default function AIExplanationPage() {
           <PersonalityReportBrand />
           <MBTIReportSource key={output?.artifact_id} report={source.report} loading={source.loading} onReturn={returnToReport} />
         </> : <View className="ai-explanation__reading-header ai-explanation__row">
-          <View><Text className="ai-explanation__label">本次测评 · AI 补充解读</Text><Text className="ai-explanation__title">补充解读已生成</Text></View>
+          <View><Text className="ai-explanation__label">本次测评 · 深度解读</Text><Text className="ai-explanation__title">深度解读已生成</Text></View>
           <AIExplanationIllustration size="small" />
         </View>}
         <AIExplanationContent content={generated} references={output?.reference_material} onTopicSelect={mbti ? selectTopic : undefined} />

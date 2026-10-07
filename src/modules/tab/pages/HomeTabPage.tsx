@@ -146,13 +146,13 @@ const HomeIndex = () => {
 
   const openAllServices = async () => {
     try {
-      const result = await Taro.showActionSheet({ itemList: ["医学量表", "人格探索", "行为能力"] });
+      const result = await Taro.showActionSheet({ itemList: ["量表", "人格探索", "行为能力"] });
       const destinations = [routes.tabScales(), routes.personalityCatalog(), routes.abilityCatalog()];
       if (destinations[result.tapIndex]) Taro.navigateTo({ url: destinations[result.tapIndex] });
     } catch (_) { /* Dismissing the native menu leaves the home unchanged. */ }
   };
   const services = subject.age === null ? [
-    { key: "medical", title: "医学量表", desc: "了解当下状态", image: emotionIcon, icon: "list", tone: "mint", url: routes.tabScales() },
+    { key: "medical", title: "量表", desc: "了解当下状态", image: emotionIcon, icon: "list", tone: "mint", url: routes.tabScales() },
     { key: "personality", title: "人格探索", desc: "发现自己的特点", icon: "user", tone: "sand", url: routes.personalityCatalog() },
     { key: "ability", title: "行为能力", desc: "理解日常行为", icon: "chart", tone: "peach", url: routes.abilityCatalog() },
     { key: "sleep", title: "睡眠", desc: "关注休息与精力", image: sleepIcon, icon: "clock", tone: "lavender", url: routes.scaleList({ category: "slp" }) },
@@ -249,13 +249,13 @@ const HomeIndex = () => {
       <SurfaceCard className="home-records-link home-tasks-link" onClick={() => Taro.navigateTo({ url: routes.pendingTasks() })}><Icon name="list" size={22} /><Text className="home-records-link__title">待填写任务</Text><Text>查看任务 ›</Text></SurfaceCard>
       <SurfaceCard className="home-records-link" onClick={handleViewRecords}><Icon name="records" size={22} /><Text className="home-records-link__title">评估记录</Text><Text>查看记录 ›</Text></SurfaceCard>
       {currentTestee ? <>
-        <View className="home-recent-toggle" onClick={() => setShowReports(value => !value)}><Text>最近医学报告</Text><Text>{showReports ? "收起 ⌃" : "展开 ⌄"}</Text></View>
+        <View className="home-recent-toggle" onClick={() => setShowReports(value => !value)}><Text>最近量表报告</Text><Text>{showReports ? "收起 ⌃" : "展开 ⌄"}</Text></View>
         {showReports ? <View className="home-report-list">
           {recentLoading ? <StatePanel state="loading" title="正在同步最近报告" compact />
             : recentError ? <StatePanel state="error" title="最近报告同步失败" description={recentError} actionText="重新加载" onAction={() => loadRecentAssessments(currentTestee.id)} compact />
             : recentAssessments.length ? recentAssessments.map(assessment => <SurfaceCard key={assessment.id || assessment.answerSheetId} className="home-report-row" onClick={() => handleViewReport(assessment)}>
               <View><Text className="home-report-row__title">{assessment.title}</Text><Text className="home-report-row__time">{assessment.completedAt}</Text></View><Icon name="arrow-right" size={18} />
-            </SurfaceCard>) : <StatePanel state="empty" title="该成员暂无医学报告" description="完成医学量表后可在这里查看。" compact />}
+            </SurfaceCard>) : <StatePanel state="empty" title="该成员暂无量表报告" description="完成量表测评后可在这里查看。" compact />}
         </View> : null}
       </> : null}
       <Text className="home-disclaimer">量表适用范围以具体说明为准</Text>

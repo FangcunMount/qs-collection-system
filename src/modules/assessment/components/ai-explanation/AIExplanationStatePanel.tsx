@@ -26,7 +26,7 @@ export default function AIExplanationStatePanel({ state, tone, report, onAction,
   return <View className={`ai-explanation__state ai-explanation__stack ${active ? 'ai-explanation__state--waiting' : ''}`}>
     <View className="ai-explanation__state-header">
       <View className="ai-explanation__state-intro">
-        <Text className="ai-explanation__label">{tone === 'personality' ? 'Qlume · 人格探索' : 'Qlume · AI 补充解读'}</Text>
+        <Text className="ai-explanation__label">{tone === 'personality' ? 'Qlume · 人格探索' : 'Qlume · 深度解读'}</Text>
         <Text className="ai-explanation__title">{ready && tone === 'personality' ? '从三个主题继续探索' : copy.title}</Text>
       </View>
       {showCharacter ? <Image className="ai-explanation__state-character" src={imageUrl} mode="aspectFit" onError={() => setFailedImage(imageUrl)} />
@@ -48,7 +48,7 @@ export default function AIExplanationStatePanel({ state, tone, report, onAction,
       </View>)}</View>
       <Text className="ai-explanation__caption">{tone === 'personality'
         ? '区分测评事实、通用参考与自我核对。不用于岗位适配或伴侣匹配定论。'
-        : 'AI 内容不替代标准报告与专业判断。'}</Text>
+        : '自动生成内容不替代标准报告与专业判断。'}</Text>
     </SurfaceCard>}
     {ready && <Text className="ai-explanation__privacy-note">只使用本次测评的结构化结果，不读取原始答案或历史测评。</Text>}
     {active && <View className="ai-explanation__waiting-cue">

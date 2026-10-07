@@ -21,7 +21,7 @@ const click = (tree, label) => act(() => tree.root.findAllByType(ActionButton).f
 
 test('entry navigates with the report scope and never starts generation', () => {
   const tree = renderer.create(<AIExplanationEntryCard assessmentId="101" testeeId="201" />);
-  click(tree, '请求 AI 解读'); expect(Taro.navigateTo).toHaveBeenCalledWith({ url: '/pages/assessment/ai-explanation/index?aid=101&t=201' });
+  click(tree, '请求深度解读'); expect(Taro.navigateTo).toHaveBeenCalledWith({ url: '/pages/assessment/ai-explanation/index?aid=101&t=201' });
   expect(model.start).not.toHaveBeenCalled(); tree.unmount();
 });
 test('detail mount does not POST, only start button does', () => {
@@ -43,7 +43,7 @@ test('failed refresh does not call start; uncertain request requires preparation
 });
 test('disabled capability explains availability without allowing generation', () => {
   model.state = { view: 'unavailable', output: { status: 'not_applicable', reason_code: 'feature_disabled', source_state: 'unknown' } };
-  const entry = renderer.create(<AIExplanationEntryCard assessmentId="101" testeeId="201" />); expect(textOf(entry)).toContain('AI 解读尚未开放');
+  const entry = renderer.create(<AIExplanationEntryCard assessmentId="101" testeeId="201" />); expect(textOf(entry)).toContain('深度解读尚未开放');
   expect(entry.root.findAllByType(ActionButton)).toHaveLength(0);
   expect(model.start).not.toHaveBeenCalled(); entry.unmount();
 });
@@ -53,16 +53,16 @@ test('stale content retains a visible source notice', () => {
 });
 
 test.each([
-  ['source_not_supported', '本次报告暂不支持 AI 解读'],
-  ['profile_unresolved', '本量表的 AI 解读暂未开放'],
-  ['profile_mismatch', '本量表的 AI 解读暂未开放'],
-  ['publication_missing', '本次报告的 AI 解读尚未开放'],
-  ['publication_paused', '本次报告的 AI 解读已暂停'],
-  ['source_incomplete', '本次报告暂无法生成 AI 解读'],
-  ['source_conflict', '本次报告暂无法生成 AI 解读'],
-  ['unsupported_model_version', '本次报告暂不支持 AI 解读'],
-  ['asset_invalid', 'AI 解读配置暂不可用'],
-  ['not_applicable', '本次报告暂无法提供 AI 解读'],
+  ['source_not_supported', '本次报告暂不支持深度解读'],
+  ['profile_unresolved', '本量表的深度解读暂未开放'],
+  ['profile_mismatch', '本量表的深度解读暂未开放'],
+  ['publication_missing', '本次报告的深度解读尚未开放'],
+  ['publication_paused', '本次报告的深度解读已暂停'],
+  ['source_incomplete', '本次报告暂无法生成深度解读'],
+  ['source_conflict', '本次报告暂无法生成深度解读'],
+  ['unsupported_model_version', '本次报告暂不支持深度解读'],
+  ['asset_invalid', '深度解读配置暂不可用'],
+  ['not_applicable', '本次报告暂无法提供深度解读'],
 ])('unavailable reason %s is visible without a misleading request action', (reason, copy) => {
   model.state = { view: 'unavailable', output: { status: 'not_applicable', reason_code: reason, source_state: 'current' } };
   const entry = renderer.create(<AIExplanationEntryCard assessmentId="101" testeeId="201" />);
@@ -73,7 +73,7 @@ test.each([
 });
 test('personality entry retains its report kind and detail can return from a direct link', () => {
   const entry = renderer.create(<AIExplanationEntryCard assessmentId="101" testeeId="201" tone="personality" />);
-  click(entry, '请求 AI 解读');
+  click(entry, '请求深度解读');
   expect(Taro.navigateTo).toHaveBeenCalledWith({ url: '/pages/assessment/ai-explanation/index?aid=101&t=201&kind=personality' });
   entry.unmount();
   Taro.__setRouterParams({ aid: '101', t: '201', kind: 'personality' });
@@ -123,7 +123,7 @@ test('waiting refresh reads the original request and never exposes a new-generat
 
 test.each([
   ['waiting', pending, '解读正在生成 · 查看进度'],
-  ['generated', generated, '查看 AI 解读'],
+  ['generated', generated, '查看深度解读'],
   ['failed', failed, '本次解读未完成 · 查看状态'],
 ])('report entry reopens the existing %s request in the same scope', (view, output, label) => {
   model.state = { view, output, requestId: pending.requestId };
