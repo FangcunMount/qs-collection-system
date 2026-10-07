@@ -7,9 +7,12 @@ export interface MBTIReferenceEntry {
   entry_id: string; topic: MBTITheme; axis: string; pole: string; content: string
   source_ids: string[]; usage_boundary: string
 }
-export interface MBTIReferenceSelection {
+type MBTIReferenceModel =
+  | { model_code: 'MBTI_OEJTS'; model_version: 'v64-report-202608-v1' }
+  | { model_code: 'MBTI_FC_93'; model_version: 'v55-report-202608-v1' }
+export type MBTIReferenceSelection = MBTIReferenceModel & {
   schema_version: 'mbti-reference-selection/v1'; version: string
-  model_code: 'MBTI_OEJTS'; model_version: 'v64-report-202608-v1'; type_code: string
+  type_code: string
   sources: MBTIReferenceSource[]; entries: MBTIReferenceEntry[]
 }
 export interface MBTIFrozenReferences { content: MBTIReferenceSelection; fingerprint: string }
@@ -40,8 +43,9 @@ function entry(v: unknown): v is MBTIReferenceEntry {
 }
 export function isMBTIReferenceSelection(v: unknown): v is MBTIReferenceSelection {
   if (!object(v) || !keys(v, ['schema_version', 'version', 'model_code', 'model_version', 'type_code', 'sources', 'entries']) ||
-    v.schema_version !== 'mbti-reference-selection/v1' || v.model_code !== 'MBTI_OEJTS' ||
-    v.model_version !== 'v64-report-202608-v1' ||
+    v.schema_version !== 'mbti-reference-selection/v1' ||
+    !((v.model_code === 'MBTI_OEJTS' && v.model_version === 'v64-report-202608-v1') ||
+      (v.model_code === 'MBTI_FC_93' && v.model_version === 'v55-report-202608-v1')) ||
     typeof v.version !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$/.test(v.version) ||
     typeof v.type_code !== 'string' || !/^[EI][SN][TF][JP]$/.test(v.type_code) ||
     !Array.isArray(v.sources) || v.sources.length < 1 || v.sources.length > 8 || !v.sources.every(source) ||
