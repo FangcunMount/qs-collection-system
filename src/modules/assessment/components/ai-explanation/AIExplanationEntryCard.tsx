@@ -17,6 +17,8 @@ export default function AIExplanationEntryCard({ tone = 'medical', render, ...sc
 }) {
   const { state, refresh } = useAIExplanation(scope, { poll: false });
   const copy = aiStateCopy(state);
+  const statusLabel = state.view === 'generated' ? '已生成' : state.view === 'waiting'
+    ? state.output?.status === 'pending' ? '等待开始' : '正在生成' : state.view === 'failed' ? '未完成' : '';
   const navigable = ['ready','waiting','generated','failed'].includes(state.view);
   const label = state.view === 'generated' ? '查看 AI 解读' : state.view === 'waiting' ? '解读正在生成 · 查看进度' :
     state.view === 'failed' ? '本次解读未完成 · 查看状态' : '请求 AI 解读';
@@ -27,7 +29,11 @@ export default function AIExplanationEntryCard({ tone = 'medical', render, ...sc
       <AIExplanationIllustration size="small" />
     </View>
     {state.view === 'checking' ? <Text className="ai-explanation__caption">正在查询可用状态…</Text> : navigable ? <>
-      <Text className="ai-explanation__caption">{tone === 'personality' ? '从性格、职业与关系三个主题继续探索。仅作补充参考，不替代标准报告。' : '帮助理解维度之间的关系与日常建议，仅作补充参考，不替代标准报告。'}</Text>
+      {statusLabel && <Text className={`ai-explanation__entry-status-label ai-explanation__entry-status-label--${state.view}`}>{statusLabel}</Text>}
+      {state.view === 'waiting' || state.view === 'failed' ? <View className="ai-explanation__entry-status">
+        <Text className="ai-explanation__heading">{copy.title}</Text>
+        <Text className="ai-explanation__caption">{copy.description}</Text>
+      </View> : <Text className="ai-explanation__caption">{tone === 'personality' ? '从性格、职业与关系三个主题继续探索。仅作补充参考，不替代标准报告。' : '帮助理解维度之间的关系与日常建议，仅作补充参考，不替代标准报告。'}</Text>}
       <ActionButton tone={tone} className={tone === 'personality' ? 'mbti-report-entry-action' : ''} variant="secondary" block onClick={onOpen}>{label}</ActionButton>
     </> : <>
       <Text className="ai-explanation__heading">{copy.title}</Text>
