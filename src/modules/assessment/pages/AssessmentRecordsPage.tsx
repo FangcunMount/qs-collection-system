@@ -1,4 +1,7 @@
+import { getLogger as getPrivacyLogger } from '@/shared/lib/logger';
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { View } from "@tarojs/components";
+import FilterChip from "@/shared/ui/FilterChip";
 import Taro, { useRouter } from "@tarojs/taro";
 
 import BottomMenu from "@/shared/ui/BottomMenu";
@@ -20,6 +23,8 @@ import {
 import StatePanel from "@/shared/ui/StatePanel";
 import "./AssessmentRecordsPage.less";
 
+const privacyLogger = getPrivacyLogger('modules/assessment/pages/AssessmentRecordsPage.tsx');
+
 interface TesteeStoreSnapshot {
   testeeList: RecordTesteeOption[];
   selectedTesteeId: string;
@@ -27,9 +32,11 @@ interface TesteeStoreSnapshot {
 
 const AssessmentRecordsPage = () => {
   const router = useRouter();
-  const assessmentKind = normalizeAssessmentKind(
+  const routeKind = normalizeAssessmentKind(
     router.params?.kind || router.params?.assessment_kind,
   ) || ASSESSMENT_KIND.MEDICAL;
+  const [assessmentKind, setAssessmentKind] = useState(routeKind);
+  useEffect(() => { setAssessmentKind(routeKind); }, [routeKind]);
   const tone = assessmentKind as DomainTone;
   const isMedicalReport = assessmentKind === ASSESSMENT_KIND.MEDICAL;
   const [selectedTestee, setSelectedTestee] = useState<RecordTesteeOption | null>(() => {
@@ -41,6 +48,14 @@ const AssessmentRecordsPage = () => {
   const [statusFilter, setStatusFilter] = useState("");
   const [showFilterSheet, setShowFilterSheet] = useState(false);
   const [scaleCapsuleInfo, setScaleCapsuleInfo] = useState<ScaleCapsuleInfo | null>(null);
+
+  const selectKind = (kind: typeof assessmentKind) => {
+    if (kind === assessmentKind) return;
+    setStatusFilter("");
+    setShowFilterSheet(false);
+    setScaleCapsuleInfo(null);
+    setAssessmentKind(kind);
+  };
 
   const jumpToRegister = useCallback(() => {
     Taro.redirectTo({
@@ -65,7 +80,7 @@ const AssessmentRecordsPage = () => {
       setSelectedTestee(storedList.find(item => item.id === currentSelectedId) || null);
     } catch (error) {
       if (!mounted.current) return;
-      console.error("初始化档案列表失败:", error);
+      privacyLogger.ERROR("初始化档案列表失败:", error);
       Taro.showToast({ title: "加载档案列表失败", icon: "none" });
     }
   }, [jumpToRegister]);
@@ -87,6 +102,16 @@ const AssessmentRecordsPage = () => {
   return (
     <>
       <PageShell globalTestee tone={tone} className="assessment-record-page">
+        <View className="assessment-record-kinds">
+          {[
+            { key: ASSESSMENT_KIND.MEDICAL, label: "量表" },
+            { key: ASSESSMENT_KIND.PERSONALITY, label: "人格" },
+            { key: ASSESSMENT_KIND.ABILITY, label: "行为能力" },
+          ].map(item => <FilterChip key={item.key} tone={item.key as DomainTone}
+            selected={assessmentKind === item.key} onClick={() => selectKind(item.key)}>
+            {item.label}
+          </FilterChip>)}
+        </View>
         {selectedTestee ? (
           <>
             <AssessmentRecordFilterBar
@@ -106,7 +131,9 @@ const AssessmentRecordsPage = () => {
               showFilterBar
               emptyText={isMedicalReport
                 ? "完成量表测评后，报告将在这里展示。"
-                : "完成人格或能力测评后，报告将在这里展示。"}
+                : assessmentKind === ASSESSMENT_KIND.PERSONALITY
+                  ? "完成人格测评后，报告将在这里展示。"
+                  : "完成行为能力测评后，报告将在这里展示。"}
               showFilterSheet={showFilterSheet}
               onCloseFilterSheet={() => setShowFilterSheet(false)}
               onScaleCapsuleInfo={setScaleCapsuleInfo}

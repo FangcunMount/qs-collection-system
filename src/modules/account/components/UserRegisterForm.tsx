@@ -1,3 +1,4 @@
+import { getLogger as getPrivacyLogger } from '@/shared/lib/logger';
 import React, { useEffect, useRef, useState } from "react";
 import { Text, View } from "@tarojs/components";
 import Taro from "@tarojs/taro";
@@ -20,6 +21,8 @@ import {
 import { registerUser } from "./registerUser";
 import UserRegisterFields from "./UserRegisterFields";
 import "./RegisterForm.less";
+
+const privacyLogger = getPrivacyLogger('modules/account/components/UserRegisterForm.tsx');
 
 interface UserRegisterFormProps {
   goUrl?: string;
@@ -99,7 +102,7 @@ const UserRegisterForm = ({ goUrl = "", submitClose = false }: UserRegisterFormP
           return;
         }
       } catch (loginError: unknown) {
-        console.warn("[UserRegisterForm] 自动登录失败，回退到原有跳转逻辑", loginError);
+        privacyLogger.WARN("[UserRegisterForm] 自动登录失败，回退到原有跳转逻辑", loginError);
       }
       afterSubmit();
     } catch (error: unknown) {

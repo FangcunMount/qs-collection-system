@@ -1,3 +1,6 @@
+import { getLogger as getPrivacyLogger } from '@/shared/lib/logger';
+
+const privacyLogger = getPrivacyLogger('shared/lib/dateFormatters.js');
 /**
  * 日期格式化工具函数（原生 Date 实现，避免引入 moment）
  */
@@ -132,7 +135,7 @@ export const parseDateSafe = (dateStr) => {
       return parsed;
     }
   } catch (e) {
-    console.warn('日期解析失败:', dateStr, e);
+    privacyLogger.WARN('日期解析失败:', dateStr, e);
   }
 
   return new Date();

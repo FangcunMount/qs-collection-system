@@ -1,5 +1,8 @@
+import { getLogger as getPrivacyLogger } from '@/shared/lib/logger';
 import Taro from '@tarojs/taro';
 import { clearPrivateSessionState } from '@/shared/stores/sessionPrivacy';
+
+const privacyLogger = getPrivacyLogger('store/tokenStore.ts');
 
 /**
  * Token 数据结构
@@ -107,7 +110,7 @@ function loadFromStorage(): TokenData | null {
 
     return normalizeTokenData(stored);
   } catch (e) {
-    console.error('[TokenStore] 从本地存储加载失败:', e);
+    privacyLogger.ERROR('[TokenStore] 从本地存储加载失败:', e);
     return null;
   }
 }
@@ -118,24 +121,24 @@ function loadFromStorage(): TokenData | null {
  */
 function saveToStorage(tokenData: TokenData): void {
   try {
-    console.log('[TokenStore] 准备保存到本地存储:', {
+    privacyLogger.RUN('[TokenStore] 准备保存到本地存储:', {
       hasAccessToken: !!tokenData.access_token,
       hasRefreshToken: !!tokenData.refresh_token,
       accessTokenLength: tokenData.access_token?.length,
       refreshTokenLength: tokenData.refresh_token?.length
     });
     Taro.setStorageSync(STORAGE_KEY, tokenData);
-    console.log('[TokenStore] Token 已保存到本地存储');
+    privacyLogger.RUN('[TokenStore] Token 已保存到本地存储');
     
     // 验证保存是否成功
     const verified = Taro.getStorageSync(STORAGE_KEY);
-    console.log('[TokenStore] 保存验证:', {
+    privacyLogger.RUN('[TokenStore] 保存验证:', {
       saved: !!verified,
       hasAccessToken: !!verified?.access_token,
       hasRefreshToken: !!verified?.refresh_token
     });
   } catch (e) {
-    console.error('[TokenStore] 保存到本地存储失败:', e);
+    privacyLogger.ERROR('[TokenStore] 保存到本地存储失败:', e);
   }
 }
 
@@ -205,13 +208,13 @@ export function getTokenData(): TokenData | null {
  */
 export function setToken(token: TokenInput, refreshToken?: string): void {
   if (!token) {
-    console.warn('[TokenStore] 尝试设置空 token');
+    privacyLogger.WARN('[TokenStore] 尝试设置空 token');
     return;
   }
 
   const tokenData = normalizeTokenData(token, refreshToken);
   if (!tokenData) {
-    console.error('[TokenStore] 无效的 token 格式');
+    privacyLogger.ERROR('[TokenStore] 无效的 token 格式');
     return;
   }
 
@@ -223,16 +226,16 @@ export function setToken(token: TokenInput, refreshToken?: string): void {
   // 强制更新 updated_at 为当前时间（除非明确传入了 updated_at）
   if (!('updated_at' in (token as object))) {
     tokenData.updated_at = Date.now();
-    console.log('[TokenStore] 强制更新 updated_at:', new Date(tokenData.updated_at).toISOString());
+    privacyLogger.RUN('[TokenStore] 强制更新 updated_at:', new Date(tokenData.updated_at).toISOString());
   } else {
-    console.log('[TokenStore] 保留传入的 updated_at:', new Date(tokenData.updated_at).toISOString());
+    privacyLogger.RUN('[TokenStore] 保留传入的 updated_at:', new Date(tokenData.updated_at).toISOString());
   }
 
   state.tokenData = tokenData;
   saveToStorage(tokenData);
   notify();
 
-  console.log('[TokenStore] Token 已更新', {
+  privacyLogger.RUN('[TokenStore] Token 已更新', {
     hasAccessToken: !!tokenData.access_token,
     hasRefreshToken: !!tokenData.refresh_token,
     tokenType: tokenData.token_type,
@@ -264,7 +267,7 @@ export function updateAccessToken(newAccessToken: string, newRefreshToken?: stri
   saveToStorage(state.tokenData);
   notify();
 
-  console.log('[TokenStore] Access token 已更新');
+  privacyLogger.RUN('[TokenStore] Access token 已更新');
 }
 
 /**
@@ -276,9 +279,9 @@ export function clearToken(): void {
 
   try {
     Taro.removeStorageSync(STORAGE_KEY);
-    console.log('[TokenStore] Token 已清除');
+    privacyLogger.RUN('[TokenStore] Token 已清除');
   } catch (e) {
-    console.error('[TokenStore] 清除 token 失败:', e);
+    privacyLogger.ERROR('[TokenStore] 清除 token 失败:', e);
   }
 
   notify();
@@ -307,7 +310,7 @@ export function isTokenExpired(advanceTime: number = 5 * 60 * 1000): boolean {
   const expireTime = (tokenData.updated_at || tokenData.created_at) + tokenData.expires_in * 1000;
   const remaining = expireTime - advanceTime - now;
   
-  console.log('[TokenStore] Token 过期检查:', {
+  privacyLogger.RUN('[TokenStore] Token 过期检查:', {
     now: new Date(now).toISOString(),
     updated_at: new Date(tokenData.updated_at || tokenData.created_at).toISOString(),
     expires_in: tokenData.expires_in + '秒',
@@ -367,10 +370,10 @@ export function initTokenStore(): void {
   const stored = loadFromStorage();
   if (stored) {
     state.tokenData = stored;
-    console.log('[TokenStore] 已从本地存储加载 token');
+    privacyLogger.RUN('[TokenStore] 已从本地存储加载 token');
     notify();
   } else {
-    console.log('[TokenStore] 本地存储中无 token');
+    privacyLogger.RUN('[TokenStore] 本地存储中无 token');
   }
 }
 

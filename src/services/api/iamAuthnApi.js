@@ -1,6 +1,9 @@
+import { getLogger as getPrivacyLogger } from '@/shared/lib/logger';
 import { request } from '../servers';
 import config from '../../config';
 import { isSessionExpiredCode, isUnregisteredCode } from '../auth/authorization';
+
+const privacyLogger = getPrivacyLogger('services/api/iamAuthnApi.js');
 
 function maskIdentifier(value) {
   if (!value) return '';
@@ -97,7 +100,7 @@ function buildWechatMiniProgramSignupPayload(code, appId, profile = {}) {
  */
 export const login = async (code, appId) => {
   const resolvedAppId = appId || config.appId;
-  console.info('[IAM Authn] 发起登录请求', {
+  privacyLogger.RUN('[IAM Authn] 发起登录请求', {
     method: 'wechat',
     host: config.iamAuthnHost,
     appId: maskIdentifier(resolvedAppId),
@@ -121,9 +124,9 @@ export const login = async (code, appId) => {
 
     const result = createTokenResult(payload);
     if (result.ok) {
-      console.info('[IAM Authn] 登录成功', summarizeTokenPayload(payload));
+      privacyLogger.RUN('[IAM Authn] 登录成功', summarizeTokenPayload(payload));
     } else {
-      console.warn('[IAM Authn] 登录响应结构异常', {
+      privacyLogger.WARN('[IAM Authn] 登录响应结构异常', {
         reason: result.reason,
         message: result.message,
         payloadKeys: Object.keys(payload || {})
@@ -132,7 +135,7 @@ export const login = async (code, appId) => {
     return result;
   } catch (error) {
     const normalized = normalizeAuthError(error, 'network_error');
-    console.warn('[IAM Authn] 登录失败', {
+    privacyLogger.WARN('[IAM Authn] 登录失败', {
       reason: normalized.reason,
       ...summarizeAuthError(error)
     });
@@ -146,7 +149,7 @@ export const login = async (code, appId) => {
  * @returns {Promise<{ok: boolean, accessToken?: string, refreshToken?: string, tokenType?: string, expiresIn?: number, reason?: string, message?: string}>}
  */
 export const refreshToken = async (refreshTokenValue) => {
-  console.info('[IAM Authn] 发起刷新请求', {
+  privacyLogger.RUN('[IAM Authn] 发起刷新请求', {
     host: config.iamAuthnHost,
     hasRefreshToken: Boolean(refreshTokenValue),
     refreshTokenLength: refreshTokenValue?.length ?? 0
@@ -164,9 +167,9 @@ export const refreshToken = async (refreshTokenValue) => {
 
     const result = createTokenResult(payload);
     if (result.ok) {
-      console.info('[IAM Authn] 刷新成功', summarizeTokenPayload(payload));
+      privacyLogger.RUN('[IAM Authn] 刷新成功', summarizeTokenPayload(payload));
     } else {
-      console.warn('[IAM Authn] 刷新响应结构异常', {
+      privacyLogger.WARN('[IAM Authn] 刷新响应结构异常', {
         reason: result.reason,
         message: result.message,
         payloadKeys: Object.keys(payload || {})
@@ -175,7 +178,7 @@ export const refreshToken = async (refreshTokenValue) => {
     return result;
   } catch (error) {
     const normalized = normalizeAuthError(error, 'session_expired');
-    console.warn('[IAM Authn] 刷新失败', {
+    privacyLogger.WARN('[IAM Authn] 刷新失败', {
       reason: normalized.reason,
       ...summarizeAuthError(error)
     });

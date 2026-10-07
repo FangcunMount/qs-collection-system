@@ -1,5 +1,8 @@
+import { getLogger as getPrivacyLogger } from '@/shared/lib/logger';
 import { getAssessments, extractAssessmentList } from '@/services/api/assessments';
 import { COLLECTION_API_CAPABILITIES, isAssessmentsListUnavailableError } from '@/shared/config/collectionApiCapabilities';
+
+const privacyLogger = getPrivacyLogger('modules/assessment/services/loadMedicalAssessmentRecords.js');
 
 const emptyMedicalListResult = (pageSize = 20) => ({
   items: [],
@@ -65,7 +68,7 @@ export async function loadMedicalAssessmentRecords(params = {}) {
     };
   } catch (error) {
     if (isAssessmentsListUnavailableError(error)) {
-      console.warn('[loadMedicalAssessmentRecords] GET /assessments 未在 collection-server 提供，返回空列表');
+      privacyLogger.WARN('[loadMedicalAssessmentRecords] GET /assessments 未在 collection-server 提供，返回空列表');
       return emptyMedicalListResult(pageSize);
     }
     throw error;

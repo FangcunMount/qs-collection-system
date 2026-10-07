@@ -1,3 +1,4 @@
+import { getLogger as getPrivacyLogger } from '@/shared/lib/logger';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Text, View } from "@tarojs/components";
 import Taro, { useDidHide, useDidShow } from "@tarojs/taro";
@@ -17,6 +18,8 @@ import RiskTag from "@/shared/ui/RiskTag";
 import SurfaceCard from "@/shared/ui/SurfaceCard";
 import { getAssessmentTrendSummary } from "@/services/api/assessments";
 import "./AssessmentReportTrendPage.less";
+
+const privacyLogger = getPrivacyLogger('modules/assessment/pages/AssessmentReportTrendPage.tsx');
 
 interface TrendTimelineItem {
   assessment_id: string;
@@ -124,7 +127,7 @@ const AssessmentReportTrendPage = () => {
       setSummary(data || null);
     } catch (error: unknown) {
       if (!isCurrent()) return;
-      console.error("[analysis/trend] 获取趋势摘要失败:", error);
+      privacyLogger.ERROR("[analysis/trend] 获取趋势摘要失败:", error);
       setErrorMessage(getErrorMessage(error));
     } finally {
       if (isCurrent()) setLoading(false);

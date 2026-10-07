@@ -1,3 +1,4 @@
+import { getLogger as getPrivacyLogger } from '@/shared/lib/logger';
 import Taro from '@tarojs/taro';
 import { requestCancelled } from './requestLifetime';
 
@@ -6,6 +7,8 @@ import { getUrl } from '@/shared/lib/url';
 import { getAccessToken } from '@/shared/stores/session';
 import { errorHandler, isSessionExpiredCode } from './auth/authorization';
 import sessionManager from './auth/sessionManager';
+
+const privacyLogger = getPrivacyLogger('services/servers.js');
 
 function summarizeRequestAuth(requestParams, options = {}) {
   return {
@@ -49,7 +52,7 @@ function appendQueryParams(url, query = {}) {
 function getConfigToken(quiet = false) {
   const configToken = config.token;
   if (configToken !== undefined && configToken !== null) {
-    if (!quiet) console.info('[Load Token] 从 config 配置获取 token, 长度:', configToken.length);
+    if (!quiet) privacyLogger.RUN('[Load Token] 从 config 配置获取 token, 长度:', configToken.length);
     return configToken;
   }
   return null;
@@ -63,11 +66,11 @@ function loadToken(quiet = false) {
 
   const accessToken = getAccessToken();
   if (accessToken) {
-    if (!quiet) console.info('[Load Token] 从 TokenStore 获取到 access_token, 长度:', accessToken.length);
+    if (!quiet) privacyLogger.RUN('[Load Token] 从 TokenStore 获取到 access_token, 长度:', accessToken.length);
     return accessToken;
   }
 
-  if (!quiet) console.warn('[Load Token] ⚠️ 未找到 token');
+  if (!quiet) privacyLogger.WARN('[Load Token] ⚠️ 未找到 token');
   return null;
 }
 
@@ -81,7 +84,7 @@ function loadToken(quiet = false) {
 export async function request(url, params = {}, options = {}) {
   const quiet = options.logPolicy === 'metadata_only';
   assertActive(options);
-  if (!quiet) console.log('[Request] 请求 URL:', url, '参数:', params, '选项:', options);
+  privacyLogger.RUN('[Request] 请求开始', { method: options.method || 'GET' });
 
   const requestParams = interceptorsRequest({
     ...options,
@@ -91,19 +94,19 @@ export async function request(url, params = {}, options = {}) {
 
   const configToken = getConfigToken(quiet);
   const shouldHandleAuth = requestParams.needToken && !configToken;
-  if (!quiet) console.info('[Request] 鉴权上下文', summarizeRequestAuth(requestParams, { shouldHandleAuth }));
+  if (!quiet) privacyLogger.RUN('[Request] 鉴权上下文', summarizeRequestAuth(requestParams, { shouldHandleAuth }));
 
   if (shouldHandleAuth) {
     try {
       const token = await sessionManager.ensureValidAccessToken({ allowInteractiveLogin: options.allowInteractiveLogin ?? true });
       assertActive(requestParams);
       requestParams.header['Authorization'] = `Bearer ${token}`;
-      if (!quiet) console.info('[Request] 已注入可用 access token', {
+      if (!quiet) privacyLogger.RUN('[Request] 已注入可用 access token', {
         url: requestParams.url,
         tokenLength: token?.length ?? 0
       });
     } catch (error) {
-      if (!quiet) console.error('[Request] 获取可用 access_token 失败:', error);
+      if (!quiet) privacyLogger.ERROR('[Request] 获取可用 access_token 失败:', error);
 
       if (!options.suppressErrorToast && (!error?.reason || (error.reason !== 'session_expired' && error.reason !== 'unregistered'))) {
         Taro.showToast({
@@ -180,11 +183,11 @@ function assertActive(params) {
 async function retryWithFreshToken(params, context) {
   assertActive(params);
   const quiet = params.logPolicy === 'metadata_only';
-  if (!quiet) console.info('[BaseRequest] 开始强制刷新并重放请求', summarizeRequestAuth(params, context));
+  if (!quiet) privacyLogger.RUN('[BaseRequest] 开始强制刷新并重放请求', summarizeRequestAuth(params, context));
   const newToken = await sessionManager.refreshSession();
   assertActive(params);
   params.header['Authorization'] = `Bearer ${newToken}`;
-  if (!quiet) console.info('[BaseRequest] 强制刷新成功，准备重放请求', {
+  if (!quiet) privacyLogger.RUN('[BaseRequest] 强制刷新成功，准备重放请求', {
     url: params.url,
     newTokenLength: newToken?.length ?? 0,
     nextAuthRetryCount: context.authRetryCount + 1
@@ -236,20 +239,13 @@ function baseRequest(params, context) {
         if (cancelled()) return;
         const meta = extractResponseMeta(res);
 
-        if (quiet) console.info('[Request]', { method: params.method, statusCode: meta.statusCode, code: meta.code, elapsedMs: Date.now() - startedAt });
-        if (!quiet) console.log('[BaseRequest] 原始响应:', {
-          statusCode: meta.statusCode,
-          data: meta.data,
-          dataType: typeof meta.data,
-          hasDataField: meta.data && typeof meta.data === 'object' && 'data' in meta.data,
-          dataKeys: Object.keys(meta.data)
-        });
+        privacyLogger.RUN('[Request] 请求完成', { method: params.method, statusCode: meta.statusCode, code: meta.code, elapsedMs: Date.now() - startedAt });
 
         if (meta.statusCode === QPS_STATUS_CODE) {
           const retryAfterMs = resolveRetryAfterMs(meta);
           if (params.retry429 === false || context.qpsRetryCount >= QPS_RETRY_LIMIT) {
             const throttledMessage = meta.data?.message || meta.data?.errmsg || '请求过于频繁，请稍候再试';
-            if (!quiet) console.warn('[BaseRequest] 接口返回 429，重试次数已达上限', {
+            if (!quiet) privacyLogger.WARN('[BaseRequest] 接口返回 429，重试次数已达上限', {
               url: params.url,
               qpsRetry: context.qpsRetryCount,
               limit: QPS_RETRY_LIMIT
@@ -273,7 +269,7 @@ function baseRequest(params, context) {
             retryAfterMs,
             QPS_BACKOFF_BASE_MS * Math.pow(2, context.qpsRetryCount)
           );
-          console.warn('[BaseRequest] 接口返回 429，准备重试', {
+          privacyLogger.WARN('[BaseRequest] 接口返回 429，准备重试', {
             url: params.url,
             attempt: nextAttempt,
             delayMs,
@@ -296,7 +292,7 @@ function baseRequest(params, context) {
 
         const authCode = meta.code || String(meta.statusCode || '');
         if (context.shouldHandleAuth && isSessionExpiredCode(authCode) && !(params.refreshOnForbidden === false && (meta.statusCode === 403 || authCode === '403'))) {
-          if (!quiet) console.warn('[BaseRequest] 收到会话失效响应，尝试强制刷新 token', {
+          if (!quiet) privacyLogger.WARN('[BaseRequest] 收到会话失效响应，尝试强制刷新 token', {
             url: params.url,
             statusCode: meta.statusCode,
             code: authCode,
@@ -305,7 +301,7 @@ function baseRequest(params, context) {
           });
 
           if (context.authRetryCount >= 1) {
-            if (!quiet) console.error('[BaseRequest] Token 刷新后仍然鉴权失败，结束当前会话');
+            if (!quiet) privacyLogger.ERROR('[BaseRequest] Token 刷新后仍然鉴权失败，结束当前会话');
             sessionManager.clearSession('session_expired', { navigateHome: true });
             reject(createRequestError(meta, { needRelogin: true }));
             return;
@@ -317,7 +313,7 @@ function baseRequest(params, context) {
           } catch (error) {
             if (cancelled()) return;
             if (error?.code === 'REQUEST_CANCELLED') { reject(error); return; }
-            if (!quiet) console.error('[BaseRequest] 强制刷新 token 失败:', {
+            if (!quiet) privacyLogger.ERROR('[BaseRequest] 强制刷新 token 失败:', {
               url: params.url,
               reason: error?.reason,
               code: error?.code,
@@ -403,7 +399,7 @@ function interceptorsRequest(options) {
 
   const quiet = options.logPolicy === 'metadata_only';
   const token = loadToken(quiet);
-  if (!quiet) console.log('[InterceptorsRequest] 设置 token 到 header', {
+  if (!quiet) privacyLogger.RUN('[InterceptorsRequest] 设置 token 到 header', {
     hasToken: !!token,
     url: requestParam.url
   });

@@ -118,7 +118,7 @@ const AssessmentReportPage = () => {
   }, [isAbilityReport]);
 
   const applyReport = useCallback((raw: unknown, testeeId: string) => {
-    logger.RUN("[Analysis] 原始报告数据:", raw);
+    logger.RUN("[Analysis] 报告读取完成");
     if (redirectPersonality(raw)) return false;
     const viewModel = isAbilityReport
       ? buildBehaviorReportViewModel(raw, findTesteeById(testeeId) || { id: testeeId })

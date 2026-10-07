@@ -1,3 +1,4 @@
+import { getLogger as getPrivacyLogger } from '@/shared/lib/logger';
 import React, { useCallback, useEffect, useState } from "react";
 import Taro from "@tarojs/taro";
 import { View, Text, Image } from "@tarojs/components";
@@ -24,6 +25,8 @@ import abilityImage from "@/pages/catalog-ability/assets/icon/icon-behavior-abil
 import workingMemoryImage from "@/pages/catalog-ability/assets/icon/icon-working-memory.png";
 import sensoryImage from "@/pages/catalog-ability/assets/home/category-sensory.png";
 import "./AbilityCatalogPage.less";
+
+const privacyLogger = getPrivacyLogger('modules/catalog/pages/AbilityCatalogPage.tsx');
 
 const OBSERVATION_ITEMS = Object.freeze([
   {
@@ -107,7 +110,7 @@ const AbilityCatalogPage = () => {
         : (Array.isArray(payload.items) ? payload.items : []);
       setAssessmentCards(models.map(mapAbilityCatalogCard).filter((item) => !item.disabled));
     } catch (error) {
-      console.warn("[AbilityCatalogPage] 加载行为能力模型目录失败", error);
+      privacyLogger.WARN("[AbilityCatalogPage] 加载行为能力模型目录失败", error);
       setAssessmentCards([]);
       setCatalogError("行为能力测评目录加载失败，请检查网络后重试。");
     } finally {

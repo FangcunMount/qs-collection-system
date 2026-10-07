@@ -1,3 +1,4 @@
+import { getLogger as getPrivacyLogger } from '@/shared/lib/logger';
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import Taro, { usePullDownRefresh } from "@tarojs/taro";
 import { View, Text, ScrollView, Picker } from "@tarojs/components";
@@ -19,6 +20,8 @@ import {
   type CatalogCardViewModel,
 } from "@/modules/catalog/viewModels/catalogCard";
 import "./ScaleListPage.less";
+
+const privacyLogger = getPrivacyLogger('modules/catalog/pages/ScaleListPage.tsx');
 
 const logger = getLogger("questionnaire_full_list");
 
@@ -120,7 +123,7 @@ const ScaleListPage = () => {
       });
     } catch (error) {
       if (generation !== requestGeneration.current) return;
-      console.error("加载量表列表失败:", error);
+      privacyLogger.ERROR("加载量表列表失败:", error);
       setLoadError("量表目录加载失败，请检查网络后重试。");
       Taro.showToast({ title: "加载失败，请重试", icon: "none", duration: 2000 });
     } finally {

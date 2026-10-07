@@ -1,3 +1,4 @@
+import { getLogger as getPrivacyLogger } from '@/shared/lib/logger';
 import React, { useEffect, useRef, useState } from "react";
 import Taro, { useLoad, useShareAppMessage } from "@tarojs/taro";
 
@@ -48,6 +49,8 @@ import type {
 } from "@/modules/questionnaire/types";
 import type { EntryContext } from "@/store/entryContextStore";
 import type { Testee, TesteeInput } from "@/store/testeeStore";
+
+const privacyLogger = getPrivacyLogger('modules/assessment/pages/AssessmentFillPage.tsx');
 
 const PAGE_NAME = "questionnaire_fill";
 const logger = getLogger(PAGE_NAME);
@@ -205,7 +208,7 @@ function AssessmentFillController({ paramData }: { paramData: RouteParams }) {
       if (!active.current) return;
       if (paramData.task_id && error?.reason === "unregistered") { Taro.hideLoading(); return; }
       Taro.hideLoading();
-      console.error('解析入口参数失败:', error);
+      privacyLogger.ERROR('解析入口参数失败:', error);
       redirectToEntryError({
         title: "入口解析失败",
         text: "当前测评入口无法识别",
@@ -264,7 +267,7 @@ function AssessmentFillController({ paramData }: { paramData: RouteParams }) {
       }
     } catch (error) {
       if (!active.current) return;
-      console.error('初始化页面数据失败:', error);
+      privacyLogger.ERROR('初始化页面数据失败:', error);
       Taro.hideLoading();
       Taro.showToast({ title: '加载失败，请重试', icon: 'none' });
     }
@@ -304,7 +307,7 @@ function AssessmentFillController({ paramData }: { paramData: RouteParams }) {
       Taro.hideLoading();
     } catch (error) {
       if (!active.current) return;
-      console.error('加载问卷失败:', error);
+      privacyLogger.ERROR('加载问卷失败:', error);
       Taro.hideLoading();
       if (hasEntryContext(resolvedEntryParams)) {
         redirectToEntryError({
@@ -362,7 +365,7 @@ function AssessmentFillController({ paramData }: { paramData: RouteParams }) {
       Taro.hideLoading();
     } catch (error) {
       if (!active.current) return;
-      console.error('加载数据失败:', error);
+      privacyLogger.ERROR('加载数据失败:', error);
       Taro.hideLoading();
       if (hasEntryContext(resolvedEntryParams) || nextModelCode) {
         redirectToEntryError({
@@ -408,7 +411,7 @@ function AssessmentFillController({ paramData }: { paramData: RouteParams }) {
       }
     } catch (error) {
       if (!active.current) return;
-      console.error('加载档案信息失败:', error);
+      privacyLogger.ERROR('加载档案信息失败:', error);
       Taro.hideLoading();
       Taro.showToast({ title: '加载档案信息失败', icon: 'none' });
     }

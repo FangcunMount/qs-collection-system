@@ -1,5 +1,8 @@
-import React, { useCallback, useEffect, useState } from "react";
-import Taro from "@tarojs/taro";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import Taro, { useDidHide, useDidShow } from "@tarojs/taro";
+import { createRequestLifetime, type RequestLifetime } from "@/services/requestLifetime";
+import { getSessionRevision, onSessionCleared } from "@/shared/stores/sessionPrivacy";
+import StatePanel from "@/shared/ui/StatePanel";
 import { Text as TaroText, View } from "@tarojs/components";
 
 import PageShell from "@/shared/ui/PageShell";
@@ -38,6 +41,7 @@ const noop = () => undefined;
 interface AssessmentResponseResult {
   id?: string;
   questionnaire_code?: string;
+  questionnaire_version?: string;
   answers?: AssessmentResponseAnswer[];
   assessment_id?: string;
   testee_id?: string;
@@ -45,6 +49,7 @@ interface AssessmentResponseResult {
 
 interface QuestionnaireResult {
   code?: string;
+  version?: string;
   title?: string;
   type?: string;
   questions?: AssessmentResponseQuestion[];
@@ -87,54 +92,95 @@ const AssessmentResponsePage = () => {
   const [needCloseFlag, setNeedCloseFlag] = useState(false);
   const [exportImageFlag, setExportImageFlag] = useState(false);
   const [entryContext] = useState(() => getAssessmentEntryContext());
-  const [planTaskId, setPlanTaskId] = useState("");
-
-  const initAnswerSheet = useCallback(async (id: string) => {
-    setAnswerSheetId(id);
-    try {
-      Taro.showLoading({ title: "加载中..." });
-      const answerSheetResult = await getAssessmentResponse(id) as AssessmentResponseResult;
-      logger.RUN("[AnswerSheet] 答卷数据获取成功:", {
-        id: answerSheetResult.id,
-        questionnaireCode: answerSheetResult.questionnaire_code,
-        answersCount: answerSheetResult.answers?.length,
-        assessmentId: answerSheetResult.assessment_id,
-        testeeId: answerSheetResult.testee_id,
-      });
-
-      const questionnaireResult = await getQuestionnaire(answerSheetResult.questionnaire_code || "") as QuestionnaireResult;
-      logger.RUN("[AnswerSheet] 问卷定义获取成功:", {
-        code: questionnaireResult.code,
-        title: questionnaireResult.title,
-        questionsCount: questionnaireResult.questions?.length,
-        type: questionnaireResult.type,
-      });
-      setQuestionnaireType(String(questionnaireResult.type || ""));
-      setQuestionnaireTitle(questionnaireResult.title || "");
-      setQuestions(mergeQuestionsWithAnswers(
-        questionnaireResult.questions || [],
-        answerSheetResult.answers || [],
-      ));
-    } catch (error: unknown) {
-      logger.ERROR("[AnswerSheet] 加载失败:", error);
-      const details = error as { code?: unknown; errno?: unknown; message?: string };
-      const code = String(details.code ?? details.errno ?? "");
-      if (code === "100403") setNeedCloseFlag(true);
-      else Taro.showToast({ title: details.message || "加载失败", icon: "none" });
-    } finally {
-      Taro.hideLoading();
-    }
+  const params = Taro.getCurrentInstance().router?.params || {};
+  const routeAnswerSheetId = String(params.a || "");
+  const planTaskId = String(params.task_id || "");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const requestVersion = useRef(0);
+  const lifetimeRef = useRef<RequestLifetime | null>(null);
+  const visible = useRef(true);
+  const reloadOnShow = useRef(false);
+  const clearAnswers = useCallback(() => {
+    setQuestions([]);
+    setAnswerSheetId("");
+    setQuestionnaireTitle("");
+    setQuestionnaireType("");
+    setExportImageFlag(false);
+    setNeedCloseFlag(false);
   }, []);
+  const invalidate = useCallback(() => {
+    requestVersion.current += 1;
+    lifetimeRef.current?.cancel();
+    lifetimeRef.current = null;
+  }, []);
+  useEffect(() => onSessionCleared(() => {
+    invalidate();
+    reloadOnShow.current = false;
+    clearAnswers();
+    setLoading(false);
+    setError("登录状态已变化，请重新打开答卷。");
+  }), [clearAnswers, invalidate]);
 
+  const initAnswerSheet = useCallback(async () => {
+    invalidate();
+    const version = requestVersion.current;
+    const session = getSessionRevision();
+    const lifetime = createRequestLifetime(() => visible.current && version === requestVersion.current && session === getSessionRevision());
+    lifetimeRef.current = lifetime;
+    const isCurrent = () => lifetime.isActive();
+    clearAnswers();
+    setLoading(true);
+    setError("");
+    try {
+      if (!routeAnswerSheetId) throw new Error("缺少答卷编号，请从测评记录重新进入。");
+      const answerSheet = await getAssessmentResponse(routeAnswerSheetId, { showLoading: false, lifetime }) as AssessmentResponseResult;
+      if (!isCurrent()) return;
+      if (String(answerSheet.id || "") !== routeAnswerSheetId) throw new Error("答卷身份不匹配，请从测评记录重新进入。");
+      if (!answerSheet.questionnaire_code || !answerSheet.questionnaire_version) throw new Error("缺少原始题版，暂时无法核对这份答卷。");
+      const questionnaire = await getQuestionnaire(answerSheet.questionnaire_code, answerSheet.questionnaire_version, { lifetime }) as QuestionnaireResult;
+      if (!isCurrent()) return;
+      if (questionnaire.code !== answerSheet.questionnaire_code || questionnaire.version !== answerSheet.questionnaire_version) throw new Error("原始题版不匹配，暂时无法展示这份答卷。");
+      setAnswerSheetId(routeAnswerSheetId);
+      setQuestionnaireType(String(questionnaire.type || ""));
+      setQuestionnaireTitle(questionnaire.title || "");
+      setQuestions(mergeQuestionsWithAnswers(questionnaire.questions || [], answerSheet.answers || []));
+      logger.RUN("[AnswerSheet] 原始题版核对完成", { answersheetId: routeAnswerSheetId, questionnaireCode: questionnaire.code, questionnaireVersion: questionnaire.version, answersCount: answerSheet.answers?.length });
+    } catch (loadError: unknown) {
+      if (!isCurrent()) return;
+      logger.ERROR("[AnswerSheet] 加载失败", loadError);
+      const details = loadError as { code?: unknown; errno?: unknown; statusCode?: unknown; message?: string };
+      const code = String(details.code ?? details.errno ?? details.statusCode ?? "");
+      if (code === "100403" || code === "403") {
+        setNeedCloseFlag(true);
+        setError("没有查看这份答卷的权限，请返回测评记录。");
+      } else {
+        const localMessages = ["缺少答卷编号，请从测评记录重新进入。", "答卷身份不匹配，请从测评记录重新进入。", "缺少原始题版，暂时无法核对这份答卷。", "原始题版不匹配，暂时无法展示这份答卷。"];
+        setError(localMessages.includes(details.message || "") ? details.message || "" : "暂时无法读取原始答卷，请稍后重试。");
+      }
+    } finally {
+      if (isCurrent()) setLoading(false);
+    }
+  }, [routeAnswerSheetId, clearAnswers, invalidate]);
+
+  useDidHide(() => {
+    visible.current = false;
+    reloadOnShow.current = true;
+    invalidate();
+    clearAnswers();
+  });
+  useDidShow(() => {
+    visible.current = true;
+    if (!reloadOnShow.current) return;
+    reloadOnShow.current = false;
+    void initAnswerSheet();
+  });
   useEffect(() => {
-    const params = Taro.getCurrentInstance().router?.params || {};
-    const id = String(params.a || "");
-    logger.RUN("did effect <RUN> | params: ", { answersheetid: id });
-    setPlanTaskId(String(params.task_id || ""));
-    void initAnswerSheet(id);
-  }, [initAnswerSheet]);
+    void initAnswerSheet();
+    return invalidate;
+  }, [initAnswerSheet, invalidate]);
 
-  const reportAction = questionnaireType === "MedicalScale" ? (
+  const reportAction = !loading && !error && questionnaireType === "MedicalScale" ? (
     <BottomActionBar>
       <ActionButton
         tone="medical"
@@ -171,25 +217,28 @@ const AssessmentResponsePage = () => {
           <TaroText className="answersheet-header__description">答案仅供查看，不会在此页面被修改。</TaroText>
         </View>
         <View className="answersheet-content">
-          <PlanSubscribeConfirm
+          {!loading && !error ? <PlanSubscribeConfirm
             taskId={planTaskId}
             planName={entryContext?.plan_name}
             entryTitle={entryContext?.entry_title || questionnaireTitle}
             clinicianName={entryContext?.clinician_name}
             entryContext={entryContext}
             variant="floating"
-          />
+          /> : null}
           <NeedDialog
             flag={needCloseFlag}
             title="警告"
             content="您没有查看该答卷的权限！"
             btnText="点击退出小程序"
           />
-          {questions.map((question, index) => (
+          {loading ? <StatePanel state="loading" title="正在核对原始答卷" />
+            : error ? <StatePanel state="error" title="暂时无法查看答卷" description={error} actionText="重新加载" onAction={() => void initAnswerSheet()} />
+            : !questions.length ? <StatePanel state="empty" title="没有可展示的题目" description="这份答卷没有可读取的题目，请返回测评记录。" /> : null}
+          {!loading && !error ? questions.map((question, index) => (
             <View key={question.code} className="answersheet-question">
               {renderQuestion(question, index)}
             </View>
-          ))}
+          )) : null}
         </View>
       </PageShell>
       <PrivacyAuthorization />

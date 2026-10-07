@@ -1,3 +1,4 @@
+import { getLogger as getPrivacyLogger } from '@/shared/lib/logger';
 import React, { useCallback, useEffect, useState } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro from "@tarojs/taro";
@@ -13,6 +14,8 @@ import { routes } from "@/shared/config/routes";
 import { normalizeAssessmentKind } from "@/shared/lib/assessmentKind";
 import AssessmentRecordListController from "./AssessmentRecordListController";
 import "./AssessmentKindReportSection.less";
+
+const privacyLogger = getPrivacyLogger('modules/assessment/components/records/AssessmentKindReportSection.jsx');
 
 const resolveDisplayTestee = (testeeList = getStoredTesteeList(), selectedId = getSelectedTesteeId()) => {
   if (!testeeList.length) {
@@ -57,7 +60,7 @@ const AssessmentKindReportSection = ({
     refreshTesteeList()
       .then(refreshSelectedTestee)
       .catch((error) => {
-        console.warn("[AssessmentKindReportSection] 刷新档案失败:", error);
+        privacyLogger.WARN("[AssessmentKindReportSection] 刷新档案失败:", error);
         refreshSelectedTestee();
       });
 

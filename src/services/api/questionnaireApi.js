@@ -35,9 +35,10 @@ export const getQuestionnaires = (page = 1, pageSize = 20, status, title) => {
  * @param {string} code - 问卷编码
  * @returns {Promise<object>}
  */
-export const getQuestionnaire = (code, version = "") => {
+export const getQuestionnaire = (code, version = "", options = {}) => {
   return request(`/questionnaires/${code}`, {}, {
     params: version ? { version } : undefined,
+    ...(options.lifetime ? { lifetime: options.lifetime, suppressErrorToast: true, allowInteractiveLogin: false, refreshOnForbidden: false } : {}),
     host: config.collectionHost,
     needToken: true
   });
