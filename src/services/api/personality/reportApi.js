@@ -48,7 +48,7 @@ export async function getPersonalityReportStatus({ assessmentId, testeeId }) {
 /**
  * 获取人格测评报告
  */
-export async function getPersonalityReport({ assessmentId, testeeId }) {
+export async function getPersonalityReport({ assessmentId, testeeId, lifetime }) {
   const result = await request(
     `/typology-assessments/${toStringId(assessmentId)}/report`,
     {},
@@ -56,6 +56,7 @@ export async function getPersonalityReport({ assessmentId, testeeId }) {
       host: config.collectionHost,
       params: { testee_id: toStringId(testeeId) },
       needToken: true,
+      ...(lifetime ? { lifetime, suppressErrorToast: true, logPolicy: 'metadata_only', allowInteractiveLogin: false, refreshOnForbidden: false } : {}),
     }
   );
 

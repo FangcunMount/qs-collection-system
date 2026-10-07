@@ -80,7 +80,7 @@ const ScaleCatalogPage = () => {
 
   return (
     <>
-      <PageShell
+      <PageShell globalTestee
         tone="medical"
         className="scale-page"
         contentClassName="scale-page__scroll"
@@ -88,7 +88,7 @@ const ScaleCatalogPage = () => {
         navigation={<AppNavigationBar brandTitle="Qlume" tone="medical" transparent />}
       >
           <View className="scale-page__header">
-            <Text className="scale-page__title">医学量表</Text>
+            <Text className="scale-page__title">量表</Text>
             <Text className="scale-page__subtitle">了解当下状态，为进一步沟通提供参考</Text>
           </View>
           <View className="scale-page__search">
@@ -131,7 +131,7 @@ const ScaleCatalogPage = () => {
 
           <View className="scale-section">
             <SectionHeader
-              title="医学量表"
+              title="量表"
               actionLabel="查看全部"
               onAction={() => handleOpenScaleList()}
               tone="medical"

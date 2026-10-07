@@ -9,9 +9,13 @@ export type TesteeBootstrapDecision =
 export function resolveTesteeBootstrap(
   testees: Testee[],
   explicitTesteeId?: string,
+  globalTesteeId?: string,
 ): TesteeBootstrapDecision {
   if (testees.length === 0) return { kind: "create_testee" };
   if (explicitTesteeId) return { kind: "load_selected", testeeId: explicitTesteeId };
+  if (globalTesteeId && testees.some(testee => testee.id === globalTesteeId)) {
+    return { kind: "load_selected", testeeId: globalTesteeId };
+  }
   if (testees.length === 1) return { kind: "load_single", testeeId: testees[0].id };
   return { kind: "await_selection" };
 }

@@ -11,6 +11,7 @@ interface PersonalityReportHeroProps {
   imageUrl?: string;
   testeeName?: string;
   createdAtText?: string;
+  variant?: "standard" | "ai";
 }
 
 const text = (value: unknown): string => (
@@ -32,6 +33,7 @@ const PersonalityReportHero = ({
   imageUrl = "",
   testeeName = "",
   createdAtText = "",
+  variant = "standard",
 }: PersonalityReportHeroProps) => {
   const [failedImageUrl, setFailedImageUrl] = useState("");
   const typeCode = text(modelExtra.type_code || modelExtra.typeCode);
@@ -48,16 +50,17 @@ const PersonalityReportHero = ({
   const showImage = Boolean(imageUrl && imageUrl !== failedImageUrl);
 
   return (
-    <View className={`personality-report-hero ${showImage ? "personality-report-hero--with-image" : "personality-report-hero--text-only"}`}>
+    <View className={`personality-report-hero personality-report-hero--${variant} ${showImage ? "personality-report-hero--with-image" : "personality-report-hero--text-only"}`}>
       <View className="personality-report-hero__topline">
         <View className="personality-report-hero__heading">
-          <Text className="personality-report-hero__number">01</Text>
-          <Text className="personality-report-hero__eyebrow">总览</Text>
+          {variant === "standard" && <Text className="personality-report-hero__number">01</Text>}
+          <Text className="personality-report-hero__eyebrow">{variant === "ai" ? "关联本次标准报告" : "总览"}</Text>
         </View>
         {rarity ? <Text className="personality-report-hero__rarity">人群占比 {rarity}</Text> : null}
       </View>
       <View className="personality-report-hero__body">
         <View className="personality-report-hero__copy">
+          {variant === "standard" && <Text className="personality-report-hero__badge">标准报告</Text>}
           <View className="personality-report-hero__classification">
             <Text className="personality-report-hero__field-label">人格分类</Text>
             <Text className="personality-report-hero__model">{modelTitle || "人格测评"}</Text>
@@ -80,7 +83,8 @@ const PersonalityReportHero = ({
           </View>
         ) : null}
       </View>
-      {tagline ? (
+      {variant === "ai" && <Text className="personality-report-hero__ai-caption">性格理解、职业探索与关系沟通</Text>}
+      {tagline && variant === "standard" ? (
         <View className="personality-report-hero__summary">
           <View className="personality-report-hero__summary-mark" />
           <Text className="personality-report-hero__tagline">{tagline}</Text>

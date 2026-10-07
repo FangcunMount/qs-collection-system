@@ -1,0 +1,38 @@
+import React from 'react';
+import renderer, { act } from 'react-test-renderer';
+import AssessmentRecordsPage from '../AssessmentRecordsPage';
+import AssessmentRecordList from '../../components/records/AssessmentRecordList';
+import { loadMedicalAssessmentRecords } from '../../services/loadMedicalAssessmentRecords';
+import { resetTesteeStore, setTesteeList, setSelectedTesteeId, getSelectedTesteeId } from '@/shared/stores/testees';
+jest.mock('../../services/loadMedicalAssessmentRecords', () => ({ loadMedicalAssessmentRecords: jest.fn() }));
+jest.mock('@/shared/stores/testees', () => ({ ...jest.requireActual('@/shared/stores/testees'), refreshTesteeList: jest.fn().mockResolvedValue(undefined) }));
+const deferred = () => { let resolve; const promise = new Promise(yes => { resolve = yes; }); return { promise, resolve }; };
+let tree;
+beforeEach(() => { resetTesteeStore(); setTesteeList([{ id: 'one', legalName: '成员一' }, { id: 'two', legalName: '成员二' }]); loadMedicalAssessmentRecords.mockReset().mockResolvedValue({ items: [], page: 1 }); });
+afterEach(() => { if (tree) act(() => tree.unmount()); });
+test('records neither pick the first member nor overwrite a selection made on another page', async () => {
+  await act(async () => { tree = renderer.create(<AssessmentRecordsPage />); });
+  expect(getSelectedTesteeId()).toBe('');
+  expect(loadMedicalAssessmentRecords).not.toHaveBeenCalled();
+  act(() => tree.unmount());
+  setSelectedTesteeId('two');
+  await act(async () => { tree = renderer.create(<AssessmentRecordsPage />); });
+  expect(getSelectedTesteeId()).toBe('two');
+  expect(loadMedicalAssessmentRecords).toHaveBeenLastCalledWith(expect.objectContaining({ testeeId: 'two' }));
+});
+test('switch clears the old list and discards its late response and pagination', async () => {
+  setSelectedTesteeId('one');
+  const old = deferred(); const next = deferred();
+  loadMedicalAssessmentRecords.mockImplementation(({ testeeId }) => testeeId === 'one' ? old.promise : next.promise);
+  await act(async () => { tree = renderer.create(<AssessmentRecordsPage />); });
+  await act(async () => tree.root.findByType('taro-picker').props.onChange({ detail: { value: 1 } }));
+  await act(async () => next.resolve({ items: [{ id: 'new', title: '成员二记录', status: 'completed' }], page: 1, total: 1 }));
+  const records = () => tree.root.findByType(AssessmentRecordList).props;
+  expect(records().testeeId).toBe('two');
+  expect(records().records[0].id).toBe('new');
+  await act(async () => old.resolve({ items: [{ id: 'old', title: '成员一记录', status: 'completed' }], page: 9, total: 99 }));
+  expect(records().records[0].id).toBe('new');
+  expect(records().pagination.total).toBe(1);
+  act(() => resetTesteeStore());
+  expect(tree.root.findAllByType(AssessmentRecordList)).toHaveLength(0);
+});

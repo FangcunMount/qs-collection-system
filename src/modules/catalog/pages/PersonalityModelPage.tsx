@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Taro, { useRouter } from "@tarojs/taro";
-import { View, Text, Picker } from "@tarojs/components";
+import { View, Text } from "@tarojs/components";
 
 import { PrivacyAuthorization } from "@/shared/ui/PrivacyAuthorization";
 import AppNavigationBar from "@/shared/ui/AppNavigationBar";
@@ -15,7 +15,6 @@ import {
   getSelectedTesteeId,
   getTesteeList,
   refreshTesteeList,
-  setSelectedTesteeId,
   subscribeTesteeStore,
 } from "@/shared/stores/testees";
 import { listPublishedPersonalityModels } from "@/services/api/personality";
@@ -83,12 +82,6 @@ interface PublishedPersonalityModel {
 
 interface PersonalityListResult {
   items?: PublishedPersonalityModel[];
-}
-
-interface PickerChangeEvent {
-  detail: {
-    value: string | number;
-  };
 }
 
 const listPersonalityModels = listPublishedPersonalityModels as unknown as (
@@ -180,12 +173,6 @@ const PersonalityModelPage = () => {
   const selectedTestee = selectedId
     ? findTesteeById(selectedId) as TesteeViewModel | null
     : null;
-  const selectedIndex = Math.max(0, testees.findIndex((item) => item.id === selectedId));
-  const pickerOptions = testees.map((item) => ({
-    label: formatTesteeName(item),
-    value: item.id,
-  }));
-
   useEffect(() => {
     const unsubscribe = subscribeTesteeStore(({
       testeeList,
@@ -316,13 +303,6 @@ const PersonalityModelPage = () => {
     };
   }, [routeModelCode, routeFamilyCode, reloadToken]);
 
-  const handleSelectTestee = (event: PickerChangeEvent) => {
-    const next = testees[Number(event.detail.value)];
-    if (!next?.id) return;
-    setSelectedTesteeId(next.id);
-    setSelectedId(next.id);
-  };
-
   const handleCreateTestee = () => {
     Taro.navigateTo({
       url: routes.testeeCreate({
@@ -382,7 +362,7 @@ const PersonalityModelPage = () => {
   if (pageLoading) {
     return (
       <>
-        <PageShell tone="personality" navigation={navigation}>
+        <PageShell globalTestee tone="personality" navigation={navigation}>
           <StatePanel state="loading" title="加载模型信息" tone="personality" />
         </PageShell>
         <PrivacyAuthorization />
@@ -394,7 +374,7 @@ const PersonalityModelPage = () => {
     return (
       <>
         <PrivacyAuthorization />
-        <PageShell tone="personality" navigation={navigation}>
+        <PageShell globalTestee tone="personality" navigation={navigation}>
           <StatePanel
             state="error"
             title="模型暂不可用"
@@ -417,7 +397,7 @@ const PersonalityModelPage = () => {
 
   return (
     <>
-      <PageShell
+      <PageShell globalTestee
         tone="personality"
         className={`personality-model-page personality-model-page--${pageThemeClass}`}
         contentClassName="personality-model-page__scroll"
@@ -523,7 +503,7 @@ const PersonalityModelPage = () => {
 
         <View className="personality-model-panel personality-model-testee">
           <View className="personality-model-testee__header">
-            <Text className="personality-model-panel__title">选择档案</Text>
+            <Text className="personality-model-panel__title">本次测评档案</Text>
             <Text className="personality-model-testee__hint">
               {testeeLoading ? "加载中" : `${testees.length} 个档案`}
             </Text>
@@ -531,21 +511,6 @@ const PersonalityModelPage = () => {
 
           {testees.length ? (
             <>
-              <Picker
-                mode="selector"
-                range={pickerOptions}
-                rangeKey="label"
-                value={selectedIndex}
-                onChange={handleSelectTestee}
-              >
-                <View className="personality-model-picker">
-                  <Text className="personality-model-picker__name">
-                    {selectedTestee ? formatTesteeName(selectedTestee) : "请选择档案"}
-                  </Text>
-                  <Text className="personality-model-picker__arrow">切换</Text>
-                </View>
-              </Picker>
-
               {selectedTestee ? (
                 <View className="personality-model-testee-card">
                   <Text className="personality-model-testee-card__name">

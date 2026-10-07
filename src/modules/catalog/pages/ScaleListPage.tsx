@@ -209,7 +209,7 @@ const ScaleListPage = () => {
     (!reporterFilter || card.reporterLabel.split("、").includes(reporterFilter))
   );
   const categoryTitle = CATEGORY_CHIPS.find(chip => chip.value === selectedCategory)?.title;
-  const listTitle = appliedSearchText ? "搜索结果" : selectedCategory ? `${categoryTitle || "医学"}量表` : "全部量表";
+  const listTitle = appliedSearchText ? "搜索结果" : selectedCategory ? `${categoryTitle || ""}量表` : "全部量表";
   const toggleFilters = () => {
     setFiltersExpanded(value => !value);
     if (!filterMode) {
@@ -220,12 +220,12 @@ const ScaleListPage = () => {
   };
 
   return (
-    <PageShell
+    <PageShell globalTestee
       tone="medical"
       className="scale-list-page"
       contentClassName="scale-list-page__scroll"
       navigation={(
-        <AppNavigationBar title="医学量表" showBack onBack={handleBack} tone="medical" transparent />
+        <AppNavigationBar title="量表" showBack onBack={handleBack} tone="medical" transparent />
       )}
     >
 

@@ -151,7 +151,7 @@ const AbilityCatalogPage = () => {
   }, []);
 
   return (
-    <PageShell
+    <PageShell globalTestee
       tone="ability"
       className="ability-home"
       contentClassName="ability-home__scroll"

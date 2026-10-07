@@ -26,6 +26,12 @@ describe("assessment fill controller decisions", () => {
     });
   });
 
+  test("ordinary entry inherits a valid global member while explicit task identity takes priority", () => {
+    expect(resolveTesteeBootstrap(testees, undefined, "t2")).toEqual({ kind: "load_selected", testeeId: "t2" });
+    expect(resolveTesteeBootstrap(testees, "t1", "t2")).toEqual({ kind: "load_selected", testeeId: "t1" });
+    expect(resolveTesteeBootstrap(testees, undefined, "removed")).toEqual({ kind: "await_selection" });
+  });
+
   test("keeps personality and short medical questionnaires in single-question mode", () => {
     expect(resolveQuestionnaireSinglePageMode({
       questionnaireType: "PersonalityAssessment",

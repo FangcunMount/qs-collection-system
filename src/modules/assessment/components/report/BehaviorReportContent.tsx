@@ -226,7 +226,7 @@ const BehaviorReportContent = ({ report }: BehaviorReportContentProps) => {
 
       <View className="behavior-report-note">
         <Text className="behavior-report-note__text">
-          结果用于成长观察，不代表医学诊断。请结合孩子在家庭、学校等真实情境中的表现持续理解。
+          结果用于成长观察，不代表诊断。请结合孩子在家庭、学校等真实情境中的表现持续理解。
         </Text>
       </View>
     </View>

@@ -31,7 +31,7 @@ const MedicalReportOverview = ({ report }: MedicalReportOverviewProps) => {
         </View>
         <View className="risk-level-badge" style={{ color: risk.scoreBadgeColor || undefined }}>
           <Text className="risk-level-text">
-            {risk.label}{report.total?.content ? `:${report.total.content}` : ""}
+            {risk.label}{report.total?.content ? ` · ${report.total.content}` : ""}
           </Text>
         </View>
         {firstSuggestion ? (

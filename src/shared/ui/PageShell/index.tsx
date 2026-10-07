@@ -2,11 +2,13 @@ import React from "react";
 import { ScrollView, View } from "@tarojs/components";
 
 import type { PageShellProps } from "../types";
+import GlobalTesteeSelector from "../GlobalTesteeSelector";
 import "./index.less";
 
 const PageShell = ({
   children,
   navigation,
+  globalTestee = false,
   fixedAction,
   className = "",
   contentClassName = "",
@@ -26,6 +28,7 @@ const PageShell = ({
   return (
     <View className={`page-shell page-shell--${tone} ${className}`.trim()}>
       {navigation}
+      {globalTestee ? <GlobalTesteeSelector /> : null}
       {scroll ? (
         <ScrollView
           scrollY

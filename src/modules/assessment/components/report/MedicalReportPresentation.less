@@ -1,0 +1,252 @@
+@import "../../../../styles/tokens.less";
+
+// The accepted medical report retains its existing composition and palette.
+// Keep presentation local: the report shell also serves ability reports, and
+// the AI entry / action primitives are shared with personality reports.
+.medical-report-shell {
+  .analysis-report-page {
+    padding-bottom: @space-4;
+  }
+
+  .report-overview-card {
+    padding: @space-4 @page-gutter 0;
+    margin-bottom: @space-4;
+
+    .report-header {
+      align-items: baseline;
+      margin-bottom: @space-2;
+
+      .report-title {
+        font-size: @font-size-section-title;
+        line-height: @line-height-heading;
+      }
+
+      .report-testee {
+        max-width: 30%;
+        white-space: normal;
+        word-break: break-all;
+        text-align: right;
+        font-size: @font-size-body;
+        line-height: @line-height-heading;
+      }
+    }
+
+    .report-context {
+      margin-bottom: @space-3;
+
+      &__text {
+        font-size: @font-size-body;
+        line-height: @line-height-body;
+      }
+    }
+
+    .score-display-area {
+      padding: @space-4;
+      border-radius: @radius-card;
+
+      .score-number {
+        gap: @space-1;
+        margin-bottom: @space-3;
+
+        .score-main {
+          font-size: @font-size-report-score;
+          font-weight: @font-weight-black;
+          line-height: 1.1;
+          letter-spacing: normal;
+        }
+
+        .score-unit {
+          font-size: @font-size-section-title;
+          margin-left: 0;
+        }
+      }
+
+      .risk-level-badge {
+        max-width: 100%;
+        box-sizing: border-box;
+        padding: @space-2 @space-3;
+        margin-bottom: 0;
+        font-size: @font-size-body;
+        font-weight: @font-weight-semibold;
+        box-shadow: @shadow-small;
+      }
+
+      .suggestion-section {
+        margin-top: @space-4;
+
+        .suggestion-content-text {
+          font-size: @font-size-reading;
+          line-height: 1.8;
+          word-break: break-all;
+        }
+      }
+    }
+  }
+
+  .ai-explanation__entry--medical {
+    margin: 0 @page-gutter @space-4;
+    padding: @space-4;
+    border-radius: @radius-card;
+    gap: @space-3;
+
+    .ai-explanation__row {
+      align-items: flex-start;
+    }
+
+    .ai-explanation__title {
+      font-weight: @font-weight-bold;
+    }
+
+    .ai-explanation__caption {
+      font-size: @font-size-reading;
+      line-height: 1.75;
+    }
+  }
+
+  .trend-summary-card {
+    margin: 0 @page-gutter @space-4;
+    padding: @space-4;
+    border-color: @color-medical-200;
+    border-radius: @radius-card;
+    box-shadow: none;
+
+    .trend-summary-header {
+      flex-wrap: wrap;
+      gap: @space-2;
+      margin-bottom: @space-3;
+    }
+
+    .trend-summary-title {
+      font-size: @font-size-section-title;
+      line-height: @line-height-heading;
+    }
+
+    .trend-summary-subtitle {
+      font-size: @font-size-body;
+      line-height: @line-height-body;
+    }
+
+    .trend-summary-empty {
+      padding: @space-5 @space-3;
+      background: @color-medical-50;
+      border-radius: @radius-lg-token;
+      text-align: center;
+
+      &__title {
+        font-size: @font-size-card-title-sm;
+        margin-bottom: @space-2;
+      }
+
+      &__text {
+        font-size: @font-size-body;
+      }
+    }
+  }
+
+  .report-section-tabs {
+    margin: 0 @page-gutter @space-4;
+    background: transparent;
+  }
+
+  .report-section-tab {
+    &--active {
+      background: transparent;
+    }
+
+    &__label {
+      font-size: @font-size-card-title;
+      line-height: @line-height-heading;
+    }
+  }
+
+  .tab-content-area {
+    padding: 0 @page-gutter @space-4;
+  }
+
+  .factor-analysis-content .factor-chart-card {
+    padding: @space-4;
+    border-color: @color-medical-200;
+    border-radius: @radius-card;
+    box-shadow: none;
+
+    .chart-header {
+      align-items: stretch;
+      gap: @space-3;
+      margin-bottom: @space-3;
+    }
+
+    .card-title {
+      font-size: @font-size-section-title;
+      font-weight: @font-weight-bold;
+      line-height: @line-height-heading;
+      text-align: left;
+    }
+
+    .chart-toggle {
+      flex-wrap: nowrap;
+      gap: @space-2;
+
+      .filter-chip {
+        flex: 1;
+        min-width: 0;
+        padding: 0 @space-1;
+        border-color: @color-medical-200;
+        border-radius: @radius-sm-token;
+        background: @color-medical-50;
+      }
+
+      .filter-chip--selected {
+        background: @color-medical-600;
+        border-color: @color-medical-600;
+        color: @color-white;
+      }
+    }
+  }
+
+  .factor-chart-summary {
+    padding: 0;
+    border-top: 1rpx solid @border-color-base;
+    border-bottom: 1rpx solid @border-color-base;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .factor-chart-summary__row {
+    min-height: @touch-target-min;
+  }
+
+  .factor-chart-summary__name,
+  .factor-chart-summary__value {
+    font-size: @font-size-body;
+    line-height: @line-height-body;
+  }
+
+  .factor-chart-caption {
+    display: block;
+    margin-top: @space-3;
+    font-size: @font-size-caption;
+    color: @text-color-tertiary;
+    line-height: @line-height-body;
+    text-align: center;
+  }
+
+  .factor-cards-list {
+    gap: @space-3;
+  }
+
+  .factor-card {
+    padding: @space-4;
+    border-color: @color-medical-200;
+    border-radius: @radius-card;
+
+    .factor-content,
+    .factor-suggestion {
+      font-size: @font-size-reading;
+      line-height: 1.8;
+    }
+  }
+
+  .report-completion-action .action-button {
+    border-radius: @radius-lg-token;
+  }
+}

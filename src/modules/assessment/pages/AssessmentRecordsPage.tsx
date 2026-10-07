@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import Taro, { useRouter } from "@tarojs/taro";
 
 import BottomMenu from "@/shared/ui/BottomMenu";
@@ -15,9 +15,9 @@ import {
   getSelectedTesteeId,
   getTesteeList as getStoredTesteeList,
   refreshTesteeList,
-  setSelectedTesteeId,
   subscribeTesteeStore,
 } from "@/shared/stores/testees";
+import StatePanel from "@/shared/ui/StatePanel";
 import "./AssessmentRecordsPage.less";
 
 interface TesteeStoreSnapshot {
@@ -32,14 +32,13 @@ const AssessmentRecordsPage = () => {
   ) || ASSESSMENT_KIND.MEDICAL;
   const tone = assessmentKind as DomainTone;
   const isMedicalReport = assessmentKind === ASSESSMENT_KIND.MEDICAL;
-  const [testeeList, setTesteeList] = useState<RecordTesteeOption[]>(() => getStoredTesteeList());
-  const [selectedTesteeId, setSelectedTesteeIdState] = useState(() => getSelectedTesteeId() || "");
   const [selectedTestee, setSelectedTestee] = useState<RecordTesteeOption | null>(() => {
     const id = getSelectedTesteeId();
     return id ? findTesteeById(id) : null;
   });
+  const selectedMemberId = useRef(selectedTestee?.id || "");
+  const mounted = useRef(false);
   const [statusFilter, setStatusFilter] = useState("");
-  const [showTesteeSheet, setShowTesteeSheet] = useState(false);
   const [showFilterSheet, setShowFilterSheet] = useState(false);
   const [scaleCapsuleInfo, setScaleCapsuleInfo] = useState<ScaleCapsuleInfo | null>(null);
 
@@ -56,77 +55,64 @@ const AssessmentRecordsPage = () => {
   const initTesteeList = useCallback(async () => {
     try {
       await refreshTesteeList();
+      if (!mounted.current) return;
       const storedList = getStoredTesteeList() as RecordTesteeOption[];
       if (!storedList.length) {
         jumpToRegister();
         return;
       }
-      setTesteeList(storedList);
       const currentSelectedId = getSelectedTesteeId();
-      const nextTestee = storedList.length === 1
-        ? storedList[0]
-        : storedList.find((item) => String(item.id) === String(currentSelectedId)) || storedList[0];
-      setSelectedTesteeId(nextTestee.id);
-      setSelectedTestee(nextTestee);
+      setSelectedTestee(storedList.find(item => item.id === currentSelectedId) || null);
     } catch (error) {
+      if (!mounted.current) return;
       console.error("初始化档案列表失败:", error);
       Taro.showToast({ title: "加载档案列表失败", icon: "none" });
     }
   }, [jumpToRegister]);
 
   useEffect(() => {
+    mounted.current = true;
     const unsubscribe = subscribeTesteeStore((snapshot: TesteeStoreSnapshot) => {
-      setTesteeList(snapshot.testeeList);
-      setSelectedTesteeIdState(snapshot.selectedTesteeId);
+      if (selectedMemberId.current !== snapshot.selectedTesteeId) {
+        selectedMemberId.current = snapshot.selectedTesteeId;
+        setScaleCapsuleInfo(null);
+        setShowFilterSheet(false);
+      }
       setSelectedTestee(snapshot.selectedTesteeId ? findTesteeById(snapshot.selectedTesteeId) : null);
     });
     void initTesteeList();
-    return unsubscribe;
+    return () => { mounted.current = false; unsubscribe(); };
   }, [initTesteeList]);
-
-  const handleTesteeChange = (testeeId: string) => {
-    if (!testeeId) return;
-    setSelectedTesteeId(testeeId);
-    setSelectedTestee(findTesteeById(testeeId));
-    setShowTesteeSheet(false);
-  };
 
   return (
     <>
-      <PageShell tone={tone} className="assessment-record-page">
+      <PageShell globalTestee tone={tone} className="assessment-record-page">
         {selectedTestee ? (
           <>
             <AssessmentRecordFilterBar
               tone={tone}
-              testee={selectedTestee}
-              testeeCount={testeeList.length}
               statusFilter={statusFilter}
               scaleOptions={scaleCapsuleInfo?.scaleList}
               selectedScale={scaleCapsuleInfo?.selectedScale}
-              onOpenTestee={() => setShowTesteeSheet(true)}
               onOpenScale={scaleCapsuleInfo?.onOpenScaleSheet}
               onOpenAdvanced={() => setShowFilterSheet(true)}
               onStatusChange={setStatusFilter}
             />
             <AssessmentRecordListController
+              key={`${selectedTestee.id}:${assessmentKind}`}
               testee={selectedTestee}
               assessmentKind={assessmentKind}
               statusFilter={statusFilter}
               showFilterBar
               emptyText={isMedicalReport
-                ? "完成医学量表测评后，报告将在这里展示。"
+                ? "完成量表测评后，报告将在这里展示。"
                 : "完成人格或能力测评后，报告将在这里展示。"}
-              showTesteeSheet={showTesteeSheet}
               showFilterSheet={showFilterSheet}
-              testeeList={testeeList}
-              selectedTesteeId={selectedTesteeId}
-              onSelectTestee={handleTesteeChange}
-              onCloseTesteeSheet={() => setShowTesteeSheet(false)}
               onCloseFilterSheet={() => setShowFilterSheet(false)}
               onScaleCapsuleInfo={setScaleCapsuleInfo}
             />
           </>
-        ) : null}
+        ) : <StatePanel state="empty" title="选择受试者后查看报告" compact />}
       </PageShell>
       <BottomMenu activeKey="报告" />
     </>

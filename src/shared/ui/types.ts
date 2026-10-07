@@ -7,6 +7,7 @@ export type ActionVariant = "primary" | "secondary" | "ghost" | "danger";
 export interface PageShellProps {
   children: ReactNode;
   navigation?: ReactNode;
+  globalTestee?: boolean;
   fixedAction?: ReactNode;
   className?: string;
   contentClassName?: string;

@@ -85,7 +85,7 @@ export const mapMedicalCatalogCard = (value: unknown): CatalogCardViewModel => {
   return {
     key: code || normalizeCatalogLabel(item.id),
     code,
-    title: normalizeCatalogLabel(item.title ?? item.name ?? item.scale_name) || "医学量表",
+    title: normalizeCatalogLabel(item.title ?? item.name ?? item.scale_name) || "量表",
     description: normalizeCatalogLabel(item.description),
     subtitle: normalizeCatalogLabel(item.subtitle),
     category: normalizeCatalogLabel(item.category),

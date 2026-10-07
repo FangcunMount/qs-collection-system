@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Taro from "@tarojs/taro";
 
 import { loadMedicalAssessmentRecords } from "@/modules/assessment/services/loadMedicalAssessmentRecords";
@@ -7,6 +7,7 @@ import { loadBehaviorAssessmentRecords } from "@/modules/assessment/services/beh
 import { loadPersonalityAssessmentRecords } from "@/modules/assessment/services/personalityAssessmentRecordService";
 import { ASSESSMENT_KIND, normalizeAssessmentKind } from "@/shared/lib/assessmentKind";
 import { buildAssessmentScanTargetUrl, isScanCancelError } from "@/shared/lib/entryScan";
+import { getSessionRevision } from "@/shared/stores/sessionPrivacy";
 import type { DomainTone } from "@/shared/ui/types";
 
 import {
@@ -23,7 +24,6 @@ import AssessmentRecordList from "./AssessmentRecordList";
 import BottomSheet from "./BottomSheet";
 import FilterSheet from "./FilterSheet";
 import ScaleSheet from "./ScaleSheet";
-import TesteeSheet from "./TesteeSheet";
 import type { RecordTesteeOption } from "./AssessmentRecordFilterBar";
 
 const loadPersonalityRecords = loadPersonalityAssessmentRecords as (params: {
@@ -60,12 +60,6 @@ const TypedScaleSheet = ScaleSheet as React.ComponentType<{
   onClose: () => void;
 }>;
 
-const TypedTesteeSheet = TesteeSheet as React.ComponentType<{
-  testeeList: RecordTesteeOption[];
-  selectedTesteeId: string;
-  onSelectTestee?: (testeeId: string) => void;
-}>;
-
 export interface ScaleCapsuleInfo {
   scaleList: AssessmentRecordScaleOption[];
   selectedScaleCode: string;
@@ -79,16 +73,11 @@ interface AssessmentRecordListControllerProps {
   statusFilter?: string;
   pageSize?: number;
   showFilterBar?: boolean;
-  showTesteeSheet?: boolean;
   showFilterSheet?: boolean;
   emptyText?: string;
   emptyButtonText?: string;
   showEmptyButton?: boolean;
   showLoadMore?: boolean;
-  testeeList?: RecordTesteeOption[];
-  selectedTesteeId?: string;
-  onSelectTestee?: (testeeId: string) => void;
-  onCloseTesteeSheet?: () => void;
   onCloseFilterSheet?: () => void;
   onScaleCapsuleInfo?: (info: ScaleCapsuleInfo) => void;
 }
@@ -111,16 +100,11 @@ const AssessmentRecordListController = ({
   statusFilter = "",
   pageSize = 20,
   showFilterBar = true,
-  showTesteeSheet = false,
   showFilterSheet = false,
   emptyText = "暂无测评记录",
   emptyButtonText = "重新扫码",
   showEmptyButton = true,
   showLoadMore = true,
-  testeeList = [],
-  selectedTesteeId = "",
-  onSelectTestee,
-  onCloseTesteeSheet,
   onCloseFilterSheet,
   onScaleCapsuleInfo,
 }: AssessmentRecordListControllerProps) => {
@@ -140,8 +124,16 @@ const AssessmentRecordListController = ({
   );
   const tone = (normalizedAssessmentKind || "medical") as DomainTone;
 
+  const requestVersion = useRef(0);
+  const memberId = useRef(testee.id);
+  memberId.current = testee.id;
+
   const fetchRecords = useCallback(async (page = 1, append = false) => {
+    const request = ++requestVersion.current;
+    const revision = getSessionRevision();
+    const valid = () => request === requestVersion.current && memberId.current === testee.id && revision === getSessionRevision();
     if (!testee.id) return;
+    if (!append) setRecords([]);
     setError("");
     if (append) setLoadingMore(true);
     else setLoading(true);
@@ -155,6 +147,7 @@ const AssessmentRecordListController = ({
           page,
           pageSize,
         });
+        if (!valid()) return;
         const nextRecords = result.items.map(toAssessmentRecordViewModel);
         setRecords((previous) => append ? [...previous, ...nextRecords] : nextRecords);
         setPagination({
@@ -174,6 +167,7 @@ const AssessmentRecordListController = ({
           page,
           pageSize,
         });
+        if (!valid()) return;
         const nextRecords = result.items.map(toAssessmentRecordViewModel);
         setRecords((previous) => append ? [...previous, ...nextRecords] : nextRecords);
         setPagination({
@@ -197,6 +191,7 @@ const AssessmentRecordListController = ({
         page,
         pageSize,
       });
+      if (!valid()) return;
       if (result.unavailable) {
         setMedicalListUnavailable(true);
       } else {
@@ -214,11 +209,11 @@ const AssessmentRecordListController = ({
         totalPages: Number(result.totalPages || 0),
       });
     } catch (caughtError) {
+      if (!valid()) return;
       console.error("获取测评记录失败：", caughtError);
       setError(errorMessage(caughtError));
     } finally {
-      setLoading(false);
-      setLoadingMore(false);
+      if (valid()) { setLoading(false); setLoadingMore(false); }
     }
   }, [
     normalizedAssessmentKind,
@@ -232,6 +227,7 @@ const AssessmentRecordListController = ({
 
   useEffect(() => {
     void fetchRecords(1, false);
+    return () => { ++requestVersion.current; };
   }, [fetchRecords]);
 
   const scaleList = useMemo(
@@ -267,7 +263,7 @@ const AssessmentRecordListController = ({
   }, []);
 
   const resolvedEmptyText = medicalListUnavailable
-    ? "医学量表记录列表接口暂未开放，完成测评后可直接查看报告"
+    ? "量表记录列表接口暂未开放，完成测评后可直接查看报告"
     : emptyText;
 
   return (
@@ -295,15 +291,6 @@ const AssessmentRecordListController = ({
         showScaleSheet={showScaleSheet}
         onClose={() => setShowScaleSheet(false)}
       />
-      {showTesteeSheet ? (
-        <BottomSheet isOpened onClose={onCloseTesteeSheet} onConfirm={() => undefined} title="选择档案" height="70vh">
-          <TypedTesteeSheet
-            testeeList={testeeList}
-            selectedTesteeId={selectedTesteeId}
-            onSelectTestee={onSelectTestee}
-          />
-        </BottomSheet>
-      ) : null}
       {showFilterSheet ? (
         <BottomSheet isOpened onClose={onCloseFilterSheet} onConfirm={() => undefined} title="筛选" height="60vh" showConfirm>
           <FilterSheet

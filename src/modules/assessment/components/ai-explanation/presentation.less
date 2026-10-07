@@ -1,0 +1,60 @@
+@import "../../../../styles/tokens.less";
+
+// Scoped to the AI journey; standard reports and report reading keep their styles.
+.ai-explanation--medical,
+.ai-explanation--personality {
+  .ai-explanation__page { padding: @space-4 @page-gutter; }
+  .ai-explanation__stack { gap: @space-3; min-width: 0; }
+  .ai-explanation__state { gap: @space-4; }
+  .ai-explanation__title, .ai-explanation__heading { font-weight: @font-weight-bold; }
+  .ai-explanation__body { word-break: break-word; overflow-wrap: break-word; }
+  .ai-explanation__caption { overflow-wrap: break-word; }
+  .ai-explanation__label { margin-bottom: 0; }
+  .ai-explanation__state-header { display: flex; align-items: center; gap: @space-2; }
+  .ai-explanation__state-intro { flex: 1; min-width: 0; }
+  .ai-explanation__state-intro .ai-explanation__label { margin-bottom: @space-2; }
+  .ai-explanation__state .ai-explanation__art--entry { width: 136rpx; height: 136rpx; }
+  .ai-explanation__state-character { flex: none; width: 160rpx; height: 184rpx; }
+  .ai-explanation__state .ai-explanation__art--hero { width: 224rpx; height: 224rpx; }
+  .ai-explanation__context, .ai-explanation__scope-card {
+    padding: @space-3; border: 1rpx solid @color-medical-200;
+    border-radius: @radius-lg-token; background: @surface-card;
+  }
+  .ai-explanation__context .ai-explanation__heading { font-size: @font-size-card-title-sm; }
+  .ai-explanation__context .ai-explanation__label { margin-bottom: @space-1; }
+  .ai-explanation__context .ai-explanation__caption { margin-top: @space-1; }
+  .ai-explanation__topics { display: flex; flex-direction: column; gap: @space-2; padding: @space-3 0; }
+  .ai-explanation__topic { display: flex; align-items: center; gap: @space-2; padding: @space-2; border-radius: @radius-md; background: @color-medical-50; }
+  .ai-explanation__topic .ai-explanation__body { flex: 1; min-width: 0; font-size: @font-size-body; font-weight: @font-weight-semibold; }
+  .ai-explanation__topic-number { flex: none; color: @color-medical-700; font-size: @font-size-body; font-weight: @font-weight-bold; }
+  .ai-explanation__privacy-note { color: @text-color-tertiary; font-size: @font-size-caption; line-height: @line-height-body; }
+  .ai-explanation__waiting-cue, .ai-explanation__state-note { padding: @space-3; border-radius: @radius-lg-token; background: @color-medical-50; }
+  .ai-explanation__waiting-cue .ai-explanation__heading { font-size: @font-size-card-title-sm; margin-bottom: @space-1; }
+  .ai-explanation__waiting-cue .ai-explanation__caption + .ai-explanation__caption { margin-top: @space-1; }
+  .ai-explanation__dots { padding: 0 0 @space-2; }
+  .ai-explanation__state-actions { display: flex; flex-direction: column; gap: @space-2; }
+  .ai-explanation__state-actions .action-button { border-radius: @radius-button; }
+  .ai-explanation__motion-toggle { align-self: center; min-width: 0; padding: 0 @space-3; }
+  .ai-explanation__motion-toggle .action-button__label { color: @text-color-tertiary; font-size: @font-size-caption; font-weight: @font-weight-regular; }
+  .ai-explanation__reading-header { padding: @space-1 0 @space-2; }
+  .ai-explanation__reading-header .ai-explanation__label { margin-bottom: @space-1; }
+  .ai-explanation__completion-status {
+    align-self: flex-start; padding: 4rpx @space-2; color: @color-success-700;
+    background: @color-success-50; border-radius: @radius-pill; font-size: @font-size-caption;
+  }
+}
+
+.ai-explanation--medical { background: linear-gradient(180deg, @color-medical-50, @surface-page); }
+.ai-explanation--personality {
+  background: @surface-personality-reading;
+  .ai-explanation__label { color: @color-personality-700; }
+  .ai-explanation__context, .ai-explanation__scope-card { border-color: @color-personality-200; }
+  .ai-explanation__topic--0, .ai-explanation__state-note { background: @color-personality-50; }
+  .ai-explanation__topic--1 { background: @color-ability-50; }
+  .ai-explanation__topic--2, .ai-explanation__waiting-cue { background: @color-brand-soft; }
+  .ai-explanation__topic-number { color: @color-brand-strong; }
+  .ai-explanation__state-actions .action-button { border-radius: @radius-pill; }
+  .ai-explanation__state-actions .action-button--primary:not(.action-button--disabled) { background: @color-brand-primary; }
+  .ai-explanation__state-actions .action-button--secondary { color: @color-brand-strong; border-color: @color-brand-primary; }
+  .ai-explanation__dots > view { background: @color-brand-primary; }
+}

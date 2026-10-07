@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Taro, { usePullDownRefresh, useReady, useRouter } from "@tarojs/taro";
-import { View, Text, Image, Picker } from "@tarojs/components";
+import { View, Text, Image } from "@tarojs/components";
 import Icon from "@/shared/ui/Icon";
 
 import BottomMenu from "@/shared/ui/BottomMenu";
@@ -12,7 +12,7 @@ import { routes } from "@/shared/config/routes";
 import { loadRecentAssessments as fetchRecentAssessments } from "@/modules/assessment/services/loadRecentAssessments";
 import { isPersonalityAssessmentKind } from "@/shared/lib/assessmentKind";
 import { getAssessmentEntryContext, subscribeAssessmentEntryContext } from "@/shared/stores/assessmentEntry";
-import { findTesteeById, getSelectedTesteeId, getTesteeList, setSelectedTesteeId, subscribeTesteeStore } from "@/shared/stores/testees";
+import { findTesteeById, getSelectedTesteeId, subscribeTesteeStore } from "@/shared/stores/testees";
 import type { Testee } from "@/store/testeeStore";
 import { mapRecentAssessment, type RecentAssessmentViewModel } from "@/modules/tab/viewModels/home";
 import { resolveHomeSubject } from "../viewModels/homeSubject";
@@ -47,7 +47,6 @@ const HomeIndex = () => {
   const [recentError, setRecentError] = useState("");
   const [entryContext, setEntryContext] = useState<EntryContext | null>(() => getAssessmentEntryContext());
   const [currentTestee, setCurrentTestee] = useState<Testee | null>(() => getInitialTestee());
-  const [testees, setTestees] = useState<Testee[]>(() => getTesteeList());
   const selectedMemberId = useRef(currentTestee?.id || "");
   const recentRequest = useRef(0);
   const [avatarFailed, setAvatarFailed] = useState(false);
@@ -146,13 +145,13 @@ const HomeIndex = () => {
 
   const openAllServices = async () => {
     try {
-      const result = await Taro.showActionSheet({ itemList: ["医学量表", "人格探索", "行为能力"] });
+      const result = await Taro.showActionSheet({ itemList: ["量表", "人格探索", "行为能力"] });
       const destinations = [routes.tabScales(), routes.personalityCatalog(), routes.abilityCatalog()];
       if (destinations[result.tapIndex]) Taro.navigateTo({ url: destinations[result.tapIndex] });
     } catch (_) { /* Dismissing the native menu leaves the home unchanged. */ }
   };
   const services = subject.age === null ? [
-    { key: "medical", title: "医学量表", desc: "了解当下状态", image: emotionIcon, icon: "list", tone: "mint", url: routes.tabScales() },
+    { key: "medical", title: "量表", desc: "了解当下状态", image: emotionIcon, icon: "list", tone: "mint", url: routes.tabScales() },
     { key: "personality", title: "人格探索", desc: "发现自己的特点", icon: "user", tone: "sand", url: routes.personalityCatalog() },
     { key: "ability", title: "行为能力", desc: "理解日常行为", icon: "chart", tone: "peach", url: routes.abilityCatalog() },
     { key: "sleep", title: "睡眠", desc: "关注休息与精力", image: sleepIcon, icon: "clock", tone: "lavender", url: routes.scaleList({ category: "slp" }) },
@@ -195,7 +194,6 @@ const HomeIndex = () => {
         setRecentError("");
         setRecentLoading(Boolean(selectedTesteeId));
       }
-      setTestees(getTesteeList());
       setCurrentTestee(selectedTesteeId ? findTesteeById(selectedTesteeId) : null);
     });
 
@@ -207,24 +205,9 @@ const HomeIndex = () => {
     };
   }, []);
 
-  const memberIdentity = <View className="home-member" hoverClass="home-member--pressed">
-    <View className="home-member__avatar"><Icon name="user" size={24} /></View>
-    <View className="home-member__identity"><Text className="home-member__name">{subject.name}</Text><Text className="home-member__meta">{subject.meta}</Text></View>
-    <Text className="home-member__action">{currentTestee ? "切换受试者" : "选择受试者"} ⌄</Text>
-  </View>;
-
   return <>
-    <PageShell className="home-page" contentClassName="home-content" bottomInset={false}
+    <PageShell globalTestee className="home-page" contentClassName="home-content" bottomInset={false}
       navigation={<AppNavigationBar brandTitle="Qlume" className="home-navigation" transparent />}>
-      {testees.length ? <Picker mode="selector"
-        range={[...testees.map(testee => testee.legalName || "未命名成员"), "添加 / 管理家庭成员"]}
-        value={Math.max(0, testees.findIndex(testee => testee.id === currentTestee?.id))}
-        onChange={event => {
-          const testee = testees[Number(event.detail.value)];
-          if (testee) setSelectedTesteeId(testee.id);
-          else Taro.navigateTo({ url: routes.testeeList() });
-        }}>{memberIdentity}</Picker>
-        : <View onClick={() => Taro.navigateTo({ url: routes.testeeList() })}>{memberIdentity}</View>}
 
       {hasEntryTask ? <View className="home-task-strip" onClick={handleContinueEntry}>
         <View><Text className="home-task-strip__title">查看机构测评任务</Text><Text className="home-task-strip__meta">已识别扫码入口，进入后确认任务状态</Text></View>
@@ -249,13 +232,13 @@ const HomeIndex = () => {
       <SurfaceCard className="home-records-link home-tasks-link" onClick={() => Taro.navigateTo({ url: routes.pendingTasks() })}><Icon name="list" size={22} /><Text className="home-records-link__title">待填写任务</Text><Text>查看任务 ›</Text></SurfaceCard>
       <SurfaceCard className="home-records-link" onClick={handleViewRecords}><Icon name="records" size={22} /><Text className="home-records-link__title">评估记录</Text><Text>查看记录 ›</Text></SurfaceCard>
       {currentTestee ? <>
-        <View className="home-recent-toggle" onClick={() => setShowReports(value => !value)}><Text>最近医学报告</Text><Text>{showReports ? "收起 ⌃" : "展开 ⌄"}</Text></View>
+        <View className="home-recent-toggle" onClick={() => setShowReports(value => !value)}><Text>最近量表报告</Text><Text>{showReports ? "收起 ⌃" : "展开 ⌄"}</Text></View>
         {showReports ? <View className="home-report-list">
           {recentLoading ? <StatePanel state="loading" title="正在同步最近报告" compact />
             : recentError ? <StatePanel state="error" title="最近报告同步失败" description={recentError} actionText="重新加载" onAction={() => loadRecentAssessments(currentTestee.id)} compact />
             : recentAssessments.length ? recentAssessments.map(assessment => <SurfaceCard key={assessment.id || assessment.answerSheetId} className="home-report-row" onClick={() => handleViewReport(assessment)}>
               <View><Text className="home-report-row__title">{assessment.title}</Text><Text className="home-report-row__time">{assessment.completedAt}</Text></View><Icon name="arrow-right" size={18} />
-            </SurfaceCard>) : <StatePanel state="empty" title="该成员暂无医学报告" description="完成医学量表后可在这里查看。" compact />}
+            </SurfaceCard>) : <StatePanel state="empty" title="该成员暂无量表报告" description="完成量表测评后可在这里查看。" compact />}
         </View> : null}
       </> : null}
       <Text className="home-disclaimer">量表适用范围以具体说明为准</Text>
