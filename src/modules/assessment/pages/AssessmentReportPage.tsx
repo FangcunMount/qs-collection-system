@@ -32,6 +32,7 @@ import MedicalReportOverview from "../components/report/MedicalReportOverview";
 import MedicalReportTrendSummary from "../components/report/MedicalReportTrendSummary";
 import ReportCompletionAction from "../components/report/ReportCompletionAction";
 import "./AssessmentReportPage.less";
+import "../components/report/MedicalReportPresentation.less";
 
 const logger = getLogger("analysis");
 
