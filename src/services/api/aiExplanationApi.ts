@@ -21,6 +21,7 @@ export interface AILegacyContent {
 export type AIContent = AILegacyContent | MBTIThreeTopicOutput;
 export interface AIOutput {
   status: AIStatus; reason_code?: string; requestId?: string; artifact_id?: string;
+  submission_state?: 'submitted' | 'accepted' | 'held' | 'rejected';
   reference_material?: MBTIReferenceSelection; reference_material_fingerprint?: string;
   source_report_id?: string; source_state: SourceState; content?: AIContent;
   failure?: { code: string; safe_message: string; retryable: boolean };
@@ -56,6 +57,9 @@ export function validateExplanationView(input: unknown): AIOutput {
     if (value[key] !== undefined && typeof value[key] !== 'string') throw new AIContractError();
   }
   if (['pending','generating','generated','failed'].includes(String(value.status)) && !text(value.requestId)) throw new AIContractError();
+  if (value.submission_state !== undefined &&
+      !(['submitted', 'accepted', 'held'].includes(String(value.submission_state)) && value.status === 'pending' ||
+        value.submission_state === 'rejected' && value.status === 'failed')) throw new AIContractError();
   if (value.failure !== undefined && (!object(value.failure) || !text(value.failure.code) ||
       typeof value.failure.safe_message !== 'string' || typeof value.failure.retryable !== 'boolean')) throw new AIContractError();
   if (value.status === 'failed' && !value.failure) throw new AIContractError();
@@ -127,9 +131,29 @@ export async function requestAIExplanation(scope: AIScope, command: AIWorkflowCo
       !['accepted', 'submitted'].includes(String(value.status))) throw new AIContractError();
   if (value.status === 'submitted' &&
       (value.operation_id !== command.requestId || value.command_id !== command.requestId)) throw new AIContractError();
-  // MQ submission confirms durable staging only. Poll the original authorized
-  // workflow; never follow a returned URL or infer that generation has started.
-  return { status: 'pending', requestId: command.requestId, source_report_id: command.reportId, source_state: 'unknown', workflow_version: 0 };
+  // Submission is not AI admission. Read only our scoped endpoints, never a
+  // returned status_url, and never replay a command while checking status.
+  return { status: 'pending', requestId: command.requestId, source_report_id: command.reportId, source_state: 'unknown', workflow_version: 0,
+    ...(value.status === 'submitted' ? { submission_state: 'submitted' as const } : {}) };
+}
+
+async function readSubmission(scope: AIScope, requestId: string, lifetime?: RequestLifetime): Promise<AIOutput> {
+  const value = await request(`/interpretation/ai-workflow/operations/${encodeURIComponent(requestId)}`, {}, {
+    ...options(scope, lifetime), method: 'GET',
+    params: { testee_id: scope.testeeId, assessment_id: scope.assessmentId, request_id: requestId },
+  });
+  if (!object(value) || value.operation_id !== requestId || value.command_id !== requestId || value.resource_id !== requestId ||
+      !['staged', 'awaiting_receipt', 'confirmed', 'held'].includes(String(value.transport_status)) ||
+      value.decision !== undefined && typeof value.decision !== 'string') throw new AIContractError();
+  const decision = value.decision === undefined ? '' : value.decision;
+  const submitted = value.status === 'submitted' && decision === '' && value.transport_status !== 'confirmed';
+  const accepted = value.status === 'accepted' && decision === 'accepted' && value.transport_status === 'confirmed';
+  const rejected = value.status === 'rejected' && decision === 'rejected' && value.transport_status === 'confirmed';
+  const held = value.status === 'held' && decision === 'held' && value.transport_status === 'held';
+  if (!submitted && !accepted && !rejected && !held) throw new AIContractError();
+  return validateExplanationView({ status: rejected ? 'failed' : 'pending', requestId, source_state: 'unknown',
+    submission_state: rejected ? 'rejected' : held || value.transport_status === 'held' ? 'held' : accepted ? 'accepted' : 'submitted',
+    failure: rejected ? { code: 'submission_rejected', safe_message: '本次解读请求未被接收，请联系工作人员核对。标准报告仍可正常阅读。', retryable: false } : undefined });
 }
 
 export function parseWorkflowResult(value: unknown, requestId: string): AIOutput {
@@ -147,9 +171,21 @@ export function parseWorkflowResult(value: unknown, requestId: string): AIOutput
 
 export async function getAIExplanation(scope: AIScope, requestId: string, lifetime?: RequestLifetime): Promise<AIOutput> {
   if (!isWorkflowRequestId(requestId)) throw new AIContractError();
-  const output = parseWorkflowResult(await request(`${scopePath(scope)}/ai-workflows/${encodeURIComponent(requestId)}`, {}, {
-    ...options(scope, lifetime), method: 'GET',
-  }), requestId);
+  let output: AIOutput;
+  try {
+    output = parseWorkflowResult(await request(`${scopePath(scope)}/ai-workflows/${encodeURIComponent(requestId)}`, {}, {
+      ...options(scope, lifetime), method: 'GET',
+    }), requestId);
+  } catch (error) {
+    if ((error as { statusCode?: number }).statusCode !== 404) throw error;
+    return readSubmission(scope, requestId, lifetime);
+  }
+  // An existing QS request with no AI projection is not an admission receipt.
+  // Older servers may not expose operations; only a 404 retains that read.
+  if (output.status === 'pending' && output.workflow_version === 0) {
+    try { return await readSubmission(scope, requestId, lifetime); }
+    catch (error) { if ((error as { statusCode?: number }).statusCode !== 404) throw error; }
+  }
   if (output.status !== 'generated') return output;
   try {
     const source = await getAIExplanationCapability(scope, lifetime);

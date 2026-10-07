@@ -12,6 +12,7 @@ export type AIViewState = 'checking' | 'ready' | 'submitting' | 'waiting' | 'gen
   'storageUnavailable' | 'preparationFailed' | 'limited' | 'unconfirmed' | 'paused' | 'unsupported' | 'forbidden' | 'authRequired' | 'invalid';
 export interface AIState {
   view: AIViewState; output?: AIOutput; requestId?: string; retryAt?: number;
+  canResumeSubmission?: boolean;
   refreshError?: boolean; longWait?: boolean; animateCompletion?: boolean;
 }
 interface Dependencies {
@@ -40,7 +41,11 @@ export function createAIExplanationController(scope: AIAccountScope, onChange: (
   let deadline: ReturnType<typeof setTimeout> | undefined;
   let longWaitTimer: ReturnType<typeof setTimeout> | undefined;
   const current = () => active && (options.isCurrent?.() ?? true);
-  const emit = (next: AIState) => { state = { ...next, requestId: activeRequestId || undefined }; onChange(state); };
+  const emit = (next: AIState) => {
+    state = { ...next, requestId: activeRequestId || undefined,
+      canResumeSubmission: next.view === 'unconfirmed' && !!activeRequestId && isReportId(reportId) };
+    onChange(state);
+  };
   const clearTimers = () => { clearTimeout(timer); clearTimeout(deadline); clearTimeout(longWaitTimer); };
   const resetRequest = () => {
     epoch += 1;
@@ -77,7 +82,7 @@ export function createAIExplanationController(scope: AIAccountScope, onChange: (
       reportId = output.source_report_id || reportId;
       deps.save(scope, activeRequestId, reportId);
     }
-    const view: AIViewState = isAIWaiting(output.status) ? 'waiting' : output.status === 'ready' ? 'ready' :
+    const view: AIViewState = output.submission_state === 'held' ? 'paused' : isAIWaiting(output.status) ? 'waiting' : output.status === 'ready' ? 'ready' :
       output.status === 'generated' ? 'generated' : output.status === 'failed' ? 'failed' : 'unavailable';
     const animateCompletion = state.view === 'waiting' && view === 'generated';
     emit({ view, output, animateCompletion, longWait: view === 'waiting' && deps.now() - startedAt >= AI_LONG_WAIT_MS });
