@@ -220,7 +220,7 @@ const ScaleListPage = () => {
   };
 
   return (
-    <PageShell
+    <PageShell globalTestee
       tone="medical"
       className="scale-list-page"
       contentClassName="scale-list-page__scroll"

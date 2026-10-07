@@ -1,0 +1,40 @@
+import React from 'react';
+import renderer, { act } from 'react-test-renderer';
+import Taro from '@tarojs/taro';
+import PageShell from '../../PageShell';
+import BottomMenu from '../../BottomMenu';
+import { resetTesteeStore, setTesteeList, setSelectedTesteeId, getSelectedTesteeId, removeTestee } from '@/shared/stores/testees';
+const members = [{ id: 'one', legalName: '成员一' }, { id: 'two', legalName: '成员二' }];
+let tree;
+beforeEach(() => { resetTesteeStore(); setTesteeList(members); });
+afterEach(() => { if (tree) act(() => tree.unmount()); });
+test('browse pages share one selection; specific reports do not expose a switch', () => {
+  setSelectedTesteeId('one');
+  act(() => { tree = renderer.create(<><PageShell globalTestee><span>首页</span></PageShell><PageShell globalTestee><span>量表</span></PageShell><PageShell><span>固定报告</span></PageShell></>); });
+  expect(tree.root.findAllByType('taro-picker')).toHaveLength(2);
+  act(() => tree.root.findAllByType('taro-picker')[0].props.onChange({ detail: { value: 1 } }));
+  expect(getSelectedTesteeId()).toBe('two');
+  tree.root.findAllByType('taro-picker').forEach(picker => expect(picker.props.value).toBe(1));
+  act(() => removeTestee('two'));
+  expect(JSON.stringify(tree.toJSON())).not.toContain('成员二');
+  act(() => resetTesteeStore());
+  expect(JSON.stringify(tree.toJSON())).not.toContain('成员一');
+});
+test('multiple profiles require an explicit choice; management is not a selection', () => {
+  act(() => { tree = renderer.create(<PageShell globalTestee><span>内容</span></PageShell>); });
+  const picker = tree.root.findByType('taro-picker');
+  expect(picker.props.range[0]).toBe('请选择受试者');
+  act(() => picker.props.onChange({ detail: { value: 0 } }));
+  expect(getSelectedTesteeId()).toBe('');
+  act(() => picker.props.onChange({ detail: { value: 2 } }));
+  expect(getSelectedTesteeId()).toBe('two');
+  const navigate = jest.spyOn(Taro, 'navigateTo');
+  act(() => tree.root.findByType('taro-picker').props.onChange({ detail: { value: 2 } }));
+  expect(navigate).toHaveBeenCalledWith({ url: expect.stringContaining('/pages/testees/list') });
+  expect(getSelectedTesteeId()).toBe('two');
+});
+test('bottom navigation has four destinations and no scan entry', () => {
+  act(() => { tree = renderer.create(<BottomMenu activeKey="首页" />); });
+  expect(tree.root.findAll(node => node.type === 'taro-view' && (node.props.className || '').split(' ').includes('menu-item'))).toHaveLength(4);
+  expect(JSON.stringify(tree.toJSON())).not.toContain('扫一扫');
+});

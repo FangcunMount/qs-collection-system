@@ -235,7 +235,7 @@ function AssessmentFillController({ paramData }: { paramData: RouteParams }) {
       if (!active.current) return;
 
       const storedList = getStoredTesteeList();
-      const bootstrap = resolveTesteeBootstrap(storedList, explicitTesteeId);
+      const bootstrap = resolveTesteeBootstrap(storedList, explicitTesteeId, getSelectedTesteeId());
 
       if (bootstrap.kind === "create_testee") {
         Taro.hideLoading();

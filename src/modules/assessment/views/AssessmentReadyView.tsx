@@ -70,7 +70,7 @@ const AssessmentReadyView = ({
       </SurfaceCard>
 
       <View className="testee-selector-section">
-        <SectionHeader title="为谁测评" description="请确认成员，本次结果将保存到该档案" tone={viewModel.tone} />
+        <SectionHeader title="为谁测评" description="沿用全局受试者，请确认本次结果保存的档案" tone={viewModel.tone} />
         {viewModel.testees.length > 0 ? (
           <SurfaceCard className="testee-selector">
             <Picker

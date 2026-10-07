@@ -30,6 +30,8 @@ const routes = read('src/shared/config/routes.js');
 const bottomMenu = read('src/shared/ui/BottomMenu/index.tsx');
 const bottomMenuStyle = read('src/shared/ui/BottomMenu/index.less');
 const assessmentPortals = read('src/shared/config/assessmentPortals.js');
+const globalTesteeSelector = read('src/shared/ui/GlobalTesteeSelector/index.tsx');
+const pageShell = read('src/shared/ui/PageShell/index.tsx');
 const homeTabPage = read('src/modules/tab/pages/HomeTabPage.tsx');
 const homeViewModel = read('src/modules/tab/viewModels/home.ts');
 const homeTabStyle = read('src/modules/tab/pages/HomeTabPage.less');
@@ -58,7 +60,7 @@ assertContains(bottomMenu, /label:\s*["']量表["']/, 'BottomMenu must include �
 assertContains(bottomMenu, /label:\s*["']报告["']/, 'BottomMenu must include 报告');
 assertContains(bottomMenu, /routes\.assessmentRecords\(\{\s*kind:\s*ASSESSMENT_KIND\.MEDICAL\s*\}\)/, 'BottomMenu 报告 must open medical assessment reports');
 assertContains(bottomMenu, /label:\s*["']我的["']/, 'BottomMenu must include 我的');
-assertNotContains(bottomMenu, /扫码测评/, 'BottomMenu must not include 扫码测评 tab');
+assertNotContains(bottomMenu, /scanCode|扫一扫|handleScan/, 'BottomMenu must not include 扫码测评 tab');
 assertNotContains(bottomMenuStyle, /menu-item--scan|scan-button|label--scan/, 'BottomMenu styles must not keep scan tab styles');
 
 const bottomMenuLabels = bottomMenu.match(/label:\s*["']([^"']+)["']/g) || [];
@@ -76,7 +78,9 @@ assertContains(assessmentPortals, /home-(entry|child)-behavior\.(png|webp)/, 'ab
 assertContains(homeProfileCard, /home-current-record-checklist\.png/, 'home current record card must reference checklist image');
 // The approved subject-centred home replaces the hot-model feed and portal artwork.
 assertContains(homeTabPage, /resolveHomeSubject\(currentTestee\)/, 'home page must derive its presentation from the selected subject');
-assertContains(homeTabPage, /setSelectedTesteeId\(testee\.id\)/, 'home selection must update the shared subject store');
+assertContains(homeTabPage, /<PageShell globalTestee/, 'home must use the global subject selector');
+assertContains(pageShell, /globalTestee \? <GlobalTesteeSelector/, 'page shell must render the shared selector for browse pages');
+assertContains(globalTesteeSelector, /setSelectedTesteeId\(member\.id\)/, 'global selection must update the shared subject store');
 assertContains(homeTabPage, /routes\.tabScales\(\)/, 'home must retain access to the medical catalog');
 assertContains(homeTabPage, /routes\.personalityCatalog\(\)/, 'home must retain access to the personality catalog');
 assertContains(homeTabPage, /routes\.abilityCatalog\(\)/, 'home must retain access to the ability catalog');
