@@ -1,3 +1,4 @@
+import { getLogger as getPrivacyLogger } from '@/shared/lib/logger';
 import React, { useState, useCallback } from "react";
 import Taro, { usePullDownRefresh } from "@tarojs/taro";
 import { View, Text, Image } from "@tarojs/components";
@@ -24,6 +25,8 @@ import pressureIcon from "@/pages/catalog-medical/assets/icon/pressure.png";
 import attentionIcon from "@/pages/catalog-medical/assets/icon/attention.png";
 import "./ScaleCatalogPage.less";
 
+const privacyLogger = getPrivacyLogger('modules/catalog/pages/ScaleCatalogPage.tsx');
+
 const PAGE_NAME = "questionnaire_list";
 const logger = getLogger(PAGE_NAME);
 
@@ -48,7 +51,7 @@ const ScaleCatalogPage = () => {
         (scale) => isMedicalScaleCategory(scale.category)
       ));
     } catch (error) {
-      console.error("加载热门量表失败:", error);
+      privacyLogger.ERROR("加载热门量表失败:", error);
       setHotScales([]);
       setHotError("量表加载失败，请检查网络后重试。");
     } finally {

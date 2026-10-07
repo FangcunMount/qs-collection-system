@@ -1,9 +1,12 @@
+import { getLogger as getPrivacyLogger } from '@/shared/lib/logger';
 import React, { useEffect, useMemo, useState } from "react";
 import { Text, View } from "@tarojs/components";
 import Taro from "@tarojs/taro";
 
 import config from "@/config.js";
 import "./index.less";
+
+const privacyLogger = getPrivacyLogger('shared/ui/PlanSubscribeConfirm/index.tsx');
 
 type SubscribeStatus = "accepted" | "ban" | "cancelled";
 
@@ -159,7 +162,7 @@ const readPlanSubscribeStatus = (scopeKey: string): PlanSubscribeStatusRecord | 
       clinician_name: cached.clinician_name || "",
     };
   } catch (error: unknown) {
-    console.error("[PlanSubscribeConfirm] read status failed:", error);
+    privacyLogger.ERROR("[PlanSubscribeConfirm] read status failed:", error);
     return null;
   }
 };
@@ -186,7 +189,7 @@ export const persistPlanSubscribeStatus = (
       ...meta,
     });
   } catch (error: unknown) {
-    console.error("[PlanSubscribeConfirm] save status failed:", error);
+    privacyLogger.ERROR("[PlanSubscribeConfirm] save status failed:", error);
   }
 };
 
@@ -200,7 +203,7 @@ export const listPlanSubscribeStatuses = (): PlanSubscribeStatusRecord[] => {
       .filter((item): item is PlanSubscribeStatusRecord => Boolean(item))
       .sort((left, right) => right.updated_at - left.updated_at);
   } catch (error: unknown) {
-    console.error("[PlanSubscribeConfirm] list status failed:", error);
+    privacyLogger.ERROR("[PlanSubscribeConfirm] list status failed:", error);
     return [];
   }
 };
@@ -217,7 +220,7 @@ export const clearPlanSubscribeStatuses = (scopeKey?: string): void => {
       .filter((key) => key.startsWith(`${STORAGE_KEY_PREFIX}:`))
       .forEach((key) => Taro.removeStorageSync(key));
   } catch (error: unknown) {
-    console.error("[PlanSubscribeConfirm] clear status failed:", error);
+    privacyLogger.ERROR("[PlanSubscribeConfirm] clear status failed:", error);
   }
 };
 
@@ -353,7 +356,7 @@ export default function PlanSubscribeConfirm({
       setExpanded(false);
       Taro.showToast({ title: "未订阅下一次测评开放提醒", icon: "none" });
     } catch (error: unknown) {
-      console.error("[PlanSubscribeConfirm] request subscribe failed:", error);
+      privacyLogger.ERROR("[PlanSubscribeConfirm] request subscribe failed:", error);
       Taro.showToast({ title: readErrorMessage(error), icon: "none" });
     }
   };

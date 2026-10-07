@@ -24,7 +24,7 @@ jest.mock('@tarojs/taro', () => {
   const taro = jest.requireActual('@tarojs/taro');
   return { ...taro, __esModule: true, default: taro, useLoad: fn => { mockLoad = fn; }, useReady: fn => { mockReady = fn; } };
 });
-jest.mock('@/shared/lib/logger', () => ({ getLogger: () => ({ RUN: jest.fn(), WARN: jest.fn() }) }));
+jest.mock('@/shared/lib/logger', () => ({ getLogger: () => ({ RUN: jest.fn(), WARN: jest.fn(), ERROR: jest.fn() }) }));
 jest.mock('@/shared/stores/assessmentEntry', () => ({ getAssessmentEntryContext: () => mockEntryContext, setAssessmentEntryContext: jest.fn(value => { mockEntryContext = value; }) }));
 jest.mock('@/shared/stores/testees', () => ({
   getSelectedTesteeId: () => 'member', getTesteeList: () => [{ id: 'member', legalName: '成员' }],

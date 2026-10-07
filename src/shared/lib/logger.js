@@ -1,56 +1,29 @@
 import Taro from "@tarojs/taro";
+import { safeLogMetadata } from './logMetadata';
 
 const { miniProgram: { version } } = Taro.getAccountInfoSync();
 const VERSION = version ?? "0.0.0";
-
-const canIUseLogManage = Taro.canIUse("getLogManager");
-const logger = canIUseLogManage ? Taro.getLogManager({ level: 0 }) : null;
+const logger = Taro.canIUse("getLogManager") ? Taro.getLogManager({ level: 0 }) : null;
 const realtimeLogger = Taro.getRealtimeLogManager ? Taro.getRealtimeLogManager() : null;
 
-export function RUN(file, ...args) {
-  console.log(`[${VERSION}]`, file, " | ", ...args);
-  if (canIUseLogManage) {
-    logger.log(`[${VERSION}]`, file, " | ", ...args);
-  }
-
-  if (realtimeLogger) {
-    realtimeLogger.info(`[${VERSION}]`, file, " | ", ...args);
-  }
+// The first argument is a static source event label. All remaining data is allowlisted.
+function emit(level, file, args) {
+  const event = typeof args[0] === 'string' ? args[0].slice(0, 160) : 'event';
+  const metadata = safeLogMetadata(typeof args[0] === 'string' ? args.slice(1) : args);
+  const output = [`[${VERSION}]`, file, event, metadata];
+  const sinks = [
+    [console, level === 'info' ? 'log' : level],
+    [logger, level === 'info' ? 'log' : level === 'error' ? 'debug' : 'warn'],
+    [realtimeLogger, level],
+  ];
+  sinks.forEach(([sink, method]) => {
+    try { sink?.[method]?.(...output); } catch (_) { /* A failed log sink is not a business failure. */ }
+  });
 }
-
-export function WARN(file, ...args) {
-  console.warn(`[${VERSION}]`, file, " | ", ...args);
-  if (canIUseLogManage) {
-    logger.warn(`[${VERSION}]`, file, " | ", ...args);
-  }
-
-  if (realtimeLogger) {
-    realtimeLogger.warn(`[${VERSION}]`, file, " | ", ...args);
-  }
-}
-
-export function ERROR(file, ...args) {
-  console.error(`[${VERSION}]`, file, " | ", ...args);
-  if (canIUseLogManage) {
-    logger.debug(`[${VERSION}]`, file, " | ", ...args);
-  }
-
-  if (realtimeLogger) {
-    realtimeLogger.error(`[${VERSION}]`, file, " | ", ...args);
-  }
-}
-
+export function RUN(file, ...args) { emit('info', file, args); }
+export function WARN(file, ...args) { emit('warn', file, args); }
+export function ERROR(file, ...args) { emit('error', file, args); }
 export function getLogger(fileName) {
-  return {
-    ERROR: (...args) => ERROR(fileName, ...args),
-    RUN: (...args) => RUN(fileName, ...args),
-    WARN: (...args) => WARN(fileName, ...args)
-  };
+  return { RUN: (...args) => RUN(fileName, ...args), WARN: (...args) => WARN(fileName, ...args), ERROR: (...args) => ERROR(fileName, ...args) };
 }
-
-export default {
-  RUN,
-  WARN,
-  ERROR,
-  getLogger,
-};
+export default { RUN, WARN, ERROR, getLogger };

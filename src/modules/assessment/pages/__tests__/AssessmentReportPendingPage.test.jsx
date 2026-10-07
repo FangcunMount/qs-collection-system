@@ -1,0 +1,61 @@
+import React from 'react';
+import renderer, {act} from 'react-test-renderer';
+import Taro from '@tarojs/taro';
+import Page from '../AssessmentReportPendingPage';
+import StatePanel from '@/shared/ui/StatePanel';
+import {clearPrivateSessionState} from '@/shared/stores/sessionPrivacy';
+import {waitAssessmentReportLifecycle} from '../../services/waitAssessmentReportLifecycle';
+import {saveSubmissionContext} from '../../services/submissionContextStore';
+let mockOnHide, mockOnShow;
+jest.mock('@tarojs/taro',()=>{
+ const taro=jest.requireActual('@tarojs/taro');
+ return {...taro,__esModule:true,default:taro,useDidHide:fn=>{mockOnHide=fn;},useDidShow:fn=>{mockOnShow=fn;}};
+});
+jest.mock('@tarojs/components',()=>({...jest.requireActual('@tarojs/components'),Canvas:'taro-canvas'}));
+jest.mock('lottie-miniprogram',()=>({setup:jest.fn(),loadAnimation:jest.fn()}));
+jest.mock('@/shared/lib/logger',()=>({getLogger:()=>({RUN:jest.fn(),WARN:jest.fn(),ERROR:jest.fn()})}));
+jest.mock('@/shared/ui/PrivacyAuthorization',()=>({PrivacyAuthorization:()=>null}));
+jest.mock('../../services/waitAssessmentReportLifecycle',()=>({waitAssessmentReportLifecycle:jest.fn()}));
+jest.mock('../../services/submissionContextStore',()=>({getSubmissionContext:()=>({}),saveSubmissionContext:jest.fn(),clearSubmissionContext:jest.fn()}));
+const deferred=()=>{let resolve;const promise=new Promise(yes=>{resolve=yes;});return{promise,resolve};};
+const ready={statusData:{status:'interpreted'},assessmentId:'assessment',answerSheetId:'sheet'};
+let tree;
+beforeEach(()=>{
+ jest.useFakeTimers();
+ jest.spyOn(Taro,'getCurrentInstance').mockReturnValue({router:{params:{a:'sheet',t:'member',kind:'medical'}}});
+ jest.spyOn(Taro,'redirectTo').mockResolvedValue({});
+ waitAssessmentReportLifecycle.mockReset();
+});
+afterEach(()=>{if(tree)act(()=>tree.unmount());tree=null;jest.clearAllTimers();jest.useRealTimers();jest.restoreAllMocks();});
+const render=async()=>{await act(async()=>{tree=renderer.create(<Page/>);});};
+test('hidden waiter cannot save late submission evidence or redirect; showing resumes the original flow',async()=>{
+ const pending=deferred(), resumed=deferred();
+ waitAssessmentReportLifecycle.mockReturnValueOnce(pending.promise).mockReturnValueOnce(resumed.promise);
+ await render();const options=waitAssessmentReportLifecycle.mock.calls[0][0];
+ act(()=>mockOnHide());expect(options.shouldContinue()).toBe(false);
+ saveSubmissionContext.mockClear();
+ act(()=>options.onSubmissionReady({requestId:'late',answersheetId:'late-sheet',assessmentId:'late-assessment'}));
+ expect(saveSubmissionContext).not.toHaveBeenCalled();
+ await act(async()=>pending.resolve(ready));act(()=>jest.advanceTimersByTime(3000));
+ expect(Taro.redirectTo).not.toHaveBeenCalled();
+ await act(async()=>mockOnShow());
+ expect(waitAssessmentReportLifecycle).toHaveBeenCalledTimes(2);
+ expect(waitAssessmentReportLifecycle.mock.calls[1][0]).toMatchObject({answerSheetId:'sheet',testeeId:'member'});
+ await act(async()=>resumed.resolve(ready));act(()=>jest.advanceTimersByTime(3000));
+ expect(Taro.redirectTo).toHaveBeenCalledTimes(1);
+});
+test('logout rejects late results and disables retry using the previous account',async()=>{
+ const pending=deferred();waitAssessmentReportLifecycle.mockReturnValue(pending.promise);
+ await render();act(()=>clearPrivateSessionState());
+ expect(tree.root.findByType(StatePanel).props.description).toContain('登录状态已变化');
+ expect(tree.root.findByType(StatePanel).props.onAction).toBeUndefined();
+ await act(async()=>pending.resolve(ready));act(()=>jest.advanceTimersByTime(3000));
+ expect(Taro.redirectTo).not.toHaveBeenCalled();
+ await act(async()=>mockOnHide());await act(async()=>mockOnShow());
+ expect(waitAssessmentReportLifecycle).toHaveBeenCalledTimes(1);
+});
+test('a success redirect already scheduled is invalidated by hiding the page',async()=>{
+ waitAssessmentReportLifecycle.mockResolvedValue(ready);
+ await render();act(()=>mockOnHide());act(()=>jest.advanceTimersByTime(3000));
+ expect(Taro.redirectTo).not.toHaveBeenCalled();
+});

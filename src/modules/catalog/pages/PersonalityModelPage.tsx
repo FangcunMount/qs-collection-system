@@ -1,3 +1,4 @@
+import { getLogger as getPrivacyLogger } from '@/shared/lib/logger';
 import React, { useEffect, useMemo, useState } from "react";
 import Taro, { useRouter } from "@tarojs/taro";
 import { View, Text } from "@tarojs/components";
@@ -29,6 +30,8 @@ import {
 } from "@/modules/catalog/lib/mbtiVariants";
 import { applyAlgorithmPresentation } from "@/modules/catalog/lib/personalityPresentation";
 import "./PersonalityModelPage.less";
+
+const privacyLogger = getPrivacyLogger('modules/catalog/pages/PersonalityModelPage.tsx');
 
 interface TesteeViewModel {
   id: string;
@@ -286,7 +289,7 @@ const PersonalityModelPage = () => {
         throw new Error("缺少 model_code 或 family 参数");
       } catch (error) {
         if (cancelled) return;
-        console.warn("[PersonalityModelPage] 加载模型失败", error);
+        privacyLogger.WARN("[PersonalityModelPage] 加载模型失败", error);
         setPageError(getErrorMessage(error));
         setModel(null);
         setVariants([]);

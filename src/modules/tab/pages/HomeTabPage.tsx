@@ -1,5 +1,6 @@
+import { getLogger as getPrivacyLogger } from '@/shared/lib/logger';
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import Taro, { usePullDownRefresh, useReady, useRouter } from "@tarojs/taro";
+import Taro, { useDidHide, useDidShow, usePullDownRefresh, useReady, useRouter } from "@tarojs/taro";
 import { View, Text, Image } from "@tarojs/components";
 import Icon from "@/shared/ui/Icon";
 
@@ -13,6 +14,7 @@ import { loadRecentAssessments as fetchRecentAssessments } from "@/modules/asses
 import { isPersonalityAssessmentKind } from "@/shared/lib/assessmentKind";
 import { getAssessmentEntryContext, subscribeAssessmentEntryContext } from "@/shared/stores/assessmentEntry";
 import { findTesteeById, getSelectedTesteeId, subscribeTesteeStore } from "@/shared/stores/testees";
+import { getSessionRevision } from "@/shared/stores/sessionPrivacy";
 import type { Testee } from "@/store/testeeStore";
 import { mapRecentAssessment, type RecentAssessmentViewModel } from "@/modules/tab/viewModels/home";
 import { resolveHomeSubject } from "../viewModels/homeSubject";
@@ -25,6 +27,8 @@ import pressureIcon from "@/assets/icon/icon-anxiety-screening.png";
 import sleepIcon from "@/assets/icon/icon-sleep-quality.png";
 import attentionIcon from "@/assets/icon/icon-attention-screening.png";
 import "./HomeTabPage.less";
+
+const privacyLogger = getPrivacyLogger('modules/tab/pages/HomeTabPage.tsx');
 
 const SUBJECT_IMAGES = { "adult-male": adultMale, "adult-female": adultFemale, "child-male": childMale, "child-female": childFemale };
 
@@ -49,6 +53,8 @@ const HomeIndex = () => {
   const [currentTestee, setCurrentTestee] = useState<Testee | null>(() => getInitialTestee());
   const selectedMemberId = useRef(currentTestee?.id || "");
   const recentRequest = useRef(0);
+  const visible = useRef(true);
+  const reloadOnShow = useRef(false);
   const [avatarFailed, setAvatarFailed] = useState(false);
   const [showReports, setShowReports] = useState(false);
 
@@ -59,9 +65,11 @@ const HomeIndex = () => {
 
   const loadRecentAssessments = useCallback(async (testeeId?: string) => {
     const request = ++recentRequest.current;
+    const revision = getSessionRevision();
+    const valid = () => visible.current && request === recentRequest.current && revision === getSessionRevision();
     setRecentAssessments([]);
     setRecentError("");
-    if (!testeeId) {
+    if (!testeeId || !visible.current) {
       setRecentAssessments([]);
       setRecentLoading(false);
       return;
@@ -71,18 +79,18 @@ const HomeIndex = () => {
       setRecentLoading(true);
       setRecentError("");
       const source: unknown[] = await fetchRecentAssessments(testeeId, { pageSize: 3 });
-      if (request !== recentRequest.current) return;
+      if (!valid()) return;
       const list = source
         .map((item, index) => mapRecentAssessment(item, index, []))
         .filter((item): item is RecentAssessmentViewModel => Boolean(item));
       setRecentAssessments(list);
     } catch (error) {
-      if (request !== recentRequest.current) return;
-      console.error("加载最近测评失败:", error);
+      if (!valid()) return;
+      privacyLogger.ERROR("加载最近测评失败:", error);
       setRecentAssessments([]);
       setRecentError("最近报告同步失败，请稍后重试。");
     } finally {
-      if (request === recentRequest.current) setRecentLoading(false);
+      if (valid()) setRecentLoading(false);
     }
   }, []);
 
@@ -166,6 +174,22 @@ const HomeIndex = () => {
     { key: "sleep", title: "睡眠", desc: "关注休息与精力", image: sleepIcon, icon: "clock", tone: "lavender", url: routes.scaleList({ category: "slp" }) },
     { key: "personality", title: "人格探索", desc: "发现自己的特点", icon: "user", tone: "sand", url: routes.personalityCatalog() },
   ];
+
+  useDidHide(() => {
+    visible.current = false;
+    reloadOnShow.current = true;
+    ++recentRequest.current;
+    setRecentAssessments([]);
+    setRecentLoading(false);
+    setRecentError("");
+  });
+  useDidShow(() => {
+    visible.current = true;
+    if (reloadOnShow.current) {
+      reloadOnShow.current = false;
+      void loadRecentAssessments(getSelectedTesteeId());
+    }
+  });
 
   usePullDownRefresh(async () => {
     await loadRecentAssessments(currentTestee?.id);

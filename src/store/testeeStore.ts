@@ -1,6 +1,9 @@
+import { getLogger as getPrivacyLogger } from '@/shared/lib/logger';
 import Taro from '@tarojs/taro';
 import { getMyTestees } from '@/services/api/testees';
 import { getSessionRevision, onSessionCleared } from '@/shared/stores/sessionPrivacy';
+
+const privacyLogger = getPrivacyLogger('store/testeeStore.ts');
 
 /**
  * 受试者基本信息
@@ -106,9 +109,9 @@ function saveToStorage(): void {
       lastUpdated: state.lastUpdated
     };
     Taro.setStorageSync(STORAGE_KEY, data);
-    console.log('[TesteeStore] 状态已保存到本地存储');
+    privacyLogger.RUN('[TesteeStore] 状态已保存到本地存储');
   } catch (e) {
-    console.error('[TesteeStore] 保存到本地存储失败:', e);
+    privacyLogger.ERROR('[TesteeStore] 保存到本地存储失败:', e);
   }
 }
 
@@ -121,7 +124,7 @@ function loadFromStorage(): Partial<TesteeStoreState> | null {
     if (!stored) return null;
     return stored;
   } catch (e) {
-    console.error('[TesteeStore] 从本地存储加载失败:', e);
+    privacyLogger.ERROR('[TesteeStore] 从本地存储加载失败:', e);
     return null;
   }
 }
@@ -131,14 +134,14 @@ function loadFromStorage(): Partial<TesteeStoreState> | null {
  */
 function normalizeTestee(testee: TesteeInput): Testee | null {
   if (!testee) {
-    console.log('[TesteeStore] normalizeTestee: testee 为空');
+    privacyLogger.RUN('[TesteeStore] normalizeTestee: testee 为空');
     return null;
   }
 
   // 兼容多种 ID 字段
   const id = testee.id ?? testee.testeeid;
   if (!id) {
-    console.log('[TesteeStore] normalizeTestee: 缺少 ID', testee);
+    privacyLogger.RUN('[TesteeStore] normalizeTestee: 缺少 ID', testee);
     return null;
   }
 
@@ -149,7 +152,7 @@ function normalizeTestee(testee: TesteeInput): Testee | null {
                     testee.testee_name ?? 
                     '';
   
-  console.log('[TesteeStore] normalizeTestee 处理中:', { 
+  privacyLogger.RUN('[TesteeStore] normalizeTestee 处理中:', {
     id, 
     legalName,
     raw: { 
@@ -185,7 +188,7 @@ function normalizeTestee(testee: TesteeInput): Testee | null {
     updatedAt: testee.updatedAt
   };
   
-  console.log('[TesteeStore] normalizeTestee 结果:', result);
+  privacyLogger.RUN('[TesteeStore] normalizeTestee 结果:', result);
   return result;
 }
 
@@ -200,12 +203,12 @@ export function getTesteeList(): Testee[] {
  * 设置受试者列表
  */
 export function setTesteeList(list: TesteeInput[] = []): void {
-  console.log('[TesteeStore] setTesteeList 收到数据:', list);
+  privacyLogger.RUN('[TesteeStore] setTesteeList 收到数据:', list);
   const normalized = Array.isArray(list)
     ? list.map(normalizeTestee).filter((item): item is Testee => item !== null)
     : [];
   
-  console.log('[TesteeStore] 规范化后的数据:', normalized);
+  privacyLogger.RUN('[TesteeStore] 规范化后的数据:', normalized);
   state.testeeList = normalized;
   state.lastUpdated = Date.now();
 
@@ -228,7 +231,7 @@ export function setTesteeList(list: TesteeInput[] = []): void {
   saveToStorage();
   notify();
   
-  console.log('[TesteeStore] 受试者列表已更新，共', normalized.length, '个');
+  privacyLogger.RUN('[TesteeStore] 受试者列表已更新，共', normalized.length, '个');
 }
 
 /**
@@ -237,7 +240,7 @@ export function setTesteeList(list: TesteeInput[] = []): void {
 export function addTestee(testee: TesteeInput): void {
   const normalized = normalizeTestee(testee);
   if (!normalized) {
-    console.warn('[TesteeStore] 无效的受试者数据:', testee);
+    privacyLogger.WARN('[TesteeStore] 无效的受试者数据:', testee);
     return;
   }
 
@@ -245,10 +248,10 @@ export function addTestee(testee: TesteeInput): void {
   const existingIndex = state.testeeList.findIndex(item => item.id === normalized.id);
   if (existingIndex > -1) {
     state.testeeList[existingIndex] = normalized;
-    console.log('[TesteeStore] 受试者已更新:', normalized.legalName);
+    privacyLogger.RUN('[TesteeStore] 受试者已更新:', normalized.legalName);
   } else {
     state.testeeList = [...state.testeeList, normalized];
-    console.log('[TesteeStore] 受试者已添加:', normalized.legalName);
+    privacyLogger.RUN('[TesteeStore] 受试者已添加:', normalized.legalName);
   }
 
   // 如果没有选中的受试者，自动选中新添加的
@@ -269,7 +272,7 @@ export function updateTestee(testeeId: string, updates: Partial<TesteeInput>): v
   const index = state.testeeList.findIndex(item => item.id === id);
   
   if (index === -1) {
-    console.warn('[TesteeStore] 未找到受试者:', testeeId);
+    privacyLogger.WARN('[TesteeStore] 未找到受试者:', testeeId);
     return;
   }
 
@@ -285,7 +288,7 @@ export function updateTestee(testeeId: string, updates: Partial<TesteeInput>): v
   saveToStorage();
   notify();
   
-  console.log('[TesteeStore] 受试者已更新:', updated.legalName);
+  privacyLogger.RUN('[TesteeStore] 受试者已更新:', updated.legalName);
 }
 
 /**
@@ -298,7 +301,7 @@ export function removeTestee(testeeId: string | number): void {
   state.testeeList = state.testeeList.filter(item => item.id !== id);
 
   if (state.testeeList.length < originalLength) {
-    console.log('[TesteeStore] 受试者已删除:', id);
+    privacyLogger.RUN('[TesteeStore] 受试者已删除:', id);
     
     // 如果删除的是当前选中的，自动选择第一个
     if (state.selectedTesteeId === id) {
@@ -309,7 +312,7 @@ export function removeTestee(testeeId: string | number): void {
     saveToStorage();
     notify();
   } else {
-    console.warn('[TesteeStore] 未找到要删除的受试者:', id);
+    privacyLogger.WARN('[TesteeStore] 未找到要删除的受试者:', id);
   }
 }
 
@@ -338,7 +341,7 @@ export function setSelectedTesteeId(testeeId: string | number | null): void {
   if (id) {
     const exists = state.testeeList.some(item => item.id === id);
     if (!exists) {
-      console.warn('[TesteeStore] 受试者不存在:', id);
+      privacyLogger.WARN('[TesteeStore] 受试者不存在:', id);
       // 如果列表不为空，选择第一个
       if (state.testeeList.length > 0) {
         state.selectedTesteeId = state.testeeList[0].id;
@@ -355,7 +358,7 @@ export function setSelectedTesteeId(testeeId: string | number | null): void {
   saveToStorage();
   notify();
   
-  console.log('[TesteeStore] 已选中受试者:', state.selectedTesteeId);
+  privacyLogger.RUN('[TesteeStore] 已选中受试者:', state.selectedTesteeId);
 }
 
 /**
@@ -415,11 +418,11 @@ export function resetTesteeStore(): void {
   try {
     Taro.removeStorageSync(STORAGE_KEY);
   } catch (e) {
-    console.error('[TesteeStore] 清除本地存储失败:', e);
+    privacyLogger.ERROR('[TesteeStore] 清除本地存储失败:', e);
   }
   
   notify();
-  console.log('[TesteeStore] 已重置');
+  privacyLogger.RUN('[TesteeStore] 已重置');
 }
 
 /**
@@ -427,7 +430,7 @@ export function resetTesteeStore(): void {
  */
 export function subscribeTesteeStore(listener: Listener): () => void {
   if (typeof listener !== 'function') {
-    console.warn('[TesteeStore] 无效的监听器');
+    privacyLogger.WARN('[TesteeStore] 无效的监听器');
     return () => {};
   }
   
@@ -445,14 +448,14 @@ export function subscribeTesteeStore(listener: Listener): () => void {
  * 从 Collection 加载受试者列表
  */
 export async function loadTesteesFromCollection(): Promise<Testee[]> {
-  console.log('[TesteeStore] 从 Collection 加载受试者列表');
+  privacyLogger.RUN('[TesteeStore] 从 Collection 加载受试者列表');
   
   try {
     const response = await getMyTestees();
-    console.log('[TesteeStore] Collection 响应:', response);
+    privacyLogger.RUN('[TesteeStore] Collection 响应:', response);
     
     const items = response?.items || [];
-    console.log('[TesteeStore] Collection 原始数据:', items);
+    privacyLogger.RUN('[TesteeStore] Collection 原始数据:', items);
     
     // 转换 Collection testee 格式（需要适配新 API 的字段）
     const testees = items.map((item: any) => {
@@ -468,17 +471,17 @@ export async function loadTesteesFromCollection(): Promise<Testee[]> {
         createdAt: item.created_at,
         updatedAt: item.updated_at
       };
-      console.log('[TesteeStore] 转换单个 testee:', { 
+      privacyLogger.RUN('[TesteeStore] 转换单个 testee:', {
         原始: { id: item.id, name: item.name },
         结果: { id: testee.id, legalName: testee.legalName }
       });
       return testee;
     });
     
-    console.log('[TesteeStore] 从 Collection 加载了', testees.length, '个受试者, 转换后:', testees);
+    privacyLogger.RUN('[TesteeStore] 从 Collection 加载了', testees.length, '个受试者, 转换后:', testees);
     return testees;
   } catch (error) {
-    console.error('[TesteeStore] 从 Collection 加载受试者失败:', error);
+    privacyLogger.ERROR('[TesteeStore] 从 Collection 加载受试者失败:', error);
     throw error;
   }
 }
@@ -490,13 +493,13 @@ export async function loadTesteesFromCollection(): Promise<Testee[]> {
 export async function initTesteeStore(force: boolean = false): Promise<TesteeStoreState> {
   // 如果已初始化且不强制刷新，直接返回
   if (state.isInitialized && !force) {
-    console.log('[TesteeStore] 已初始化，跳过重复加载');
+    privacyLogger.RUN('[TesteeStore] 已初始化，跳过重复加载');
     return cloneState();
   }
 
   // 如果正在加载，等待完成
   if (state.isLoading) {
-    console.log('[TesteeStore] 正在加载中，等待完成...');
+    privacyLogger.RUN('[TesteeStore] 正在加载中，等待完成...');
     return new Promise(resolve => {
       const unsubscribe = subscribeTesteeStore(snapshot => {
         if (!snapshot.isLoading) {
@@ -515,7 +518,7 @@ export async function initTesteeStore(force: boolean = false): Promise<TesteeSto
     // 先尝试从本地存储加载
     const stored = loadFromStorage();
     if (stored && !force) {
-      console.log('[TesteeStore] 从本地存储加载');
+      privacyLogger.RUN('[TesteeStore] 从本地存储加载');
       if (stored.testeeList) {
         state.testeeList = stored.testeeList;
       }
@@ -527,20 +530,20 @@ export async function initTesteeStore(force: boolean = false): Promise<TesteeSto
       }
     }
 
-    console.log('[TesteeStore] 从 Collection 加载受试者列表');
+    privacyLogger.RUN('[TesteeStore] 从 Collection 加载受试者列表');
     const list = await loadTesteesFromCollection();
     if (revision !== getSessionRevision()) return cloneState();
-    console.log('[TesteeStore] Collection 加载成功，共', list.length, '个受试者');
+    privacyLogger.RUN('[TesteeStore] Collection 加载成功，共', list.length, '个受试者');
     
-    console.log('[TesteeStore] 解析后的列表长度:', list.length);
+    privacyLogger.RUN('[TesteeStore] 解析后的列表长度:', list.length);
     setTesteeList(list);
     
     state.isInitialized = true;
-    console.log('[TesteeStore] 初始化成功，共', list.length, '个受试者');
+    privacyLogger.RUN('[TesteeStore] 初始化成功，共', list.length, '个受试者');
     
   } catch (error) {
     if (revision !== getSessionRevision()) return cloneState();
-    console.error('[TesteeStore] 初始化失败:', error);
+    privacyLogger.ERROR('[TesteeStore] 初始化失败:', error);
     
     // 如果有本地数据，使用本地数据
     if (state.testeeList.length === 0) {
@@ -550,7 +553,7 @@ export async function initTesteeStore(force: boolean = false): Promise<TesteeSto
         if (stored.selectedTesteeId) {
           state.selectedTesteeId = stored.selectedTesteeId;
         }
-        console.log('[TesteeStore] 使用本地缓存数据');
+        privacyLogger.RUN('[TesteeStore] 使用本地缓存数据');
       }
     }
     
@@ -563,7 +566,7 @@ export async function initTesteeStore(force: boolean = false): Promise<TesteeSto
   }
 
   const result = cloneState();
-  console.log('[TesteeStore] 初始化完成:', result);
+  privacyLogger.RUN('[TesteeStore] 初始化完成:', result);
   return result;
 }
 
@@ -571,7 +574,7 @@ export async function initTesteeStore(force: boolean = false): Promise<TesteeSto
  * 刷新受试者列表
  */
 export async function refreshTesteeList(): Promise<void> {
-  console.log('[TesteeStore] 刷新受试者列表');
+  privacyLogger.RUN('[TesteeStore] 刷新受试者列表');
   await initTesteeStore(true);
 }
 

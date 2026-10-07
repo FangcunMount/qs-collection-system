@@ -1,3 +1,4 @@
+import { getLogger as getPrivacyLogger } from '@/shared/lib/logger';
 import Taro from '@tarojs/taro';
 import { parsingScene } from '@/shared/lib/scene';
 import { getSessionRevision } from '@/shared/stores/sessionPrivacy';
@@ -12,6 +13,8 @@ import {
 } from '@/shared/stores/session';
 import { authorizationHandler } from './authorization';
 import * as iamAuthn from '@/services/api/auth';
+
+const privacyLogger = getPrivacyLogger('services/auth/sessionManager.js');
 
 export const SESSION_STATUS = {
   ANONYMOUS: 'anonymous',
@@ -28,7 +31,7 @@ let isHomeRedirecting = false;
 let isRegisterRedirecting = false;
 
 function logSessionEvent(event, meta = {}) {
-  console.info(`[SessionManager] ${event}`, meta);
+  privacyLogger.RUN(`[SessionManager] ${event}`, meta);
 }
 
 function setSessionStatus(status) {
@@ -94,7 +97,7 @@ async function getWechatLoginCode() {
         reject(createSessionError('login_failed', '获取微信登录凭证失败'));
       },
       fail(error) {
-        console.warn('[SessionManager] wx.login 调用失败', {
+        privacyLogger.WARN('[SessionManager] wx.login 调用失败', {
           message: error?.errMsg ?? '调用 wx.login 失败'
         });
         reject(createSessionError('network_error', error?.errMsg || '调用 wx.login 失败', { raw: error }));
@@ -117,7 +120,7 @@ async function performLogin() {
     return persistSession(result);
   }
 
-  console.warn('[SessionManager] 登录流程失败', {
+  privacyLogger.WARN('[SessionManager] 登录流程失败', {
     reason: result.reason,
     code: result.code ?? '',
     message: result.message
@@ -147,7 +150,7 @@ async function performRefresh() {
     return persistSession(result);
   }
 
-  console.warn('[SessionManager] 刷新流程失败', {
+  privacyLogger.WARN('[SessionManager] 刷新流程失败', {
     reason: result.reason,
     code: result.code ?? '',
     message: result.message
@@ -291,7 +294,7 @@ export async function bootstrapSession(options = {}) {
         return { status: SESSION_STATUS.UNREGISTERED };
       }
 
-      console.warn('[SessionManager] 启动阶段刷新失败', {
+      privacyLogger.WARN('[SessionManager] 启动阶段刷新失败', {
         reason: error?.reason,
         code: error?.code,
         message: error?.message
@@ -322,7 +325,7 @@ export async function bootstrapSession(options = {}) {
       return { status: SESSION_STATUS.UNREGISTERED };
     }
 
-    console.warn('[SessionManager] 启动阶段登录失败', {
+    privacyLogger.WARN('[SessionManager] 启动阶段登录失败', {
       reason: error?.reason,
       code: error?.code,
       message: error?.message
@@ -364,7 +367,7 @@ export async function ensureValidAccessToken(options = {}) {
         throw error;
       }
 
-      console.warn('[SessionManager] access token 校验时刷新失败', {
+      privacyLogger.WARN('[SessionManager] access token 校验时刷新失败', {
         reason: error?.reason,
         code: error?.code,
         message: error?.message

@@ -1,4 +1,7 @@
+import { getLogger as getPrivacyLogger } from '@/shared/lib/logger';
 import Taro from '@tarojs/taro';
+
+const privacyLogger = getPrivacyLogger('store/entryContextStore.ts');
 
 export interface EntryContext {
   mpqrcodeid?: string;
@@ -37,7 +40,7 @@ function notify(): void {
     try {
       listener(snapshot);
     } catch (error) {
-      console.error('[EntryContextStore] listener failed:', error);
+      privacyLogger.ERROR('[EntryContextStore] listener failed:', error);
     }
   });
 }
@@ -50,7 +53,7 @@ function saveToStorage(): void {
     }
     Taro.setStorageSync(STORAGE_KEY, state);
   } catch (error) {
-    console.error('[EntryContextStore] save failed:', error);
+    privacyLogger.ERROR('[EntryContextStore] save failed:', error);
   }
 }
 
@@ -61,7 +64,7 @@ function loadFromStorage(): void {
       state = stored;
     }
   } catch (error) {
-    console.error('[EntryContextStore] load failed:', error);
+    privacyLogger.ERROR('[EntryContextStore] load failed:', error);
   }
 }
 

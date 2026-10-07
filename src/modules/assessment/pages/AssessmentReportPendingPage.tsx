@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, Text, View } from "@tarojs/components";
-import Taro from "@tarojs/taro";
+import Taro, { useDidHide, useDidShow } from "@tarojs/taro";
+import { getSessionRevision, onSessionCleared } from "@/shared/stores/sessionPrivacy";
 import lottie from "lottie-miniprogram";
 
 import carLoadingData from "@/assets/lotties/car-loading-data.json";
@@ -92,6 +93,8 @@ const AssessmentReportPendingPage = () => {
   const [failureCanOpenReport, setFailureCanOpenReport] = useState(false);
   const [dots, setDots] = useState("");
   const isPollingRef = useRef(false);
+  const visibleRef = useRef(true);
+  const resumeOnShowRef = useRef(false);
   const runIdRef = useRef(0);
   const flowParamsRef = useRef<WaitFlowParams | null>(null);
   const lottieInstanceRef = useRef<LottieAnimationInstance | null>(null);
@@ -103,6 +106,8 @@ const AssessmentReportPendingPage = () => {
   );
 
   const startWaitFlow = useCallback(async (flowParams: WaitFlowParams) => {
+    if (!visibleRef.current) return;
+    const revision = getSessionRevision();
     const runId = runIdRef.current + 1;
     runIdRef.current = runId;
     flowParamsRef.current = flowParams;
@@ -113,7 +118,8 @@ const AssessmentReportPendingPage = () => {
     setMessage(flowParams.initialMessage);
     setFailureCanOpenReport(false);
 
-    const isActive = () => isPollingRef.current && runIdRef.current === runId;
+    const isCurrent = () => visibleRef.current && runIdRef.current === runId && revision === getSessionRevision();
+    const isActive = () => isPollingRef.current && isCurrent();
 
     const {
       assessmentId,
@@ -134,6 +140,7 @@ const AssessmentReportPendingPage = () => {
           logger,
         }));
       }
+      if (!isActive()) return;
       if (!testeeId) {
         throw new Error("未找到受试者信息，请稍后重试");
       }
@@ -184,6 +191,7 @@ const AssessmentReportPendingPage = () => {
           answersheetId: string;
           assessmentId: string;
         }) => {
+          if (!isActive()) return;
           if (flowParamsRef.current) {
             flowParamsRef.current = {
               ...flowParamsRef.current,
@@ -284,7 +292,7 @@ const AssessmentReportPendingPage = () => {
         const remainingTime = Math.max(0, MIN_WAIT_TIME - elapsedTime);
 
         setTimeout(() => {
-          if (runIdRef.current !== runId) return;
+          if (!isCurrent()) return;
           Taro.redirectTo({
             url: strategy.reportRoute({
               a: resolvedAnswerSheetId,
@@ -316,6 +324,30 @@ const AssessmentReportPendingPage = () => {
       isPollingRef.current = false;
     }
   }, []);
+
+  useDidHide(() => {
+    visibleRef.current = false;
+    resumeOnShowRef.current = isPollingRef.current || phase === "success";
+    isPollingRef.current = false;
+    runIdRef.current += 1;
+  });
+  useDidShow(() => {
+    visibleRef.current = true;
+    if (resumeOnShowRef.current && flowParamsRef.current) {
+      resumeOnShowRef.current = false;
+      void startWaitFlow(flowParamsRef.current);
+    }
+  });
+  useEffect(() => onSessionCleared(() => {
+    isPollingRef.current = false;
+    resumeOnShowRef.current = false;
+    runIdRef.current += 1;
+    flowParamsRef.current = null;
+    setPhase("failure");
+    setStage("");
+    setMessage("登录状态已变化，请返回测评记录重新打开。");
+    setFailureCanOpenReport(false);
+  }), []);
 
   useEffect(() => {
     const params = Taro.getCurrentInstance().router?.params || {};
@@ -477,8 +509,8 @@ const AssessmentReportPendingPage = () => {
               tone="medical"
               title={viewModel.title}
               description={viewModel.description}
-              actionText={viewModel.canRetry ? "重新等待" : undefined}
-              onAction={viewModel.canRetry ? retry : undefined}
+              actionText={viewModel.canRetry && flowParamsRef.current ? "重新等待" : undefined}
+              onAction={viewModel.canRetry && flowParamsRef.current ? retry : undefined}
               compact
             />
           ) : (

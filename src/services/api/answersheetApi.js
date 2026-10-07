@@ -118,12 +118,13 @@ export const waitForAssessmentReadiness = async (answerSheetId, testeeId, option
 
 /** 获取答卷详情（原始数据）。 */
 export const getAnswersheet = (id, options = {}) => {
-  const { showLoading = true } = options;
+  const { showLoading = true, lifetime } = options;
   return new Promise((resolve, reject) => {
     request(`/answersheets/${String(id)}`, {}, {
       host: config.collectionHost,
       needToken: true,
-      isNeedLoading: showLoading
+      isNeedLoading: showLoading,
+      ...(lifetime ? { lifetime, suppressErrorToast: true, allowInteractiveLogin: false, refreshOnForbidden: false } : {}),
     })
       .then((result) => {
         let si = 1;

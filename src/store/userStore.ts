@@ -1,5 +1,8 @@
+import { getLogger as getPrivacyLogger } from '@/shared/lib/logger';
 import { getSessionRevision, onSessionCleared } from '@/shared/stores/sessionPrivacy';
 import { getAccountProfile } from '@/services/api/account';
+
+const privacyLogger = getPrivacyLogger('store/userStore.ts');
 
 /**
  * 用户信息接口
@@ -106,7 +109,7 @@ function notify(): void {
     try {
       listener(snapshot);
     } catch (error) {
-      console.error('[UserStore] 监听器执行失败:', error);
+      privacyLogger.ERROR('[UserStore] 监听器执行失败:', error);
     }
   });
 }
@@ -149,7 +152,7 @@ const reducers: Record<string, Reducer> = {
 function dispatch(type: string, payload?: any): UserStoreState {
   const reducer = reducers[type];
   if (!reducer) {
-    console.warn(`[UserStore] 未找到 reducer: ${type}`);
+    privacyLogger.WARN('[UserStore] 未找到 reducer');
     return state;
   }
   state = reducer(state, payload);
@@ -290,12 +293,12 @@ export function subscribeUserStore(listener: (state: UserStoreState) => void): (
  */
 export async function initUserStore(force: boolean = false): Promise<UserStoreState> {
   if (state.isInitialized && !force) {
-    console.log('[UserStore] 已初始化，跳过重复加载');
+    privacyLogger.RUN('[UserStore] 已初始化，跳过重复加载');
     return cloneState();
   }
 
   if (state.isLoading) {
-    console.log('[UserStore] 正在加载中，等待完成...');
+    privacyLogger.RUN('[UserStore] 正在加载中，等待完成...');
     return new Promise<UserStoreState>(resolve => {
       const unsubscribe = subscribeUserStore(snapshot => {
         if (!snapshot.isLoading) {
@@ -315,7 +318,7 @@ export async function initUserStore(force: boolean = false): Promise<UserStoreSt
     dispatch('setInitialized', true);
   } catch (error) {
     if (revision !== getSessionRevision()) return cloneState();
-    console.error('[UserStore] 初始化失败:', error);
+    privacyLogger.ERROR('[UserStore] 初始化失败:', error);
     dispatch('setInitialized', false);
     dispatch('save', { userInfo: null });
   } finally {
@@ -323,7 +326,7 @@ export async function initUserStore(force: boolean = false): Promise<UserStoreSt
   }
 
   const result = cloneState();
-  console.log('[UserStore] 初始化完成:', result);
+  privacyLogger.RUN('[UserStore] 初始化完成:', result);
   return result;
 }
 

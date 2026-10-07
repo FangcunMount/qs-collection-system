@@ -75,7 +75,7 @@ const PersonalityReportPage = () => {
       }
       if (!isCurrent()) return;
       const viewModel = buildPersonalityReportViewModel(raw, findTesteeById(testeeId) || { id: testeeId });
-      logger.RUN("[PersonalityReport] ViewModel:", viewModel);
+      logger.RUN("[PersonalityReport] 报告读取完成", { assessmentId });
       setAssessmentContext({ assessmentId, testeeId });
       setReport(viewModel);
     } catch (loadError) {

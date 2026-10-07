@@ -9,6 +9,12 @@ import { loadRecentAssessments } from '@/modules/assessment/services/loadRecentA
 import { listHotPublishedAssessmentModels } from '@/services/api/assessmentModelCatalogApi';
 import { resetTesteeStore, setTesteeList, setSelectedTesteeId } from '@/shared/stores/testees';
 
+let mockOnHide, mockOnShow;
+jest.mock('@tarojs/taro', () => {
+  const taro = jest.requireActual('@tarojs/taro');
+  return {...taro, __esModule:true, default:taro,
+    useDidHide: fn => { mockOnHide = fn; }, useDidShow: fn => { mockOnShow = fn; }};
+});
 jest.mock('@/services/api/planTaskEntries', () => ({ listPlanTasks: jest.fn() }));
 jest.mock('@/modules/assessment/services/loadRecentAssessments', () => ({ loadRecentAssessments: jest.fn() }));
 jest.mock('@/services/api/assessmentModelCatalogApi', () => ({ listHotPublishedAssessmentModels: jest.fn() }));
@@ -116,4 +122,16 @@ test('home exposes a compact task entry without loading or rendering a task list
   expect(listPlanTasks).not.toHaveBeenCalled();
   act(() => component.root.findAllByType(SurfaceCard).find(card => (card.props.className || '').includes('home-tasks-link')).props.onClick());
   expect(navigate).toHaveBeenCalledWith({ url: '/pages/assessment/tasks/index' });
+});
+
+test('returning home refreshes reports and cannot display a late hidden-page result', async () => {
+  const hidden = deferred(); loadRecentAssessments.mockReturnValueOnce(hidden.promise);
+  await act(async () => { component = renderer.create(<HomeTabPage />); });
+  act(() => component.root.findByProps({className:'home-recent-toggle'}).props.onClick());
+  act(() => mockOnHide());
+  await act(async () => hidden.resolve([{id:'old', scale_name:'隐藏页旧报告',testee_id:'one'}]));
+  expect(textOf(component)).not.toContain('隐藏页旧报告');
+  loadRecentAssessments.mockResolvedValueOnce([{id:'new',scale_name:'返回后新报告',testee_id:'one'}]);
+  await act(async () => mockOnShow());
+  expect(textOf(component)).toContain('返回后新报告');
 });

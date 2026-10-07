@@ -1,14 +1,20 @@
 import React from 'react';
+import Taro from '@tarojs/taro';
+import FilterChip from '@/shared/ui/FilterChip';
+import { loadPersonalityAssessmentRecords } from '../../services/personalityAssessmentRecordService';
+import { loadBehaviorAssessmentRecords } from '../../services/behaviorAssessmentRecordService';
 import renderer, { act } from 'react-test-renderer';
 import AssessmentRecordsPage from '../AssessmentRecordsPage';
 import AssessmentRecordList from '../../components/records/AssessmentRecordList';
 import { loadMedicalAssessmentRecords } from '../../services/loadMedicalAssessmentRecords';
 import { resetTesteeStore, setTesteeList, setSelectedTesteeId, getSelectedTesteeId } from '@/shared/stores/testees';
+jest.mock('../../services/personalityAssessmentRecordService', () => ({ loadPersonalityAssessmentRecords: jest.fn() }));
+jest.mock('../../services/behaviorAssessmentRecordService', () => ({ loadBehaviorAssessmentRecords: jest.fn() }));
 jest.mock('../../services/loadMedicalAssessmentRecords', () => ({ loadMedicalAssessmentRecords: jest.fn() }));
 jest.mock('@/shared/stores/testees', () => ({ ...jest.requireActual('@/shared/stores/testees'), refreshTesteeList: jest.fn().mockResolvedValue(undefined) }));
 const deferred = () => { let resolve; const promise = new Promise(yes => { resolve = yes; }); return { promise, resolve }; };
 let tree;
-beforeEach(() => { resetTesteeStore(); setTesteeList([{ id: 'one', legalName: '成员一' }, { id: 'two', legalName: '成员二' }]); loadMedicalAssessmentRecords.mockReset().mockResolvedValue({ items: [], page: 1 }); });
+beforeEach(() => { Taro.__setRouterParams({}); [loadPersonalityAssessmentRecords, loadBehaviorAssessmentRecords].forEach(mock => mock.mockReset().mockResolvedValue({items: [], page: 1, total: 0}));  resetTesteeStore(); setTesteeList([{ id: 'one', legalName: '成员一' }, { id: 'two', legalName: '成员二' }]); loadMedicalAssessmentRecords.mockReset().mockResolvedValue({ items: [], page: 1 }); });
 afterEach(() => { if (tree) act(() => tree.unmount()); });
 test('records neither pick the first member nor overwrite a selection made on another page', async () => {
   await act(async () => { tree = renderer.create(<AssessmentRecordsPage />); });
@@ -35,4 +41,31 @@ test('switch clears the old list and discards its late response and pagination',
   expect(records().pagination.total).toBe(1);
   act(() => resetTesteeStore());
   expect(tree.root.findAllByType(AssessmentRecordList)).toHaveLength(0);
+});
+
+const kindChip = key => tree.root.findAllByType(FilterChip).find(chip => chip.props.tone === key && ['量表', '人格', '行为能力'].includes(chip.props.children));
+test('all report kinds are reachable while preserving global member selection', async () => {
+  setSelectedTesteeId('two');
+  await act(async () => { tree = renderer.create(<AssessmentRecordsPage />); });
+  await act(async () => kindChip('personality').props.onClick());
+  expect(loadPersonalityAssessmentRecords).toHaveBeenLastCalledWith(expect.objectContaining({testeeId:'two', page:1}));
+  await act(async () => kindChip('ability').props.onClick());
+  expect(loadBehaviorAssessmentRecords).toHaveBeenLastCalledWith(expect.objectContaining({testeeId:'two', page:1}));
+  expect(getSelectedTesteeId()).toBe('two');
+});
+test('kind switch clears filter and rejects a late response from the previous category', async () => {
+  setSelectedTesteeId('one');
+  const old = deferred(); loadMedicalAssessmentRecords.mockReturnValueOnce(old.promise);
+  loadPersonalityAssessmentRecords.mockResolvedValue({items:[{id:'personality-record', title:'人格报告', status:'completed'}],page:1,total:1});
+  await act(async () => { tree = renderer.create(<AssessmentRecordsPage />); });
+  await act(async () => kindChip('personality').props.onClick());
+  await act(async () => old.resolve({items:[{id:'old', title:'旧量表', status:'completed'}],page:9,total:99}));
+  expect(tree.root.findByType(AssessmentRecordList).props.records[0].id).toBe('personality-record');
+  expect(tree.root.findByType(AssessmentRecordList).props.pagination.total).toBe(1);
+});
+test('explicit report route opens the requested kind', async () => {
+  Taro.__setRouterParams({kind:'ability'}); setSelectedTesteeId('one');
+  await act(async () => { tree = renderer.create(<AssessmentRecordsPage />); });
+  expect(loadBehaviorAssessmentRecords).toHaveBeenCalled();
+  expect(loadMedicalAssessmentRecords).not.toHaveBeenCalled();
 });

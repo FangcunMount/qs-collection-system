@@ -1,3 +1,4 @@
+import { getLogger as getPrivacyLogger } from '@/shared/lib/logger';
 /**
  * 注册服务
  * 由 collection-server 负责创建 IAM Profile/ProfileLink 和 QS Testee。
@@ -5,6 +6,8 @@
 
 import { createTestee } from '@/services/api/testees';
 import { addTestee } from '@/shared/stores/testees';
+
+const privacyLogger = getPrivacyLogger('services/registerService.ts');
 
 /**
  * 档案注册数据类型
@@ -57,7 +60,7 @@ export interface RegisterResult {
  * @throws 如果创建失败将抛出错误
  */
 export async function registerTesteeComplete(testeeData: TesteeRegisterData): Promise<RegisterResult> {
-  console.log('[RegisterService] 开始注册档案:', testeeData.name);
+  privacyLogger.RUN('[RegisterService] 开始注册档案');
   
   try {
     const collectionPayload = {
@@ -71,7 +74,7 @@ export async function registerTesteeComplete(testeeData: TesteeRegisterData): Pr
       is_key_focus: testeeData.isKeyFocus ?? false
     };
 
-    console.log('[RegisterService] Collection 请求 payload:', collectionPayload);
+    privacyLogger.RUN('[RegisterService] 请求已准备');
     const testeeResponse = await createTestee(collectionPayload as never) as unknown;
     const responseSource = testeeResponse && typeof testeeResponse === 'object'
       ? testeeResponse as Record<string, any>
@@ -81,11 +84,11 @@ export async function registerTesteeComplete(testeeData: TesteeRegisterData): Pr
     const iamProfileId = testee?.iam_profile_id ? String(testee.iam_profile_id) : undefined;
 
     if (!testeeId) {
-      console.error('[RegisterService] Collection 响应中未找到 testeeId:', testeeResponse);
+      privacyLogger.ERROR('[RegisterService] 响应缺少受试者标识');
       throw new Error('创建受试者失败：未返回受试者ID');
     }
 
-    console.log('[RegisterService] Collection 创建成功:', {
+    privacyLogger.RUN('[RegisterService] Collection 创建成功:', {
       testeeId,
       iamProfileId
     });
@@ -103,9 +106,9 @@ export async function registerTesteeComplete(testeeData: TesteeRegisterData): Pr
         createdAt: testee?.created_at || testee?.createdAt,
         updatedAt: testee?.updated_at || testee?.updatedAt
       });
-      console.log('[RegisterService] 本地 store 更新成功');
+      privacyLogger.RUN('[RegisterService] 本地 store 更新成功');
     } catch (storeError) {
-      console.warn('[RegisterService] 本地 store 更新失败:', storeError);
+      privacyLogger.WARN('[RegisterService] 本地 store 更新失败:', storeError);
     }
 
     return {
@@ -114,7 +117,7 @@ export async function registerTesteeComplete(testeeData: TesteeRegisterData): Pr
       iamProfileId
     };
   } catch (error) {
-    console.error('[RegisterService] 注册失败:', error);
+    privacyLogger.ERROR('[RegisterService] 注册失败:', error);
     throw error;
   }
 }

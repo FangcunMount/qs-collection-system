@@ -1,3 +1,4 @@
+import { getLogger as getPrivacyLogger } from '@/shared/lib/logger';
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Taro from "@tarojs/taro";
 import { View, Text, Image } from "@tarojs/components";
@@ -22,6 +23,8 @@ import ieTestImage from "@/pages/catalog-personality/assets/icon/icon-ie-test.pn
 import typeBasicImage from "@/pages/catalog-personality/assets/icon/icon-personality-basic.png";
 import funTestImage from "@/pages/catalog-personality/assets/icon/icon-sbti.png";
 import "./PersonalityCatalogPage.less";
+
+const privacyLogger = getPrivacyLogger('modules/catalog/pages/PersonalityCatalogPage.tsx');
 
 const PersonalityCatalogPage = () => {
   const [catalogItems, setCatalogItems] = useState<CatalogCardViewModel[]>([]);
@@ -52,7 +55,7 @@ const PersonalityCatalogPage = () => {
           : [];
         setCatalogItems(items.map(mapPersonalityCatalogCard));
       } catch (error) {
-        console.warn("[PersonalityCatalogPage] 加载人格模型目录失败", error);
+        privacyLogger.WARN("[PersonalityCatalogPage] 加载人格模型目录失败", error);
         setCatalogItems([]);
         setLoadError("人格测评目录加载失败，请检查网络后重试");
       } finally {

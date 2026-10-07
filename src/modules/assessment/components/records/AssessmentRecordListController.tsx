@@ -1,3 +1,4 @@
+import { getLogger as getPrivacyLogger } from '@/shared/lib/logger';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Taro from "@tarojs/taro";
 
@@ -25,6 +26,8 @@ import BottomSheet from "./BottomSheet";
 import FilterSheet from "./FilterSheet";
 import ScaleSheet from "./ScaleSheet";
 import type { RecordTesteeOption } from "./AssessmentRecordFilterBar";
+
+const privacyLogger = getPrivacyLogger('modules/assessment/components/records/AssessmentRecordListController.tsx');
 
 const loadPersonalityRecords = loadPersonalityAssessmentRecords as (params: {
   testeeId: string;
@@ -210,7 +213,7 @@ const AssessmentRecordListController = ({
       });
     } catch (caughtError) {
       if (!valid()) return;
-      console.error("获取测评记录失败：", caughtError);
+      privacyLogger.ERROR("获取测评记录失败：", caughtError);
       setError(errorMessage(caughtError));
     } finally {
       if (valid()) { setLoading(false); setLoadingMore(false); }

@@ -80,3 +80,12 @@ test('AI 403 is a permission failure, not a token refresh or logout', async () =
   await flush(); await requests[0].success({ statusCode: 403, data: { code: 403 } });
   await rejected; expect(sessionManager.refreshSession).not.toHaveBeenCalled(); expect(sessionManager.clearSession).not.toHaveBeenCalled();
 });
+
+test('ordinary requests are metadata-only even without an explicit log policy', async () => {
+  const { logPolicy, ...ordinary } = settings;
+  const result = request('/answersheets', { answers: ['private-raw-answer'], id_card_number: 'private-id-card' }, { ...ordinary, retry429: true });
+  await flush();
+  requests[0].success({statusCode:200,data:{code:0,data:{report:'private-report-content'}}});
+  await expect(result).resolves.toEqual({report:'private-report-content'});
+  expect(JSON.stringify(logs.flatMap(log=>log.mock.calls))).not.toMatch(/private-raw-answer|private-id-card|private-report-content|private-access-token/);
+});
