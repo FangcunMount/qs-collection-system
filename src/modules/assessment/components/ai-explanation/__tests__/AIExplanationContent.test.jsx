@@ -81,3 +81,18 @@ test('renders a validated exploration result with all three themes and original 
   expect(JSON.stringify(view.toJSON())).toContain(references.entries.find(e => e.entry_id === 'personality.ei.i').content);
   view.unmount();
 });
+
+test('theme anchors navigate without hiding other themes, questions or action steps', () => {
+  const onSelect = jest.fn();
+  const view = renderer.create(<AIExplanationContent content={threeTopics} onTopicSelect={onSelect} />);
+  act(() => view.root.findAllByType('taro-button').find(button => button.findByType('taro-text').props.children === '职业探索').props.onClick());
+  expect(onSelect).toHaveBeenCalledWith('career');
+  const text = JSON.stringify(view.toJSON());
+  for (const section of threeTopics.sections) {
+    expect(text).toContain(`mbti-topic-${section.topic}`);
+    for (const insight of section.insights) { expect(text).toContain(insight.title); expect(text).toContain(insight.content); }
+    for (const question of section.reflection_questions) expect(text).toContain(question.question);
+    for (const action of section.actions) for (const step of action.steps) expect(text).toContain(step);
+  }
+  view.unmount();
+});

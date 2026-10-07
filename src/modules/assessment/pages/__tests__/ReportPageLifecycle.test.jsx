@@ -43,7 +43,7 @@ jest.mock('../../components/report/MedicalReportTrendSummary', () => ({ __esModu
 jest.mock('../../components/report/BehaviorReportContent', () => ({ __esModule: true, default: () => null }));
 jest.mock('../../components/report/PersonalityReportContent', () => ({ __esModule: true, default: ({ supplement }) => supplement || null }));
 jest.mock('../../components/report/TrendLineChart', () => ({ __esModule: true, default: () => null }));
-jest.mock('../../components/ai-explanation/AIExplanationEntryCard', () => ({ __esModule: true, default: () => null }));
+jest.mock('../../components/ai-explanation/AIExplanationEntryCard', () => ({ __esModule: true, default: ({ render }) => render ? render(null) : null }));
 
 const deferred = () => { let resolve, reject; const promise = new Promise((yes, no) => { resolve = yes; reject = no; }); return { promise, resolve, reject }; };
 let tree;

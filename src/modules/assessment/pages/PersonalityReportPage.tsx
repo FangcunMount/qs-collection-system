@@ -16,6 +16,9 @@ import type { PersonalityReportViewModel } from "../types";
 import PersonalityReportContent from "../components/report/PersonalityReportContent";
 import AIExplanationEntryCard from "../components/ai-explanation/AIExplanationEntryCard";
 import ReportCompletionAction from "../components/report/ReportCompletionAction";
+import PersonalityReportBrand from "../components/report/PersonalityReportBrand";
+import ActionButton from "@/shared/ui/ActionButton";
+import { View } from "@tarojs/components";
 import "./PersonalityReportPage.less";
 
 const logger = getLogger("personality-report");
@@ -110,7 +113,13 @@ const PersonalityReportPage = () => {
     >
       {report ? (
         <>
-          <PersonalityReportContent report={report} supplement={<AIExplanationEntryCard {...assessmentContext} tone="personality" />} />
+          <PersonalityReportBrand />
+          <AIExplanationEntryCard {...assessmentContext} tone="personality" render={(entry, action) => <>
+            <PersonalityReportContent report={report} supplement={entry} />
+            {action && <View className="mbti-report-primary-action">
+              <ActionButton tone="personality" block className="mbti-report-action" onClick={action.onClick}>{action.label}</ActionButton>
+            </View>}
+          </>} />
           <PlanSubscribeConfirm
             taskId={planTaskId}
             planName={entryContext?.plan_name}

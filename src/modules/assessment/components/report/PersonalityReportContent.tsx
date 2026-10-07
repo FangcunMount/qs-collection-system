@@ -3,10 +3,10 @@ import { Text, View } from "@tarojs/components";
 
 import StatePanel from "@/shared/ui/StatePanel";
 import { formatSimpleDate } from "@/shared/lib/dateFormatters";
-import { resolvePersonalityDimensionScale } from "../../lib/personalityDimensionScale";
 
-import type { PersonalityReportDimensionViewModel, PersonalityReportViewModel } from "../../types";
+import type { PersonalityReportViewModel } from "../../types";
 import PersonalityReportHero from "./PersonalityReportHero";
+import PersonalityDimensionScales from "./PersonalityDimensionScales";
 
 interface ReportRegionProps {
   number: string;
@@ -28,72 +28,6 @@ const ReportRegion = ({ number, title, subtitle, children, className = "" }: Rep
     <View className="pr-report-region__content">{children}</View>
   </View>
 );
-
-const DimensionScale = ({
-  dimension,
-  outcomeCode,
-}: {
-  dimension: PersonalityReportDimensionViewModel;
-  outcomeCode: string;
-}) => {
-  const scale = resolvePersonalityDimensionScale(dimension, outcomeCode);
-  const fillStart = Math.min(scale.position, 50);
-  const fillWidth = Math.abs(scale.position - 50);
-  const leftActive = scale.hasValue && scale.leftPercent > scale.rightPercent;
-  const rightActive = scale.hasValue && scale.rightPercent > scale.leftPercent;
-  const balanced = scale.hasValue && scale.leftPercent === scale.rightPercent;
-  const preferredPole = leftActive ? scale.left : scale.right;
-  const preferredPercent = leftActive ? scale.leftPercent : scale.rightPercent;
-  const pairCode = `${scale.left.code}${scale.right.code}`;
-  const dimensionTitle = dimension.title && comparableText(dimension.title) !== comparableText(pairCode)
-    ? dimension.title
-    : "";
-
-  return (
-    <View className="pr-dimension-scale">
-      <View className="pr-dimension-scale__summary">
-        <View className="pr-dimension-scale__heading">
-          <Text className="pr-dimension-scale__pair">{pairCode}</Text>
-          {dimensionTitle ? <Text className="pr-dimension-scale__title">{dimensionTitle}</Text> : null}
-        </View>
-        {scale.hasValue ? (
-          <Text className="pr-dimension-scale__result">
-            {balanced ? "倾向均衡 · 50%" : `偏向 ${preferredPole.code} · ${preferredPercent}%`}
-          </Text>
-        ) : (
-          <Text className="pr-dimension-scale__result pr-dimension-scale__result--empty">暂无数据</Text>
-        )}
-      </View>
-      <View className="pr-dimension-scale__poles">
-        <View className={`pr-dimension-pole pr-dimension-pole--left ${leftActive ? "pr-dimension-pole--active" : ""}`}>
-          <View className="pr-dimension-pole__identity">
-            <Text className="pr-dimension-pole__code">{scale.left.code}</Text>
-            <Text className="pr-dimension-pole__label">{scale.left.label}</Text>
-          </View>
-        </View>
-        <View className={`pr-dimension-pole pr-dimension-pole--right ${rightActive ? "pr-dimension-pole--active" : ""}`}>
-          <View className="pr-dimension-pole__identity">
-            <Text className="pr-dimension-pole__code">{scale.right.code}</Text>
-            <Text className="pr-dimension-pole__label">{scale.right.label}</Text>
-          </View>
-        </View>
-      </View>
-      <View className={`pr-dimension-scale__track ${scale.hasValue ? "" : "pr-dimension-scale__track--empty"}`}>
-        <View className="pr-dimension-scale__center" />
-        {scale.hasValue ? (
-          <>
-            <View
-              className="pr-dimension-scale__fill"
-              style={{ left: `${fillStart}%`, width: `${fillWidth}%` }}
-            />
-            <View className="pr-dimension-scale__marker" style={{ left: `${scale.position}%` }} />
-          </>
-        ) : null}
-      </View>
-      {dimension.description ? <Text className="pr-dimension-scale__description">{dimension.description}</Text> : null}
-    </View>
-  );
-};
 
 const comparableText = (value: string): string => value.replace(/\s+/g, "").toLowerCase();
 
@@ -217,7 +151,7 @@ const PersonalityReportContent = ({ report, supplement }: { report: PersonalityR
       <ReportRegion
         number="02"
         title="人格报告"
-        subtitle="从整体特征到具体表现，理解你的行为方式"
+        subtitle="类型通用说明 · 报告原文"
         className="pr-report-region--interpretation"
       >
         {showConclusion || reportSections.length ? (
@@ -238,7 +172,7 @@ const PersonalityReportContent = ({ report, supplement }: { report: PersonalityR
       <ReportRegion
         number="03"
         title="成长建议"
-        subtitle="看见优势，也为自己留出可以成长的空间"
+        subtitle="原报告建议 · 结合真实经历阅读"
         className="pr-report-region--growth"
       >
         {growthGroups.length ? (
@@ -276,24 +210,16 @@ const PersonalityReportContent = ({ report, supplement }: { report: PersonalityR
       <ReportRegion
         number="04"
         title="维度观察"
-        subtitle="结合各维度的得分与原始解释理解倾向"
+        subtitle="结合各维度的得分与原始解释理解倾向 · 来自标准报告"
         className="pr-report-region--dimensions"
       >
         {report.dimensions.length ? (
-          <View className="pr-dimension-list">
-            {report.dimensions.map((dimension, index) => (
-              <DimensionScale
-                key={dimension.factor_code || index}
-                dimension={dimension}
-                outcomeCode={report.outcome.code}
-              />
-            ))}
-          </View>
+          <PersonalityDimensionScales dimensions={report.dimensions} outcomeCode={report.outcome.code} />
         ) : (
           <StatePanel state="empty" tone="personality" compact title="暂无维度数据" />
         )}
       </ReportRegion>
-
+      <Text className="pr-report-field-note">标尺比例、原始分与偏好强度为不同报告字段。</Text>
     </View>
   );
 };

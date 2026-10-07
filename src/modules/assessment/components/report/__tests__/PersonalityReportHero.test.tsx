@@ -51,3 +51,13 @@ describe("PersonalityReportHero", () => {
     expect(JSON.stringify(component.toJSON())).toContain("personality-report-hero--text-only");
   });
 });
+
+test.each(['ISTJ', 'ISFJ', 'INFJ', 'INTJ', 'ISTP', 'ISFP', 'INFP', 'INTP', 'ESTP', 'ESFP', 'ENFP', 'ENTP', 'ESTJ', 'ESFJ', 'ENFJ', 'ENTJ'])(
+  'keeps the existing report character for %s instead of a fixed ENFP or brand mascot', code => {
+    const imageUrl = `https://example.com/${code}/portrait.png`;
+    const view = renderer.create(<PersonalityReportHero modelExtra={{ type_code: code }} imageUrl={imageUrl} />);
+    expect(view.root.findByType('taro-image').props.src).toBe(imageUrl);
+    expect(collectText(view.toJSON())).toContain(code);
+    view.unmount();
+  },
+);

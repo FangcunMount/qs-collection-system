@@ -1,0 +1,58 @@
+@import "../../../../styles/tokens.less";
+
+.mbti-ai-report {
+  background: @surface-personality-reading;
+  .ai-explanation__page { padding: @space-3; }
+  .ai-explanation__heading, .ai-explanation__title { font-weight: @font-weight-bold; }
+  .ai-explanation__caption { font-size: @font-size-caption; }
+  .ai-explanation__label { color: @color-personality-700; font-size: @font-size-caption; margin-bottom: 0; }
+  .ai-explanation__detail-toggle { color: @color-brand-strong; font-size: @font-size-body; }
+  .ai-explanation__stack { gap: @space-3; }
+  .personality-report-brand { padding: 0 @space-1; }
+  .ai-explanation__body { word-break: break-word; overflow-wrap: break-word; }
+  .mbti-report-action.action-button { border-radius: @radius-pill; background: @color-brand-primary; border-color: transparent; color: @color-white; }
+}
+
+.mbti-ai-source {
+  min-width: 0;
+  &__rulers { margin-top: @space-3; padding: @space-3; border: 1rpx solid @color-personality-200; border-radius: @radius-card; background: @surface-card; }
+  &__heading { display: flex; align-items: center; flex-wrap: wrap; justify-content: space-between; gap: @space-1; }
+  &__heading .ai-explanation__heading { min-width: 0; font-size: @font-size-card-title-sm; }
+  &__heading .action-button { min-width: auto; padding: 0 @space-1; color: @color-brand-strong; }
+  &__scales--compact .pr-dimension-scale__description { display: none; }
+  &--unavailable { padding: @space-2 @space-3; border-left: 4rpx solid @color-personality-500; background: @color-personality-50; }
+}
+
+.mbti-three-topic {
+  &__notice { padding: @space-3; border: 1rpx solid @color-personality-200; border-radius: @radius-lg-token; background: @color-personality-50; }
+  &__notice .ai-explanation__caption + .ai-explanation__caption { margin-top: @space-1; }
+  &__summary { padding: @space-3; border-radius: @radius-lg-token; background: @surface-card; }
+  &__summary .ai-explanation__label { margin: @space-2 0 @space-1; }
+  &__navigation { display: flex; gap: @space-1; }
+  &__anchor {
+    min-width: 0; flex: 1; min-height: @touch-target-min; margin: 0; padding: @space-2 @space-1;
+    display: flex; align-items: center; justify-content: center; border: 1rpx solid @border-color-base;
+    border-radius: @radius-lg-token; color: @text-color-secondary; background: @surface-card;
+    font-size: @font-size-body; font-weight: @font-weight-semibold; line-height: @line-height-body;
+    &::after { border: 0; }
+    &--active { color: @color-brand-strong; border-color: @color-brand-primary; background: @color-brand-soft; }
+  }
+  &__heading { display: flex; align-items: baseline; gap: @space-2; padding: @space-2 0; }
+  &__heading .ai-explanation__title { min-width: 0; font-size: @font-size-card-title; }
+  &__number { color: @color-personality-600; font-size: @font-size-section-title; font-weight: @font-weight-bold; flex: none; }
+  &__reading { padding: @space-3; border: 1rpx solid @color-personality-200; border-radius: @radius-card; background: @surface-card; }
+  &__section--career &__reading { border-color: @color-ability-200; }
+  &__section--career &__number { color: @color-ability-700; }
+  &__section--relationships &__reading { border-color: @color-brand-soft; }
+  &__section--relationships &__number { color: @color-brand-strong; }
+  &__insight { padding: @space-2 0 @space-3; }
+  &__insight + &__insight { padding-top: @space-3; border-top: 1rpx solid @border-color-base; }
+  &__basis { align-self: flex-start; padding: 4rpx @space-2; border-radius: @radius-pill; background: @color-personality-100; }
+  &__questions, &__actions { padding: @space-3; margin-top: @space-3; border-radius: @radius-lg-token; background: @color-personality-50; }
+  &__actions { background: @color-ability-50; }
+  &__section--relationships &__actions { background: @color-brand-soft; }
+  &__question, &__action { margin-top: @space-3; }
+  &__step { display: flex; align-items: flex-start; gap: @space-2; }
+  &__step .ai-explanation__body { min-width: 0; flex: 1; }
+  &__step-number { flex: none; color: @color-ability-700; font-size: @font-size-reading; line-height: 1.7; }
+}

@@ -15,7 +15,15 @@
   &__caution { color: @color-warning-700; font-size: @font-size-reading; line-height: 1.7; white-space: pre-wrap; }
   &__boundary { padding-top: @space-4; border-top: 1rpx solid @border-color-base; }
   &__entry { width: auto; margin: 0 @space-5 @space-5; gap: @space-3; }
-  &__entry--personality { margin: @space-4 @space-3 0; }
+  &__entry--personality {
+    margin: @space-2 @space-3 0; padding: @space-3;
+    border-color: @color-personality-200; background: @surface-card;
+    gap: @space-2;
+  }
+  &__entry--personality &__title { font-size: @font-size-card-title; font-weight: @font-weight-bold; }
+  &__entry--personality &__art--small { width: 88rpx; height: 88rpx; }
+  &__entry--personality &__label { margin-bottom: @space-1; font-size: @font-size-caption; }
+  &__entry--personality .mbti-report-entry-action { border-radius: @radius-pill; color: @color-brand-strong; border-color: @color-brand-soft; background: @color-brand-soft; }
   &__entry--personality &__label { color: @color-personality-700; }
   &__detail-toggle {
     width: 100%; min-height: @touch-target-min; margin: 0; padding: @space-2 0;
