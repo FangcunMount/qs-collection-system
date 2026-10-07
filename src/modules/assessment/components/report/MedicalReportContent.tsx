@@ -133,6 +133,7 @@ const MedicalReportContent = ({ factors }: MedicalReportContentProps) => {
                 ) : chartType === "scatter" ? (
                   <View className="scatter-chart-container"><TypedFactorScatterChart data={factors} /></View>
                 ) : null}
+                <Text className="factor-chart-caption">图表展示因子得分，风险等级以标准报告结论为准。</Text>
               </View>
             ) : (
               <StatePanel state="empty" tone="medical" compact title="暂无因子分析数据" />
