@@ -20,12 +20,9 @@ export interface RecordTesteeOption {
 
 interface AssessmentRecordFilterBarProps {
   tone: DomainTone;
-  testee?: RecordTesteeOption | null;
-  testeeCount: number;
   statusFilter: string;
   scaleOptions?: AssessmentRecordScaleOption[];
   selectedScale?: AssessmentRecordScaleOption;
-  onOpenTestee: () => void;
   onOpenScale?: () => void;
   onOpenAdvanced: () => void;
   onStatusChange: (status: string) => void;
@@ -40,12 +37,9 @@ const STATUS_TABS = [
 
 const AssessmentRecordFilterBar = ({
   tone,
-  testee,
-  testeeCount,
   statusFilter,
   scaleOptions = [],
   selectedScale,
-  onOpenTestee,
   onOpenScale,
   onOpenAdvanced,
   onStatusChange,
@@ -53,21 +47,6 @@ const AssessmentRecordFilterBar = ({
   <View className="record-filter">
     <View className="record-filter__selectors">
       <View className="record-filter__selector-list">
-        {testee && testeeCount > 1 ? (
-          <View
-            className="record-filter__selector"
-            hoverClass="record-filter__selector--pressed"
-            role="button"
-            aria-label="选择受试者"
-            onClick={onOpenTestee}
-          >
-            <Text className="record-filter__selector-label">受试者</Text>
-            <Text className="record-filter__selector-value">
-              {testee.legalName || testee.name || "未命名"}
-            </Text>
-            <Text className="record-filter__selector-arrow">▾</Text>
-          </View>
-        ) : null}
         {scaleOptions.length > 1 && onOpenScale ? (
           <View
             className="record-filter__selector"

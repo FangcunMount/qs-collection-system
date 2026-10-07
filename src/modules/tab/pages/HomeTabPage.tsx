@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Taro, { usePullDownRefresh, useReady, useRouter } from "@tarojs/taro";
-import { View, Text, Image, Picker } from "@tarojs/components";
+import { View, Text, Image } from "@tarojs/components";
 import Icon from "@/shared/ui/Icon";
 
 import BottomMenu from "@/shared/ui/BottomMenu";
@@ -12,7 +12,7 @@ import { routes } from "@/shared/config/routes";
 import { loadRecentAssessments as fetchRecentAssessments } from "@/modules/assessment/services/loadRecentAssessments";
 import { isPersonalityAssessmentKind } from "@/shared/lib/assessmentKind";
 import { getAssessmentEntryContext, subscribeAssessmentEntryContext } from "@/shared/stores/assessmentEntry";
-import { findTesteeById, getSelectedTesteeId, getTesteeList, setSelectedTesteeId, subscribeTesteeStore } from "@/shared/stores/testees";
+import { findTesteeById, getSelectedTesteeId, subscribeTesteeStore } from "@/shared/stores/testees";
 import type { Testee } from "@/store/testeeStore";
 import { mapRecentAssessment, type RecentAssessmentViewModel } from "@/modules/tab/viewModels/home";
 import { resolveHomeSubject } from "../viewModels/homeSubject";
@@ -47,7 +47,6 @@ const HomeIndex = () => {
   const [recentError, setRecentError] = useState("");
   const [entryContext, setEntryContext] = useState<EntryContext | null>(() => getAssessmentEntryContext());
   const [currentTestee, setCurrentTestee] = useState<Testee | null>(() => getInitialTestee());
-  const [testees, setTestees] = useState<Testee[]>(() => getTesteeList());
   const selectedMemberId = useRef(currentTestee?.id || "");
   const recentRequest = useRef(0);
   const [avatarFailed, setAvatarFailed] = useState(false);
@@ -195,7 +194,6 @@ const HomeIndex = () => {
         setRecentError("");
         setRecentLoading(Boolean(selectedTesteeId));
       }
-      setTestees(getTesteeList());
       setCurrentTestee(selectedTesteeId ? findTesteeById(selectedTesteeId) : null);
     });
 
@@ -207,24 +205,9 @@ const HomeIndex = () => {
     };
   }, []);
 
-  const memberIdentity = <View className="home-member" hoverClass="home-member--pressed">
-    <View className="home-member__avatar"><Icon name="user" size={24} /></View>
-    <View className="home-member__identity"><Text className="home-member__name">{subject.name}</Text><Text className="home-member__meta">{subject.meta}</Text></View>
-    <Text className="home-member__action">{currentTestee ? "切换受试者" : "选择受试者"} ⌄</Text>
-  </View>;
-
   return <>
-    <PageShell className="home-page" contentClassName="home-content" bottomInset={false}
+    <PageShell globalTestee className="home-page" contentClassName="home-content" bottomInset={false}
       navigation={<AppNavigationBar brandTitle="Qlume" className="home-navigation" transparent />}>
-      {testees.length ? <Picker mode="selector"
-        range={[...testees.map(testee => testee.legalName || "未命名成员"), "添加 / 管理家庭成员"]}
-        value={Math.max(0, testees.findIndex(testee => testee.id === currentTestee?.id))}
-        onChange={event => {
-          const testee = testees[Number(event.detail.value)];
-          if (testee) setSelectedTesteeId(testee.id);
-          else Taro.navigateTo({ url: routes.testeeList() });
-        }}>{memberIdentity}</Picker>
-        : <View onClick={() => Taro.navigateTo({ url: routes.testeeList() })}>{memberIdentity}</View>}
 
       {hasEntryTask ? <View className="home-task-strip" onClick={handleContinueEntry}>
         <View><Text className="home-task-strip__title">查看机构测评任务</Text><Text className="home-task-strip__meta">已识别扫码入口，进入后确认任务状态</Text></View>

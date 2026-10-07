@@ -80,7 +80,7 @@ const ScaleCatalogPage = () => {
 
   return (
     <>
-      <PageShell
+      <PageShell globalTestee
         tone="medical"
         className="scale-page"
         contentClassName="scale-page__scroll"

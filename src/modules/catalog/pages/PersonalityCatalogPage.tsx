@@ -103,7 +103,7 @@ const PersonalityCatalogPage = () => {
 
   return (
     <>
-      <PageShell
+      <PageShell globalTestee
         tone="personality"
         className="personality-home"
         contentClassName="personality-home__scroll"

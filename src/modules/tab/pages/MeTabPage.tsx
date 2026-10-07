@@ -100,7 +100,7 @@ const MeTabPage = () => {
   };
 
   return (
-    <PageShell tone="medical" contentClassName="user-profile-page" bottomInset={false}>
+    <PageShell globalTestee tone="medical" contentClassName="user-profile-page" bottomInset={false}>
       <View className="profile-header">
         {isLoggedIn ? (
           <View className="user-info">
