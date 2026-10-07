@@ -12,9 +12,9 @@ export const ASSESSMENT_PORTALS = Object.freeze([
   {
     key: 'medical',
     badge: '严谨',
-    title: '医学量表',
-    headline: '专业医学量表',
-    subtitle: '睡眠、情绪、压力、儿童行为等\n医学与心理量表筛查',
+    title: '量表',
+    headline: '专业量表',
+    subtitle: '睡眠、情绪、压力、儿童行为等\n心理与行为量表筛查',
     tone: 'medical',
     icon: 'add-circle',
     actionText: '进入',

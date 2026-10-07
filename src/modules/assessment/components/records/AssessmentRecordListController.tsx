@@ -263,7 +263,7 @@ const AssessmentRecordListController = ({
   }, []);
 
   const resolvedEmptyText = medicalListUnavailable
-    ? "医学量表记录列表接口暂未开放，完成测评后可直接查看报告"
+    ? "量表记录列表接口暂未开放，完成测评后可直接查看报告"
     : emptyText;
 
   return (

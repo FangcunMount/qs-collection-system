@@ -61,7 +61,7 @@ test('reports expose a real retry state and never create a mood-record feature',
   const error = component.root.findByType(StatePanel);
   expect(error.props.state).toBe('error');
   await act(async () => { await error.props.onAction(); });
-  expect(textOf(component)).toContain('该成员暂无医学报告');
+  expect(textOf(component)).toContain('该成员暂无量表报告');
   expect(textOf(component)).not.toContain('心情打卡');
 });
 

@@ -26,7 +26,7 @@ const ALGORITHM_PRESENTATION = Object.freeze({
       '正在做职业或学习选择的人',
       '希望改善亲密关系和团队沟通的人',
     ],
-    disclaimer: '测评结果用于自我探索与沟通参考，不作为医学诊断依据。',
+    disclaimer: '测评结果用于自我探索与沟通参考，不作为诊断依据。',
     cta: '开始 16 人格测评',
   },
   sbti: {
@@ -75,7 +75,7 @@ const ALGORITHM_PRESENTATION = Object.freeze({
       '正在梳理关系模式的人',
       '关注长期成长与自我觉察的人',
     ],
-    disclaimer: '测评结果用于自我探索与沟通参考，不作为医学诊断依据。',
+    disclaimer: '测评结果用于自我探索与沟通参考，不作为诊断依据。',
     cta: '开始九型人格测评',
   },
   bigfive: {
@@ -99,7 +99,7 @@ const ALGORITHM_PRESENTATION = Object.freeze({
       '想系统了解性格维度的人',
       '需要沟通与协作参考的人',
     ],
-    disclaimer: '测评结果用于自我探索与沟通参考，不作为医学诊断依据。',
+    disclaimer: '测评结果用于自我探索与沟通参考，不作为诊断依据。',
     cta: '开始大五人格测评',
   },
 });

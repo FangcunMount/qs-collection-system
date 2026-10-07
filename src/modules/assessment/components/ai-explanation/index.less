@@ -15,6 +15,10 @@
   &__caution { color: @color-warning-700; font-size: @font-size-reading; line-height: 1.7; white-space: pre-wrap; }
   &__boundary { padding-top: @space-4; border-top: 1rpx solid @border-color-base; }
   &__entry { width: auto; margin: 0 @space-5 @space-5; gap: @space-3; }
+  &__entry-status &__heading { font-size: @font-size-card-title-sm; margin-bottom: @space-1; }
+  &__entry-status-label { align-self: flex-start; padding: 4rpx @space-2; border-radius: @radius-pill; color: @color-medical-700; background: @color-medical-50; font-size: @font-size-caption; }
+  &__entry-status-label--generated { color: @color-success-700; background: @color-success-50; }
+  &__entry-status-label--failed { color: @color-warning-700; background: @color-warning-50; }
   &__entry--personality {
     margin: @space-2 @space-3 0; padding: @space-3;
     border-color: @color-personality-200; background: @surface-card;

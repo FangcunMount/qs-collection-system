@@ -105,7 +105,7 @@ const AssessmentRecordsPage = () => {
               statusFilter={statusFilter}
               showFilterBar
               emptyText={isMedicalReport
-                ? "完成医学量表测评后，报告将在这里展示。"
+                ? "完成量表测评后，报告将在这里展示。"
                 : "完成人格或能力测评后，报告将在这里展示。"}
               showFilterSheet={showFilterSheet}
               onCloseFilterSheet={() => setShowFilterSheet(false)}

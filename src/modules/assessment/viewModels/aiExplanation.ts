@@ -10,18 +10,18 @@ export const aiSourceNotice = (state?: SourceState) => ({
 export function aiStateCopy(state: AIState): { title: string; description: string; action?: string } {
   if (state.output?.status === 'not_applicable') {
     switch (state.output.reason_code) {
-      case 'feature_disabled': return { title: 'AI 解读尚未开放', description: '开放后，可在这里请求本次测评的补充解读。你可以先阅读标准报告。' };
-      case 'source_not_supported': return { title: '本次报告暂不支持 AI 解读', description: '这份报告暂不支持生成补充解读，请继续阅读标准报告。' };
-      case 'publication_missing': return { title: '本次报告的 AI 解读尚未开放', description: '当前还没有通过审核并发布的解读方案。标准报告仍可正常阅读。' };
-      case 'publication_paused': return { title: '本次报告的 AI 解读已暂停', description: '目前暂不接受新的解读请求。标准报告仍可正常阅读。' };
+      case 'feature_disabled': return { title: '深度解读尚未开放', description: '开放后，可在这里请求本次测评的补充解读。你可以先阅读标准报告。' };
+      case 'source_not_supported': return { title: '本次报告暂不支持深度解读', description: '这份报告暂不支持生成补充解读，请继续阅读标准报告。' };
+      case 'publication_missing': return { title: '本次报告的深度解读尚未开放', description: '当前还没有通过审核并发布的解读方案。标准报告仍可正常阅读。' };
+      case 'publication_paused': return { title: '本次报告的深度解读已暂停', description: '目前暂不接受新的解读请求。标准报告仍可正常阅读。' };
       case 'source_incomplete':
-      case 'source_conflict': return { title: '本次报告暂无法生成 AI 解读', description: '报告所需的结构化结果暂不完整或不一致。标准报告仍可正常阅读。' };
+      case 'source_conflict': return { title: '本次报告暂无法生成深度解读', description: '报告所需的结构化结果暂不完整或不一致。标准报告仍可正常阅读。' };
       case 'unsupported_scene':
-      case 'unsupported_model_version': return { title: '本次报告暂不支持 AI 解读', description: '当前版本尚未支持这份报告的解读，标准报告仍可正常阅读。' };
-      case 'asset_invalid': return { title: 'AI 解读配置暂不可用', description: '当前暂无法生成补充解读，标准报告仍可正常阅读。' };
+      case 'unsupported_model_version': return { title: '本次报告暂不支持深度解读', description: '当前版本尚未支持这份报告的解读，标准报告仍可正常阅读。' };
+      case 'asset_invalid': return { title: '深度解读配置暂不可用', description: '当前暂无法生成补充解读，标准报告仍可正常阅读。' };
       case 'profile_unresolved':
-      case 'profile_mismatch': return { title: '本量表的 AI 解读暂未开放', description: '本量表暂时无法提供补充解读，标准报告仍可正常阅读。' };
-      default: return { title: '本次报告暂无法提供 AI 解读', description: '当前无法为这份报告提供补充解读，请继续阅读标准报告。' };
+      case 'profile_mismatch': return { title: '本量表的深度解读暂未开放', description: '本量表暂时无法提供补充解读，标准报告仍可正常阅读。' };
+      default: return { title: '本次报告暂无法提供深度解读', description: '当前无法为这份报告提供补充解读，请继续阅读标准报告。' };
     }
   }
   switch (state.view) {
@@ -31,16 +31,16 @@ export function aiStateCopy(state: AIState): { title: string; description: strin
     case 'waiting': if (state.refreshError) return { title: '暂时无法更新解读状态', description: '正在尝试重新查询，标准报告仍可继续阅读。' };
       return { title: state.output?.status === 'pending' ? '请求已提交，等待开始' : '解读正在生成',
       description: state.longWait ? '所需时间较长，你可以先阅读标准报告，稍后再查看。' : '你可以返回标准报告，稍后再查看。' };
-    case 'failed': return { title: '本次 AI 解读未完成', description: state.output?.failure?.safe_message || '本次未能提供可展示的补充解读，标准报告仍可正常阅读。', action: '刷新状态' };
+    case 'failed': return { title: '本次深度解读未完成', description: state.output?.failure?.safe_message || '本次未能提供可展示的补充解读，标准报告仍可正常阅读。', action: '刷新状态' };
     case 'limited': return { title: '请求暂受限制', description: state.retryAt ? `请在 ${new Date(state.retryAt).toLocaleString()} 后再试，标准报告仍可正常阅读。` : '请稍后再试，标准报告仍可正常阅读。', action: '刷新状态' };
     case 'storageUnavailable': return { title: '暂时无法保存解读请求', description: '请检查设备存储后重试，标准报告仍可正常阅读。', action: '刷新状态' };
     case 'preparationFailed': return { title: '暂时无法准备解读请求', description: '本次请求尚未发送，请刷新后重试。标准报告仍可正常阅读。', action: '刷新状态' };
-    case 'unconfirmed': return { title: '暂未确认请求结果', description: '暂时无法确认请求是否已被接收。重试会继续核对同一次请求，不会另外创建测评。', action: '再次请求' };
+    case 'unconfirmed': return { title: '暂未确认请求结果', description: '暂时无法确认请求是否已被接收。继续核对同一次请求，避免重复提交。', action: '核对请求结果' };
     case 'paused': return { title: '暂时无法更新解读状态', description: '可以稍后回来查看。已接收的请求不会因为离开页面而取消。', action: '刷新状态' };
     case 'unsupported': return { title: '当前版本暂不支持展示', description: '这份解读的数据格式暂不受支持，请继续阅读标准报告。' };
     case 'forbidden': return { title: '无法访问这份解读', description: '当前账号没有访问权限，请返回标准报告。' };
-    case 'authRequired': return { title: '请先完成登录', description: '登录后可查看 AI 补充解读。请返回“我的”完成登录后再进入。' };
+    case 'authRequired': return { title: '请先完成登录', description: '登录后可查看深度解读。请返回“我的”完成登录后再进入。' };
     case 'invalid': return { title: '测评参数不完整', description: '请从本次标准报告重新进入。' };
-    default: return { title: state.output?.status === 'not_ready' ? '标准报告尚未就绪' : 'AI 解读暂不可用', description: '当前暂时无法提供补充解读，标准报告仍可独立阅读。', action: '刷新状态' };
+    default: return { title: state.output?.status === 'not_ready' ? '标准报告尚未就绪' : '深度解读暂不可用', description: '当前暂时无法提供补充解读，标准报告仍可独立阅读。', action: '刷新状态' };
   }
 }

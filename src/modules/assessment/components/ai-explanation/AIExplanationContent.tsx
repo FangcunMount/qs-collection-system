@@ -20,7 +20,7 @@ export default function AIExplanationContent({ content, references, onTopicSelec
   if (content.schema_version === 'ai-explanation-output/v2') return <MBTIThreeTopicContent content={content} references={references} onTopicSelect={onTopicSelect} />;
   return <View className="ai-explanation__stack">
     <View className="ai-explanation__stack">
-      <Text className="ai-explanation__caption">AI 生成内容 · 仅作补充参考，不替代标准报告</Text>
+      <Text className="ai-explanation__caption">自动生成内容 · 仅作补充参考，不替代标准报告</Text>
       <Text className="ai-explanation__title">整体理解</Text>
       <Text className="ai-explanation__body" selectable>{content.summary}</Text>
     </View>

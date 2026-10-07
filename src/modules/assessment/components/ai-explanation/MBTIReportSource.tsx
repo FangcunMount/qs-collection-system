@@ -10,7 +10,7 @@ export default function MBTIReportSource({ report, loading, onReturn }: {
 }) {
   const [expanded, setExpanded] = useState(false);
   if (!report) return <View className="mbti-ai-source mbti-ai-source--unavailable">
-    <Text className="ai-explanation__caption">{loading ? '正在读取关联标准报告…' : '暂时无法核对关联标准报告，以下保留本次 AI 成果的事实摘要。'}</Text>
+    <Text className="ai-explanation__caption">{loading ? '正在读取关联标准报告…' : '暂时无法核对关联标准报告，以下保留本次深度解读结果的事实摘要。'}</Text>
   </View>;
   return <View className="mbti-ai-source">
     <PersonalityReportHero variant="ai" modelExtra={report.hero.modelExtra} modelTitle={report.modelTitle}
@@ -26,7 +26,7 @@ export default function MBTIReportSource({ report, loading, onReturn }: {
       {report.dimensions.length > 0 && <Button className="ai-explanation__detail-toggle" onClick={() => setExpanded(value => !value)}>
         <Text>{expanded ? '收起原始报告说明' : '查看原始分与报告说明'}</Text><Text>{expanded ? '−' : '+'}</Text>
       </Button>}
-      <Text className="ai-explanation__caption">标尺数据来自关联标准报告，AI 正文不推断偏好强度。</Text>
+      <Text className="ai-explanation__caption">标尺数据来自关联标准报告，深度解读正文不推断偏好强度。</Text>
     </View>
   </View>;
 }

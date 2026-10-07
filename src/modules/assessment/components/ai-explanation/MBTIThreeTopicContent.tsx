@@ -39,7 +39,7 @@ export default function MBTIThreeTopicContent({ content, references, onTopicSele
   const [activeTopic, setActiveTopic] = useState<MBTITheme>('personality');
   return <View className="ai-explanation__stack mbti-three-topic">
     <View className="mbti-three-topic__notice">
-      <Text className="ai-explanation__caption">AI 生成内容 · 结合本次标准报告阅读</Text>
+      <Text className="ai-explanation__caption">自动生成内容 · 结合本次标准报告阅读</Text>
       <Text className="ai-explanation__caption">通用参考与探索问题用于自我核对，不是本次测得的个人行为、职业能力或关系结论。</Text>
     </View>
     {!references && <Text className="ai-explanation__caption">当前记录未保留完整参考正文与来源，无法进一步核对；没有使用最新资料补齐。</Text>}

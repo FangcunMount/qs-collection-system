@@ -127,7 +127,7 @@ const MeTabPage = () => {
             <View className="settings-item__content"><Text>家庭档案</Text><Text className="settings-item__description">选择与管理测评成员</Text></View><Text className="settings-item__arrow">›</Text>
           </Button>
           <Button className="settings-item" hoverClass="settings-item--pressed" onClick={() => Taro.navigateTo({ url: routes.assessmentRecords() })}>
-            <View className="settings-item__content"><Text>医学测评记录</Text><Text className="settings-item__description">人格与行为报告可从对应目录查看</Text></View><Text className="settings-item__arrow">›</Text>
+            <View className="settings-item__content"><Text>量表测评记录</Text><Text className="settings-item__description">人格与行为报告可从对应目录查看</Text></View><Text className="settings-item__arrow">›</Text>
           </Button>
         </SurfaceCard>
       </View>
