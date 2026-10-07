@@ -208,8 +208,8 @@ function AssessmentFillController({ paramData }: { paramData: RouteParams }) {
       console.error('解析入口参数失败:', error);
       redirectToEntryError({
         title: "入口解析失败",
-        text: "当前二维码或入口链接无法识别",
-        desc: "请重新扫码，或联系推荐人员确认入口是否有效。",
+        text: "当前测评入口无法识别",
+        desc: "请重新打开测评链接，或联系推荐人员确认入口是否有效。",
         buttonText: "返回首页",
         buttonUrl: routes.tabHome()
       });

@@ -3,7 +3,6 @@ import { Text, View } from "@tarojs/components";
 import Taro from "@tarojs/taro";
 
 import { routes } from "@/shared/config/routes";
-import { buildAssessmentScanTargetUrl, isScanCancelError } from "@/shared/lib/entryScan";
 import {
   getTesteeStoreState,
   initTesteeStore,
@@ -83,21 +82,6 @@ const TesteeListPage = () => {
     }
   };
 
-  const rescan = async () => {
-    try {
-      const result = await Taro.scanCode({ onlyFromCamera: false, scanType: ["qrCode"] });
-      const targetUrl = buildAssessmentScanTargetUrl(result);
-      if (!targetUrl) {
-        Taro.showToast({ title: "未识别到可用测评入口", icon: "none" });
-        return;
-      }
-      Taro.navigateTo({ url: targetUrl });
-    } catch (scanError: unknown) {
-      if (isScanCancelError(scanError)) return;
-      Taro.showToast({ title: "扫码失败，请重试", icon: "none" });
-    }
-  };
-
   const fixedAction = (
     <BottomActionBar>
       <ActionButton tone="medical" block onClick={() => Taro.navigateTo({ url: routes.testeeCreate() })}>+ 添加档案</ActionButton>
@@ -116,7 +100,6 @@ const TesteeListPage = () => {
       {!loading && !error && !testees.length ? (
         <SurfaceCard className="testee-list-empty">
           <StatePanel state="empty" tone="medical" title="暂无档案信息" description="添加档案后即可开始测评。" />
-          <ActionButton variant="secondary" tone="medical" block onClick={() => void rescan()}>重新扫码</ActionButton>
         </SurfaceCard>
       ) : null}
       {!loading && !error && testees.length ? (

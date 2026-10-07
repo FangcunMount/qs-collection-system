@@ -25,6 +25,6 @@ test('same page retry reuses its attempt and never accepts a malformed response'
 test('source is frozen and changed start changes submission identity', () => {
   expect(answeringOrigin({}, 'task')).toEqual({ type: 'plan_task', id: 'task' });
   expect(answeringOrigin({ token: 't', raw: { raw: { entry: { id: '44' } } } })).toEqual({ type: 'assessment_entry', id: '44' });
-  expect(() => answeringOrigin({ token: 't' })).toThrow('重新扫码');
+  expect(() => answeringOrigin({ token: 't' })).toThrow('重新进入测评');
   expect(buildSubmissionFingerprint({ ...contract, answering_start_id: '1' })).not.toBe(buildSubmissionFingerprint({ ...contract, answering_start_id: '2' }));
 });

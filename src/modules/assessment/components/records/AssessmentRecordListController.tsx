@@ -6,7 +6,7 @@ import { normalizeMedicalAssessmentRecord } from "@/modules/assessment/services/
 import { loadBehaviorAssessmentRecords } from "@/modules/assessment/services/behaviorAssessmentRecordService";
 import { loadPersonalityAssessmentRecords } from "@/modules/assessment/services/personalityAssessmentRecordService";
 import { ASSESSMENT_KIND, normalizeAssessmentKind } from "@/shared/lib/assessmentKind";
-import { buildAssessmentScanTargetUrl, isScanCancelError } from "@/shared/lib/entryScan";
+import { routes } from "@/shared/config/routes";
 import { getSessionRevision } from "@/shared/stores/sessionPrivacy";
 import type { DomainTone } from "@/shared/ui/types";
 
@@ -102,7 +102,7 @@ const AssessmentRecordListController = ({
   showFilterBar = true,
   showFilterSheet = false,
   emptyText = "暂无测评记录",
-  emptyButtonText = "重新扫码",
+  emptyButtonText = "去测评",
   showEmptyButton = true,
   showLoadMore = true,
   onCloseFilterSheet,
@@ -246,21 +246,14 @@ const AssessmentRecordListController = ({
     });
   }, [onScaleCapsuleInfo, scaleList, selectedScale, selectedScaleCode, showFilterBar]);
 
-  const handleEmptyScan = useCallback(async () => {
-    try {
-      const result = await Taro.scanCode({ onlyFromCamera: false, scanType: ["qrCode"] });
-      const targetUrl = buildAssessmentScanTargetUrl(result);
-      if (!targetUrl) {
-        Taro.showToast({ title: "未识别到可用测评入口", icon: "none" });
-        return;
-      }
-      Taro.navigateTo({ url: targetUrl });
-    } catch (scanError) {
-      if (isScanCancelError(scanError)) return;
-      console.error("记录中心重新扫码失败：", scanError);
-      Taro.showToast({ title: "扫码失败，请重试", icon: "none" });
-    }
-  }, []);
+  const handleBrowseAssessments = useCallback(() => {
+    const url = normalizedAssessmentKind === ASSESSMENT_KIND.PERSONALITY
+      ? routes.personalityCatalog()
+      : normalizedAssessmentKind === ASSESSMENT_KIND.ABILITY
+        ? routes.abilityCatalog()
+        : routes.tabScales();
+    Taro.navigateTo({ url });
+  }, [normalizedAssessmentKind]);
 
   const resolvedEmptyText = medicalListUnavailable
     ? "量表记录列表接口暂未开放，完成测评后可直接查看报告"
@@ -282,7 +275,7 @@ const AssessmentRecordListController = ({
         showLoadMore={showLoadMore}
         onRetry={() => void fetchRecords(1, false)}
         onLoadMore={() => void fetchRecords(pagination.page + 1, true)}
-        onEmptyAction={handleEmptyScan}
+        onEmptyAction={handleBrowseAssessments}
       />
       <TypedScaleSheet
         scaleList={scaleList}
