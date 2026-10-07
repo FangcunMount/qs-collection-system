@@ -19,7 +19,6 @@ const taro = {
   reLaunch: resolved,
   removeStorageSync: (key) => storage.delete(key),
   requestSubscribeMessage: resolved,
-  scanCode: resolved,
   setNavigationBarTitle: resolved,
   setStorageSync: (key, value) => storage.set(key, value),
   showLoading: noop,

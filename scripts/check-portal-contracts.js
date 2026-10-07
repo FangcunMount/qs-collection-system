@@ -62,6 +62,17 @@ assertContains(bottomMenu, /routes\.assessmentRecords\(\{\s*kind:\s*ASSESSMENT_K
 assertContains(bottomMenu, /label:\s*["']我的["']/, 'BottomMenu must include 我的');
 assertNotContains(bottomMenu, /scanCode|扫一扫|handleScan/, 'BottomMenu must not include 扫码测评 tab');
 assertNotContains(bottomMenuStyle, /menu-item--scan|scan-button|label--scan/, 'BottomMenu styles must not keep scan tab styles');
+for (const entryPage of [
+  'src/modules/assessment/components/records/AssessmentRecordListController.tsx',
+  'src/modules/testee/pages/TesteeListPage.tsx',
+  'src/modules/tab/pages/HomeTabPage.tsx',
+]) {
+  assertNotContains(read(entryPage), /scanCode|entryScan|重新扫码|扫一扫/, `${entryPage} must not expose the retired scanner`);
+}
+if (fs.existsSync(path.join(root, 'src/shared/lib/entryScan.js'))) {
+  fail('the unused scanner URL adapter must be removed');
+}
+
 
 const bottomMenuLabels = bottomMenu.match(/label:\s*["']([^"']+)["']/g) || [];
 if (bottomMenuLabels.length !== 4) {

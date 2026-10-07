@@ -35,7 +35,7 @@ const AssessmentRecordList = ({
   loadingMore,
   error,
   emptyText,
-  emptyActionText = "重新扫码",
+  emptyActionText = "去测评",
   showEmptyAction = true,
   showLoadMore = true,
   onRetry,

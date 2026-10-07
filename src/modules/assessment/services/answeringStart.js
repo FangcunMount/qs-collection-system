@@ -9,7 +9,7 @@ export function answeringOrigin(entry = {}, taskId = '') {
   if (taskId) return { type: 'plan_task', id: String(taskId) };
   const entryId = entry?.raw?.raw?.entry?.id || entry?.raw?.entry?.id;
   if (entry?.token) {
-    if (!entryId) throw new Error('测评入口信息不完整，请重新扫码');
+    if (!entryId) throw new Error('测评入口信息不完整，请重新进入测评');
     return { type: 'assessment_entry', id: String(entryId) };
   }
   return { type: 'self_service' };

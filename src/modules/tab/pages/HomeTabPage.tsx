@@ -210,7 +210,7 @@ const HomeIndex = () => {
       navigation={<AppNavigationBar brandTitle="Qlume" className="home-navigation" transparent />}>
 
       {hasEntryTask ? <View className="home-task-strip" onClick={handleContinueEntry}>
-        <View><Text className="home-task-strip__title">查看机构测评任务</Text><Text className="home-task-strip__meta">已识别扫码入口，进入后确认任务状态</Text></View>
+        <View><Text className="home-task-strip__title">查看机构测评任务</Text><Text className="home-task-strip__meta">已识别测评入口，进入后确认任务状态</Text></View>
         <Icon name="arrow-right" size={18} />
       </View> : null}
 

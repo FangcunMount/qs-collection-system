@@ -65,7 +65,7 @@ const mapResolvedAssessmentEntry = (token, result) => {
     target_code: targetCode,
     target_type: targetType,
     target_version: targetVersion,
-    entry_title: clinicianName ? `${clinicianName} 推荐测评` : '扫码测评入口',
+    entry_title: clinicianName ? `${clinicianName} 推荐测评` : '测评入口',
     entry_description: targetCode ? `来源入口 · ${targetCode}` : '请按入口指引完成测评。',
     entry_status: toResolvedEntryStatus(entry),
     clinician_name: clinicianName,
