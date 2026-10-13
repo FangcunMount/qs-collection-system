@@ -27,8 +27,8 @@ const QsNumber = props => {
       <View>
         <Stepper
           value={item.value}
-          min={minValue ? Number(minValue) : undefined}
-          max={maxValue ? Number(maxValue) : undefined}
+          min={minValue != null ? Number(minValue) : undefined}
+          max={maxValue != null ? Number(maxValue) : undefined}
           disabled={disabled}
           onChange={handleChange}
         />

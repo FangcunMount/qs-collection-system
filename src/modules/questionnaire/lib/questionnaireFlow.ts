@@ -27,6 +27,10 @@ const getRuleValue = (
   ruleType: string,
 ): unknown => rules?.find((rule) => rule.rule_type === ruleType)?.target_value ?? null;
 
+const isAnswerEmpty = (value: unknown): boolean => (
+  typeof value === "string" ? value.trim().length === 0 : isEmpty(value)
+);
+
 const isRequiredRule = (value: unknown): boolean => (
   value === 1 || value === "1" || value === "true" || value === true
 );
@@ -42,14 +46,14 @@ export function validateQuestion(
 ): QuestionValidationResult {
   const rules = question.validation_rules;
   const required = getRuleValue(rules, "required");
-  const minWords = getRuleValue(rules, "min_words");
-  const maxWords = getRuleValue(rules, "max_words");
+  const minLength = getRuleValue(rules, "min_length");
+  const maxLength = getRuleValue(rules, "max_length");
   const minValue = getRuleValue(rules, "min_value");
   const maxValue = getRuleValue(rules, "max_value");
-  const minSelect = getRuleValue(rules, "min_select");
-  const maxSelect = getRuleValue(rules, "max_select");
+  const minSelections = getRuleValue(rules, "min_selections");
+  const maxSelections = getRuleValue(rules, "max_selections");
   const value = question.value;
-  const empty = isEmpty(value);
+  const empty = isAnswerEmpty(value);
   const displayIndex = getQuestionDisplayIndex(question, index);
 
   if (isRequiredRule(required) && empty) {
@@ -57,26 +61,28 @@ export function validateQuestion(
   }
   if (empty) return { valid: true };
 
-  const textValue = Array.isArray(value) ? value.join("") : String(value ?? "");
-  const selectCount = Array.isArray(value) ? value.length : 1;
+  const textValue = Array.isArray(value) ? String(value[0] ?? "") : String(value ?? "");
+  // Match the submission validator's utf8.RuneCountInString, including emoji.
+  const textLength = Array.from(textValue).length;
+  const selectCount = Array.isArray(value) ? value.length : typeof value === "string" ? 1 : 0;
 
-  if (minWords && textValue.length < Number(minWords)) {
-    return { valid: false, message: `第${displayIndex}题最少字数为 ${minWords}，请检查答题内容` };
+  if (minLength != null && textLength < Number(minLength)) {
+    return { valid: false, message: `第${displayIndex}题最少字数为 ${minLength}，请检查答题内容` };
   }
-  if (maxWords && textValue.length > Number(maxWords)) {
-    return { valid: false, message: `第${displayIndex}题最大字数为 ${maxWords}，请检查答题内容` };
+  if (maxLength != null && textLength > Number(maxLength)) {
+    return { valid: false, message: `第${displayIndex}题最大字数为 ${maxLength}，请检查答题内容` };
   }
-  if (minValue && Number(value) < Number(minValue)) {
+  if (minValue != null && Number(value) < Number(minValue)) {
     return { valid: false, message: `第${displayIndex}题最小值为 ${minValue}` };
   }
-  if (maxValue && Number(value) > Number(maxValue)) {
+  if (maxValue != null && Number(value) > Number(maxValue)) {
     return { valid: false, message: `第${displayIndex}题最大值为 ${maxValue}` };
   }
-  if (minSelect && selectCount < Number(minSelect)) {
-    return { valid: false, message: `第${displayIndex}题最少选择 ${minSelect} 个选项` };
+  if (minSelections != null && selectCount < Number(minSelections)) {
+    return { valid: false, message: `第${displayIndex}题最少选择 ${minSelections} 个选项` };
   }
-  if (maxSelect && selectCount > Number(maxSelect)) {
-    return { valid: false, message: `第${displayIndex}题最多选择 ${maxSelect} 个选项` };
+  if (maxSelections != null && selectCount > Number(maxSelections)) {
+    return { valid: false, message: `第${displayIndex}题最多选择 ${maxSelections} 个选项` };
   }
   return { valid: true };
 }
@@ -191,7 +197,7 @@ export function getVisibleAnswerQuestions(questions: QuestionnaireQuestion[]): Q
 // not an empty option/text payload. This is the submission contract expected by
 // collection-server and the final questionnaire validator.
 export function getVisibleAnsweredQuestions(questions: QuestionnaireQuestion[]): QuestionnaireQuestion[] {
-  return getVisibleAnswerQuestions(questions).filter((question) => !isEmpty(question.value));
+  return getVisibleAnswerQuestions(questions).filter((question) => !isAnswerEmpty(question.value));
 }
 
 export function hasAnyVisibleAnswer(questions: QuestionnaireQuestion[]): boolean {

@@ -29,7 +29,7 @@ beforeEach(() => {
   submitQuestionnaire.mockReset();
   getQuestionnaire.mockReset().mockResolvedValue(questionnaire);
 });
-afterEach(() => { if (tree) act(() => tree.unmount()); tree = undefined; jest.restoreAllMocks(); });
+afterEach(() => { if (tree) act(() => tree.unmount()); tree = undefined; delete Taro.createSelectorQuery; jest.restoreAllMocks(); });
 
 for (const [name, Page] of [['single', SinglePageQuestionnaire], ['full', QuestionnaireForm]]) {
   test(`${name}: in-flight submission is locked; uncertain retry preserves answers and attempt identity`, async () => {
@@ -153,3 +153,41 @@ test('replacing a questionnaire cancels the old choice auto-advance', async () =
     expect(tree.root.findByType(QuestionRenderer).props.question.code).toBe('q1');
   } finally { jest.useRealTimers(); }
 });
+
+for (const [name, Page] of [['single', SinglePageQuestionnaire], ['full', QuestionnaireForm]]) {
+  test.each([
+    ['min_length', 'Text', '中', '中🙂'],
+    ['max_length', 'Text', '中文🙂', '中🙂'],
+    ['min_selections', 'CheckBox', ['a'], ['a', 'b']],
+    ['max_selections', 'CheckBox', ['a', 'b', 'c'], ['a', 'b']],
+  ])(`${name}: canonical %s blocks invalid answers and submits an exact-boundary answer`, async (ruleType, type, invalidValue, validValue) => {
+    const data = { ...questionnaire, questions: [
+      { code: 'bounded', type, value: invalidValue, validation_rules: [{ rule_type: ruleType, target_value: '2' }] },
+      { code: 'optional', type: 'Textarea', value: ' \t ', validation_rules: [{ rule_type: 'min_length', target_value: '2' }] },
+    ] };
+    await act(async () => { tree = renderer.create(<Page {...createProps()} initialQuestionnaire={data} />); });
+    if (name === 'single') {
+      act(() => tree.root.findByType(QuestionnaireBottomActions).props.onNext());
+      expect(tree.root.findByType(QuestionRenderer).props.question.code).toBe('bounded');
+    }
+    if (name === 'full') {
+      const query = { select: jest.fn().mockReturnThis(), boundingClientRect: jest.fn().mockReturnThis(),
+        scrollOffset: jest.fn().mockReturnThis(), exec: callback => callback([]) };
+      Taro.createSelectorQuery = jest.fn(() => query);
+      await act(async () => { await tree.root.findByType(QuestionnaireBottomActions).props.onSubmit(); });
+    }
+    expect(submitQuestionnaire).not.toHaveBeenCalled();
+    expect(Taro.showToast).toHaveBeenCalledWith(expect.objectContaining({ icon: 'none' }));
+    act(() => tree.root.findAllByType(QuestionRenderer)[0].props.onChangeValue(validValue));
+    if (name === 'single') {
+      act(() => tree.root.findByType(QuestionnaireBottomActions).props.onNext());
+      act(() => tree.root.findByType(QuestionnaireBottomActions).props.onNext());
+    }
+    submitQuestionnaire.mockResolvedValue({ id: 'canonical-accepted' });
+    await act(async () => { await tree.root.findByType(QuestionnaireBottomActions).props.onSubmit(); });
+    expect(submitQuestionnaire).toHaveBeenCalledTimes(1);
+    expect(submitQuestionnaire.mock.calls[0][0].answers).toEqual([
+      expect.objectContaining({ code: 'bounded', value: validValue }),
+    ]);
+  });
+}
