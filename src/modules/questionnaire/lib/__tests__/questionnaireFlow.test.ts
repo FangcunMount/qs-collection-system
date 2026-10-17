@@ -71,8 +71,8 @@ describe("questionnaire flow", () => {
 
   test.each([
     [{ code: "q", type: "Text", title: "4. 姓名", value: "", validation_rules: [{ rule_type: "required", target_value: "1" }] }, "第4题为必填题"],
-    [{ code: "q", type: "Text", title: "5. 描述", value: "短", validation_rules: [{ rule_type: "min_words", target_value: 3 }] }, "第5题最少字数为 3，请检查答题内容"],
-    [{ code: "q", type: "CheckBox", title: "6. 多选", value: ["a"], validation_rules: [{ rule_type: "min_select", target_value: 2 }] }, "第6题最少选择 2 个选项"],
+    [{ code: "q", type: "Text", title: "5. 描述", value: "短", validation_rules: [{ rule_type: "min_length", target_value: 3 }] }, "第5题最少字数为 3，请检查答题内容"],
+    [{ code: "q", type: "CheckBox", title: "6. 多选", value: ["a"], validation_rules: [{ rule_type: "min_selections", target_value: 2 }] }, "第6题最少选择 2 个选项"],
   ])("returns the existing validation message", (question, message) => {
     expect(validateQuestion(question as QuestionnaireQuestion)).toEqual({ valid: false, message });
   });
@@ -136,5 +136,79 @@ describe("questionnaire flow", () => {
 
     expect(getAdjacentVisibleStep(steppedQuestions, 0, "next")).toBe(2);
     expect(getAdjacentVisibleStep(steppedQuestions, 2, "prev")).toBe(2);
+  });
+});
+
+
+describe("published canonical validation rules", () => {
+  const question = (type: string, value: unknown, ruleType: string, targetValue: unknown): QuestionnaireQuestion => ({
+    code: "bound", type, value,
+    validation_rules: [{ rule_type: ruleType, target_value: targetValue }],
+  });
+
+  test.each([
+    ["min_length", "2", "中", false],
+    ["min_length", 2, "中文", true],
+    ["min_length", "2", "中文🙂", true],
+    ["max_length", "2", "中", true],
+    ["max_length", 2, "中文", true],
+    ["max_length", "2", "中文🙂", false],
+    ["min_length", 2, "中🙂", true],
+    ["min_length", 2, "🙂", false],
+    ["max_length", 2, "中🙂", true],
+    ["max_length", 2, "🙂🙂🙂", false],
+    ["max_length", 2, "e\u0301", true],
+  ])("Text and Textarea enforce %s=%s on %s at Unicode character boundaries", (ruleType, target, value, valid) => {
+    for (const type of ["Text", "Textarea"]) {
+      expect(validateQuestion(question(type, value, ruleType, target)).valid).toBe(valid);
+    }
+  });
+
+  test.each([
+    ["min_selections", "2", ["a"], false],
+    ["min_selections", 2, ["a", "b"], true],
+    ["min_selections", "2", ["a", "b", "c"], true],
+    ["max_selections", "2", ["a"], true],
+    ["max_selections", 2, ["a", "b"], true],
+    ["max_selections", "2", ["a", "b", "c"], false],
+  ])("both multiple-choice controls enforce %s=%s", (ruleType, target, value, valid) => {
+    for (const type of ["CheckBox", "ImageCheckBox"]) {
+      expect(validateQuestion(question(type, value, ruleType, target)).valid).toBe(valid);
+    }
+  });
+
+  test.each([
+    ["Text", "max_length", "有值", false],
+    ["Text", "min_length", "有值", true],
+    ["CheckBox", "max_selections", ["a"], false],
+    ["CheckBox", "min_selections", ["a"], true],
+    ["Number", "min_value", -1, false],
+    ["Number", "max_value", 1, false],
+    ["Number", "min_value", 0, true],
+    ["Number", "max_value", 0, true],
+  ])("a configured zero is a real %s %s constraint", (type, ruleType, value, valid) => {
+    for (const zero of [0, "0"]) {
+      expect(validateQuestion(question(type, value, ruleType, zero)).valid).toBe(valid);
+    }
+  });
+
+  test.each([undefined, null, "", "  \t\n", []])("optional empty %s skips configured constraints and is omitted", (value) => {
+    const optional = { ...question("Text", value, "min_length", 2), validation_rules: [
+      { rule_type: "min_length", target_value: 2 },
+      { rule_type: "min_selections", target_value: 2 },
+    ] };
+    expect(validateQuestion(optional)).toEqual({ valid: true });
+    expect(buildQuestionnaireSubmission({ questions: [optional] }).answers).toEqual([]);
+    expect(validateQuestion({ ...optional, validation_rules: [...optional.validation_rules,
+      { rule_type: "required", target_value: "1" },
+    ] }).valid).toBe(false);
+  });
+
+  test("zero-valued numeric answers are present and retained", () => {
+    const zero = { ...question("Number", 0, "max_value", 0), validation_rules: [
+      { rule_type: "required", target_value: "1" }, { rule_type: "max_value", target_value: 0 },
+    ] };
+    expect(validateQuestion(zero)).toEqual({ valid: true });
+    expect(buildQuestionnaireSubmission({ questions: [zero] }).answers).toEqual([zero]);
   });
 });
