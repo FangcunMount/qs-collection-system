@@ -20,6 +20,7 @@ const QsText = props => {
       <View>
         <Field
           defaultValue={item.value}
+          maxlength={-1}
           placeholder={getQuestionPlaceholder(item)}
           disabled={disabled}
           onValueChange={v => onChangeValue(v, index)}

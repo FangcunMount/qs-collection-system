@@ -3,21 +3,16 @@ import { View } from "@tarojs/components";
 import { TextareaField } from "@/shared/ui";
 
 import ShowContainer from "./widget/showContainer";
-import { getQuestionPlaceholder, isQuestionRequired } from "../../lib/questionValidation";
+import { getQuestionPlaceholder, getValidationRule, isQuestionRequired } from "../../lib/questionValidation";
 
 const QsTextarea = props => {
   const { item, index, disabled } = props;
   const { onChangeValue } = props;
 
-  const handleChange = v => {
-    if (
-      item.validate_rules.max_words &&
-      v.length > item.validate_rules.max_words
-    ) {
-      v = v.slice(0, item.validate_rules.max_words);
-    }
-    onChangeValue(v, index);
-  };
+  const configuredMaxLength = getValidationRule(item.validation_rules, "max_length");
+  // Configured bounds are validated by questionnaireFlow using Unicode characters.
+  // A native input cap may count UTF-16 units and truncate an otherwise valid answer.
+  const handleChange = value => onChangeValue(value, index);
   return (
     <ShowContainer
       title={item.title}
@@ -29,7 +24,7 @@ const QsTextarea = props => {
       <View>
         <TextareaField
           value={item.value}
-          maxLength={item.validate_rules?.max_words ?? 3000}
+          maxlength={configuredMaxLength == null ? 3000 : -1}
           placeholder={getQuestionPlaceholder(item)}
           onValueChange={handleChange}
           disabled={disabled}
